@@ -14,13 +14,130 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      exam_stats: {
+        Row: {
+          average_score: number | null
+          best_score: number | null
+          created_at: string | null
+          exam_id: string
+          id: string
+          last_test_date: string | null
+          rank: number | null
+          total_tests: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          average_score?: number | null
+          best_score?: number | null
+          created_at?: string | null
+          exam_id: string
+          id?: string
+          last_test_date?: string | null
+          rank?: number | null
+          total_tests?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          average_score?: number | null
+          best_score?: number | null
+          created_at?: string | null
+          exam_id?: string
+          id?: string
+          last_test_date?: string | null
+          rank?: number | null
+          total_tests?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_stats_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_attempts: {
+        Row: {
+          answers: Json | null
+          completed_at: string | null
+          correct_answers: number
+          exam_id: string
+          id: string
+          score: number
+          time_taken: number | null
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          answers?: Json | null
+          completed_at?: string | null
+          correct_answers: number
+          exam_id: string
+          id?: string
+          score: number
+          time_taken?: number | null
+          total_questions: number
+          user_id: string
+        }
+        Update: {
+          answers?: Json | null
+          completed_at?: string | null
+          correct_answers?: number
+          exam_id?: string
+          id?: string
+          score?: number
+          time_taken?: number | null
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_profiles: {
+        Row: {
+          created_at: string | null
+          id: string
+          phone: string
+          pin: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id: string
+          phone: string
+          pin?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          phone?: string
+          pin?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_exam_ranks: {
+        Args: { exam_name: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
