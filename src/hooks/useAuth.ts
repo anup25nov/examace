@@ -1,62 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useSupabaseAuth } from './useSupabaseAuth';
 import { getCurrentUserId, isUserAuthenticated, getCurrentAuthUser, signOutUser } from '@/lib/firebaseAuth';
-import type { AuthUser } from '@/lib/firebaseAuth';
 
 export const useAuth = () => {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        const authenticated = isUserAuthenticated();
-        setIsAuthenticated(authenticated);
-        
-        if (authenticated) {
-          const currentUser = await getCurrentAuthUser();
-          setUser(currentUser);
-        }
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    initAuth();
-  }, []);
+  const supabaseAuth = useSupabaseAuth();
+  
+  // Fallback to Firebase auth if Supabase auth not available
+  const getUserId = () => {
+    return supabaseAuth.getUserId() || getCurrentUserId();
+  };
 
   const logout = async () => {
     try {
-      await signOutUser();
-      setUser(null);
-      setIsAuthenticated(false);
+      await supabaseAuth.signOut();
     } catch (error) {
       console.error('Error logging out:', error);
-    }
-  };
-
-  const getUserId = () => {
-    return getCurrentUserId();
-  };
-
-  const refreshUser = async () => {
-    try {
-      const currentUser = await getCurrentAuthUser();
-      setUser(currentUser);
-      setIsAuthenticated(!!currentUser);
-    } catch (error) {
-      console.error('Error refreshing user:', error);
+      // Fallback to Firebase logout
+      try {
+        await signOutUser();
+      } catch (firebaseError) {
+        console.error('Firebase logout error:', firebaseError);
+      }
     }
   };
 
   return {
-    user,
-    isLoading,
-    isAuthenticated,
+    user: supabaseAuth.user,
+    isLoading: supabaseAuth.loading,
+    isAuthenticated: supabaseAuth.isAuthenticated,
     logout,
     getUserId,
-    refreshUser
+    refreshUser: () => Promise.resolve() // Not needed with Supabase real-time auth
   };
 };
