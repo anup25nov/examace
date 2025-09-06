@@ -20,6 +20,7 @@ I've already updated your `vercel.json` file with the correct configuration:
 }
 ```
 
+
 ## 🔑 **Step 2: Set Environment Variables in Vercel**
 
 You need to add your Supabase credentials to Vercel:
