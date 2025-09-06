@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { shouldBypassAuth } from '@/config/devConfig';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -8,6 +9,12 @@ interface ProtectedRouteProps {
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { isAuthenticated, loading } = useAuth();
   const location = useLocation();
+
+  // If auth bypass is enabled, skip all auth checks
+  if (shouldBypassAuth()) {
+    console.log('🔧 ProtectedRoute: Auth bypass enabled, allowing access');
+    return <>{children}</>;
+  }
 
   if (loading) {
     return (
