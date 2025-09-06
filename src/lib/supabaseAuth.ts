@@ -16,8 +16,7 @@ export const sendOTPCode = async (email: string) => {
     const { data, error } = await supabase.auth.signInWithOtp({
       email: email,
       options: {
-        shouldCreateUser: true,
-        emailRedirectTo: window.location.origin + '/auth'
+        shouldCreateUser: true
       }
     });
 
