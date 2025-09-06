@@ -197,42 +197,53 @@ class SupabaseStatsService {
 
     try {
       if (examId) {
-        // Use the safe function for specific exam
-        const { data, error } = await supabase.rpc('get_or_create_exam_stats', {
+        // First, ensure default stats exist for this user/exam
+        await supabase.rpc('create_default_exam_stats', {
           user_uuid: user.id,
           exam_name: examId
         });
+
+        // Now get the stats (guaranteed to exist)
+        const { data, error } = await supabase
+          .from('exam_stats')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('exam_id', examId)
+          .single();
 
         if (error) {
           console.error('Error getting exam stats:', error);
           return { data: [], error };
         }
 
-        const statsData = data && data.length > 0 ? [data[0]] : [];
+        const statsData = data ? [data] : [];
         return { data: statsData, error: null };
       } else {
-        // Get all exam stats
+        // First, ensure default stats exist for all exams
+        await supabase.rpc('create_all_default_exam_stats', {
+          user_uuid: user.id
+        });
+
+        // Now get all exam stats (guaranteed to exist)
         const { data, error } = await supabase
           .from('exam_stats')
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
 
-        // Handle the case where no exam stats exist yet
-        if (error && error.code === 'PGRST116') {
-          // No rows found - this is normal for new users
-          console.log('No exam stats found yet for user:', user.id);
-          return { data: [], error: null };
+        if (error) {
+          console.error('Error getting exam stats:', error);
+          return { data: [], error };
         }
 
         // Cache the results
-        if (!error && data) {
+        if (data) {
           const cacheData = this.getCache()?.data || {};
           cacheData.examStats = data;
           this.setCache(cacheData);
         }
 
-        return { data: data || [], error };
+        return { data: data || [], error: null };
       }
     } catch (error) {
       console.error('Error getting exam stats:', error);
@@ -304,7 +315,7 @@ class SupabaseStatsService {
 
       console.log('Calculated stats:', { newTotalTests, newBestScore, newAverageScore });
 
-    // Update or create exam stats
+    // Update or create exam stats with proper conflict resolution
     const { data: statsData, error: statsError } = await supabase
       .from('exam_stats')
       .upsert({
@@ -314,6 +325,8 @@ class SupabaseStatsService {
         best_score: newBestScore,
         average_score: newAverageScore,
         last_test_date: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,exam_id'
       })
       .select()
       .single();
@@ -401,7 +414,7 @@ class SupabaseStatsService {
     if (!user) return { data: null, error: 'User not authenticated' };
 
     try {
-      // Create test completion record
+      // Create test completion record with proper conflict resolution
       const { data: completionData, error: completionError } = await supabase
         .from('test_completions')
         .upsert({
@@ -415,6 +428,8 @@ class SupabaseStatsService {
           correct_answers: submission.correctAnswers,
           time_taken: submission.timeTaken,
           answers: submission.answers
+        }, {
+          onConflict: 'user_id,exam_id,test_type,test_id'
         })
         .select()
         .single();
@@ -541,7 +556,7 @@ class SupabaseStatsService {
 
     try {
       // Use the new function that handles duplicates gracefully
-      const { error } = await supabase.rpc('submitIndividualTestScore', {
+      const { error } = await supabase.rpc('submitindividualtestscore', {
         user_uuid: user.id,
         exam_name: examId,
         test_type_name: testType,
