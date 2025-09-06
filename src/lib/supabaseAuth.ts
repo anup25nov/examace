@@ -83,7 +83,6 @@ export const verifyOTPCode = async (email: string, otp: string) => {
 // Create or update user profile in Supabase
 export const createOrUpdateUserProfile = async (userId: string, email: string) => {
   try {
-    // First, try to insert/update with email column
     const { data, error } = await supabase
       .from('user_profiles')
       .upsert({
@@ -96,30 +95,6 @@ export const createOrUpdateUserProfile = async (userId: string, email: string) =
 
     if (error) {
       console.error('Error creating/updating user profile:', error);
-      
-      // If email column doesn't exist, try with phone column as fallback
-      if (error.message?.includes('email') || error.code === 'PGRST204') {
-        console.log('Email column not found, trying with phone column...');
-        
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('user_profiles')
-          .upsert({
-            id: userId,
-            phone: email, // Use email as phone for now
-            updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'id'
-          });
-
-        if (fallbackError) {
-          console.error('Fallback also failed:', fallbackError);
-          return { success: false, error: fallbackError.message };
-        }
-
-        console.log('User profile created/updated with fallback method');
-        return { success: true, data: fallbackData };
-      }
-      
       return { success: false, error: error.message };
     }
 

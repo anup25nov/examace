@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabaseStatsService } from '@/lib/supabaseStats';
-import { useSupabaseAuth } from './useSupabaseAuth';
+import { useAuth } from './useAuth';
 import type { SupabaseUserProfile } from '@/lib/supabaseStats';
 
 export const useUserProfile = () => {
   const [profile, setProfile] = useState<SupabaseUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const { user, isAuthenticated } = useSupabaseAuth();
+  const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -21,29 +21,27 @@ export const useUserProfile = () => {
         if (!error && data) {
           setProfile(data);
         } else {
-          // Fallback to localStorage phone number if no profile exists
-          const phone = localStorage.getItem("userPhone");
-          if (phone) {
+          // Fallback to localStorage email if no profile exists
+          const email = localStorage.getItem("userEmail");
+          if (email) {
             setProfile({ 
               id: user.id, 
-              phone, 
+              email, 
               created_at: '', 
-              updated_at: '',
-              pin: undefined 
+              updated_at: ''
             });
           }
         }
       } catch (error) {
         console.error('Failed to fetch user profile:', error);
-        // Fallback to localStorage phone number
-        const phone = localStorage.getItem("userPhone");
-        if (phone) {
+        // Fallback to localStorage email
+        const email = localStorage.getItem("userEmail");
+        if (email) {
           setProfile({ 
             id: user.id, 
-            phone, 
+            email, 
             created_at: '', 
-            updated_at: '',
-            pin: undefined 
+            updated_at: ''
           });
         }
       } finally {
