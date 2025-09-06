@@ -1,24 +1,42 @@
-[
-  {
-    "id": "q1",
-    "questionEn": "What is the square root of 144?",
-    "questionHi": "144 का वर्गमूल क्या है?",
-    "options": ["10", "12", "14", "16"],
-    "correct": 1,
-    "difficulty": "easy",
-    "subject": "maths",
-    "topic": "algebra",
-    "explanation": "To find the square root of 144, we need to find a number that when multiplied by itself gives 144. 12 × 12 = 144, so the square root of 144 is 12. We can verify: 10² = 100, 12² = 144, 14² = 196, 16² = 256. Therefore, the correct answer is 12."
+{
+  "examInfo": {
+    "examId": "ssc-cgl",
+    "examName": "SSC CGL",
+    "testType": "pyq",
+    "testId": "2024-day1-shift1",
+    "testName": "SSC CGL PYQ 2024 (Day 1, Shift 1)",
+    "totalQuestions": 2,
+    "languages": ["english", "hindi"],
+    "defaultLanguage": "english"
   },
-  {
-    "id": "q2",
-    "questionEn": "Who wrote the book 'Discovery of India'?",
-    "questionHi": "डिस्कवरी ऑफ इंडिया पुस्तक किसने लिखी?",
-    "options": ["Mahatma Gandhi", "Jawaharlal Nehru", "Subhas Chandra Bose", "Sardar Patel"],
-    "correct": 1,
-    "difficulty": "easy",
-    "subject": "gk",
-    "topic": "history",
-    "explanation": "'The Discovery of India' was written by Jawaharlal Nehru, India's first Prime Minister, while he was imprisoned in Ahmednagar fort during 1942-1946. The book provides a comprehensive view of Indian history, culture, and philosophy. It was written as a series of letters to his daughter Indira Gandhi and remains one of the most important works on Indian history and civilization."
-  }
-]
+  "questions": [
+    {
+      "id": "q1",
+      "questionEn": "What is the square root of 144?",
+      "questionHi": "144 का वर्गमूल क्या है?",
+      "options": ["10", "12", "14", "16"],
+      "correct": 1,
+      "difficulty": "easy",
+      "subject": "maths",
+      "topic": "algebra",
+      "marks": 1,
+      "negativeMarks": 0.25,
+      "duration": 60,
+      "explanation": "The square root of 144 is 12 because 12 × 12 = 144."
+    },
+    {
+      "id": "q2",
+      "questionEn": "If 2x + 5 = 15, what is the value of x?",
+      "questionHi": "यदि 2x + 5 = 15, तो x का मान क्या है?",
+      "options": ["3", "5", "7", "10"],
+      "correct": 1,
+      "difficulty": "medium",
+      "subject": "maths",
+      "topic": "algebra",
+      "marks": 1,
+      "negativeMarks": 0.25,
+      "duration": 60,
+      "explanation": "Solving: 2x + 5 = 15, so 2x = 10, therefore x = 5."
+    }
+  ]
+}

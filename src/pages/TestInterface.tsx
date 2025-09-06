@@ -16,7 +16,8 @@ import {
 import { getQuestionsForTest, getTestDuration } from "@/config/examConfig";
 import { useExamStats } from "@/hooks/useExamStats";
 import { useAuth } from "@/hooks/useAuth";
-import { QuestionLoader } from "@/lib/questionLoader";
+import { QuestionLoader, TestData, QuestionWithProps } from "@/lib/questionLoader";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import SolutionsDisplay from "@/components/SolutionsDisplay";
 
 // Questions will be loaded dynamically based on test parameters
@@ -27,12 +28,14 @@ const TestInterface = () => {
   const { getUserId } = useAuth();
   const { submitTestAttempt, submitIndividualTestScore } = useExamStats(examId);
   
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [testData, setTestData] = useState<TestData | null>(null);
+  const [questions, setQuestions] = useState<QuestionWithProps[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<{ [key: number]: number }>({});
   const [timeLeft, setTimeLeft] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [showHindi, setShowHindi] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('');
+  const [showLanguageSelector, setShowLanguageSelector] = useState(true);
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
   const [startTime] = useState(Date.now());
   const [loading, setLoading] = useState(true);
@@ -48,27 +51,56 @@ const TestInterface = () => {
   useEffect(() => {
     const loadTestData = async () => {
       try {
-        // Try to load from dynamic question files first
-        let testQuestions = await QuestionLoader.loadQuestions(examId!, testType as 'pyq' | 'practice' | 'mock', testType!);
+        console.log('Route parameters:', { examId, sectionId, testType, topic });
         
-        // Fallback to config if dynamic loading fails
-        if (testQuestions.length === 0) {
-          testQuestions = getQuestionsForTest(examId!, sectionId!, testType!, topic);
+        // Determine the correct test ID based on the route parameters
+        let actualTestId = '';
+        
+        if (testType === 'mock') {
+          actualTestId = 'mock-test-1';
+        } else if (testType === 'pyq') {
+          actualTestId = '2024-day1-shift1';
+        } else if (testType === 'practice') {
+          actualTestId = 'maths-algebra';
         }
         
-        const duration = getTestDuration(examId!, sectionId!, testType!, topic);
+        console.log('Loading test data for:', { examId, testType, actualTestId });
         
-        setQuestions(testQuestions);
-        setTimeLeft(duration * 60); // Convert minutes to seconds
+        // Load test data from JSON
+        const loadedTestData = await QuestionLoader.loadQuestions(examId!, testType as 'pyq' | 'practice' | 'mock', actualTestId);
+        
+        if (!loadedTestData) {
+          console.error('Failed to load test data');
+          setLoading(false);
+          return;
+        }
+        
+        setTestData(loadedTestData);
+        setQuestions(loadedTestData.questions);
+        
+        console.log('Test data loaded successfully:', {
+          examInfo: loadedTestData.examInfo,
+          questionsCount: loadedTestData.questions.length,
+          firstQuestion: loadedTestData.questions[0]
+        });
+        
+        // Calculate total duration dynamically from questions
+        const totalDuration = QuestionLoader.calculateTotalDuration(loadedTestData.questions);
+        setTimeLeft(totalDuration * 60); // Convert minutes to seconds
+        
+        // Check if user has a preferred language
+        const preferredLanguage = localStorage.getItem('preferredLanguage');
+        if (preferredLanguage && loadedTestData.examInfo.languages.includes(preferredLanguage)) {
+          setSelectedLanguage(preferredLanguage);
+          setShowLanguageSelector(false);
+        } else {
+          setSelectedLanguage(loadedTestData.examInfo.defaultLanguage);
+          setShowLanguageSelector(true);
+        }
+        
         setLoading(false);
       } catch (error) {
-        console.error('Error loading questions:', error);
-        // Fallback to config
-        const testQuestions = getQuestionsForTest(examId!, sectionId!, testType!, topic);
-        const duration = getTestDuration(examId!, sectionId!, testType!, topic);
-        
-        setQuestions(testQuestions);
-        setTimeLeft(duration * 60);
+        console.error('Error loading test data:', error);
         setLoading(false);
       }
     };
@@ -77,6 +109,12 @@ const TestInterface = () => {
       loadTestData();
     }
   }, [examId, sectionId, testType, topic]);
+
+  // Handle language selection
+  const handleLanguageSelect = (language: string) => {
+    setSelectedLanguage(language);
+    setShowLanguageSelector(false);
+  };
 
   // Timer effect
   useEffect(() => {
@@ -149,7 +187,31 @@ const TestInterface = () => {
         }
       });
 
-      const score = Math.round((correct / questions.length) * 100);
+      // Calculate score using individual question marks and negative marks
+      let totalMarks = 0;
+      let obtainedMarks = 0;
+      
+      questions.forEach((question, index) => {
+        totalMarks += question.marks;
+        if (answers[index] !== undefined) {
+          if (answers[index] === question.correct) {
+            obtainedMarks += question.marks;
+          } else {
+            obtainedMarks -= question.negativeMarks;
+          }
+        }
+      });
+      
+      // Prevent division by zero
+      const score = totalMarks > 0 ? Math.round((obtainedMarks / totalMarks) * 100) : 0;
+      
+      console.log('Score calculation details:', {
+        totalMarks,
+        obtainedMarks,
+        score,
+        questionsCount: questions.length,
+        answersCount: Object.keys(answers).length
+      });
       
       // Submit test attempt using the new system
       if (examId) {
@@ -219,6 +281,19 @@ const TestInterface = () => {
     );
   }
 
+  // Show language selector if needed
+  if (showLanguageSelector && testData) {
+    return (
+      <LanguageSelector
+        examName={testData.examInfo.examName}
+        testName={testData.examInfo.testName}
+        languages={testData.examInfo.languages}
+        defaultLanguage={testData.examInfo.defaultLanguage}
+        onLanguageSelect={handleLanguageSelect}
+      />
+    );
+  }
+
   if (questions.length === 0) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -264,10 +339,10 @@ const TestInterface = () => {
               </Button>
               <div>
                 <h1 className="text-lg font-bold text-foreground">
-                  {topic || testType?.toUpperCase() || "Test"}
+                  {testData?.examInfo.testName || topic || testType?.toUpperCase() || "Test"}
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  Question {currentQuestion + 1} of {questions.length}
+                  Question {currentQuestion + 1} of {questions.length} • {selectedLanguage === 'hindi' ? 'हिंदी' : 'English'}
                 </p>
               </div>
             </div>
@@ -315,9 +390,9 @@ const TestInterface = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setShowHindi(!showHindi)}
+                      onClick={() => setSelectedLanguage(selectedLanguage === 'english' ? 'hindi' : 'english')}
                     >
-                      {showHindi ? 'English' : 'हिंदी'}
+                      {selectedLanguage === 'english' ? 'हिंदी' : 'English'}
                     </Button>
                     <Button
                       variant={flagged.has(currentQuestion) ? "default" : "outline"}
@@ -331,7 +406,7 @@ const TestInterface = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="text-lg leading-relaxed text-foreground">
-                  {showHindi ? question.questionHi : question.questionEn}
+                  {selectedLanguage === 'hindi' ? question.questionHi : question.questionEn}
                 </div>
                 
                 <div className="space-y-3">

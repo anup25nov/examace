@@ -176,7 +176,7 @@ class SupabaseStatsService {
       .from('user_profiles')
       .select('*')
       .eq('id', user.id)
-      .single();
+      .maybeSingle(); // Use maybeSingle() to handle missing profiles gracefully
 
     return { data, error };
   }

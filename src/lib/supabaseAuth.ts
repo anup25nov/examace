@@ -141,7 +141,7 @@ export const checkUserStatus = async (email: string) => {
       .from('user_profiles')
       .select('*')
       .eq('email', email)
-      .single();
+      .maybeSingle();
     
     if (error || !userProfile) {
       console.log('User not found');
@@ -185,7 +185,7 @@ export const verifyPIN = async (email: string, pin: string) => {
       .select('*')
       .eq('email', email)
       .eq('pin', pin)
-      .single();
+      .maybeSingle();
 
     if (error) {
       if (error.code === 'PGRST116') {
@@ -248,6 +248,16 @@ export const setUserPIN = async (userId: string, pin: string) => {
   }
 };
 
+// Cache for user profile to prevent infinite loops
+let userProfileCache: { [key: string]: { data: AuthUser | null; timestamp: number } } = {};
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Clear user profile cache
+export const clearUserProfileCache = () => {
+  userProfileCache = {};
+  console.log('User profile cache cleared');
+};
+
 // Get current authenticated user
 export const getCurrentAuthUser = async (): Promise<AuthUser | null> => {
   try {
@@ -263,20 +273,64 @@ export const getCurrentAuthUser = async (): Promise<AuthUser | null> => {
     });
     
     if (userId && userEmail && isAuthenticated === 'true') {
-      const { data: userProfile } = await supabase
+      // Check cache first
+      const cacheKey = `${userId}-${userEmail}`;
+      const cached = userProfileCache[cacheKey];
+      
+      if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+        console.log('✅ Using cached user profile (preventing infinite loop)');
+        return cached.data;
+      }
+      
+      // For auth bypass, return mock user without making Supabase call
+      if (import.meta.env.DEV && localStorage.getItem('authBypass') === 'true') {
+        console.log('🔧 Auth bypass active - returning mock user profile without database call');
+        const mockUser = {
+          id: userId,
+          email: userEmail,
+          pin: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        
+        // Cache the result
+        userProfileCache[cacheKey] = {
+          data: mockUser,
+          timestamp: Date.now()
+        };
+        
+        return mockUser;
+      }
+      
+      const { data: userProfile, error } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle(); // Use maybeSingle() instead of single() to handle 0 rows gracefully
       
-      if (userProfile) {
+      if (userProfile && !error) {
         console.log('User profile found:', userProfile);
-        return {
+        const authUser = {
           id: userProfile.id,
           email: userProfile.email,
           pin: userProfile.pin,
           createdAt: userProfile.created_at,
           updatedAt: userProfile.updated_at
+        };
+        
+        // Cache the result
+        userProfileCache[cacheKey] = {
+          data: authUser,
+          timestamp: Date.now()
+        };
+        
+        return authUser;
+      } else if (error) {
+        console.log('User profile not found or error:', error.message);
+        // Cache null result to prevent repeated calls
+        userProfileCache[cacheKey] = {
+          data: null,
+          timestamp: Date.now()
         };
       }
     }

@@ -274,7 +274,7 @@ export const useExamStats = (examId?: string) => {
       // Try Supabase first with new test completion tracking
       const { data: supabaseResult, error } = await supabaseStatsService.submitTestCompletion({
         examId: targetExamId,
-        score: Math.round((correctAnswers / totalQuestions) * 100),
+        score: score, // Use the passed score parameter
         totalQuestions,
         correctAnswers,
         timeTaken,
@@ -301,7 +301,7 @@ export const useExamStats = (examId?: string) => {
           sectionId,
           testId,
           topicId,
-          score: Math.round((correctAnswers / totalQuestions) * 100),
+          score: score, // Use the passed score parameter
           totalQuestions,
           correctAnswers,
           wrongAnswers: totalQuestions - correctAnswers - (answers.skipped || 0),
@@ -330,7 +330,7 @@ export const useExamStats = (examId?: string) => {
           sectionId,
           testId,
           topicId,
-          score: Math.round((correctAnswers / totalQuestions) * 100),
+          score: score, // Use the passed score parameter
           totalQuestions,
           correctAnswers,
           wrongAnswers: totalQuestions - correctAnswers - (answers.skipped || 0),

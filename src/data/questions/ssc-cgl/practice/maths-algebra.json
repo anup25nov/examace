@@ -1,22 +1,42 @@
-[
-  {
-    "id": "q5",
-    "questionEn": "Which of the following is a prime number?",
-    "questionHi": "निम्नलिखित में से कौन सी एक अभाज्य संख्या है?",
-    "options": ["15", "21", "23", "27"],
-    "correct": 2,
-    "difficulty": "easy",
-    "subject": "maths",
-    "topic": "number-system"
+{
+  "examInfo": {
+    "examId": "ssc-cgl",
+    "examName": "SSC CGL",
+    "testType": "practice",
+    "testId": "maths-algebra",
+    "testName": "Maths Algebra Practice Set",
+    "totalQuestions": 2,
+    "languages": ["english", "hindi"],
+    "defaultLanguage": "english"
   },
-  {
-    "id": "q6",
-    "questionEn": "The area of a circle with radius 7 cm is:",
-    "questionHi": "7 सेमी त्रिज्या वाले वृत्त का क्षेत्रफल है:",
-    "options": ["154 cm²", "44 cm²", "22 cm²", "308 cm²"],
-    "correct": 0,
-    "difficulty": "medium",
-    "subject": "maths",
-    "topic": "geometry"
-  }
-]
+  "questions": [
+    {
+      "id": "p1",
+      "questionEn": "What is the square root of 144?",
+      "questionHi": "144 का वर्गमूल क्या है?",
+      "options": ["10", "12", "14", "16"],
+      "correct": 1,
+      "difficulty": "easy",
+      "subject": "maths",
+      "topic": "algebra",
+      "marks": 1,
+      "negativeMarks": 0,
+      "duration": 60,
+      "explanation": "The square root of 144 is 12 because 12 × 12 = 144."
+    },
+    {
+      "id": "p2",
+      "questionEn": "If 2x + 5 = 15, what is the value of x?",
+      "questionHi": "यदि 2x + 5 = 15, तो x का मान क्या है?",
+      "options": ["3", "5", "7", "10"],
+      "correct": 1,
+      "difficulty": "medium",
+      "subject": "maths",
+      "topic": "algebra",
+      "marks": 1,
+      "negativeMarks": 0,
+      "duration": 60,
+      "explanation": "Solving: 2x + 5 = 15, so 2x = 10, therefore x = 5."
+    }
+  ]
+}

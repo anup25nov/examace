@@ -234,9 +234,12 @@ const ExamDashboard = () => {
   }
 
   const handleTestStart = (type: 'practice' | 'pyq' | 'mock', itemId: string, topicId?: string) => {
+    // The route expects: /test/:examId/:sectionId/:testType/:topic?
+    // For mock tests, we need to provide a sectionId
+    const sectionId = 'mock'; // Use 'mock' as sectionId for all test types
     const testPath = topicId 
-      ? `/test/${examId}/${type}/${itemId}/${topicId}`
-      : `/test/${examId}/${type}/${itemId}`;
+      ? `/test/${examId}/${sectionId}/${type}/${topicId}`
+      : `/test/${examId}/${sectionId}/${type}/${itemId}`;
     navigate(testPath);
   };
 

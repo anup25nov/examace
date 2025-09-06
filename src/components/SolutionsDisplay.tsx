@@ -21,8 +21,11 @@ interface Question {
   options: string[];
   correct: number;
   difficulty: string;
-  subject: string;
+  subject?: string;
   topic: string;
+  marks: number;
+  negativeMarks: number;
+  duration: number;
   explanation?: string;
 }
 
@@ -53,6 +56,48 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
     });
     return defaultState;
   });
+
+  // Calculate detailed marks breakdown
+  const calculateMarksBreakdown = () => {
+    let totalMarks = 0;
+    let obtainedMarks = 0;
+    let negativeMarks = 0;
+    let attemptedQuestions = 0;
+    let correctQuestions = 0;
+    let incorrectQuestions = 0;
+    let skippedQuestions = 0;
+
+    questions.forEach((question, index) => {
+      totalMarks += question.marks;
+      const userAnswer = userAnswers[index];
+      
+      if (userAnswer !== undefined) {
+        attemptedQuestions++;
+        if (userAnswer === question.correct) {
+          obtainedMarks += question.marks;
+          correctQuestions++;
+        } else {
+          negativeMarks += question.negativeMarks;
+          incorrectQuestions++;
+        }
+      } else {
+        skippedQuestions++;
+      }
+    });
+
+    return {
+      totalMarks,
+      obtainedMarks,
+      negativeMarks,
+      netMarks: obtainedMarks - negativeMarks,
+      attemptedQuestions,
+      correctQuestions,
+      incorrectQuestions,
+      skippedQuestions
+    };
+  };
+
+  const marksBreakdown = calculateMarksBreakdown();
 
   const toggleExplanation = (questionIndex: number) => {
     setShowExplanations(prev => ({
@@ -96,34 +141,95 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
               <BookOpen className="w-8 h-8 text-primary" />
               <span>Test Solutions</span>
             </CardTitle>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-              <div className="text-center">
-                <div className="flex items-center justify-center space-x-2 mb-2">
-                  <Trophy className="w-5 h-5 text-accent" />
-                  <span className="text-sm font-medium text-muted-foreground">Score</span>
+            
+            {/* Quick Performance Summary */}
+            <div className="mt-4 p-4 bg-gradient-to-r from-slate-50 to-gray-50 border border-slate-200 rounded-lg">
+              <div className="flex items-center justify-center space-x-6 text-sm">
+                <div className="text-center">
+                  <span className="text-slate-600">Total Questions:</span>
+                  <span className="ml-1 font-semibold text-slate-800">{totalQuestions}</span>
                 </div>
-                <p className="text-2xl font-bold text-foreground">{score}%</p>
+                <div className="text-center">
+                  <span className="text-green-600">Correct:</span>
+                  <span className="ml-1 font-semibold text-green-700">{marksBreakdown.correctQuestions}</span>
+                </div>
+                <div className="text-center">
+                  <span className="text-red-600">Incorrect:</span>
+                  <span className="ml-1 font-semibold text-red-700">{marksBreakdown.incorrectQuestions}</span>
+                </div>
+                <div className="text-center">
+                  <span className="text-orange-600">Skipped:</span>
+                  <span className="ml-1 font-semibold text-orange-700">{marksBreakdown.skippedQuestions}</span>
+                </div>
+                <div className="text-center">
+                  <span className="text-blue-600">Net Score:</span>
+                  <span className="ml-1 font-semibold text-blue-700">{marksBreakdown.netMarks}/{marksBreakdown.totalMarks}</span>
+                </div>
               </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center space-x-2 mb-2">
-                  <Target className="w-5 h-5 text-primary" />
-                  <span className="text-sm font-medium text-muted-foreground">Correct</span>
+            </div>
+            {/* Detailed Marks Breakdown */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 mt-6">
+              <h3 className="text-lg font-semibold text-blue-900 mb-4 flex items-center">
+                <Trophy className="w-5 h-5 mr-2" />
+                Detailed Marks Breakdown
+              </h3>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div className="text-center">
+                  <div className="flex items-center justify-center space-x-2 mb-2">
+                    <Trophy className="w-5 h-5 text-accent" />
+                    <span className="text-sm font-medium text-muted-foreground">Score</span>
+                  </div>
+                  <p className="text-2xl font-bold text-foreground">{score}%</p>
                 </div>
-                <p className="text-2xl font-bold text-foreground">{correctAnswers}/{totalQuestions}</p>
+                <div className="text-center">
+                  <div className="flex items-center justify-center space-x-2 mb-2">
+                    <Target className="w-5 h-5 text-primary" />
+                    <span className="text-sm font-medium text-muted-foreground">Correct</span>
+                  </div>
+                  <p className="text-2xl font-bold text-foreground">{marksBreakdown.correctQuestions}/{totalQuestions}</p>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center space-x-2 mb-2">
+                    <Clock className="w-5 h-5 text-warning" />
+                    <span className="text-sm font-medium text-muted-foreground">Time</span>
+                  </div>
+                  <p className="text-2xl font-bold text-foreground">{formatTime(timeTaken)}</p>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center space-x-2 mb-2">
+                    <BookOpen className="w-5 h-5 text-success" />
+                    <span className="text-sm font-medium text-muted-foreground">Attempted</span>
+                  </div>
+                  <p className="text-2xl font-bold text-foreground">{marksBreakdown.attemptedQuestions}/{totalQuestions}</p>
+                </div>
               </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center space-x-2 mb-2">
-                  <Clock className="w-5 h-5 text-warning" />
-                  <span className="text-sm font-medium text-muted-foreground">Time</span>
+
+              {/* Marks Details */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-blue-200">
+                <div className="text-center">
+                  <div className="flex items-center justify-center space-x-2 mb-2">
+                    <span className="text-sm font-medium text-green-700">Marks Obtained</span>
+                  </div>
+                  <p className="text-xl font-bold text-green-600">+{marksBreakdown.obtainedMarks}</p>
+                  <p className="text-xs text-muted-foreground">out of {marksBreakdown.totalMarks}</p>
                 </div>
-                <p className="text-2xl font-bold text-foreground">{formatTime(timeTaken)}</p>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center space-x-2 mb-2">
-                  <BookOpen className="w-5 h-5 text-success" />
-                  <span className="text-sm font-medium text-muted-foreground">Questions</span>
+                <div className="text-center">
+                  <div className="flex items-center justify-center space-x-2 mb-2">
+                    <span className="text-sm font-medium text-red-700">Negative Marks</span>
+                  </div>
+                  <p className="text-xl font-bold text-red-600">-{marksBreakdown.negativeMarks}</p>
+                  <p className="text-xs text-muted-foreground">for {marksBreakdown.incorrectQuestions} wrong answers</p>
                 </div>
-                <p className="text-2xl font-bold text-foreground">{totalQuestions}</p>
+                <div className="text-center">
+                  <div className="flex items-center justify-center space-x-2 mb-2">
+                    <span className="text-sm font-medium text-blue-700">Net Marks</span>
+                  </div>
+                  <p className="text-xl font-bold text-blue-600">{marksBreakdown.netMarks}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {marksBreakdown.skippedQuestions > 0 ? `${marksBreakdown.skippedQuestions} skipped` : 'All attempted'}
+                  </p>
+                </div>
               </div>
             </div>
           </CardHeader>
@@ -154,6 +260,12 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                         </Badge>
                         <Badge variant="outline" className="text-xs">
                           {question.topic}
+                        </Badge>
+                        <Badge className="text-xs bg-green-100 text-green-800">
+                          +{question.marks} marks
+                        </Badge>
+                        <Badge className="text-xs bg-red-100 text-red-800">
+                          -{question.negativeMarks} marks
                         </Badge>
                       </div>
                       <h3 className="text-lg font-semibold text-foreground mb-2">
@@ -219,13 +331,28 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                         <p className="text-sm text-muted-foreground">
                           Correct Answer: {String.fromCharCode(65 + question.correct)}
                         </p>
+                        {userAnswer !== undefined && (
+                          <p className={`text-sm font-medium ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
+                            {isCorrect ? `+${question.marks} marks earned` : `-${question.negativeMarks} marks deducted`}
+                          </p>
+                        )}
                       </div>
-                      <Badge 
-                        variant={isCorrect ? "default" : "destructive"}
-                        className={isCorrect ? "bg-green-100 text-green-800" : ""}
-                      >
-                        {isCorrect ? 'Correct' : 'Incorrect'}
-                      </Badge>
+                      <div className="flex flex-col items-end space-y-2">
+                        <Badge 
+                          variant={isCorrect ? "default" : "destructive"}
+                          className={isCorrect ? "bg-green-100 text-green-800" : ""}
+                        >
+                          {isCorrect ? 'Correct' : 'Incorrect'}
+                        </Badge>
+                        {userAnswer !== undefined && (
+                          <Badge 
+                            variant="outline"
+                            className={isCorrect ? "border-green-200 text-green-700" : "border-red-200 text-red-700"}
+                          >
+                            {isCorrect ? `+${question.marks}` : `-${question.negativeMarks}`}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
 

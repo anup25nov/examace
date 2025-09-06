@@ -1,35 +1,56 @@
-[
-
-  {
-    "id": "q59",
-    "questionEn": "In the following question, a sentence has been given with a part underlined. Select the option that can be used to improve the underlined part. 'If you park your car here, the traffic police has fined you.'",
-    "questionHi": "निम्नलिखित प्रश्न में, एक वाक्य में एक भाग रेखांकित किया गया है। उस विकल्प का चयन करें जिसका उपयोग रेखांकित भाग को बेहतर बनाने के लिए किया जा सकता है। 'If you park your car here, the traffic police has fined you.'",
-    "options": ["will fine you", "had fined you", "fined you", "No improvement"],
-    "correct": 0,
-    "difficulty": "medium",
-    "subject": "english",
-    "topic": "sentence-improvement",
-    "explanation": "This is a conditional sentence (If-clause). The simple present tense 'park' in the 'if' clause should be followed by the simple future tense 'will fine' in the main clause. The correct phrase is 'will fine you'."
+{
+  "examInfo": {
+    "examId": "ssc-cgl",
+    "examName": "SSC CGL",
+    "testType": "mock",
+    "testId": "mock-test-1",
+    "testName": "SSC CGL Full Mock Test 1",
+    "totalQuestions": 3,
+    "languages": ["english", "hindi"],
+    "defaultLanguage": "english"
   },
-  {
-    "id": "q60",
-    "questionEn": "Select the most appropriate synonym of the given word. 'COERCE'",
-    "questionHi": "दिए गए शब्द का सर्वाधिक उपयुक्त पर्यायवाची चुनें। 'COERCE'",
-    "options": ["persuade", "pressurize", "cajole", "encourage"],
-    "correct": 1,
-    "difficulty": "easy",
-    "subject": "english",
-    "topic": "synonyms-antonyms",
-    "explanation": "To 'coerce' someone means to compel or force them to do something. The closest synonym is 'pressurize'."
-  },
-  {
-    "id": "q61",
-    "questionEn": "Select the most appropriate antonym of the given word. 'EXPANSION'",
-    "questionHi": "दिए गए शब्द का सर्वाधिक उपयुक्त विलोम चुनें। 'EXPANSION'",
-    "options": ["inflation", "augmentation", "extension", "compression"],
-    "correct": 3,
-    "difficulty": "easy",
-    "subject": "english",
-    "topic": "synonyms-antonyms",
-    "explanation": "'Expansion' means the process of increasing in size. 'Compression' means the action of compressing or pressing something together, thus reducing its size. It is the most appropriate antonym."
-  }]
+  "questions": [
+    {
+      "id": "q59",
+      "questionEn": "In the following question, a sentence has been given with a part underlined. Select the option that can be used to improve the underlined part. 'If you park your car here, the traffic police has fined you.'",
+      "questionHi": "निम्नलिखित प्रश्न में, एक वाक्य में एक भाग रेखांकित किया गया है। उस विकल्प का चयन करें जिसका उपयोग रेखांकित भाग को बेहतर बनाने के लिए किया जा सकता है। 'If you park your car here, the traffic police has fined you.'",
+      "options": ["will fine you", "had fined you", "fined you", "No improvement"],
+      "correct": 0,
+      "difficulty": "medium",
+      "subject": "english",
+      "topic": "sentence-improvement",
+      "marks": 1,
+      "negativeMarks": 0.25,
+      "duration": 60,
+      "explanation": "This is a conditional sentence (If-clause). The simple present tense 'park' in the 'if' clause should be followed by the simple future tense 'will fine' in the main clause. The correct phrase is 'will fine you'."
+    },
+    {
+      "id": "q60",
+      "questionEn": "Select the most appropriate synonym of the given word. 'COERCE'",
+      "questionHi": "दिए गए शब्द का सर्वाधिक उपयुक्त पर्यायवाची चुनें। 'COERCE'",
+      "options": ["persuade", "pressurize", "cajole", "encourage"],
+      "correct": 1,
+      "difficulty": "easy",
+      "subject": "english",
+      "topic": "synonyms-antonyms",
+      "marks": 1,
+      "negativeMarks": 0.25,
+      "duration": 60,
+      "explanation": "To 'coerce' someone means to compel or force them to do something. The closest synonym is 'pressurize'."
+    },
+    {
+      "id": "q61",
+      "questionEn": "Select the most appropriate antonym of the given word. 'EXPANSION'",
+      "questionHi": "दिए गए शब्द का सर्वाधिक उपयुक्त विलोम चुनें। 'EXPANSION'",
+      "options": ["inflation", "augmentation", "extension", "compression"],
+      "correct": 3,
+      "difficulty": "easy",
+      "subject": "english",
+      "topic": "synonyms-antonyms",
+      "marks": 1,
+      "negativeMarks": 0.25,
+      "duration": 60,
+      "explanation": "'Expansion' means the process of increasing in size. 'Compression' means the action of compressing or pressing something together, thus reducing its size. It is the most appropriate antonym."
+    }
+  ]
+}

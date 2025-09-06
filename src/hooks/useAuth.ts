@@ -33,8 +33,10 @@ export const useAuth = () => {
           // Set localStorage with real user data for consistency
           localStorage.setItem('userId', mockUser.id);
           localStorage.setItem('userEmail', mockUser.email);
+          localStorage.setItem('userPhone', mockUser.phone);
           localStorage.setItem('isAuthenticated', 'true');
           localStorage.setItem('pinSet', 'true');
+          localStorage.setItem('authBypass', 'true');
           
           setUser(mockUser);
           setIsAuthenticated(true);
