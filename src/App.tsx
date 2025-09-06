@@ -12,7 +12,8 @@ import {
   AuthWrapper, 
   ExamDashboardWrapper, 
   TestInterfaceWrapper, 
-  ResultAnalysisWrapper 
+  ResultAnalysisWrapper,
+  SolutionsViewerWrapper
 } from "@/components/LazyWrapper";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,16 @@ const App = () => {
             <Route path="/result/:examId/:sectionId" element={
               <ProtectedRoute>
                 <ResultAnalysisWrapper />
+              </ProtectedRoute>
+            } />
+            <Route path="/solutions/:examId/:sectionId/:testType" element={
+              <ProtectedRoute>
+                <SolutionsViewerWrapper />
+              </ProtectedRoute>
+            } />
+            <Route path="/solutions/:examId/:sectionId/:testType/:topic" element={
+              <ProtectedRoute>
+                <SolutionsViewerWrapper />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

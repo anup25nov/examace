@@ -111,8 +111,9 @@ class SupabaseStatsService {
   }
 
   private clearTestCaches(userId: string, examId: string, testType: string, testId: string) {
-    // Clear test completion cache
+    // Clear test completion cache for both null and testId as topicId
     localStorage.removeItem(`test_completed_${userId}_${examId}_${testType}_${testId}_null`);
+    localStorage.removeItem(`test_completed_${userId}_${examId}_${testType}_${testId}_${testId}`);
     
     // Clear test score cache
     localStorage.removeItem(`test_score_${userId}_${examId}_${testType}_${testId}`);
@@ -126,6 +127,9 @@ class SupabaseStatsService {
       }
     }
     keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    console.log('Cleared test caches for:', { userId, examId, testType, testId });
+    console.log('Removed keys:', keysToRemove);
   }
 
   async getCurrentUser() {
@@ -410,6 +414,9 @@ class SupabaseStatsService {
       // Clear cache to force refresh
       localStorage.removeItem(this.cacheKey);
 
+      // Clear test completion and score caches for this user
+      this.clearTestCaches(user.id, submission.examId, submission.testType || 'mock', submission.testId || 'default');
+
       return { data: { attempt: attemptData, stats: statsData }, error: null };
     } catch (error) {
       console.error('Error in submitTestAttempt:', error);
@@ -581,6 +588,14 @@ class SupabaseStatsService {
     }
 
     try {
+      console.log('Checking test completion with:', {
+        user_uuid: user.id,
+        exam_name: examId,
+        test_type_name: testType,
+        test_name: testId,
+        topic_name: topicId || null
+      });
+
       const { data, error } = await supabase.rpc('is_test_completed', {
         user_uuid: user.id,
         exam_name: examId,
@@ -589,12 +604,15 @@ class SupabaseStatsService {
         topic_name: topicId || null
       });
 
+      console.log('is_test_completed RPC result:', { data, error });
+
       if (error) {
         console.error('Error checking test completion:', error);
         return false;
       }
 
       const result = data || false;
+      console.log('Test completion result:', result);
       
       // Cache the result
       localStorage.setItem(cacheKey, JSON.stringify({
@@ -744,6 +762,13 @@ class SupabaseStatsService {
     }
 
     try {
+      console.log('Getting individual test score with:', {
+        user_uuid: user.id,
+        exam_name: examId,
+        test_type_name: testType,
+        test_name: testId
+      });
+
       const { data, error } = await supabase.rpc('get_user_test_score', {
         user_uuid: user.id,
         exam_name: examId,
@@ -751,7 +776,10 @@ class SupabaseStatsService {
         test_name: testId
       });
 
+      console.log('get_user_test_score RPC result:', { data, error });
+
       if (error || !data || data.length === 0) {
+        console.log('No score data found, returning null values');
         const result = { score: null, rank: null, totalParticipants: 0 };
         // Cache the result
         localStorage.setItem(cacheKey, JSON.stringify({

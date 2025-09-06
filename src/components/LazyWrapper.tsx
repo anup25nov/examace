@@ -19,6 +19,7 @@ export const LazyExamDashboard = lazy(() => import('@/pages/ExamDashboard'));
 export const LazyTestInterface = lazy(() => import('@/pages/TestInterface'));
 export const LazyResultAnalysis = lazy(() => import('@/pages/ResultAnalysis'));
 export const LazyAuth = lazy(() => import('@/pages/Auth'));
+export const LazySolutionsViewer = lazy(() => import('@/pages/SolutionsViewer'));
 
 // Wrapper components with Suspense
 export const ExamDashboardWrapper = () => (
@@ -42,5 +43,11 @@ export const ResultAnalysisWrapper = () => (
 export const AuthWrapper = () => (
   <Suspense fallback={<LoadingSpinner />}>
     <LazyAuth />
+  </Suspense>
+);
+
+export const SolutionsViewerWrapper = () => (
+  <Suspense fallback={<LoadingSpinner />}>
+    <LazySolutionsViewer />
   </Suspense>
 );

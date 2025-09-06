@@ -405,10 +405,10 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
                 onClick={onClose}
-                className="flex-1 sm:flex-none"
+                className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 text-white font-semibold"
                 size="lg"
               >
-                Close Solutions
+                🏠 Go to Dashboard
               </Button>
               <Button 
                 variant="outline"
