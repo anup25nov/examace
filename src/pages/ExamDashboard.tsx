@@ -155,10 +155,24 @@ const ExamDashboard = () => {
 
     // Load exam stats immediately
     if (examId) {
+      // Load stats only once
       loadAllStats();
       
-      // Find stats for current exam
-      const currentExamStats = getExamStatById(examId);
+      // Check test completions
+      checkTestCompletions();
+      
+      // Load test scores
+      loadTestScores();
+    }
+  }, [examId, navigate, isAuthenticated, loading]);
+
+  // Separate useEffect for updating userStats when allStats change
+  useEffect(() => {
+    console.log('useEffect triggered - examId:', examId, 'allStats.length:', allStats.length);
+    console.log('allStats content:', allStats);
+    
+    if (examId && allStats.length > 0) {
+      const currentExamStats = allStats.find(stat => stat.examId === examId);
       console.log('Current exam stats for', examId, ':', currentExamStats);
       
       if (currentExamStats) {
@@ -176,7 +190,7 @@ const ExamDashboard = () => {
           lastActive: currentExamStats.lastTestDate
         });
       } else {
-        console.log('No exam stats found, setting defaults');
+        console.log('No exam stats found for examId:', examId, 'setting defaults');
         setUserStats({
           totalTests: 0,
           avgScore: 0,
@@ -184,15 +198,16 @@ const ExamDashboard = () => {
           lastActive: null
         });
       }
-
-      // Check test completions
-      checkTestCompletions();
-      
-      // Load test scores
-      loadTestScores();
-      
+    } else if (examId && allStats.length === 0) {
+      console.log('allStats is empty, setting defaults');
+      setUserStats({
+        totalTests: 0,
+        avgScore: 0,
+        bestScore: 0,
+        lastActive: null
+      });
     }
-  }, [examId, navigate, isAuthenticated, loading]);
+  }, [examId, allStats]);
 
   if (loading) {
     return (
@@ -268,18 +283,23 @@ const ExamDashboard = () => {
           {/* Show score and rank for Mock and PYQ tests */}
           {testScore && (testType === 'mock' || testType === 'pyq') && (
             <div className="mt-2 p-2 bg-muted/50 rounded-md">
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center space-x-3">
+              <div className="text-xs space-y-1">
+                <div className="flex items-center justify-between">
                   <span className="text-foreground font-medium">
                     Score: <span className="text-primary font-bold">{testScore.score}%</span>
                   </span>
+                  <span className="text-muted-foreground">
+                    out of 100 marks
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
                   <span className="text-foreground font-medium">
                     Rank: <span className="text-accent font-bold">#{testScore.rank}</span>
                   </span>
+                  <span className="text-muted-foreground">
+                    out of {testScore.totalParticipants} participants
+                  </span>
                 </div>
-                <span className="text-muted-foreground">
-                  of {testScore.totalParticipants} participants
-                </span>
               </div>
             </div>
           )}

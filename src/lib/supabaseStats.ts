@@ -185,69 +185,116 @@ class SupabaseStatsService {
     const user = await this.getCurrentUser();
     if (!user) return { data: [], error: 'User not authenticated' };
 
+    console.log('Getting exam stats for user:', user.id, 'examId:', examId);
+
     // Check cache first for quick response
     const cache = this.getCache();
     if (this.isCacheValid(cache) && cache?.data?.examStats) {
       const cachedStats = cache.data.examStats;
       if (examId) {
-        return { data: cachedStats.filter((s: SupabaseExamStats) => s.exam_id === examId), error: null };
+        const filteredStats = cachedStats.filter((s: SupabaseExamStats) => s.exam_id === examId);
+        console.log('Returning cached exam stats (filtered):', filteredStats);
+        return { data: filteredStats, error: null };
       }
+      console.log('Returning cached exam stats (all):', cachedStats);
       return { data: cachedStats, error: null };
     }
 
     try {
+      let query = supabase
+        .from('exam_stats')
+        .select('*')
+        .eq('user_id', user.id);
+
       if (examId) {
-        // First, ensure default stats exist for this user/exam
-        await supabase.rpc('create_default_exam_stats', {
-          p_user_id: user.id,
-          p_exam_id: examId
-        });
-
-        // Now get the stats (guaranteed to exist)
-        const { data, error } = await supabase
-          .from('exam_stats')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('exam_id', examId)
-          .single();
-
-        console.log('Exam stats query result:', { data, error, examId, userId: user.id });
-
-        if (error) {
-          console.error('Error getting exam stats:', error);
-          return { data: [], error };
-        }
-
-        const statsData = data ? [data] : [];
-        console.log('Returning exam stats:', statsData);
-        return { data: statsData, error: null };
-      } else {
-        // First, ensure default stats exist for all exams
-        await supabase.rpc('create_all_default_exam_stats', {
-          p_user_id: user.id
-        });
-
-        // Now get all exam stats (guaranteed to exist)
-        const { data, error } = await supabase
-          .from('exam_stats')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.error('Error getting exam stats:', error);
-          return { data: [], error };
-        }
-
-        // Cache the results
-        if (data) {
-          const cacheData = this.getCache()?.data || {};
-          cacheData.examStats = data;
-          this.setCache(cacheData);
-        }
-
-        return { data: data || [], error: null };
+        query = query.eq('exam_id', examId);
       }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+
+      console.log('Exam stats query result:', { data, error, examId, userId: user.id });
+      console.log('Data length:', data?.length);
+      console.log('Data content:', data);
+
+      if (error) {
+        console.error('Error getting exam stats:', error);
+        return { data: [], error };
+      }
+
+      // If no data found, create default stats
+      if (!data || data.length === 0) {
+        console.log('No exam stats found, creating default stats');
+        
+        if (examId) {
+          // Create default stats for specific exam
+          const defaultStats = {
+            user_id: user.id,
+            exam_id: examId,
+            total_tests: 0,
+            best_score: 0,
+            average_score: 0,
+            last_test_date: null,
+            rank: null
+          };
+
+          const { data: insertData, error: insertError } = await supabase
+            .from('exam_stats')
+            .insert(defaultStats)
+            .select()
+            .single();
+
+          if (insertError) {
+            console.error('Error creating default exam stats:', insertError);
+            return { data: [], error: insertError };
+          }
+
+          console.log('Created default exam stats:', insertData);
+          return { data: [insertData], error: null };
+        } else {
+          // Create default stats for all exams
+          const examIds = ['ssc-cgl', 'ssc-mts', 'railway', 'bank-po', 'airforce'];
+          const defaultStatsArray = examIds.map(examId => ({
+            user_id: user.id,
+            exam_id: examId,
+            total_tests: 0,
+            best_score: 0,
+            average_score: 0,
+            last_test_date: null,
+            rank: null
+          }));
+
+          const { data: insertData, error: insertError } = await supabase
+            .from('exam_stats')
+            .insert(defaultStatsArray)
+            .select();
+
+          if (insertError) {
+            console.error('Error creating default exam stats:', insertError);
+            return { data: [], error: insertError };
+          }
+
+          console.log('Created default exam stats for all exams:', insertData);
+          
+          // Cache the results
+          if (insertData) {
+            const cacheData = this.getCache()?.data || {};
+            cacheData.examStats = insertData;
+            this.setCache(cacheData);
+          }
+
+          return { data: insertData || [], error: null };
+        }
+      }
+
+      // Cache the results
+      if (data) {
+        const cacheData = this.getCache()?.data || {};
+        cacheData.examStats = data;
+        this.setCache(cacheData);
+      }
+
+      console.log('Returning exam stats:', data);
+      return { data: data || [], error: null };
     } catch (error) {
       console.error('Error getting exam stats:', error);
       return { data: [], error };
@@ -342,11 +389,23 @@ class SupabaseStatsService {
       }
 
       // Update exam stats properly (Mock + PYQ only)
-      await supabase.rpc('update_exam_stats_properly', {
+      console.log('Calling update_exam_stats_properly with:', {
         user_uuid: user.id,
         exam_name: submission.examId,
         new_score: submission.score
       });
+      
+      const { error: statsUpdateError } = await supabase.rpc('update_exam_stats_properly', {
+        user_uuid: user.id,
+        exam_name: submission.examId,
+        new_score: submission.score
+      });
+      
+      if (statsUpdateError) {
+        console.error('Error in update_exam_stats_properly:', statsUpdateError);
+      } else {
+        console.log('update_exam_stats_properly completed successfully');
+      }
 
       // Clear cache to force refresh
       localStorage.removeItem(this.cacheKey);
@@ -440,19 +499,37 @@ class SupabaseStatsService {
       if (completionError) return { data: null, error: completionError };
 
       // Update user streak
-      await supabase.rpc('update_user_streak', { user_uuid: user.id });
+      console.log('Calling update_user_streak with:', { user_uuid: user.id });
+      const { error: streakError } = await supabase.rpc('update_user_streak', { user_uuid: user.id });
+      
+      if (streakError) {
+        console.error('Error in update_user_streak:', streakError);
+      } else {
+        console.log('update_user_streak completed successfully');
+      }
 
       // Update exam stats properly for Mock and PYQ tests only
       if (submission.testType === 'mock' || submission.testType === 'pyq') {
         console.log('Updating exam stats for:', submission.testType, 'with score:', submission.score);
         
         try {
-          await supabase.rpc('update_exam_stats_properly', {
+          console.log('Calling update_exam_stats_properly (completion) with:', {
             user_uuid: user.id,
             exam_name: submission.examId,
             new_score: submission.score
           });
-          console.log('Exam stats updated successfully');
+          
+          const { error: examStatsError } = await supabase.rpc('update_exam_stats_properly', {
+            user_uuid: user.id,
+            exam_name: submission.examId,
+            new_score: submission.score
+          });
+          
+          if (examStatsError) {
+            console.error('Error in update_exam_stats_properly (completion):', examStatsError);
+          } else {
+            console.log('Exam stats updated successfully (completion)');
+          }
         } catch (error) {
           console.error('Error updating exam stats:', error);
         }
@@ -600,6 +677,14 @@ class SupabaseStatsService {
 
     try {
       // Use the RPC function that handles duplicates gracefully
+      console.log('Calling submitindividualtestscore with:', {
+        p_user_id: user.id,
+        p_exam_id: examId,
+        p_test_type: testType,
+        p_test_id: testId,
+        p_score: score
+      });
+      
       const { error } = await supabase.rpc('submitindividualtestscore', {
         p_user_id: user.id,
         p_exam_id: examId,
@@ -616,6 +701,8 @@ class SupabaseStatsService {
         } else {
           return { data: null, error };
         }
+      } else {
+        console.log('submitindividualtestscore completed successfully');
       }
 
       // Get the updated score data

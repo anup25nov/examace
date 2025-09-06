@@ -33,9 +33,17 @@ export const useAuth = () => {
             setUser(authUser);
             setIsAuthenticated(true);
             
-            // Update daily visit streak
+            // Update daily visit streak (only once per day)
             try {
-              await supabaseStatsService.updateDailyVisit();
+              const today = new Date().toDateString();
+              const lastVisitDate = localStorage.getItem('lastVisitDate');
+              if (lastVisitDate !== today) {
+                await supabaseStatsService.updateDailyVisit();
+                localStorage.setItem('lastVisitDate', today);
+                console.log('Daily visit updated for:', today);
+              } else {
+                console.log('Daily visit already updated today');
+              }
             } catch (error) {
               console.error('Error updating daily visit:', error);
             }
