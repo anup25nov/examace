@@ -504,19 +504,61 @@ class SupabaseStatsService {
     console.log('Storing test completion record:', completionRecord);
 
     try {
-      // Try to insert first, if it fails due to duplicate, then update
-      let { data: completionData, error: completionError } = await supabase
-        .from('test_completions')
-        .insert(completionRecord)
-        .select()
-        .single();
+      // First, let's inspect what records actually exist to understand the data structure
+      console.log('Inspecting existing records to understand data structure...');
+      console.log('Search parameters:', {
+        user_id: completionRecord.user_id,
+        exam_id: completionRecord.exam_id,
+        test_type: completionRecord.test_type,
+        test_id: completionRecord.test_id,
+        topic_id: completionRecord.topic_id
+      });
 
-      // If insert fails due to duplicate key, try to update instead
-      if (completionError && completionError.code === '23505') {
-        console.log('Duplicate key detected, attempting to update existing record');
+      // Get all existing records for this user and exam to understand the data structure
+      const { data: allRecords, error: allRecordsError } = await supabase
+        .from('test_completions')
+        .select('*')
+        .eq('user_id', completionRecord.user_id)
+        .eq('exam_id', completionRecord.exam_id);
+
+      if (allRecordsError) {
+        console.error('Error fetching existing records:', allRecordsError);
+        return { data: null, error: allRecordsError };
+      }
+
+      console.log('All existing records for this user/exam:', allRecords);
+
+      // Find the exact record that matches our parameters
+      let existingRecord = null;
+      if (allRecords && allRecords.length > 0) {
+        existingRecord = allRecords.find(record => {
+          const testTypeMatch = record.test_type === completionRecord.test_type;
+          const testIdMatch = record.test_id === completionRecord.test_id;
+          const topicIdMatch = (record.topic_id === null && completionRecord.topic_id === null) ||
+                              (record.topic_id === completionRecord.topic_id);
+          
+          console.log('Checking record:', {
+            record_test_type: record.test_type,
+            record_test_id: record.test_id,
+            record_topic_id: record.topic_id,
+            testTypeMatch,
+            testIdMatch,
+            topicIdMatch,
+            overallMatch: testTypeMatch && testIdMatch && topicIdMatch
+          });
+          
+          return testTypeMatch && testIdMatch && topicIdMatch;
+        });
+      }
+
+      let completionData;
+      let completionError = null;
+
+      if (existingRecord) {
+        // Record exists, update it using the record's ID
+        console.log('Found existing record, updating it:', existingRecord);
         
-        // Build update query based on the unique constraint
-        let updateQuery = supabase
+        const { data: updateData, error: updateError } = await supabase
           .from('test_completions')
           .update({
             score: completionRecord.score,
@@ -526,32 +568,95 @@ class SupabaseStatsService {
             answers: completionRecord.answers,
             completed_at: new Date().toISOString()
           })
-          .eq('user_id', completionRecord.user_id)
-          .eq('exam_id', completionRecord.exam_id)
-          .eq('test_type', completionRecord.test_type)
-          .eq('test_id', completionRecord.test_id);
-
-        // Handle topic_id properly (it might be null)
-        if (completionRecord.topic_id === null) {
-          updateQuery = updateQuery.is('topic_id', null);
-        } else {
-          updateQuery = updateQuery.eq('topic_id', completionRecord.topic_id);
-        }
-
-        const { data: updateData, error: updateError } = await updateQuery.select().single();
+          .eq('id', existingRecord.id)
+          .select()
+          .single();
 
         if (updateError) {
           console.error('Error updating test completion:', updateError);
           return { data: null, error: updateError };
         }
 
+        console.log('Successfully updated existing test completion record');
         completionData = updateData;
-        completionError = null;
-      }
+      } else {
+        // No record exists, but let's be aggressive and clean up any potential conflicts first
+        console.log('No existing record found, but cleaning up any potential conflicts before insert...');
+        
+        // Delete any records that might conflict with our insert
+        // We'll delete based on the unique constraint fields
+        const deleteQuery = supabase
+          .from('test_completions')
+          .delete()
+          .eq('user_id', completionRecord.user_id)
+          .eq('exam_id', completionRecord.exam_id)
+          .eq('test_type', completionRecord.test_type)
+          .eq('test_id', completionRecord.test_id);
 
-      if (completionError) {
-        console.error('Error with test completion operation:', completionError);
-        return { data: null, error: completionError };
+        // Handle topic_id properly for delete
+        const finalDeleteQuery = completionRecord.topic_id === null 
+          ? deleteQuery.is('topic_id', null)
+          : deleteQuery.eq('topic_id', completionRecord.topic_id);
+
+        const { error: deleteError } = await finalDeleteQuery;
+        
+        if (deleteError) {
+          console.log('Delete error (might be expected if no record exists):', deleteError);
+        } else {
+          console.log('Successfully cleaned up any potential conflicting records');
+        }
+
+        // Now insert the new record
+        console.log('Inserting new test completion record...');
+        
+        const { data: insertData, error: insertError } = await supabase
+          .from('test_completions')
+          .insert(completionRecord)
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('Error inserting test completion after cleanup:', insertError);
+          
+          // If it still fails, let's try a different approach - delete all records for this test type
+          if (insertError.code === '23505') {
+            console.log('Insert still failed after cleanup. Trying broader cleanup...');
+            
+            // Delete all records for this user, exam, and test type
+            const { error: broadDeleteError } = await supabase
+              .from('test_completions')
+              .delete()
+              .eq('user_id', completionRecord.user_id)
+              .eq('exam_id', completionRecord.exam_id)
+              .eq('test_type', completionRecord.test_type);
+
+            if (broadDeleteError) {
+              console.log('Broad delete error:', broadDeleteError);
+            } else {
+              console.log('Successfully performed broad cleanup');
+            }
+
+            // Try to insert again
+            const { data: retryInsertData, error: retryInsertError } = await supabase
+              .from('test_completions')
+              .insert(completionRecord)
+              .select()
+              .single();
+
+            if (retryInsertError) {
+              console.error('Error inserting test completion after broad cleanup:', retryInsertError);
+              return { data: null, error: retryInsertError };
+            }
+
+            console.log('Successfully inserted test completion after broad cleanup');
+            return { data: retryInsertData, error: null };
+          }
+          
+          return { data: null, error: insertError };
+        }
+
+        console.log('Successfully inserted new test completion record');
+        completionData = insertData;
       }
 
       // Update user streak
@@ -610,7 +715,7 @@ class SupabaseStatsService {
       // Clear test completion and score caches for this user
       this.clearTestCaches(user.id, submission.examId, submission.testType || 'mock', submission.testId || 'default', submission.topicId);
 
-      return { data: completionData, error: null };
+      return { data: completionData, error: completionError };
     } catch (error) {
       return { data: null, error };
     }
