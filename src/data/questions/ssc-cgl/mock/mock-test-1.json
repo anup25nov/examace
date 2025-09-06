@@ -816,8 +816,8 @@
     },
     {
       "id": "m1-q58",
-      "questionEn": "If $x + \\frac{1}{x} = 5$, what is the value of $x^{2} + \\frac{1}{x^{2}}$?",
-      "questionHi": "यदि $x + \\frac{1}{x} = 5$ है, तो $x^{2} + \\frac{1}{x^{2}}$ का मान क्या है?",
+      "questionEn": "If x + 1/x = 5, what is the value of x^2 + 1/x^2?",
+      "questionHi": "यदि x + 1/x = 5 है, तो x^2 + 1/x^2 का मान क्या है?",
       "options": ["23", "25", "27", "21"],
       "correct": 0,
       "difficulty": "easy",
@@ -825,8 +825,8 @@
       "topic": "algebra",
       "marks": 2,
       "negativeMarks": 0.5,
-      "duration": 0.60,
-      "explanation": "We know that $(x + 1/x)^2 = x^2 + 1/x^2 + 2$. So, $x^2 + 1/x^2 = (x + 1/x)^2 - 2 = 5^2 - 2 = 25 - 2 = 23$."
+      "duration": 1,
+      "explanation": "We know that (x + 1/x)^2 = x^2 + 1/x^2 + 2. So, x^2 + 1/x^2 = (x + 1/x)^2 - 2 = 5^2 - 2 = 25 - 2 = 23."
     },
     {
       "id": "m1-q59",
