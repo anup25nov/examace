@@ -211,12 +211,15 @@ class SupabaseStatsService {
           .eq('exam_id', examId)
           .single();
 
+        console.log('Exam stats query result:', { data, error, examId, userId: user.id });
+
         if (error) {
           console.error('Error getting exam stats:', error);
           return { data: [], error };
         }
 
         const statsData = data ? [data] : [];
+        console.log('Returning exam stats:', statsData);
         return { data: statsData, error: null };
       } else {
         // First, ensure default stats exist for all exams
@@ -439,8 +442,34 @@ class SupabaseStatsService {
       // Update user streak
       await supabase.rpc('update_user_streak', { user_uuid: user.id });
 
-      // Also update exam stats (existing functionality)
-      await this.submitTestAttempt(submission);
+      // Update exam stats properly for Mock and PYQ tests only
+      if (submission.testType === 'mock' || submission.testType === 'pyq') {
+        console.log('Updating exam stats for:', submission.testType, 'with score:', submission.score);
+        
+        try {
+          await supabase.rpc('update_exam_stats_properly', {
+            user_uuid: user.id,
+            exam_name: submission.examId,
+            new_score: submission.score
+          });
+          console.log('Exam stats updated successfully');
+        } catch (error) {
+          console.error('Error updating exam stats:', error);
+        }
+
+        // Also submit individual test score for ranking
+        try {
+          await this.submitIndividualTestScore(
+            submission.examId,
+            submission.testType || 'mock',
+            submission.testId || 'default',
+            submission.score
+          );
+          console.log('Individual test score submitted successfully');
+        } catch (error) {
+          console.error('Error submitting individual test score:', error);
+        }
+      }
 
       // Clear cache to force refresh
       localStorage.removeItem(this.cacheKey);
@@ -567,19 +596,26 @@ class SupabaseStatsService {
     const user = await this.getCurrentUser();
     if (!user) return { data: null, error: 'User not authenticated' };
 
+    console.log('Submitting individual test score:', { examId, testType, testId, score, userId: user.id });
+
     try {
-      // Use the new function that handles duplicates gracefully
+      // Use the RPC function that handles duplicates gracefully
       const { error } = await supabase.rpc('submitindividualtestscore', {
         p_user_id: user.id,
         p_exam_id: examId,
-        p_test_id: testId,
         p_test_type: testType,
+        p_test_id: testId,
         p_score: score
       });
 
       if (error) {
         console.error('Error submitting individual test score:', error);
-        return { data: null, error };
+        // Don't return error for duplicate key - it's handled by UPSERT
+        if (error.code === '23505') {
+          console.log('Duplicate key error handled by UPSERT, continuing...');
+        } else {
+          return { data: null, error };
+        }
       }
 
       // Get the updated score data
@@ -591,6 +627,8 @@ class SupabaseStatsService {
         .eq('test_type', testType)
         .eq('test_id', testId)
         .single();
+
+      console.log('Individual test score result:', { scoreData, scoreError });
 
       return { data: scoreData, error: scoreError };
     } catch (error) {

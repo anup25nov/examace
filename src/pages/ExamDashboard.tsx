@@ -9,9 +9,7 @@ import {
   BookOpen, 
   Clock, 
   Trophy, 
-  TrendingUp, 
   Target, 
-  Calendar,
   ArrowLeft,
   Play,
   FileText,
@@ -19,8 +17,7 @@ import {
   ChevronRight,
   ChevronDown,
   CheckCircle,
-  RotateCcw,
-  Flame
+  RotateCcw
 } from "lucide-react";
 import { examConfigs } from "@/config/examConfig";
 import { useExamStats } from "@/hooks/useExamStats";
@@ -33,7 +30,6 @@ const iconMap: { [key: string]: any } = {
   Trophy,
   FileText,
   Brain,
-  TrendingUp,
   Target
 };
 
@@ -42,21 +38,17 @@ const ExamDashboard = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, loading } = useAuth();
   const { profile } = useUserProfile();
-  const { allStats, loadAllStats, getExamStatById, isTestCompleted, getIndividualTestScore, getUserStreak } = useExamStats();
+  const { allStats, loadAllStats, getExamStatById, isTestCompleted, getIndividualTestScore } = useExamStats();
   const [userStats, setUserStats] = useState({
     totalTests: 0,
     avgScore: 0,
     bestScore: 0,
-    streak: 0,
-    rank: 0,
-    percentile: 0,
     lastActive: null as Date | null
   });
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [completedTests, setCompletedTests] = useState<Set<string>>(new Set());
   const [testScores, setTestScores] = useState<Map<string, { score: number; rank: number; totalParticipants: number }>>(new Map());
-  const [streak, setStreak] = useState<{ current_streak: number; longest_streak: number; total_tests_taken: number } | null>(null);
 
   const exam = examConfigs[examId as string];
   const userEmail = profile?.email || localStorage.getItem("userEmail");
@@ -110,12 +102,15 @@ const ExamDashboard = () => {
   const loadTestScores = async () => {
     if (!examId || !exam) return;
 
+    console.log('Loading test scores for exam:', examId);
     const scores = new Map<string, { score: number; rank: number; totalParticipants: number }>();
 
     // Load Mock test scores
     if (exam.sections.find(s => s.id === 'mock')?.tests) {
       for (const test of exam.sections.find(s => s.id === 'mock')!.tests!) {
+        console.log('Loading mock test score for:', test.id);
         const scoreData = await getIndividualTestScore(examId, 'mock', test.id);
+        console.log('Mock test score data:', scoreData);
         if (scoreData.score !== null) {
           scores.set(`mock-${test.id}`, {
             score: scoreData.score,
@@ -130,7 +125,9 @@ const ExamDashboard = () => {
     if (exam.sections.find(s => s.id === 'pyq')?.years) {
       for (const year of exam.sections.find(s => s.id === 'pyq')!.years!) {
         for (const paper of year.papers) {
+          console.log('Loading PYQ test score for:', paper.id);
           const scoreData = await getIndividualTestScore(examId, 'pyq', paper.id);
+          console.log('PYQ test score data:', scoreData);
           if (scoreData.score !== null) {
             scores.set(`pyq-${paper.id}`, {
               score: scoreData.score,
@@ -142,22 +139,10 @@ const ExamDashboard = () => {
       }
     }
 
+    console.log('Final test scores:', scores);
     setTestScores(scores);
   };
 
-  // Load user streak
-  const loadUserStreak = async () => {
-    if (isAuthenticated) {
-      try {
-        const { data } = await getUserStreak();
-        if (data) {
-          setStreak(data);
-        }
-      } catch (error) {
-        console.error('Error loading streak:', error);
-      }
-    }
-  };
 
   useEffect(() => {
     if (loading) return;
@@ -174,24 +159,28 @@ const ExamDashboard = () => {
       
       // Find stats for current exam
       const currentExamStats = getExamStatById(examId);
+      console.log('Current exam stats for', examId, ':', currentExamStats);
+      
       if (currentExamStats) {
+        console.log('Setting user stats with:', {
+          totalTests: currentExamStats.totalTests,
+          avgScore: currentExamStats.averageScore,
+          bestScore: currentExamStats.bestScore,
+          lastActive: currentExamStats.lastTestDate
+        });
+        
         setUserStats({
           totalTests: currentExamStats.totalTests,
           avgScore: currentExamStats.averageScore,
           bestScore: currentExamStats.bestScore,
-          streak: currentExamStats.streak,
-          rank: currentExamStats.rank || 0,
-          percentile: currentExamStats.percentile || 0,
           lastActive: currentExamStats.lastTestDate
         });
       } else {
+        console.log('No exam stats found, setting defaults');
         setUserStats({
           totalTests: 0,
           avgScore: 0,
           bestScore: 0,
-          streak: 0,
-          rank: 0,
-          percentile: 0,
           lastActive: null
         });
       }
@@ -202,8 +191,6 @@ const ExamDashboard = () => {
       // Load test scores
       loadTestScores();
       
-      // Load user streak
-      loadUserStreak();
     }
   }, [examId, navigate, isAuthenticated, loading]);
 
@@ -332,14 +319,6 @@ const ExamDashboard = () => {
             <div className="text-right">
               <p className="text-sm font-medium text-foreground">Welcome!</p>
               <p className="text-xs text-muted-foreground">{userEmail}</p>
-              {streak && streak.current_streak > 0 && (
-                <div className="flex items-center justify-end space-x-1 mt-1">
-                  <Flame className="w-3 h-3 text-orange-500" />
-                  <span className="text-xs text-orange-600 font-medium">
-                    {streak.current_streak} day streak
-                  </span>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -378,38 +357,14 @@ const ExamDashboard = () => {
           
           <Card className="gradient-card border-0">
             <CardContent className="p-4 text-center">
-              <TrendingUp className="w-8 h-8 mx-auto mb-2 text-success" />
+              <Trophy className="w-8 h-8 mx-auto mb-2 text-success" />
               <p className="text-2xl font-bold text-foreground">{userStats.bestScore}%</p>
               <p className="text-sm text-muted-foreground">Best Score</p>
               <p className="text-xs text-muted-foreground">(Mock + PYQ)</p>
             </CardContent>
           </Card>
-          
-          <Card className="gradient-card border-0">
-            <CardContent className="p-4 text-center">
-              <Calendar className="w-8 h-8 mx-auto mb-2 text-warning" />
-              <p className="text-2xl font-bold text-foreground">{userStats.streak}</p>
-              <p className="text-sm text-muted-foreground">Day Streak</p>
-            </CardContent>
-          </Card>
 
-          <Card className="gradient-card border-0">
-            <CardContent className="p-4 text-center">
-              <Trophy className="w-8 h-8 mx-auto mb-2 text-accent" />
-              <p className="text-2xl font-bold text-foreground">#{userStats.rank}</p>
-              <p className="text-sm text-muted-foreground">Your Rank</p>
-              <p className="text-xs text-muted-foreground">(Mock + PYQ)</p>
-            </CardContent>
-          </Card>
 
-          <Card className="gradient-card border-0">
-            <CardContent className="p-4 text-center">
-              <TrendingUp className="w-8 h-8 mx-auto mb-2 text-primary" />
-              <p className="text-2xl font-bold text-foreground">{userStats.percentile}%</p>
-              <p className="text-sm text-muted-foreground">Percentile</p>
-              <p className="text-xs text-muted-foreground">(Mock + PYQ)</p>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Quick Mock Test */}
@@ -484,7 +439,7 @@ const ExamDashboard = () => {
                             <CollapsibleTrigger asChild>
                               <Button variant="ghost" className="w-full justify-between p-4 h-auto">
                                 <div className="flex items-center space-x-2">
-                                  <Calendar className="w-5 h-5 text-warning" />
+                                  <FileText className="w-5 h-5 text-warning" />
                                   <span className="text-lg font-semibold">{yearData.year} Papers ({yearData.papers.length} sets)</span>
                                 </div>
                                 <ChevronDown className="w-4 h-4" />
