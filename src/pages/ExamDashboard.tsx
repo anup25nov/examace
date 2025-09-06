@@ -21,7 +21,8 @@ import {
 } from "lucide-react";
 import { examConfigs } from "@/config/examConfig";
 import { useExamStats } from "@/hooks/useExamStats";
-import { useAuth } from "@/hooks/useAuth";
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 // Icon mapping for dynamic loading
 const iconMap: { [key: string]: any } = {
@@ -36,7 +37,8 @@ const iconMap: { [key: string]: any } = {
 const ExamDashboard = () => {
   const { examId } = useParams();
   const navigate = useNavigate();
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, loading } = useSupabaseAuth();
+  const { profile } = useUserProfile();
   const { allStats, loadAllStats, getExamStatById } = useExamStats();
   const [userStats, setUserStats] = useState({
     totalTests: 0,
@@ -51,14 +53,14 @@ const ExamDashboard = () => {
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
 
   const exam = examConfigs[examId as string];
-  const userPhone = user?.phone || localStorage.getItem("userPhone");
+  const userPhone = profile?.phone || localStorage.getItem("userPhone");
 
   useEffect(() => {
-    if (isLoading) return;
+    if (loading) return;
 
     // Check if user is authenticated
-    if (!isAuthenticated || !userPhone) {
-      navigate("/");
+    if (!isAuthenticated) {
+      navigate("/auth");
       return;
     }
 
@@ -67,34 +69,32 @@ const ExamDashboard = () => {
       loadAllStats();
       
       // Find stats for current exam
-      setTimeout(() => {
-        const currentExamStats = getExamStatById(examId);
-        if (currentExamStats) {
-          setUserStats({
-            totalTests: currentExamStats.totalTests,
-            avgScore: currentExamStats.averageScore,
-            bestScore: currentExamStats.bestScore,
-            streak: currentExamStats.streak,
-            rank: currentExamStats.rank || 0,
-            percentile: currentExamStats.percentile || 0,
-            lastActive: currentExamStats.lastTestDate
-          });
-        } else {
-          setUserStats({
-            totalTests: 0,
-            avgScore: 0,
-            bestScore: 0,
-            streak: 0,
-            rank: 0,
-            percentile: 0,
-            lastActive: null
-          });
-        }
-      }, 100);
+      const currentExamStats = getExamStatById(examId);
+      if (currentExamStats) {
+        setUserStats({
+          totalTests: currentExamStats.totalTests,
+          avgScore: currentExamStats.averageScore,
+          bestScore: currentExamStats.bestScore,
+          streak: currentExamStats.streak,
+          rank: currentExamStats.rank || 0,
+          percentile: currentExamStats.percentile || 0,
+          lastActive: currentExamStats.lastTestDate
+        });
+      } else {
+        setUserStats({
+          totalTests: 0,
+          avgScore: 0,
+          bestScore: 0,
+          streak: 0,
+          rank: 0,
+          percentile: 0,
+          lastActive: null
+        });
+      }
     }
-  }, [examId, userPhone, navigate, isAuthenticated, isLoading, loadAllStats, getExamStatById]);
+  }, [examId, navigate, isAuthenticated, loading, loadAllStats, getExamStatById]);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">

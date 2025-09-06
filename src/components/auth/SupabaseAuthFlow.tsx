@@ -47,9 +47,12 @@ export const SupabaseAuthFlow = () => {
         if (error) {
           setError(error.message);
         } else {
+          // Store phone number in localStorage for immediate use
+          localStorage.setItem("userPhone", phone);
+          
           toast({
             title: "Success!",
-            description: "Account created successfully. Please check your email for verification.",
+            description: "Account created successfully. You can now sign in with your credentials.",
           });
           setIsSignUp(false);
         }

@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
+import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Clock, Trophy, Users, TrendingUp, Brain } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { examConfigs } from "@/config/examConfig";
-import AuthFlow from "@/components/auth/AuthFlow";
-import { useAuth } from "@/hooks/useAuth";
+
+import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 // Icon mapping for dynamic loading
 const iconMap: { [key: string]: any } = {
@@ -22,38 +23,24 @@ const exams = Object.values(examConfigs).map(exam => ({
 }));
 
 const Index = () => {
-  const [showLogin, setShowLogin] = useState(false);
   const navigate = useNavigate();
-  const { user, isAuthenticated, isLoading, logout, refreshUser } = useAuth();
+  const { user, isAuthenticated, loading, signOut } = useSupabaseAuth();
+  const { profile } = useUserProfile();
 
-  const handleAuthSuccess = async () => {
-    setShowLogin(false);
-    // Refresh user data
-    await refreshUser();
-  };
 
   const handleLogout = async () => {
-    await logout();
+    await signOut();
   };
 
   const handleExamSelect = (examId: string) => {
     if (!isAuthenticated) {
-      setShowLogin(true);
+      navigate('/auth');
     } else {
       navigate(`/exam/${examId}`);
     }
   };
 
-  if (showLogin) {
-    return (
-      <AuthFlow 
-        onSuccess={handleAuthSuccess}
-        onBack={() => setShowLogin(false)}
-      />
-    );
-  }
-
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -84,7 +71,7 @@ const Index = () => {
               <div className="text-right">
                 <p className="text-sm font-medium text-foreground">Welcome!</p>
                 <p className="text-xs text-muted-foreground">
-                  +91 {user?.phone || localStorage.getItem("userPhone")}
+                  +91 {profile?.phone || localStorage.getItem("userPhone")}
                 </p>
               </div>
               <Button variant="outline" size="sm" onClick={handleLogout}>
@@ -92,7 +79,7 @@ const Index = () => {
               </Button>
             </div>
           ) : (
-            <Button onClick={() => setShowLogin(true)} className="gradient-primary border-0">
+            <Button onClick={() => navigate('/auth')} className="gradient-primary border-0">
               Login
             </Button>
           )}
