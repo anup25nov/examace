@@ -163,7 +163,7 @@ const Index = () => {
                   <h4 className="text-xl font-bold text-foreground mb-2">{exam.name}</h4>
                   <p className="text-sm text-muted-foreground mb-4">{exam.fullName}</p>
                   
-                  <div className="flex justify-between text-sm">
+                  {/* <div className="flex justify-between text-sm">
                     <div>
                       <span className="text-muted-foreground">Enrolled:</span>
                       <span className="font-medium text-foreground ml-1">{exam.stats.enrolled}</span>
@@ -172,7 +172,7 @@ const Index = () => {
                       <span className="text-muted-foreground">Tests:</span>
                       <span className="font-medium text-foreground ml-1">{exam.stats.tests}</span>
                     </div>
-                  </div>
+                  </div> */}
                 </CardContent>
               </Card>
             ))}
