@@ -4,7 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { DevAuthIndicator } from "@/components/DevAuthIndicator";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import DebugInfo from "./components/DebugInfo";
@@ -71,7 +70,6 @@ const App = () => {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-        <DevAuthIndicator />
         {/* <DebugInfo /> */}
       </TooltipProvider>
     </QueryClientProvider>

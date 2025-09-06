@@ -268,6 +268,21 @@ const TestInterface = () => {
   const answered = Object.keys(answers).length;
   const unanswered = questions.length - answered;
 
+  // Add safety checks
+  if (!questions || questions.length === 0 || !question) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 mx-auto mb-4 gradient-primary rounded-full flex items-center justify-center animate-pulse">
+            <Clock className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-xl font-bold text-foreground mb-2">Loading Questions...</h2>
+          <p className="text-muted-foreground">Preparing your test</p>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -411,26 +426,33 @@ const TestInterface = () => {
                 </div>
                 
                 <div className="space-y-3">
-                  {question.options.map((option, index) => (
-                    <label
-                      key={index}
-                      className={`flex items-center space-x-3 p-4 rounded-lg border cursor-pointer transition-all ${
-                        answers[currentQuestion] === index
-                          ? 'border-primary bg-primary/10'
-                          : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="answer"
-                        value={index}
-                        checked={answers[currentQuestion] === index}
-                        onChange={() => handleAnswerSelect(index)}
-                        className="w-4 h-4 text-primary"
-                      />
-                      <span className="text-foreground">{option}</span>
-                    </label>
-                  ))}
+                  {question.options && question.options.length > 0 ? (
+                    question.options.map((option, index) => (
+                      <label
+                        key={index}
+                        className={`flex items-center space-x-3 p-4 rounded-lg border cursor-pointer transition-all ${
+                          answers[currentQuestion] === index
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="answer"
+                          value={index}
+                          checked={answers[currentQuestion] === index}
+                          onChange={() => handleAnswerSelect(index)}
+                          className="w-4 h-4 text-primary"
+                        />
+                        <span className="text-foreground">{option}</span>
+                      </label>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <AlertCircle className="w-8 h-8 mx-auto mb-2" />
+                      <p>No options available for this question</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between pt-4">

@@ -6,7 +6,6 @@ import {
   signOutUser 
 } from '@/lib/supabaseAuth';
 import { supabaseStatsService } from '@/lib/supabaseStats';
-import { shouldBypassAuth, getMockUser } from '@/config/devConfig';
 
 export interface AuthUser {
   id: string;
@@ -24,25 +23,6 @@ export const useAuth = () => {
     const checkAuthStatus = async () => {
       try {
         console.log('Checking auth status...');
-        
-        // Check if auth should be bypassed in development
-        if (shouldBypassAuth()) {
-          console.log('🔧 Auth bypass enabled - using real user data');
-          const mockUser = getMockUser();
-          
-          // Set localStorage with real user data for consistency
-          localStorage.setItem('userId', mockUser.id);
-          localStorage.setItem('userEmail', mockUser.email);
-          localStorage.setItem('userPhone', mockUser.phone);
-          localStorage.setItem('isAuthenticated', 'true');
-          localStorage.setItem('pinSet', 'true');
-          localStorage.setItem('authBypass', 'true');
-          
-          setUser(mockUser);
-          setIsAuthenticated(true);
-          setLoading(false);
-          return;
-        }
         
         const isAuth = isUserAuthenticated();
         console.log('isUserAuthenticated result:', isAuth);
@@ -111,9 +91,6 @@ export const useAuth = () => {
   };
 
   const getUserId = () => {
-    if (shouldBypassAuth()) {
-      return getMockUser().id;
-    }
     return getCurrentUserId();
   };
 

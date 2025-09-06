@@ -282,25 +282,6 @@ export const getCurrentAuthUser = async (): Promise<AuthUser | null> => {
         return cached.data;
       }
       
-      // For auth bypass, return mock user without making Supabase call
-      if (import.meta.env.DEV && localStorage.getItem('authBypass') === 'true') {
-        console.log('🔧 Auth bypass active - returning mock user profile without database call');
-        const mockUser = {
-          id: userId,
-          email: userEmail,
-          pin: null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        
-        // Cache the result
-        userProfileCache[cacheKey] = {
-          data: mockUser,
-          timestamp: Date.now()
-        };
-        
-        return mockUser;
-      }
       
       const { data: userProfile, error } = await supabase
         .from('user_profiles')
