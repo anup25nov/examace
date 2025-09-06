@@ -57,11 +57,12 @@ const TestInterface = () => {
         let actualTestId = '';
         
         if (testType === 'mock') {
-          actualTestId = 'mock-test-1';
+          // Use the topic parameter for mock test ID (e.g., mock-test-1, mock-test-2)
+          actualTestId = topic || 'mock-test-1';
         } else if (testType === 'pyq') {
-          actualTestId = '2024-day1-shift1';
+          actualTestId = topic || '2024-day1-shift1';
         } else if (testType === 'practice') {
-          actualTestId = 'maths-algebra';
+          actualTestId = topic || 'maths-algebra';
         }
         
         console.log('Loading test data for:', { examId, testType, actualTestId });

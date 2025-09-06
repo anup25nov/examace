@@ -194,4 +194,128 @@ export class QuestionLoader {
   static getCacheSize() {
     return this.cache.size;
   }
+
+  // Get available tests for an exam by dynamically discovering JSON files
+  static async getAvailableTests(examId: string): Promise<{
+    mock: Array<{ id: string; name: string; description: string }>;
+    pyq: Array<{ id: string; name: string; description: string }>;
+    practice: Array<{ id: string; name: string; description: string }>;
+  }> {
+    const tests = {
+      mock: [] as Array<{ id: string; name: string; description: string }>,
+      pyq: [] as Array<{ id: string; name: string; description: string }>,
+      practice: [] as Array<{ id: string; name: string; description: string }>
+    };
+
+    try {
+      // Define the test types and their corresponding directories
+      const testTypes = ['mock', 'pyq', 'practice'] as const;
+      
+      for (const testType of testTypes) {
+        try {
+          // Try to load a sample file to get the structure
+          // We'll use a known pattern to discover files
+          const knownFiles = await this.discoverTestFiles(examId, testType);
+          
+          for (const fileId of knownFiles) {
+            try {
+              const testData = await this.loadQuestions(examId, testType, fileId);
+              if (testData) {
+                tests[testType].push({
+                  id: fileId,
+                  name: testData.examInfo.testName,
+                  description: `${testData.examInfo.totalQuestions} questions • ${this.calculateTotalDuration(testData.questions)} minutes`
+                });
+              }
+            } catch (error) {
+              console.warn(`Failed to load test ${fileId}:`, error);
+            }
+          }
+        } catch (error) {
+          console.warn(`Failed to discover ${testType} tests:`, error);
+        }
+      }
+      
+      return tests;
+    } catch (error) {
+      console.error('Error getting available tests:', error);
+      return tests;
+    }
+  }
+
+  // Discover test files by trying common patterns
+  private static async discoverTestFiles(examId: string, testType: string): Promise<string[]> {
+    const discoveredFiles: string[] = [];
+    
+    // Comprehensive patterns for different test types
+    const patterns = {
+      mock: this.generateMockTestPatterns(),
+      pyq: this.generatePYQTestPatterns(),
+      practice: this.generatePracticeTestPatterns()
+    };
+
+    const testPatterns = patterns[testType as keyof typeof patterns] || [];
+    
+    for (const pattern of testPatterns) {
+      try {
+        // Try to load the file to see if it exists
+        const testData = await this.loadQuestions(examId, testType as 'pyq' | 'practice' | 'mock', pattern);
+        if (testData) {
+          discoveredFiles.push(pattern);
+        }
+      } catch (error) {
+        // File doesn't exist, continue to next pattern
+        continue;
+      }
+    }
+    
+    return discoveredFiles;
+  }
+
+  // Generate mock test patterns (mock-test-1, mock-test-2, etc.)
+  private static generateMockTestPatterns(): string[] {
+    const patterns: string[] = [];
+    for (let i = 1; i <= 20; i++) { // Support up to 20 mock tests
+      patterns.push(`mock-test-${i}`);
+    }
+    return patterns;
+  }
+
+  // Generate PYQ test patterns for different years and shifts
+  private static generatePYQTestPatterns(): string[] {
+    const patterns: string[] = [];
+    const years = ['2024', '2023', '2022', '2021', '2020'];
+    const days = ['day1', 'day2', 'day3'];
+    const shifts = ['shift1', 'shift2', 'shift3'];
+    
+    for (const year of years) {
+      for (const day of days) {
+        for (const shift of shifts) {
+          patterns.push(`${year}-${day}-${shift}`);
+        }
+      }
+    }
+    return patterns;
+  }
+
+  // Generate practice test patterns for different subjects and topics
+  private static generatePracticeTestPatterns(): string[] {
+    const patterns: string[] = [];
+    const subjects = ['maths', 'english', 'general-knowledge', 'reasoning', 'science'];
+    const topics = {
+      'maths': ['algebra', 'geometry', 'arithmetic', 'trigonometry', 'statistics'],
+      'english': ['grammar', 'vocabulary', 'comprehension', 'literature'],
+      'general-knowledge': ['history', 'geography', 'politics', 'economics', 'science'],
+      'reasoning': ['logical', 'analytical', 'verbal', 'non-verbal'],
+      'science': ['physics', 'chemistry', 'biology']
+    };
+    
+    for (const subject of subjects) {
+      const subjectTopics = topics[subject as keyof typeof topics] || [];
+      for (const topic of subjectTopics) {
+        patterns.push(`${subject}-${topic}`);
+      }
+    }
+    return patterns;
+  }
 }

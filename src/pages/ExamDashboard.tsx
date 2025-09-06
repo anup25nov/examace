@@ -23,6 +23,7 @@ import { examConfigs } from "@/config/examConfig";
 import { useExamStats } from "@/hooks/useExamStats";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { QuestionLoader } from "@/lib/questionLoader";
 
 // Icon mapping for dynamic loading
 const iconMap: { [key: string]: any } = {
@@ -49,9 +50,25 @@ const ExamDashboard = () => {
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [completedTests, setCompletedTests] = useState<Set<string>>(new Set());
   const [testScores, setTestScores] = useState<Map<string, { score: number; rank: number; totalParticipants: number }>>(new Map());
+  const [availableTests, setAvailableTests] = useState<{
+    mock: Array<{ id: string; name: string; description: string }>;
+    pyq: Array<{ id: string; name: string; description: string }>;
+    practice: Array<{ id: string; name: string; description: string }>;
+  }>({ mock: [], pyq: [], practice: [] });
 
   const exam = examConfigs[examId as string];
   const userEmail = profile?.email || localStorage.getItem("userEmail");
+
+  // Load available tests
+  useEffect(() => {
+    const loadAvailableTests = async () => {
+      if (examId) {
+        const tests = await QuestionLoader.getAvailableTests(examId);
+        setAvailableTests(tests);
+      }
+    };
+    loadAvailableTests();
+  }, [examId]);
 
   // Check test completions
   const checkTestCompletions = async () => {
@@ -400,11 +417,10 @@ const ExamDashboard = () => {
               variant="secondary" 
               className="w-full max-w-xs"
               onClick={() => {
-                // Find the first unattempted mock test
-                const mockSection = exam.sections.find(s => s.id === 'mock');
-                if (mockSection?.tests && mockSection.tests.length > 0) {
-                  const firstTest = mockSection.tests[0];
-                  handleTestStart('mock', firstTest.id);
+                // Find the first available mock test
+                if (availableTests.mock.length > 0) {
+                  const firstTest = availableTests.mock[0];
+                  handleTestStart('mock', firstTest.id, firstTest.id);
                 }
               }}
             >
@@ -440,107 +456,64 @@ const ExamDashboard = () => {
                 <CollapsibleContent>
                   <CardContent>
                     {/* Mock Tests */}
-                    {section.id === 'mock' && section.tests && (
+                    {section.id === 'mock' && availableTests.mock.length > 0 && (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {section.tests.map((test) => 
+                        {availableTests.mock.map((test) => 
                           createTestButton(
                             test.id,
-                            test.name,
+                            test.name, // Use the name from JSON
                             'mock',
-                            undefined,
-                            `${test.questions.length} questions • ${test.duration} minutes`
+                            test.id, // Pass testId as topic parameter
+                            test.description // Use the description from JSON
                           )
                         )}
                       </div>
                     )}
 
                     {/* Previous Year Questions */}
-                    {section.id === 'pyq' && section.years && (
+                    {section.id === 'pyq' && availableTests.pyq.length > 0 && (
                       <div className="space-y-6">
-                        {section.years.map((yearData) => (
-                          <Collapsible key={yearData.year}>
-                            <CollapsibleTrigger asChild>
-                              <Button variant="ghost" className="w-full justify-between p-4 h-auto">
-                                <div className="flex items-center space-x-2">
-                                  <FileText className="w-5 h-5 text-warning" />
-                                  <span className="text-lg font-semibold">{yearData.year} Papers ({yearData.papers.length} sets)</span>
-                                </div>
-                                <ChevronDown className="w-4 h-4" />
-                              </Button>
-                            </CollapsibleTrigger>
-                            <CollapsibleContent>
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
-                                {yearData.papers.map((paper) => 
-                                  createTestButton(
-                                    paper.id,
-                                    paper.name,
-                                    'pyq',
-                                    undefined,
-                                    `${paper.questions.length} questions`
-                                  )
-                                )}
+                        <Collapsible>
+                          <CollapsibleTrigger asChild>
+                            <Button variant="ghost" className="w-full justify-between p-4 h-auto">
+                              <div className="flex items-center space-x-2">
+                                <FileText className="w-5 h-5 text-warning" />
+                                <span className="text-lg font-semibold">Previous Year Papers ({availableTests.pyq.length} sets)</span>
                               </div>
-                            </CollapsibleContent>
-                          </Collapsible>
-                        ))}
+                              <ChevronDown className="w-4 h-4" />
+                            </Button>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+                              {availableTests.pyq.map((test) => 
+                                createTestButton(
+                                  test.id,
+                                  test.name, // Use the name from JSON
+                                  'pyq',
+                                  test.id,
+                                  test.description // Use the description from JSON
+                                )
+                              )}
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
                       </div>
                     )}
 
                     {/* Practice Sets */}
-                    {section.id === 'practice' && section.subjects && (
+                    {section.id === 'practice' && availableTests.practice.length > 0 && (
                       <div className="space-y-4">
-                        {!selectedSubject ? (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {section.subjects.map((subject) => (
-                              <Button
-                                key={subject.id}
-                                variant="ghost"
-                                className="h-auto p-6 justify-between hover:bg-muted/50"
-                                onClick={() => setSelectedSubject(subject.id)}
-                              >
-                                <div className="text-left">
-                                  <div className="flex items-center space-x-2 mb-2">
-                                    <BookOpen className="w-5 h-5 text-primary" />
-                                    <p className="font-semibold text-foreground">{subject.name}</p>
-                                  </div>
-                                  <p className="text-sm text-muted-foreground">
-                                    {subject.topics.length} topics • {subject.topics.reduce((acc, topic) => acc + topic.sets.length, 0)} total sets
-                                  </p>
-                                </div>
-                                <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                              </Button>
-                            ))}
-                          </div>
-                        ) : (
-                          <div>
-                            <Button 
-                              variant="ghost" 
-                              className="mb-4"
-                              onClick={() => setSelectedSubject(null)}
-                            >
-                              <ArrowLeft className="w-4 h-4 mr-2" />
-                              Back to Subjects
-                            </Button>
-                            {section.subjects
-                              .find(s => s.id === selectedSubject)
-                              ?.topics.map((topic) => (
-                                <div key={topic.id} className="border border-border rounded-lg p-4 mb-4">
-                                  <h4 className="text-lg font-semibold text-foreground mb-3">{topic.name}</h4>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                    {topic.sets.map((set, i) => 
-                                      createTestButton(
-                                        set.id,
-                                        set.name,
-                                        'practice',
-                                        topic.id,
-                                        `${set.questions.length} questions`
-                                      )
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                          </div>
-                        )}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {availableTests.practice.map((test) => 
+                            createTestButton(
+                              test.id,
+                              test.name, // Use the name from JSON
+                              'practice',
+                              test.id,
+                              test.description // Use the description from JSON
+                            )
+                          )}
+                        </div>
                       </div>
                     )}
                   </CardContent>

@@ -1,22 +1,42 @@
-[
-  {
-    "id": "q3",
-    "questionEn": "If 2x + 5 = 15, what is the value of x?",
-    "questionHi": "यदि 2x + 5 = 15, तो x का मान क्या है?",
-    "options": ["3", "5", "7", "10"],
-    "correct": 1,
-    "difficulty": "medium",
-    "subject": "maths",
-    "topic": "algebra"
+{
+  "examInfo": {
+    "examId": "ssc-cgl",
+    "examName": "SSC CGL",
+    "testType": "pyq",
+    "testId": "2024-day1-shift2",
+    "testName": "SSC CGL PYQ 2024 (Day 1, Shift 2)",
+    "totalQuestions": 2,
+    "languages": ["english", "hindi"],
+    "defaultLanguage": "english"
   },
-  {
-    "id": "q4",
-    "questionEn": "The synonym of 'Abundant' is:",
-    "questionHi": "'Abundant' का समानार्थी है:",
-    "options": ["Scarce", "Plentiful", "Limited", "Rare"],
-    "correct": 1,
-    "difficulty": "medium",
-    "subject": "english",
-    "topic": "vocabulary"
-  }
-]
+  "questions": [
+    {
+      "id": "q1",
+      "questionEn": "What is the square root of 144?",
+      "questionHi": "144 का वर्गमूल क्या है?",
+      "options": ["10", "12", "14", "16"],
+      "correct": 1,
+      "difficulty": "easy",
+      "subject": "maths",
+      "topic": "algebra",
+      "marks": 1,
+      "negativeMarks": 0.25,
+      "duration": 60,
+      "explanation": "The square root of 144 is 12 because 12 × 12 = 144."
+    },
+    {
+      "id": "q2",
+      "questionEn": "If 2x + 5 = 15, what is the value of x?",
+      "questionHi": "यदि 2x + 5 = 15, तो x का मान क्या है?",
+      "options": ["3", "5", "7", "10"],
+      "correct": 1,
+      "difficulty": "medium",
+      "subject": "maths",
+      "topic": "algebra",
+      "marks": 1,
+      "negativeMarks": 0.25,
+      "duration": 60,
+      "explanation": "Solving: 2x + 5 = 15, so 2x = 10, therefore x = 5."
+    }
+  ]
+}

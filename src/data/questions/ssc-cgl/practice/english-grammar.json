@@ -1,0 +1,66 @@
+{
+  "examInfo": {
+    "examId": "ssc-cgl",
+    "examName": "SSC CGL",
+    "testType": "practice",
+    "testId": "english-grammar",
+    "testName": "English Grammar Practice Set",
+    "totalQuestions": 4,
+    "languages": ["english", "hindi"],
+    "defaultLanguage": "english"
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "questionEn": "Choose the correct form: 'She _____ to the market yesterday.'",
+      "questionHi": "सही रूप चुनें: 'वह कल बाजार _____ गई।'",
+      "options": ["go", "goes", "went", "going"],
+      "correct": 2,
+      "difficulty": "easy",
+      "subject": "english",
+      "topic": "grammar",
+      "marks": 1,
+      "negativeMarks": 0.25,
+      "duration": 1
+    },
+    {
+      "id": "q2",
+      "questionEn": "Identify the correct sentence:",
+      "questionHi": "सही वाक्य पहचानें:",
+      "options": ["He don't like apples", "He doesn't like apples", "He not like apples", "He no like apples"],
+      "correct": 1,
+      "difficulty": "easy",
+      "subject": "english",
+      "topic": "grammar",
+      "marks": 1,
+      "negativeMarks": 0.25,
+      "duration": 1
+    },
+    {
+      "id": "q3",
+      "questionEn": "What is the plural of 'child'?",
+      "questionHi": "'Child' का बहुवचन क्या है?",
+      "options": ["childs", "children", "childes", "child"],
+      "correct": 1,
+      "difficulty": "easy",
+      "subject": "english",
+      "topic": "grammar",
+      "marks": 1,
+      "negativeMarks": 0.25,
+      "duration": 1
+    },
+    {
+      "id": "q4",
+      "questionEn": "Choose the correct preposition: 'The book is _____ the table.'",
+      "questionHi": "सही preposition चुनें: 'किताब मेज _____ है।'",
+      "options": ["in", "on", "at", "by"],
+      "correct": 1,
+      "difficulty": "medium",
+      "subject": "english",
+      "topic": "grammar",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 2
+    }
+  ]
+}
