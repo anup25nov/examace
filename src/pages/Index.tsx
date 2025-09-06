@@ -7,6 +7,7 @@ import { examConfigs } from "@/config/examConfig";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useUserStreak } from "@/hooks/useUserStreak";
 import { optimizeRouteTransition } from "@/lib/navigationOptimizer";
 
 // Icon mapping for dynamic loading
@@ -27,6 +28,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, loading, logout } = useAuth();
   const { profile } = useUserProfile();
+  const { streak } = useUserStreak();
   const [isNavigating, setIsNavigating] = useState(false);
 
 
@@ -88,8 +90,14 @@ const Index = () => {
               <div className="text-right">
                 <p className="text-sm font-medium text-foreground">Welcome!</p>
                 <p className="text-xs text-muted-foreground">
-                  +91 {profile?.phone || localStorage.getItem("userPhone")}
+                  {profile?.email || localStorage.getItem("userEmail")}
                 </p>
+                <div className="flex items-center justify-end space-x-1 mt-1">
+                  <Flame className="w-3 h-3 text-orange-500" />
+                  <span className="text-xs text-orange-600 font-medium">
+                    {streak.current_streak} day streak
+                  </span>
+                </div>
               </div>
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 Logout

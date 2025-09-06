@@ -10,9 +10,8 @@ import {
   sendOTPCode, 
   verifyOTPCode, 
   setUserPIN, 
-  verifyUserPIN, 
-  checkUserStatus,
-  updateUserPIN
+  verifyPIN, 
+  checkUserStatus
 } from '@/lib/supabaseAuth';
 
 interface SupabaseAuthFlowProps {
@@ -131,7 +130,8 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     setError('');
 
     try {
-      const result = await setUserPIN(pin);
+      const userId = localStorage.getItem('userId');
+      const result = await setUserPIN(userId!, pin);
       if (result.success) {
         onAuthSuccess();
       } else {
@@ -156,7 +156,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     setError('');
 
     try {
-      const result = await verifyUserPIN(phone, pin);
+      const result = await verifyPIN(phone, pin);
       if (result.success) {
         onAuthSuccess();
       } else {

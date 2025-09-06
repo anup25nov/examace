@@ -59,6 +59,7 @@ export const createDevUser = async (phone: string, pin?: string): Promise<DevUse
         .from('user_profiles')
         .upsert({
           id: updatedUser.uid,
+          email: phone + '@example.com',
           phone: phone,
           pin: pin,
           updated_at: new Date().toISOString()
@@ -101,6 +102,7 @@ export const createDevUser = async (phone: string, pin?: string): Promise<DevUse
         .from('user_profiles')
         .upsert({
           id: newUser.uid,
+          email: phone + '@example.com',
           phone: phone,
           pin: pin,
           created_at: new Date().toISOString(),

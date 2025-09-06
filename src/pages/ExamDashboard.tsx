@@ -59,7 +59,7 @@ const ExamDashboard = () => {
   const [streak, setStreak] = useState<{ current_streak: number; longest_streak: number; total_tests_taken: number } | null>(null);
 
   const exam = examConfigs[examId as string];
-  const userPhone = profile?.phone || localStorage.getItem("userPhone");
+  const userEmail = profile?.email || localStorage.getItem("userEmail");
 
   // Check test completions
   const checkTestCompletions = async () => {
@@ -331,7 +331,7 @@ const ExamDashboard = () => {
             </div>
             <div className="text-right">
               <p className="text-sm font-medium text-foreground">Welcome!</p>
-              <p className="text-xs text-muted-foreground">+91 {userPhone}</p>
+              <p className="text-xs text-muted-foreground">{userEmail}</p>
               {streak && streak.current_streak > 0 && (
                 <div className="flex items-center justify-end space-x-1 mt-1">
                   <Flame className="w-3 h-3 text-orange-500" />

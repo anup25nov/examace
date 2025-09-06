@@ -216,6 +216,7 @@ export type Database = {
           created_at: string | null
           email: string | null
           id: string
+          phone: string | null
           pin: string | null
           updated_at: string | null
         }
@@ -223,6 +224,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id: string
+          phone?: string | null
           pin?: string | null
           updated_at?: string | null
         }
@@ -230,6 +232,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          phone?: string | null
           pin?: string | null
           updated_at?: string | null
         }
@@ -309,11 +312,11 @@ export type Database = {
         Returns: number
       }
       create_all_default_exam_stats: {
-        Args: { user_uuid: string }
+        Args: { p_user_id: string }
         Returns: undefined
       }
       create_default_exam_stats: {
-        Args: { exam_name: string; user_uuid: string }
+        Args: { p_exam_id: string; p_user_id: string }
         Returns: undefined
       }
       get_or_create_exam_stats: {
@@ -330,14 +333,11 @@ export type Database = {
         }[]
       }
       get_or_create_user_streak: {
-        Args: { user_uuid: string }
+        Args: { p_user_id: string }
         Returns: {
           current_streak: number
-          id: string
-          last_activity_date: string
           longest_streak: number
           total_tests_taken: number
-          user_id: string
         }[]
       }
       get_user_test_score: {
@@ -365,16 +365,16 @@ export type Database = {
       }
       submitindividualtestscore: {
         Args: {
-          exam_name: string
-          new_score: number
-          test_name: string
-          test_type_name: string
-          user_uuid: string
+          p_exam_id: string
+          p_score: number
+          p_test_id: string
+          p_test_type: string
+          p_user_id: string
         }
-        Returns: undefined
+        Returns: Json
       }
       update_daily_visit: {
-        Args: { user_uuid: string }
+        Args: { p_user_id: string }
         Returns: undefined
       }
       update_exam_stats_mock_pyq_only: {
@@ -382,7 +382,14 @@ export type Database = {
         Returns: undefined
       }
       update_exam_stats_properly: {
-        Args: { exam_name: string; new_score: number; user_uuid: string }
+        Args:
+          | { exam_name: string; new_score: number; user_uuid: string }
+          | {
+              p_exam_id: string
+              p_score: number
+              p_test_type: string
+              p_user_id: string
+            }
         Returns: undefined
       }
       update_user_streak: {

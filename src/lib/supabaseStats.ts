@@ -199,8 +199,8 @@ class SupabaseStatsService {
       if (examId) {
         // First, ensure default stats exist for this user/exam
         await supabase.rpc('create_default_exam_stats', {
-          user_uuid: user.id,
-          exam_name: examId
+          p_user_id: user.id,
+          p_exam_id: examId
         });
 
         // Now get the stats (guaranteed to exist)
@@ -221,7 +221,7 @@ class SupabaseStatsService {
       } else {
         // First, ensure default stats exist for all exams
         await supabase.rpc('create_all_default_exam_stats', {
-          user_uuid: user.id
+          p_user_id: user.id
         });
 
         // Now get all exam stats (guaranteed to exist)
@@ -510,7 +510,7 @@ class SupabaseStatsService {
     try {
       // Use the safe function to get or create streak
       const { data, error } = await supabase.rpc('get_or_create_user_streak', {
-        user_uuid: user.id
+        p_user_id: user.id
       });
 
       if (error) {
@@ -519,8 +519,21 @@ class SupabaseStatsService {
       }
 
       // The function returns an array, get the first result
-      const streakData = data && data.length > 0 ? data[0] : null;
-      return { data: streakData, error: null };
+      if (data && data.length > 0) {
+        const streak = data[0];
+        const streakData = {
+          id: user.id,
+          user_id: user.id,
+          current_streak: streak.current_streak,
+          longest_streak: streak.longest_streak,
+          total_tests_taken: streak.total_tests_taken,
+          last_activity_date: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        return { data: streakData, error: null };
+      }
+      return { data: null, error: null };
     } catch (error) {
       console.error('Error getting user streak:', error);
       return { data: null, error };
@@ -557,11 +570,11 @@ class SupabaseStatsService {
     try {
       // Use the new function that handles duplicates gracefully
       const { error } = await supabase.rpc('submitindividualtestscore', {
-        user_uuid: user.id,
-        exam_name: examId,
-        test_type_name: testType,
-        test_name: testId,
-        new_score: score
+        p_user_id: user.id,
+        p_exam_id: examId,
+        p_test_id: testId,
+        p_test_type: testType,
+        p_score: score
       });
 
       if (error) {
@@ -667,7 +680,7 @@ class SupabaseStatsService {
 
     try {
       const { error } = await supabase.rpc('update_daily_visit', {
-        user_uuid: user.id
+        p_user_id: user.id
       });
 
       if (error) {

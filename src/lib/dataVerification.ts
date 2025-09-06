@@ -131,6 +131,7 @@ export const testDataWriting = async () => {
       .from('user_profiles')
       .insert([{
         id: testData.userId,
+        email: 'test@example.com',
         phone: '+911234567890',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
