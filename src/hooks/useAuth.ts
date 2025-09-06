@@ -21,8 +21,13 @@ export const useAuth = () => {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        if (isUserAuthenticated()) {
+        console.log('Checking auth status...');
+        const isAuth = isUserAuthenticated();
+        console.log('isUserAuthenticated result:', isAuth);
+        
+        if (isAuth) {
           const authUser = await getCurrentAuthUser();
+          console.log('getCurrentAuthUser result:', authUser);
           if (authUser) {
             setUser(authUser);
             setIsAuthenticated(true);
@@ -45,7 +50,17 @@ export const useAuth = () => {
       }
     };
 
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        console.warn('Auth check timeout, setting loading to false');
+        setLoading(false);
+      }
+    }, 5000);
+
     checkAuthStatus();
+    
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const logout = async () => {

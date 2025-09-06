@@ -7,7 +7,13 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJ
 
 // Validate environment variables
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  throw new Error('Missing Supabase environment variables. Please check your .env file.');
+  console.error('Missing Supabase environment variables. Please check your .env file.');
+  console.error('SUPABASE_URL:', SUPABASE_URL);
+  console.error('SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? 'Present' : 'Missing');
+  // Don't throw error in production, just log it
+  if (import.meta.env.MODE === 'development') {
+    throw new Error('Missing Supabase environment variables. Please check your .env file.');
+  }
 }
 
 // Log environment info in development
