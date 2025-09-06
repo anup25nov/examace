@@ -825,7 +825,7 @@
       "topic": "algebra",
       "marks": 2,
       "negativeMarks": 0.5,
-      "duration": 1,
+      "duration": 0.6,
       "explanation": "We know that (x + 1/x)^2 = x^2 + 1/x^2 + 2. So, x^2 + 1/x^2 = (x + 1/x)^2 - 2 = 5^2 - 2 = 25 - 2 = 23."
     },
     {

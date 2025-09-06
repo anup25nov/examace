@@ -270,6 +270,18 @@ export const useExamStats = (examId?: string) => {
   ) => {
     if (!getUserId()) return { success: false, error: 'User not authenticated' };
 
+    // Debug logging to see exact parameters
+    console.log('submitTestAttempt called with:', {
+      targetExamId,
+      score,
+      totalQuestions,
+      correctAnswers,
+      timeTaken,
+      sectionId,
+      testId,
+      topicId
+    });
+
     try {
       // Try Supabase first with new test completion tracking
       const { data: supabaseResult, error } = await supabaseStatsService.submitTestCompletion({
@@ -279,9 +291,9 @@ export const useExamStats = (examId?: string) => {
         correctAnswers,
         timeTaken,
         answers: answers.details || answers,
-        testType: sectionId,
-        testId: testId,
-        topicId: topicId
+        testType: sectionId,  // sectionId is the test type (mock/pyq/practice)
+        testId: testId,       // testId is the actual test ID (mock-test-3, etc.)
+        topicId: topicId      // topicId for practice tests
       });
 
       if (!error && supabaseResult) {
@@ -296,7 +308,8 @@ export const useExamStats = (examId?: string) => {
       } else {
         // Fallback to local storage
         console.log('Supabase submission failed, using local storage:', error);
-        const testResultId = saveTestResult({
+        
+        const localTestResult = {
           examId: targetExamId,
           sectionId,
           testId,
@@ -309,7 +322,11 @@ export const useExamStats = (examId?: string) => {
           timeTaken,
           totalTime: timeTaken,
           answers: answers.details || []
-        });
+        };
+        
+        console.log('Attempting to save test result locally:', localTestResult);
+        
+        const testResultId = saveTestResult(localTestResult);
 
         // Refresh stats after submitting locally
         if (examId === targetExamId) {

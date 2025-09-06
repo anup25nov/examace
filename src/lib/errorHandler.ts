@@ -19,7 +19,9 @@ export const handleStorageError = (operation: string, error: any): void => {
 };
 
 export const validateTestResult = (result: any): boolean => {
-  return (
+  console.log('Validating test result:', result);
+  
+  const isValid = (
     result &&
     typeof result.examId === 'string' &&
     typeof result.score === 'number' &&
@@ -30,6 +32,21 @@ export const validateTestResult = (result: any): boolean => {
     result.correctAnswers >= 0 &&
     result.correctAnswers <= result.totalQuestions
   );
+  
+  if (!isValid) {
+    console.error('Test result validation failed:', {
+      hasResult: !!result,
+      examIdType: typeof result?.examId,
+      scoreType: typeof result?.score,
+      totalQuestionsType: typeof result?.totalQuestions,
+      correctAnswersType: typeof result?.correctAnswers,
+      scoreValue: result?.score,
+      totalQuestionsValue: result?.totalQuestions,
+      correctAnswersValue: result?.correctAnswers
+    });
+  }
+  
+  return isValid;
 };
 
 export const sanitizeStorageData = (data: any): any => {

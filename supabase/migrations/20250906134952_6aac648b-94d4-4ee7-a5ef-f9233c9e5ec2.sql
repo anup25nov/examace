@@ -44,10 +44,9 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION public.update_exam_stats_properly(
-  p_user_id UUID,
-  p_exam_id TEXT,
-  p_score INTEGER,
-  p_test_type TEXT
+  user_uuid UUID,
+  exam_name TEXT,
+  new_score INTEGER
 )
 RETURNS VOID
 LANGUAGE plpgsql
@@ -56,12 +55,12 @@ SET search_path = public
 AS $$
 BEGIN
   INSERT INTO exam_stats (user_id, exam_id, total_tests, best_score, average_score)
-  VALUES (p_user_id, p_exam_id, 1, p_score, p_score)
+  VALUES (user_uuid, exam_name, 1, new_score, new_score)
   ON CONFLICT (user_id, exam_id) 
   DO UPDATE SET
     total_tests = exam_stats.total_tests + 1,
-    best_score = GREATEST(exam_stats.best_score, p_score),
-    average_score = (exam_stats.average_score * exam_stats.total_tests + p_score) / (exam_stats.total_tests + 1),
+    best_score = GREATEST(exam_stats.best_score, new_score),
+    average_score = (exam_stats.average_score * exam_stats.total_tests + new_score) / (exam_stats.total_tests + 1),
     last_test_date = now(),
     updated_at = now();
 END;
@@ -88,8 +87,8 @@ $$;
 CREATE OR REPLACE FUNCTION public.submitindividualtestscore(
   p_user_id UUID,
   p_exam_id TEXT,
-  p_test_id TEXT,
   p_test_type TEXT,
+  p_test_id TEXT,
   p_score INTEGER
 )
 RETURNS JSONB

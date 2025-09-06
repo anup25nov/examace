@@ -98,7 +98,7 @@ export class QuestionLoader {
       'ssc-cgl': {
         pyq: ['2024-day1-shift1', '2024-day1-shift2'],
         practice: ['maths-algebra'],
-        mock: ['mock-test-1']
+        mock: ['mock-test-1', 'mock-test-2', 'mock-test-3', 'mock-test-4']
       },
       'ssc-mts': {
         pyq: ['2024-day1-shift1'],
@@ -275,7 +275,7 @@ export class QuestionLoader {
   // Generate mock test patterns (mock-test-1, mock-test-2, etc.)
   private static generateMockTestPatterns(): string[] {
     const patterns: string[] = [];
-    for (let i = 1; i <= 20; i++) { // Support up to 20 mock tests
+    for (let i = 1; i <= 4; i++) { // Only support existing mock tests 1-4
       patterns.push(`mock-test-${i}`);
     }
     return patterns;

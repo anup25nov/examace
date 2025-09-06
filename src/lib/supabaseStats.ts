@@ -110,10 +110,15 @@ class SupabaseStatsService {
     return cache ? (Date.now() - cache.timestamp) < this.cacheExpiry : false;
   }
 
-  private clearTestCaches(userId: string, examId: string, testType: string, testId: string) {
+  private clearTestCaches(userId: string, examId: string, testType: string, testId: string, topicId?: string) {
     // Clear test completion cache for both null and testId as topicId
     localStorage.removeItem(`test_completed_${userId}_${examId}_${testType}_${testId}_null`);
     localStorage.removeItem(`test_completed_${userId}_${examId}_${testType}_${testId}_${testId}`);
+    
+    // Clear cache for the specific topicId if provided
+    if (topicId) {
+      localStorage.removeItem(`test_completed_${userId}_${examId}_${testType}_${testId}_${topicId}`);
+    }
     
     // Clear test score cache
     localStorage.removeItem(`test_score_${userId}_${examId}_${testType}_${testId}`);
@@ -128,7 +133,7 @@ class SupabaseStatsService {
     }
     keysToRemove.forEach(key => localStorage.removeItem(key));
     
-    console.log('Cleared test caches for:', { userId, examId, testType, testId });
+    console.log('Cleared test caches for:', { userId, examId, testType, testId, topicId });
     console.log('Removed keys:', keysToRemove);
   }
 
@@ -415,7 +420,7 @@ class SupabaseStatsService {
       localStorage.removeItem(this.cacheKey);
 
       // Clear test completion and score caches for this user
-      this.clearTestCaches(user.id, submission.examId, submission.testType || 'mock', submission.testId || 'default');
+      this.clearTestCaches(user.id, submission.examId, submission.testType || 'mock', submission.testId || 'default', submission.topicId);
 
       return { data: { attempt: attemptData, stats: statsData }, error: null };
     } catch (error) {
@@ -482,28 +487,72 @@ class SupabaseStatsService {
     
     if (!user) return { data: null, error: 'User not authenticated' };
 
+    // Debug logging for the exact data being stored
+    const completionRecord = {
+      user_id: user.id,
+      exam_id: submission.examId,
+      test_type: submission.testType || 'mock',
+      test_id: submission.testId || 'default',
+      topic_id: submission.topicId,
+      score: submission.score,
+      total_questions: submission.totalQuestions,
+      correct_answers: submission.correctAnswers,
+      time_taken: submission.timeTaken,
+      answers: submission.answers
+    };
+    
+    console.log('Storing test completion record:', completionRecord);
+
     try {
-      // Create test completion record with proper conflict resolution
-      const { data: completionData, error: completionError } = await supabase
+      // Try to insert first, if it fails due to duplicate, then update
+      let { data: completionData, error: completionError } = await supabase
         .from('test_completions')
-        .upsert({
-          user_id: user.id,
-          exam_id: submission.examId,
-          test_type: submission.testType || 'mock',
-          test_id: submission.testId || 'default',
-          topic_id: submission.topicId,
-          score: submission.score,
-          total_questions: submission.totalQuestions,
-          correct_answers: submission.correctAnswers,
-          time_taken: submission.timeTaken,
-          answers: submission.answers
-        }, {
-          onConflict: 'user_id,exam_id,test_type,test_id'
-        })
+        .insert(completionRecord)
         .select()
         .single();
 
-      if (completionError) return { data: null, error: completionError };
+      // If insert fails due to duplicate key, try to update instead
+      if (completionError && completionError.code === '23505') {
+        console.log('Duplicate key detected, attempting to update existing record');
+        
+        // Build update query based on the unique constraint
+        let updateQuery = supabase
+          .from('test_completions')
+          .update({
+            score: completionRecord.score,
+            total_questions: completionRecord.total_questions,
+            correct_answers: completionRecord.correct_answers,
+            time_taken: completionRecord.time_taken,
+            answers: completionRecord.answers,
+            completed_at: new Date().toISOString()
+          })
+          .eq('user_id', completionRecord.user_id)
+          .eq('exam_id', completionRecord.exam_id)
+          .eq('test_type', completionRecord.test_type)
+          .eq('test_id', completionRecord.test_id);
+
+        // Handle topic_id properly (it might be null)
+        if (completionRecord.topic_id === null) {
+          updateQuery = updateQuery.is('topic_id', null);
+        } else {
+          updateQuery = updateQuery.eq('topic_id', completionRecord.topic_id);
+        }
+
+        const { data: updateData, error: updateError } = await updateQuery.select().single();
+
+        if (updateError) {
+          console.error('Error updating test completion:', updateError);
+          return { data: null, error: updateError };
+        }
+
+        completionData = updateData;
+        completionError = null;
+      }
+
+      if (completionError) {
+        console.error('Error with test completion operation:', completionError);
+        return { data: null, error: completionError };
+      }
 
       // Update user streak
       console.log('Calling update_user_streak with:', { user_uuid: user.id });
@@ -559,7 +608,7 @@ class SupabaseStatsService {
       localStorage.removeItem(this.cacheKey);
       
       // Clear test completion and score caches for this user
-      this.clearTestCaches(user.id, submission.examId, submission.testType || 'mock', submission.testId || 'default');
+      this.clearTestCaches(user.id, submission.examId, submission.testType || 'mock', submission.testId || 'default', submission.topicId);
 
       return { data: completionData, error: null };
     } catch (error) {
@@ -596,13 +645,27 @@ class SupabaseStatsService {
         topic_name: topicId || null
       });
 
-      const { data, error } = await supabase.rpc('is_test_completed', {
+      // Try the simple function first (ignores topic_id)
+      let { data, error } = await supabase.rpc('is_test_completed_simple' as any, {
         user_uuid: user.id,
         exam_name: examId,
         test_type_name: testType,
-        test_name: testId,
-        topic_name: topicId || null
+        test_name: testId
       });
+
+      // If simple function doesn't exist or fails, fall back to the original
+      if (error) {
+        console.log('Simple function failed or not found, using original function. Error:', error);
+        const result = await supabase.rpc('is_test_completed', {
+          user_uuid: user.id,
+          exam_name: examId,
+          test_type_name: testType,
+          test_name: testId,
+          topic_name: topicId || null
+        });
+        data = result.data;
+        error = result.error;
+      }
 
       console.log('is_test_completed RPC result:', { data, error });
 
@@ -611,7 +674,7 @@ class SupabaseStatsService {
         return false;
       }
 
-      const result = data || false;
+      const result = Boolean(data);
       console.log('Test completion result:', result);
       
       // Cache the result
