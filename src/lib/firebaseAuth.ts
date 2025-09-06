@@ -26,20 +26,38 @@ let confirmationResult: ConfirmationResult | null = null;
 // Initialize reCAPTCHA for phone auth with better error handling
 export const initializeRecaptcha = () => {
   try {
-    // Clear existing verifier
+    // Clear existing verifier completely
     if (recaptchaVerifier) {
-      recaptchaVerifier.clear();
+      try {
+        recaptchaVerifier.clear();
+      } catch (clearError) {
+        console.warn('Error clearing existing reCAPTCHA:', clearError);
+      }
       recaptchaVerifier = null;
     }
 
-    const recaptchaContainer = document.getElementById('recaptcha-container');
-    if (!recaptchaContainer) {
-      console.error('reCAPTCHA container not found');
-      return null;
+    // Create a unique container ID for this reCAPTCHA instance
+    const containerId = `recaptcha-container-${Date.now()}`;
+    
+    // Get or create the main container
+    let mainContainer = document.getElementById('recaptcha-container');
+    if (!mainContainer) {
+      mainContainer = document.createElement('div');
+      mainContainer.id = 'recaptcha-container';
+      mainContainer.style.display = 'none';
+      document.body.appendChild(mainContainer);
     }
 
-    console.log('Initializing reCAPTCHA verifier...');
-    recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+    // Clear the main container completely
+    mainContainer.innerHTML = '';
+    
+    // Create a new unique container for this instance
+    const uniqueContainer = document.createElement('div');
+    uniqueContainer.id = containerId;
+    mainContainer.appendChild(uniqueContainer);
+
+    console.log('Initializing reCAPTCHA verifier with container:', containerId);
+    recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
       size: 'invisible',
       callback: (response: any) => {
         console.log('reCAPTCHA solved successfully:', response);
@@ -54,47 +72,35 @@ export const initializeRecaptcha = () => {
     return recaptchaVerifier;
   } catch (error) {
     console.error('Error initializing reCAPTCHA:', error);
+    // Clean up on error
+    if (recaptchaVerifier) {
+      try {
+        recaptchaVerifier.clear();
+      } catch (clearError) {
+        console.warn('Error clearing reCAPTCHA on init error:', clearError);
+      }
+      recaptchaVerifier = null;
+    }
     return null;
   }
 };
 
 // Development mode check
-const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost';
-
-// Mock OTP for development
-const MOCK_OTP = '123456';
-let mockConfirmationResult: any = null;
+const isDevelopment = import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
 // Send OTP to phone number with improved error handling
-export const sendOTPCode = async (phone: string) => {
+export const sendOTPCode = async (phone: string, retryCount = 0) => {
   try {
-    console.log('Starting OTP send process for phone:', phone);
+    console.log('Starting OTP send process for phone:', phone, 'retry:', retryCount);
     
-    // Use mock authentication in development if Firebase billing isn't configured
-    if (isDevelopment) {
-      console.log('Development mode: Using mock OTP authentication');
-      mockConfirmationResult = {
-        confirm: async (otp: string) => {
-          if (otp === MOCK_OTP) {
-            return {
-              user: {
-                uid: `mock_${phone}`,
-                phoneNumber: `+91${phone}`
-              }
-            };
-          } else {
-            throw new Error('Invalid OTP');
-          }
-        }
-      };
-      confirmationResult = mockConfirmationResult;
-      return { 
-        success: true, 
-        data: mockConfirmationResult,
-        isDevelopment: true,
-        mockOTP: MOCK_OTP
-      };
-    }
+    // Clear any existing confirmation result
+    confirmationResult = null;
+    
+    // Aggressive cleanup before initialization
+    cleanupRecaptcha();
+    
+    // Wait longer for cleanup to complete
+    await new Promise(resolve => setTimeout(resolve, 500));
     
     const verifier = initializeRecaptcha();
     if (!verifier) {
@@ -114,42 +120,37 @@ export const sendOTPCode = async (phone: string) => {
     
     // Clear the verifier on error
     if (recaptchaVerifier) {
-      recaptchaVerifier.clear();
+      try {
+        recaptchaVerifier.clear();
+      } catch (clearError) {
+        console.warn('Error clearing reCAPTCHA on send error:', clearError);
+      }
       recaptchaVerifier = null;
     }
     
-    // Provide more specific error messages and fallback to mock in development
+    // Clear confirmation result on error
+    confirmationResult = null;
+    
+    // Retry logic for reCAPTCHA errors
+    if (error.message?.includes('reCAPTCHA has already been rendered') && retryCount < 2) {
+      console.log('reCAPTCHA conflict detected, retrying...');
+      cleanupRecaptcha();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return sendOTPCode(phone, retryCount + 1);
+    }
+    
+    // Provide more specific error messages
     let errorMessage = 'Failed to send OTP';
     if (error.code === 'auth/billing-not-enabled') {
-      if (isDevelopment) {
-        console.log('Billing not enabled, falling back to mock authentication');
-        mockConfirmationResult = {
-          confirm: async (otp: string) => {
-            if (otp === MOCK_OTP) {
-              return {
-                user: {
-                  uid: `mock_${phone}`,
-                  phoneNumber: `+91${phone}`
-                }
-              };
-            } else {
-              throw new Error('Invalid OTP');
-            }
-          }
-        };
-        confirmationResult = mockConfirmationResult;
-        return { 
-          success: true, 
-          data: mockConfirmationResult,
-          isDevelopment: true,
-          mockOTP: MOCK_OTP
-        };
-      }
       errorMessage = 'Phone authentication billing is not enabled. Please enable billing in Firebase Console and configure phone authentication.';
     } else if (error.code === 'auth/invalid-phone-number') {
       errorMessage = 'Invalid phone number format.';
     } else if (error.code === 'auth/too-many-requests') {
       errorMessage = 'Too many requests. Please try again later.';
+    } else if (error.code === 'auth/missing-or-invalid-permissions' || error.message?.includes('Missing or insufficient permissions')) {
+      errorMessage = 'Phone authentication permissions not configured. Please contact support.';
+    } else if (error.message?.includes('reCAPTCHA has already been rendered')) {
+      errorMessage = 'reCAPTCHA conflict detected. Please refresh the page and try again.';
     } else if (error.message) {
       errorMessage = error.message;
     }
@@ -348,7 +349,49 @@ export const getCurrentUserId = (): string | null => {
 
 // Check if user is authenticated
 export const isUserAuthenticated = (): boolean => {
-  return localStorage.getItem('isAuthenticated') === 'true';
+  const isAuth = localStorage.getItem('isAuthenticated') === 'true';
+  
+  // In development mode, also check if we have a valid dev user
+  if (isDevelopment && isAuth) {
+    const userId = localStorage.getItem('userId');
+    const userPhone = localStorage.getItem('userPhone');
+    console.log('Development auth check:', { isAuth, userId, userPhone });
+    return !!(userId && userPhone);
+  }
+  
+  console.log('Auth check result:', { isAuth, isDevelopment });
+  return isAuth;
+};
+
+// Clean up reCAPTCHA verifier
+export const cleanupRecaptcha = () => {
+  try {
+    if (recaptchaVerifier) {
+      recaptchaVerifier.clear();
+      recaptchaVerifier = null;
+    }
+    
+    // Clear the reCAPTCHA container
+    const recaptchaContainer = document.getElementById('recaptcha-container');
+    if (recaptchaContainer) {
+      recaptchaContainer.innerHTML = '';
+    }
+    
+    // Remove any reCAPTCHA iframes that might be left behind
+    const existingIframes = document.querySelectorAll('iframe[src*="recaptcha"]');
+    existingIframes.forEach(iframe => {
+      try {
+        iframe.remove();
+      } catch (e) {
+        console.warn('Error removing reCAPTCHA iframe:', e);
+      }
+    });
+    
+    confirmationResult = null;
+    console.log('reCAPTCHA cleanup completed');
+  } catch (error) {
+    console.warn('Error during reCAPTCHA cleanup:', error);
+  }
 };
 
 // Sign out user
@@ -359,13 +402,8 @@ export const signOutUser = async () => {
     await auth.signOut();
     localStorage.clear();
     
-    // Clear reCAPTCHA verifier
-    if (recaptchaVerifier) {
-      recaptchaVerifier.clear();
-      recaptchaVerifier = null;
-    }
-    
-    confirmationResult = null;
+    // Clean up reCAPTCHA
+    cleanupRecaptcha();
     
     return { success: true };
   } catch (error: any) {
@@ -396,3 +434,9 @@ export const updateUserPIN = async (phone: string, newPin: string) => {
     return { success: false, error: error.message || 'Failed to update PIN' };
   }
 };
+
+// Global cleanup function for debugging
+if (typeof window !== 'undefined') {
+  (window as any).cleanupRecaptcha = cleanupRecaptcha;
+  (window as any).initializeRecaptcha = initializeRecaptcha;
+}

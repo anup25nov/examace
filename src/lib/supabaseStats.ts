@@ -33,6 +33,43 @@ export interface SupabaseTestAttempt {
   answers?: any;
 }
 
+export interface SupabaseTestCompletion {
+  id: string;
+  user_id: string;
+  exam_id: string;
+  test_type: string;
+  test_id: string;
+  topic_id?: string;
+  total_questions: number;
+  correct_answers: number;
+  time_taken?: number;
+  completed_at: string;
+  answers?: any;
+}
+
+export interface SupabaseUserStreak {
+  id: string;
+  user_id: string;
+  current_streak: number;
+  longest_streak: number;
+  last_activity_date: string;
+  total_tests_taken: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SupabaseIndividualTestScore {
+  id: string;
+  user_id: string;
+  exam_id: string;
+  test_type: string;
+  test_id: string;
+  score: number;
+  rank?: number;
+  total_participants: number;
+  completed_at: string;
+}
+
 export interface TestSubmissionData {
   examId: string;
   score: number;
@@ -40,6 +77,9 @@ export interface TestSubmissionData {
   correctAnswers: number;
   timeTaken: number;
   answers: any;
+  testType?: string;
+  testId?: string;
+  topicId?: string;
 }
 
 class SupabaseStatsService {
@@ -71,11 +111,20 @@ class SupabaseStatsService {
   }
 
   async getCurrentUser() {
-    const { data: { user } } = await supabase.auth.getUser();
-    return user;
+    // Get user ID from localStorage (Supabase auth)
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      throw new Error('No authenticated user found');
+    }
+    
+    // Return a user object with the Supabase user ID
+    return {
+      id: userId,
+      email: localStorage.getItem('userEmail') || ''
+    };
   }
 
-  async createUserProfile(phone: string, pin?: string): Promise<{ data: SupabaseUserProfile | null; error: any }> {
+  async createUserProfile(email: string): Promise<{ data: SupabaseUserProfile | null; error: any }> {
     const user = await this.getCurrentUser();
     if (!user) return { data: null, error: 'User not authenticated' };
 
@@ -83,8 +132,7 @@ class SupabaseStatsService {
       .from('user_profiles')
       .upsert({
         id: user.id,
-        phone,
-        pin
+        email
       })
       .select()
       .single();
@@ -264,6 +312,204 @@ class SupabaseStatsService {
       rank: userStats?.rank || null, 
       totalUsers: count || 0 
     };
+  }
+
+  // Test completion tracking methods
+  async submitTestCompletion(submission: TestSubmissionData): Promise<{ data: any; error: any }> {
+    const user = await this.getCurrentUser();
+    if (!user) return { data: null, error: 'User not authenticated' };
+
+    try {
+      // Create test completion record
+      const { data: completionData, error: completionError } = await supabase
+        .from('test_completions')
+        .upsert({
+          user_id: user.id,
+          exam_id: submission.examId,
+          test_type: submission.testType || 'mock',
+          test_id: submission.testId || 'default',
+          topic_id: submission.topicId,
+          score: submission.score,
+          total_questions: submission.totalQuestions,
+          correct_answers: submission.correctAnswers,
+          time_taken: submission.timeTaken,
+          answers: submission.answers
+        })
+        .select()
+        .single();
+
+      if (completionError) return { data: null, error: completionError };
+
+      // Update user streak
+      await supabase.rpc('update_user_streak', { user_uuid: user.id });
+
+      // Also update exam stats (existing functionality)
+      await this.submitTestAttempt(submission);
+
+      // Clear cache to force refresh
+      localStorage.removeItem(this.cacheKey);
+
+      return { data: completionData, error: null };
+    } catch (error) {
+      return { data: null, error };
+    }
+  }
+
+  async isTestCompleted(
+    examId: string, 
+    testType: string, 
+    testId: string, 
+    topicId?: string
+  ): Promise<boolean> {
+    const user = await this.getCurrentUser();
+    if (!user) return false;
+
+    try {
+      const { data, error } = await supabase.rpc('is_test_completed', {
+        user_uuid: user.id,
+        exam_name: examId,
+        test_type_name: testType,
+        test_name: testId,
+        topic_name: topicId || null
+      });
+
+      if (error) {
+        console.error('Error checking test completion:', error);
+        return false;
+      }
+
+      return data || false;
+    } catch (error) {
+      console.error('Error checking test completion:', error);
+      return false;
+    }
+  }
+
+  async getUserStreak(): Promise<{ data: SupabaseUserStreak | null; error: any }> {
+    const user = await this.getCurrentUser();
+    if (!user) return { data: null, error: 'User not authenticated' };
+
+    const { data, error } = await supabase
+      .from('user_streaks')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    return { data, error };
+  }
+
+  async getTestCompletions(examId?: string): Promise<{ data: SupabaseTestCompletion[]; error: any }> {
+    const user = await this.getCurrentUser();
+    if (!user) return { data: [], error: 'User not authenticated' };
+
+    let query = supabase
+      .from('test_completions')
+      .select('*')
+      .eq('user_id', user.id);
+
+    if (examId) {
+      query = query.eq('exam_id', examId);
+    }
+
+    const { data, error } = await query.order('completed_at', { ascending: false });
+
+    return { data: data || [], error };
+  }
+
+  // Individual test score methods
+  async submitIndividualTestScore(
+    examId: string,
+    testType: string,
+    testId: string,
+    score: number
+  ): Promise<{ data: SupabaseIndividualTestScore | null; error: any }> {
+    const user = await this.getCurrentUser();
+    if (!user) return { data: null, error: 'User not authenticated' };
+
+    try {
+      // Insert or update individual test score
+      const { data: scoreData, error: scoreError } = await supabase
+        .from('individual_test_scores')
+        .upsert({
+          user_id: user.id,
+          exam_id: examId,
+          test_type: testType,
+          test_id: testId,
+          score: score
+        })
+        .select()
+        .single();
+
+      if (scoreError) return { data: null, error: scoreError };
+
+      // Calculate rank for this specific test
+      await supabase.rpc('calculate_test_rank', {
+        user_uuid: user.id,
+        exam_name: examId,
+        test_type_name: testType,
+        test_name: testId
+      });
+
+      // Update exam stats (Mock and PYQ only)
+      await supabase.rpc('update_exam_stats_mock_pyq_only', { exam_name: examId });
+
+      // Clear cache to force refresh
+      localStorage.removeItem(this.cacheKey);
+
+      return { data: scoreData, error: null };
+    } catch (error) {
+      return { data: null, error };
+    }
+  }
+
+  async getIndividualTestScore(
+    examId: string,
+    testType: string,
+    testId: string
+  ): Promise<{ score: number | null; rank: number | null; totalParticipants: number }> {
+    const user = await this.getCurrentUser();
+    if (!user) return { score: null, rank: null, totalParticipants: 0 };
+
+    try {
+      const { data, error } = await supabase.rpc('get_user_test_score', {
+        user_uuid: user.id,
+        exam_name: examId,
+        test_type_name: testType,
+        test_name: testId
+      });
+
+      if (error || !data || data.length === 0) {
+        return { score: null, rank: null, totalParticipants: 0 };
+      }
+
+      const result = data[0];
+      return {
+        score: result.score,
+        rank: result.rank,
+        totalParticipants: result.total_participants
+      };
+    } catch (error) {
+      console.error('Error getting individual test score:', error);
+      return { score: null, rank: null, totalParticipants: 0 };
+    }
+  }
+
+  async getAllIndividualTestScores(examId?: string): Promise<{ data: SupabaseIndividualTestScore[]; error: any }> {
+    const user = await this.getCurrentUser();
+    if (!user) return { data: [], error: 'User not authenticated' };
+
+    let query = supabase
+      .from('individual_test_scores')
+      .select('*')
+      .eq('user_id', user.id);
+
+    if (examId) {
+      query = query.eq('exam_id', examId);
+    }
+
+    const { data, error } = await query.order('completed_at', { ascending: false });
+
+    return { data: data || [], error };
   }
 
   // Clear cache method for manual refresh

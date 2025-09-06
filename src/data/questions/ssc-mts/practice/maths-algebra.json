@@ -1,0 +1,22 @@
+[
+  {
+    "id": "q11",
+    "questionEn": "If 3x - 7 = 14, find the value of x:",
+    "questionHi": "यदि 3x - 7 = 14, तो x का मान ज्ञात करें:",
+    "options": ["5", "7", "9", "11"],
+    "correct": 1,
+    "difficulty": "medium",
+    "subject": "maths",
+    "topic": "algebra"
+  },
+  {
+    "id": "q12",
+    "questionEn": "Which planet is known as the Red Planet?",
+    "questionHi": "किस ग्रह को लाल ग्रह कहा जाता है?",
+    "options": ["Venus", "Mars", "Jupiter", "Saturn"],
+    "correct": 1,
+    "difficulty": "easy",
+    "subject": "gk",
+    "topic": "science"
+  }
+]

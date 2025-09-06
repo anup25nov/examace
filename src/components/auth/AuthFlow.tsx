@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BookOpen, ArrowLeft, Lock, Smartphone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { sendOTPCode, verifyOTPCode, setUserPIN, verifyUserPIN, checkUserStatus } from "@/lib/firebaseAuth";
+import { sendOTPCode, verifyOTPCode, setUserPIN, verifyUserPIN, checkUserStatus } from "@/lib/supabaseAuth";
 
 type AuthStep = 'phone' | 'otp' | 'pin-setup' | 'pin-login';
 
@@ -98,7 +98,7 @@ const AuthFlow = ({ onSuccess, onBack }: AuthFlowProps) => {
     }
 
     setIsLoading(true);
-    const result = await verifyOTPCode(otp);
+    const result = await verifyOTPCode(phoneNumber, otp);
     setIsLoading(false);
 
     if (result.success) {
@@ -397,8 +397,6 @@ const AuthFlow = ({ onSuccess, onBack }: AuthFlowProps) => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      {/* reCAPTCHA container */}
-      <div id="recaptcha-container"></div>
       
       <Card className="w-full max-w-md animate-scale-in">
         <CardContent className="p-8">

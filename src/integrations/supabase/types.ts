@@ -109,25 +109,157 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
-          phone: string
-          pin: string | null
+          email: string
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           id: string
-          phone: string
-          pin?: string | null
+          email: string
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
-          phone?: string
-          pin?: string | null
+          email?: string
           updated_at?: string | null
         }
         Relationships: []
+      }
+      test_completions: {
+        Row: {
+          answers: Json | null
+          completed_at: string | null
+          correct_answers: number
+          exam_id: string
+          id: string
+          test_id: string
+          test_type: string
+          time_taken: number | null
+          topic_id: string | null
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          answers?: Json | null
+          completed_at?: string | null
+          correct_answers: number
+          exam_id: string
+          id?: string
+          test_id: string
+          test_type: string
+          time_taken?: number | null
+          topic_id?: string | null
+          total_questions: number
+          user_id: string
+        }
+        Update: {
+          answers?: Json | null
+          completed_at?: string | null
+          correct_answers?: number
+          exam_id?: string
+          id?: string
+          test_id?: string
+          test_type?: string
+          time_taken?: number | null
+          topic_id?: string | null
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_completions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_streaks: {
+        Row: {
+          created_at: string | null
+          current_streak: number | null
+          id: string
+          last_activity_date: string | null
+          longest_streak: number | null
+          total_tests_taken: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_streak?: number | null
+          id?: string
+          last_activity_date?: string | null
+          longest_streak?: number | null
+          total_tests_taken?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_streak?: number | null
+          id?: string
+          last_activity_date?: string | null
+          longest_streak?: number | null
+          total_tests_taken?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_streaks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      individual_test_scores: {
+        Row: {
+          completed_at: string | null
+          exam_id: string
+          id: string
+          rank: number | null
+          score: number
+          test_id: string
+          test_type: string
+          total_participants: number | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          exam_id: string
+          id?: string
+          rank?: number | null
+          score: number
+          test_id: string
+          test_type: string
+          total_participants?: number | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          exam_id?: string
+          id?: string
+          rank?: number | null
+          score?: number
+          test_id?: string
+          test_type?: string
+          total_participants?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "individual_test_scores_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -135,6 +267,42 @@ export type Database = {
     }
     Functions: {
       calculate_exam_ranks: {
+        Args: { exam_name: string }
+        Returns: undefined
+      }
+      update_user_streak: {
+        Args: { user_uuid: string }
+        Returns: undefined
+      }
+      is_test_completed: {
+        Args: { 
+          user_uuid: string
+          exam_name: string
+          test_type_name: string
+          test_name: string
+          topic_name: string | null
+        }
+        Returns: boolean
+      }
+      calculate_test_rank: {
+        Args: { 
+          user_uuid: string
+          exam_name: string
+          test_type_name: string
+          test_name: string
+        }
+        Returns: number
+      }
+      get_user_test_score: {
+        Args: { 
+          user_uuid: string
+          exam_name: string
+          test_type_name: string
+          test_name: string
+        }
+        Returns: { score: number; rank: number; total_participants: number }[]
+      }
+      update_exam_stats_mock_pyq_only: {
         Args: { exam_name: string }
         Returns: undefined
       }

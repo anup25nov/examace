@@ -16,6 +16,8 @@ import {
 import { getQuestionsForTest, getTestDuration } from "@/config/examConfig";
 import { useExamStats } from "@/hooks/useExamStats";
 import { useAuth } from "@/hooks/useAuth";
+import { QuestionLoader } from "@/lib/questionLoader";
+import SolutionsDisplay from "@/components/SolutionsDisplay";
 
 // Questions will be loaded dynamically based on test parameters
 
@@ -23,7 +25,7 @@ const TestInterface = () => {
   const { examId, sectionId, testType, topic } = useParams();
   const navigate = useNavigate();
   const { getUserId } = useAuth();
-  const { submitTestAttempt } = useExamStats(examId);
+  const { submitTestAttempt, submitIndividualTestScore } = useExamStats(examId);
   
   const [questions, setQuestions] = useState<any[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -34,16 +36,41 @@ const TestInterface = () => {
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
   const [startTime] = useState(Date.now());
   const [loading, setLoading] = useState(true);
+  const [showSolutions, setShowSolutions] = useState(false);
+  const [testResults, setTestResults] = useState<{
+    score: number;
+    correct: number;
+    timeTaken: number;
+  } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Load questions and set timer
   useEffect(() => {
-    const loadTestData = () => {
-      const testQuestions = getQuestionsForTest(examId!, sectionId!, testType!, topic);
-      const duration = getTestDuration(examId!, sectionId!, testType!, topic);
-      
-      setQuestions(testQuestions);
-      setTimeLeft(duration * 60); // Convert minutes to seconds
-      setLoading(false);
+    const loadTestData = async () => {
+      try {
+        // Try to load from dynamic question files first
+        let testQuestions = await QuestionLoader.loadQuestions(examId!, testType as 'pyq' | 'practice' | 'mock', testType!);
+        
+        // Fallback to config if dynamic loading fails
+        if (testQuestions.length === 0) {
+          testQuestions = getQuestionsForTest(examId!, sectionId!, testType!, topic);
+        }
+        
+        const duration = getTestDuration(examId!, sectionId!, testType!, topic);
+        
+        setQuestions(testQuestions);
+        setTimeLeft(duration * 60); // Convert minutes to seconds
+        setLoading(false);
+      } catch (error) {
+        console.error('Error loading questions:', error);
+        // Fallback to config
+        const testQuestions = getQuestionsForTest(examId!, sectionId!, testType!, topic);
+        const duration = getTestDuration(examId!, sectionId!, testType!, topic);
+        
+        setQuestions(testQuestions);
+        setTimeLeft(duration * 60);
+        setLoading(false);
+      }
     };
 
     if (examId && sectionId && testType) {
@@ -101,62 +128,77 @@ const TestInterface = () => {
   };
 
   const handleSubmit = async () => {
-    const endTime = Date.now();
-    const timeTaken = Math.floor((endTime - startTime) / 1000);
+    if (isSubmitting) return; // Prevent double submission
     
-    let correct = 0;
-    let incorrect = 0;
+    setIsSubmitting(true);
     
-    questions.forEach((question, index) => {
-      if (answers[index] !== undefined) {
-        if (answers[index] === question.correct) {
-          correct++;
-        } else {
-          incorrect++;
+    try {
+      const endTime = Date.now();
+      const timeTaken = Math.floor((endTime - startTime) / 1000);
+      
+      let correct = 0;
+      let incorrect = 0;
+      
+      questions.forEach((question, index) => {
+        if (answers[index] !== undefined) {
+          if (answers[index] === question.correct) {
+            correct++;
+          } else {
+            incorrect++;
+          }
+        }
+      });
+
+      const score = Math.round((correct / questions.length) * 100);
+      
+      // Submit test attempt using the new system
+      if (examId) {
+        try {
+          await submitTestAttempt(
+            examId,
+            score,
+            questions.length,
+            correct,
+            timeTaken,
+            {
+              details: questions.map((question, index) => ({
+                questionId: question.id,
+                selectedOption: answers[index] ?? -1,
+                isCorrect: answers[index] === question.correct
+              })),
+              skipped: questions.length - Object.keys(answers).length
+            },
+            sectionId!,
+            testType!,
+            topic
+          );
+
+          // Submit individual test score for Mock and PYQ tests only
+          if (sectionId === 'mock' || sectionId === 'pyq') {
+            // sectionId is the test type (mock/pyq), testType is the actual test ID
+            await submitIndividualTestScore(examId, sectionId, testType, score);
+          }
+
+          console.log('Test attempt submitted successfully');
+        } catch (error) {
+          console.error('Error submitting test attempt:', error);
+          // Continue to show solutions even if submission fails
         }
       }
-    });
 
-    const score = Math.round((correct / questions.length) * 100);
-    
-    // Submit test attempt using the new system
-    if (examId) {
-      try {
-        await submitTestAttempt(
-          examId,
-          score,
-          questions.length,
-          correct,
-          timeTaken,
-          {
-            details: questions.map((question, index) => ({
-              questionId: question.id,
-              selectedOption: answers[index] ?? -1,
-              isCorrect: answers[index] === question.correct
-            })),
-            skipped: questions.length - answered
-          },
-          sectionId!,
-          testType!,
-          topic
-        );
-        console.log('Test attempt submitted successfully');
-      } catch (error) {
-        console.error('Error submitting test attempt:', error);
-      }
+      // Store test results and show solutions
+      setTestResults({
+        score,
+        correct,
+        timeTaken
+      });
+      setShowSolutions(true);
+      setIsCompleted(true);
+    } catch (error) {
+      console.error('Error in handleSubmit:', error);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    navigate(`/result/${examId}/${sectionId}`, { 
-      state: { 
-        score, 
-        correct, 
-        incorrect, 
-        total: questions.length, 
-        timeTaken,
-        answers,
-        questions
-      } 
-    });
   };
 
   const question = questions[currentQuestion];
@@ -191,8 +233,18 @@ const TestInterface = () => {
     );
   }
 
-  if (isCompleted) {
-    return <div>Redirecting to results...</div>;
+  if (showSolutions && testResults) {
+    return (
+      <SolutionsDisplay
+        questions={questions}
+        userAnswers={answers}
+        score={testResults.score}
+        totalQuestions={questions.length}
+        correctAnswers={testResults.correct}
+        timeTaken={testResults.timeTaken}
+        onClose={() => navigate(`/exam/${examId}`)}
+      />
+    );
   }
 
   return (
@@ -227,8 +279,19 @@ const TestInterface = () => {
                   {formatTime(timeLeft)}
                 </span>
               </div>
-              <Button onClick={handleSubmit} className="gradient-primary border-0">
-                Submit Test
+              <Button 
+                onClick={handleSubmit} 
+                className="gradient-primary border-0"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Submitting...
+                  </>
+                ) : (
+                  'Submit Test'
+                )}
               </Button>
             </div>
           </div>

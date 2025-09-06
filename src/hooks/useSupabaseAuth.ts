@@ -51,6 +51,25 @@ export const useSupabaseAuth = () => {
     return { data, error };
   };
 
+  const signInWithPhone = async (phone: string) => {
+    const { data, error } = await supabase.auth.signInWithOtp({
+      phone: `+91${phone}`,
+      options: {
+        channel: 'sms'
+      }
+    });
+    return { data, error };
+  };
+
+  const verifyPhoneOtp = async (phone: string, otp: string) => {
+    const { data, error } = await supabase.auth.verifyOtp({
+      phone: `+91${phone}`,
+      token: otp,
+      type: 'sms'
+    });
+    return { data, error };
+  };
+
   const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -79,6 +98,8 @@ export const useSupabaseAuth = () => {
     getUserId,
     signUp,
     signIn,
+    signInWithPhone,
+    verifyPhoneOtp,
     signOut
   };
 };

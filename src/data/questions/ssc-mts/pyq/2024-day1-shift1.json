@@ -1,0 +1,22 @@
+[
+  {
+    "id": "q9",
+    "questionEn": "What is the capital of Australia?",
+    "questionHi": "ऑस्ट्रेलिया की राजधानी क्या है?",
+    "options": ["Sydney", "Melbourne", "Canberra", "Perth"],
+    "correct": 2,
+    "difficulty": "easy",
+    "subject": "gk",
+    "topic": "geography"
+  },
+  {
+    "id": "q10",
+    "questionEn": "Choose the correct spelling:",
+    "questionHi": "सही वर्तनी चुनें:",
+    "options": ["Accomodate", "Accommodate", "Acommodate", "Accomadate"],
+    "correct": 1,
+    "difficulty": "medium",
+    "subject": "english",
+    "topic": "spelling"
+  }
+]

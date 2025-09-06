@@ -1,0 +1,22 @@
+[
+  {
+    "id": "q5",
+    "questionEn": "Which of the following is a prime number?",
+    "questionHi": "निम्नलिखित में से कौन सी एक अभाज्य संख्या है?",
+    "options": ["15", "21", "23", "27"],
+    "correct": 2,
+    "difficulty": "easy",
+    "subject": "maths",
+    "topic": "number-system"
+  },
+  {
+    "id": "q6",
+    "questionEn": "The area of a circle with radius 7 cm is:",
+    "questionHi": "7 सेमी त्रिज्या वाले वृत्त का क्षेत्रफल है:",
+    "options": ["154 cm²", "44 cm²", "22 cm²", "308 cm²"],
+    "correct": 0,
+    "difficulty": "medium",
+    "subject": "maths",
+    "topic": "geometry"
+  }
+]

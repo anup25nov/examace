@@ -1,0 +1,24 @@
+[
+  {
+    "id": "q7",
+    "questionEn": "What is 25% of 200?",
+    "questionHi": "200 का 25% क्या है?",
+    "options": ["25", "50", "75", "100"],
+    "correct": 1,
+    "difficulty": "easy",
+    "subject": "maths",
+    "topic": "percentage",
+    "explanation": "To calculate 25% of 200, we use the percentage formula: (Percentage/100) × Number. So, (25/100) × 200 = 0.25 × 200 = 50. Therefore, 25% of 200 is 50."
+  },
+  {
+    "id": "q8",
+    "questionEn": "If CODING is written as DPEJOH, how is FLOWER written?",
+    "questionHi": "यदि CODING को DPEJOH लिखा जाता है, तो FLOWER को कैसे लिखा जाएगा?",
+    "options": ["GMPXFS", "GMPVFR", "HMPXFS", "GMPXES"],
+    "correct": 0,
+    "difficulty": "medium",
+    "subject": "reasoning",
+    "topic": "coding-decoding",
+    "explanation": "In the coding pattern, each letter is shifted by +1 position in the alphabet. C→D, O→P, D→E, I→J, N→O, G→H. Applying the same pattern to FLOWER: F→G, L→M, O→P, W→X, E→F, R→S. So FLOWER becomes GMPXFS."
+  }
+]

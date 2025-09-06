@@ -253,14 +253,17 @@ export const useExamStats = (examId?: string) => {
     if (!getUserId()) return { success: false, error: 'User not authenticated' };
 
     try {
-      // Try Supabase first, fallback to local
-      const { data: supabaseResult, error } = await supabaseStatsService.submitTestAttempt({
+      // Try Supabase first with new test completion tracking
+      const { data: supabaseResult, error } = await supabaseStatsService.submitTestCompletion({
         examId: targetExamId,
         score: Math.round((correctAnswers / totalQuestions) * 100),
         totalQuestions,
         correctAnswers,
         timeTaken,
-        answers: answers.details || answers
+        answers: answers.details || answers,
+        testType: sectionId,
+        testId: testId,
+        topicId: topicId
       });
 
       if (!error && supabaseResult) {
@@ -337,6 +340,46 @@ export const useExamStats = (examId?: string) => {
     return getTestResults(examId);
   };
 
+  // Check if a test is completed
+  const isTestCompleted = async (examId: string, testType: string, testId: string, topicId?: string): Promise<boolean> => {
+    try {
+      return await supabaseStatsService.isTestCompleted(examId, testType, testId, topicId);
+    } catch (error) {
+      console.error('Error checking test completion:', error);
+      return false;
+    }
+  };
+
+  // Get user streak
+  const getUserStreak = async () => {
+    try {
+      return await supabaseStatsService.getUserStreak();
+    } catch (error) {
+      console.error('Error getting user streak:', error);
+      return { data: null, error };
+    }
+  };
+
+  // Get individual test score
+  const getIndividualTestScore = async (examId: string, testType: string, testId: string) => {
+    try {
+      return await supabaseStatsService.getIndividualTestScore(examId, testType, testId);
+    } catch (error) {
+      console.error('Error getting individual test score:', error);
+      return { score: null, rank: null, totalParticipants: 0 };
+    }
+  };
+
+  // Submit individual test score
+  const submitIndividualTestScore = async (examId: string, testType: string, testId: string, score: number) => {
+    try {
+      return await supabaseStatsService.submitIndividualTestScore(examId, testType, testId, score);
+    } catch (error) {
+      console.error('Error submitting individual test score:', error);
+      return { data: null, error };
+    }
+  };
+
   // Load initial data
   useEffect(() => {
     if (examId) {
@@ -370,6 +413,10 @@ export const useExamStats = (examId?: string) => {
     refreshStats: () => examId && loadExamStats(examId),
     getExamStatById,
     getProfile,
-    getTestHistory
+    getTestHistory,
+    isTestCompleted,
+    getUserStreak,
+    getIndividualTestScore,
+    submitIndividualTestScore
   };
 };

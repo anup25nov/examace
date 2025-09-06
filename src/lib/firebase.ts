@@ -2,7 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-// Production Firebase configuration
+// Firebase configuration from environment variables
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDpOP0jWFQ4C9BhJ2GHQF8B4Po50cVrNxY",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "exam-prod-90097.firebaseapp.com",
@@ -16,6 +16,15 @@ const firebaseConfig = {
 // Validate Firebase configuration
 if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
   console.error('Firebase configuration is missing. Please check your environment variables.');
+}
+
+// Log environment info in development
+if (import.meta.env.VITE_ENV === 'development') {
+  console.log('🔥 Firebase Configuration:', {
+    projectId: firebaseConfig.projectId,
+    environment: import.meta.env.VITE_ENV,
+    hasApiKey: !!firebaseConfig.apiKey
+  });
 }
 
 // Initialize Firebase

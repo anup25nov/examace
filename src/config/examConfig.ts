@@ -54,8 +54,8 @@ export interface ExamConfig {
   sections: SectionConfig[];
 }
 
-// Sample questions for SSC CGL
-const sscCglQuestions: QuestionConfig[] = [
+// Sample questions for all exams (will be replaced by dynamic loading)
+const sampleQuestions: QuestionConfig[] = [
   {
     id: "q1",
     questionEn: "What is the square root of 144?",
@@ -75,86 +75,20 @@ const sscCglQuestions: QuestionConfig[] = [
     difficulty: "medium",
     subject: "maths",
     topic: "algebra"
-  },
-  {
-    id: "q3",
-    questionEn: "Which of the following is a prime number?",
-    questionHi: "निम्नलिखित में से कौन सी एक अभाज्य संख्या है?",
-    options: ["15", "21", "23", "27"],
-    correct: 2,
-    difficulty: "easy",
-    subject: "maths",
-    topic: "number-system"
-  },
-  {
-    id: "q4",
-    questionEn: "The area of a circle with radius 7 cm is:",
-    questionHi: "7 सेमी त्रिज्या वाले वृत्त का क्षेत्रफल है:",
-    options: ["154 cm²", "44 cm²", "22 cm²", "308 cm²"],
-    correct: 0,
-    difficulty: "medium",
-    subject: "maths",
-    topic: "geometry"
-  },
-  {
-    id: "q5",
-    questionEn: "What is 25% of 200?",
-    questionHi: "200 का 25% क्या है?",
-    options: ["25", "50", "75", "100"],
-    correct: 1,
-    difficulty: "easy",
-    subject: "maths",
-    topic: "percentage"
-  },
-  // Add more questions for variety
-  {
-    id: "q6",
-    questionEn: "Who wrote the book 'Discovery of India'?",
-    questionHi: "डिस्कवरी ऑफ इंडिया पुस्तक किसने लिखी?",
-    options: ["Mahatma Gandhi", "Jawaharlal Nehru", "Subhas Chandra Bose", "Sardar Patel"],
-    correct: 1,
-    difficulty: "easy",
-    subject: "gk",
-    topic: "history"
-  },
-  {
-    id: "q7",
-    questionEn: "The synonym of 'Abundant' is:",
-    questionHi: "'Abundant' का समानार्थी है:",
-    options: ["Scarce", "Plentiful", "Limited", "Rare"],
-    correct: 1,
-    difficulty: "medium",
-    subject: "english",
-    topic: "vocabulary"
-  },
-  {
-    id: "q8",
-    questionEn: "If CODING is written as DPEJOH, how is FLOWER written?",
-    questionHi: "यदि CODING को DPEJOH लिखा जाता है, तो FLOWER को कैसे लिखा जाएगा?",
-    options: ["GMPXFS", "GMPWFR", "HMPXFS", "GMPXES"],
-    correct: 0,
-    difficulty: "medium",
-    subject: "reasoning",
-    topic: "coding-decoding"
   }
 ];
 
 // Generate dynamic tests based on questions
-const generateMockTests = (questions: QuestionConfig[], count: number = 15): TestConfig[] => {
+const generateMockTests = (questions: QuestionConfig[], count: number = 1): TestConfig[] => {
   const tests: TestConfig[] = [];
-  const questionsPerTest = Math.min(25, questions.length);
   
   for (let i = 1; i <= count; i++) {
-    // Shuffle and select questions for this test
-    const shuffledQuestions = [...questions].sort(() => Math.random() - 0.5);
-    const testQuestions = shuffledQuestions.slice(0, questionsPerTest);
-    
     tests.push({
-      id: `mock-${i}`,
+      id: `mock-test-${i}`,
       name: `Full Mock Test ${i}`,
-      duration: 180,
-      questions: testQuestions,
-      breakdown: `${questionsPerTest} questions - Mixed subjects`
+      duration: 30, // 2 questions = 30 minutes
+      questions: questions,
+      breakdown: `${questions.length} questions - Mixed subjects`
     });
   }
   
@@ -162,28 +96,26 @@ const generateMockTests = (questions: QuestionConfig[], count: number = 15): Tes
 };
 
 const generatePYQTests = (questions: QuestionConfig[]): { year: string; papers: TestConfig[] }[] => {
-  const years = ["2024", "2023", "2022", "2021", "2020"];
+  const years = ["2024"];
   const yearData: { year: string; papers: TestConfig[] }[] = [];
   
   years.forEach(year => {
     const papers: TestConfig[] = [];
-    const papersCount = 15; // Number of papers per year
     
-    for (let i = 1; i <= papersCount; i++) {
-      const shift = ((i - 1) % 3) + 1;
-      const date = Math.floor((i - 1) / 3) + 1;
-      
-      // Shuffle and select questions for this paper
-      const shuffledQuestions = [...questions].sort(() => Math.random() - 0.5);
-      const paperQuestions = shuffledQuestions.slice(0, Math.min(25, questions.length));
-      
-      papers.push({
-        id: `${year}-day${date}-shift${shift}`,
-        name: `PYQ ${year} (Day ${date}, Shift ${shift})`,
-        duration: 180,
-        questions: paperQuestions
-      });
-    }
+    // Create 2 papers for 2024
+    papers.push({
+      id: `${year}-day1-shift1`,
+      name: `PYQ ${year} (Day 1, Shift 1)`,
+      duration: 30, // 2 questions = 30 minutes
+      questions: questions
+    });
+    
+    papers.push({
+      id: `${year}-day1-shift2`,
+      name: `PYQ ${year} (Day 1, Shift 2)`,
+      duration: 30,
+      questions: questions
+    });
     
     yearData.push({ year, papers });
   });
@@ -191,44 +123,12 @@ const generatePYQTests = (questions: QuestionConfig[]): { year: string; papers: 
   return yearData;
 };
 
-const generatePracticeSets = (questions: QuestionConfig[]): SubjectConfig[] => {
+const generatePracticeSets = (questions: QuestionConfig[], examId: string): SubjectConfig[] => {
   const subjects: { [key: string]: { name: string; topics: { [key: string]: string } } } = {
     maths: {
       name: "Quantitative Aptitude",
       topics: {
-        algebra: "Algebra",
-        geometry: "Geometry",
-        "number-system": "Number System",
-        percentage: "Percentage",
-        trigonometry: "Trigonometry",
-        statistics: "Statistics"
-      }
-    },
-    english: {
-      name: "English Language",
-      topics: {
-        grammar: "Grammar",
-        vocabulary: "Vocabulary",
-        "reading-comprehension": "Reading Comprehension",
-        "sentence-correction": "Sentence Correction"
-      }
-    },
-    reasoning: {
-      name: "General Intelligence & Reasoning",
-      topics: {
-        "verbal-reasoning": "Verbal Reasoning",
-        "non-verbal-reasoning": "Non-Verbal Reasoning",
-        puzzles: "Puzzles & Seating Arrangement",
-        "coding-decoding": "Coding & Decoding"
-      }
-    },
-    gk: {
-      name: "General Knowledge & Awareness",
-      topics: {
-        history: "History",
-        polity: "Polity & Constitution",
-        geography: "Geography",
-        "current-affairs": "Current Affairs"
+        algebra: "Algebra"
       }
     }
   };
@@ -239,31 +139,21 @@ const generatePracticeSets = (questions: QuestionConfig[]): SubjectConfig[] => {
     const topics: TopicConfig[] = [];
 
     Object.entries(subject.topics).forEach(([topicId, topicName]) => {
-      const topicQuestions = questions.filter(q => q.subject === subjectId && q.topic === topicId);
+      const sets: TestConfig[] = [];
       
-      if (topicQuestions.length > 0) {
-        const sets: TestConfig[] = [];
-        const setsCount = Math.min(5, Math.ceil(topicQuestions.length / 5)); // Create up to 5 sets per topic
-        
-        for (let i = 1; i <= setsCount; i++) {
-          const setQuestions = topicQuestions.slice((i - 1) * 5, i * 5);
-          if (setQuestions.length > 0) {
-            sets.push({
-              id: `${topicId}-set-${i}`,
-              name: `Practice Set ${i}`,
-              duration: 30,
-              questions: setQuestions
-            });
-          }
-        }
+      sets.push({
+        id: `${examId}-${subjectId}-${topicId}`,
+        name: `Practice Set 1`,
+        duration: 30, // 2 questions = 30 minutes
+        questions: questions
+      });
 
-        if (sets.length > 0) {
-          topics.push({
-            id: topicId,
-            name: topicName,
-            sets
-          });
-        }
+      if (sets.length > 0) {
+        topics.push({
+          id: topicId,
+          name: topicName,
+          sets
+        });
       }
     });
 
@@ -295,7 +185,7 @@ export const examConfigs: { [key: string]: ExamConfig } = {
         icon: "Trophy",
         color: "text-success",
         type: "mock",
-        tests: generateMockTests(sscCglQuestions)
+        tests: generateMockTests(sampleQuestions)
       },
       {
         id: "pyq",
@@ -303,7 +193,7 @@ export const examConfigs: { [key: string]: ExamConfig } = {
         icon: "FileText",
         color: "text-warning",
         type: "pyq",
-        years: generatePYQTests(sscCglQuestions)
+        years: generatePYQTests(sampleQuestions)
       },
       {
         id: "practice",
@@ -311,7 +201,7 @@ export const examConfigs: { [key: string]: ExamConfig } = {
         icon: "BookOpen",
         color: "text-primary",
         type: "practice",
-        subjects: generatePracticeSets(sscCglQuestions)
+        subjects: generatePracticeSets(sampleQuestions, "ssc-cgl")
       }
     ]
   },
@@ -329,7 +219,7 @@ export const examConfigs: { [key: string]: ExamConfig } = {
         icon: "Trophy",
         color: "text-success",
         type: "mock",
-        tests: generateMockTests(sscCglQuestions, 10) // Fewer tests for MTS
+        tests: generateMockTests(sampleQuestions, 1) // Fewer tests for MTS
       },
       {
         id: "pyq",
@@ -337,7 +227,7 @@ export const examConfigs: { [key: string]: ExamConfig } = {
         icon: "FileText",
         color: "text-warning",
         type: "pyq",
-        years: generatePYQTests(sscCglQuestions)
+        years: generatePYQTests(sampleQuestions)
       },
       {
         id: "practice",
@@ -345,7 +235,7 @@ export const examConfigs: { [key: string]: ExamConfig } = {
         icon: "BookOpen",
         color: "text-primary",
         type: "practice",
-        subjects: generatePracticeSets(sscCglQuestions)
+        subjects: generatePracticeSets(sampleQuestions, "ssc-mts")
       }
     ]
   },
@@ -363,7 +253,7 @@ export const examConfigs: { [key: string]: ExamConfig } = {
         icon: "Trophy",
         color: "text-success",
         type: "mock",
-        tests: generateMockTests(sscCglQuestions, 20)
+        tests: generateMockTests(sampleQuestions, 1)
       },
       {
         id: "pyq",
@@ -371,7 +261,7 @@ export const examConfigs: { [key: string]: ExamConfig } = {
         icon: "FileText",
         color: "text-warning",
         type: "pyq",
-        years: generatePYQTests(sscCglQuestions)
+        years: generatePYQTests(sampleQuestions)
       },
       {
         id: "practice",
@@ -379,7 +269,7 @@ export const examConfigs: { [key: string]: ExamConfig } = {
         icon: "BookOpen",
         color: "text-primary",
         type: "practice",
-        subjects: generatePracticeSets(sscCglQuestions)
+        subjects: generatePracticeSets(sampleQuestions, "railway")
       }
     ]
   },
@@ -397,7 +287,7 @@ export const examConfigs: { [key: string]: ExamConfig } = {
         icon: "Trophy",
         color: "text-success",
         type: "mock",
-        tests: generateMockTests(sscCglQuestions, 18)
+        tests: generateMockTests(sampleQuestions, 1)
       },
       {
         id: "pyq",
@@ -405,7 +295,7 @@ export const examConfigs: { [key: string]: ExamConfig } = {
         icon: "FileText",
         color: "text-warning",
         type: "pyq",
-        years: generatePYQTests(sscCglQuestions)
+        years: generatePYQTests(sampleQuestions)
       },
       {
         id: "practice",
@@ -413,7 +303,7 @@ export const examConfigs: { [key: string]: ExamConfig } = {
         icon: "BookOpen",
         color: "text-primary",
         type: "practice",
-        subjects: generatePracticeSets(sscCglQuestions)
+        subjects: generatePracticeSets(sampleQuestions, "bank-po")
       }
     ]
   },
@@ -431,7 +321,7 @@ export const examConfigs: { [key: string]: ExamConfig } = {
         icon: "Trophy",
         color: "text-success",
         type: "mock",
-        tests: generateMockTests(sscCglQuestions, 9)
+        tests: generateMockTests(sampleQuestions, 1)
       },
       {
         id: "pyq",
@@ -439,7 +329,7 @@ export const examConfigs: { [key: string]: ExamConfig } = {
         icon: "FileText",
         color: "text-warning",
         type: "pyq",
-        years: generatePYQTests(sscCglQuestions)
+        years: generatePYQTests(sampleQuestions)
       },
       {
         id: "practice",
@@ -447,7 +337,7 @@ export const examConfigs: { [key: string]: ExamConfig } = {
         icon: "BookOpen",
         color: "text-primary",
         type: "practice",
-        subjects: generatePracticeSets(sscCglQuestions)
+        subjects: generatePracticeSets(sampleQuestions, "airforce")
       }
     ]
   }

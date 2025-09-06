@@ -1,0 +1,22 @@
+[
+  {
+    "id": "q13",
+    "questionEn": "Find the next number in the series: 2, 4, 8, 16, ?",
+    "questionHi": "श्रृंखला में अगली संख्या ज्ञात करें: 2, 4, 8, 16, ?",
+    "options": ["24", "32", "28", "20"],
+    "correct": 1,
+    "difficulty": "easy",
+    "subject": "reasoning",
+    "topic": "number-series"
+  },
+  {
+    "id": "q14",
+    "questionEn": "The antonym of 'Brave' is:",
+    "questionHi": "'Brave' का विलोम है:",
+    "options": ["Bold", "Courageous", "Cowardly", "Fearless"],
+    "correct": 2,
+    "difficulty": "easy",
+    "subject": "english",
+    "topic": "vocabulary"
+  }
+]

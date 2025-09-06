@@ -1,0 +1,22 @@
+[
+  {
+    "id": "q23",
+    "questionEn": "If 2x + 5 = 15, what is the value of x?",
+    "questionHi": "यदि 2x + 5 = 15, तो x का मान क्या है?",
+    "options": ["3", "5", "7", "10"],
+    "correct": 1,
+    "difficulty": "medium",
+    "subject": "maths",
+    "topic": "algebra"
+  },
+  {
+    "id": "q24",
+    "questionEn": "The synonym of 'Abundant' is:",
+    "questionHi": "'Abundant' का समानार्थी है:",
+    "options": ["Scarce", "Plentiful", "Limited", "Rare"],
+    "correct": 1,
+    "difficulty": "medium",
+    "subject": "english",
+    "topic": "vocabulary"
+  }
+]

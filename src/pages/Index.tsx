@@ -1,12 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Clock, Trophy, Users, TrendingUp, Brain } from "lucide-react";
+import { BookOpen, Clock, Trophy, Users, TrendingUp, Brain, Flame } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { examConfigs } from "@/config/examConfig";
 
-import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { optimizeRouteTransition } from "@/lib/navigationOptimizer";
 
 // Icon mapping for dynamic loading
 const iconMap: { [key: string]: any } = {
@@ -24,18 +25,23 @@ const exams = Object.values(examConfigs).map(exam => ({
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated, loading, signOut } = useSupabaseAuth();
+  const { user, isAuthenticated, loading, logout } = useAuth();
   const { profile } = useUserProfile();
+  const [isNavigating, setIsNavigating] = useState(false);
 
 
   const handleLogout = async () => {
-    await signOut();
+    await logout();
   };
+
 
   const handleExamSelect = (examId: string) => {
     if (!isAuthenticated) {
       navigate('/auth');
     } else {
+      setIsNavigating(true);
+      // Optimize route transition
+      optimizeRouteTransition('/', `/exam/${examId}`);
       navigate(`/exam/${examId}`);
     }
   };
@@ -46,6 +52,17 @@ const Index = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isNavigating) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Navigating...</p>
         </div>
       </div>
     );
@@ -67,7 +84,7 @@ const Index = () => {
           </div>
           
           {isAuthenticated ? (
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-4">
               <div className="text-right">
                 <p className="text-sm font-medium text-foreground">Welcome!</p>
                 <p className="text-xs text-muted-foreground">
@@ -109,6 +126,7 @@ const Index = () => {
               <span>Progress Tracking</span>
             </div>
           </div>
+          
         </div>
       </section>
 

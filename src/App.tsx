@@ -5,11 +5,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import ExamDashboard from "./pages/ExamDashboard";
-import TestInterface from "./pages/TestInterface";
-import ResultAnalysis from "./pages/ResultAnalysis";
 import NotFound from "./pages/NotFound";
+import { 
+  AuthWrapper, 
+  ExamDashboardWrapper, 
+  TestInterfaceWrapper, 
+  ResultAnalysisWrapper 
+} from "@/components/LazyWrapper";
 
 const queryClient = new QueryClient();
 
@@ -20,7 +22,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/auth" element={<Auth />} />
+          <Route path="/auth" element={<AuthWrapper />} />
           <Route path="/" element={
             <ProtectedRoute>
               <Index />
@@ -28,22 +30,22 @@ const App = () => (
           } />
           <Route path="/exam/:examId" element={
             <ProtectedRoute>
-              <ExamDashboard />
+              <ExamDashboardWrapper />
             </ProtectedRoute>
           } />
           <Route path="/test/:examId/:sectionId/:testType" element={
             <ProtectedRoute>
-              <TestInterface />
+              <TestInterfaceWrapper />
             </ProtectedRoute>
           } />
           <Route path="/test/:examId/:sectionId/:testType/:topic" element={
             <ProtectedRoute>
-              <TestInterface />
+              <TestInterfaceWrapper />
             </ProtectedRoute>
           } />
           <Route path="/result/:examId/:sectionId" element={
             <ProtectedRoute>
-              <ResultAnalysis />
+              <ResultAnalysisWrapper />
             </ProtectedRoute>
           } />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

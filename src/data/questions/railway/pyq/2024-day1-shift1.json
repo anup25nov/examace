@@ -1,0 +1,22 @@
+[
+  {
+    "id": "q15",
+    "questionEn": "What is the perimeter of a square with side 5 cm?",
+    "questionHi": "5 सेमी भुजा वाले वर्ग का परिमाप क्या है?",
+    "options": ["15 cm", "20 cm", "25 cm", "30 cm"],
+    "correct": 1,
+    "difficulty": "easy",
+    "subject": "maths",
+    "topic": "geometry"
+  },
+  {
+    "id": "q16",
+    "questionEn": "Who is known as the 'Father of the Nation' in India?",
+    "questionHi": "भारत में 'राष्ट्रपिता' के रूप में किसे जाना जाता है?",
+    "options": ["Jawaharlal Nehru", "Mahatma Gandhi", "Subhas Chandra Bose", "Bhagat Singh"],
+    "correct": 1,
+    "difficulty": "easy",
+    "subject": "gk",
+    "topic": "history"
+  }
+]
