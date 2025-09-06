@@ -52,8 +52,8 @@ export interface SupabaseUserStreak {
   user_id: string;
   current_streak: number;
   longest_streak: number;
-  total_tests_taken: number;
   last_activity_date: string;
+  total_tests_taken: number;
   created_at: string;
   updated_at: string;
 }
@@ -66,7 +66,7 @@ export interface SupabaseIndividualTestScore {
   test_id: string;
   score: number;
   rank?: number;
-  total_participants?: number;
+  total_participants: number;
   completed_at: string;
 }
 
@@ -195,7 +195,6 @@ class SupabaseStatsService {
       return { data: cachedStats, error: null };
     }
 
-    try {
     let query = supabase
       .from('exam_stats')
       .select('*')
@@ -205,27 +204,20 @@ class SupabaseStatsService {
       query = query.eq('exam_id', examId);
     }
 
-      const { data, error } = await query.order('created_at', { ascending: false });
+    const { data, error } = await query.order('last_test_date', { ascending: false });
 
-      // Handle the case where no exam stats exist yet
-      if (error && error.code === 'PGRST116') {
-        // No rows found - this is normal for new users
-        console.log('No exam stats found yet for user:', user.id);
-        return { data: [], error: null };
-      }
-
-      // Cache the results
-      if (!error && data) {
-        const cacheData = this.getCache()?.data || {};
-        cacheData.examStats = data;
-        this.setCache(cacheData);
+    if (data && !error) {
+      // Update cache
+      const cache = this.getCache();
+      const newCache = {
+        ...cache?.data,
+        examStats: examId ? data : data,
+        timestamp: Date.now()
+      };
+      this.setCache(newCache);
     }
 
     return { data: data || [], error };
-    } catch (error) {
-      console.error('Error getting exam stats:', error);
-      return { data: [], error };
-    }
   }
 
   async getTestAttempts(examId: string, limit = 20): Promise<{ data: SupabaseTestAttempt[]; error: any }> {
@@ -252,20 +244,20 @@ class SupabaseStatsService {
     if (!user) return { data: null, error: 'User not authenticated' };
 
     try {
-    // Create test attempt
-    const { data: attemptData, error: attemptError } = await supabase
-      .from('test_attempts')
-      .insert({
-        user_id: user.id,
-        exam_id: submission.examId,
-        score: submission.score,
-        total_questions: submission.totalQuestions,
-        correct_answers: submission.correctAnswers,
-        time_taken: submission.timeTaken,
-        answers: submission.answers
-      })
-      .select()
-      .single();
+      // Create test attempt
+      const { data: attemptData, error: attemptError } = await supabase
+        .from('test_attempts')
+        .insert({
+          user_id: user.id,
+          exam_id: submission.examId,
+          score: submission.score,
+          total_questions: submission.totalQuestions,
+          correct_answers: submission.correctAnswers,
+          time_taken: submission.timeTaken,
+          answers: submission.answers
+        })
+        .select()
+        .single();
 
       console.log('Test attempt insert result:', { attemptData, attemptError });
 
@@ -274,37 +266,37 @@ class SupabaseStatsService {
         return { data: null, error: attemptError };
       }
 
-    // Get existing stats
-    const { data: existingStats } = await supabase
-      .from('exam_stats')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('exam_id', submission.examId)
-      .single();
+      // Get existing stats
+      const { data: existingStats } = await supabase
+        .from('exam_stats')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('exam_id', submission.examId)
+        .single();
 
       console.log('Existing stats:', existingStats);
 
-    const newTotalTests = (existingStats?.total_tests || 0) + 1;
-    const newBestScore = Math.max(existingStats?.best_score || 0, submission.score);
-    const newAverageScore = existingStats 
-      ? Math.round(((existingStats.average_score * existingStats.total_tests) + submission.score) / newTotalTests)
-      : submission.score;
+      const newTotalTests = (existingStats?.total_tests || 0) + 1;
+      const newBestScore = Math.max(existingStats?.best_score || 0, submission.score);
+      const newAverageScore = existingStats 
+        ? Math.round(((existingStats.average_score * existingStats.total_tests) + submission.score) / newTotalTests)
+        : submission.score;
 
       console.log('Calculated stats:', { newTotalTests, newBestScore, newAverageScore });
 
-    // Update or create exam stats
-    const { data: statsData, error: statsError } = await supabase
-      .from('exam_stats')
-      .upsert({
-        user_id: user.id,
-        exam_id: submission.examId,
-        total_tests: newTotalTests,
-        best_score: newBestScore,
-        average_score: newAverageScore,
-        last_test_date: new Date().toISOString()
-      })
-      .select()
-      .single();
+      // Update or create exam stats
+      const { data: statsData, error: statsError } = await supabase
+        .from('exam_stats')
+        .upsert({
+          user_id: user.id,
+          exam_id: submission.examId,
+          total_tests: newTotalTests,
+          best_score: newBestScore,
+          average_score: newAverageScore,
+          last_test_date: new Date().toISOString()
+        })
+        .select()
+        .single();
 
       console.log('Exam stats upsert result:', { statsData, statsError });
 
@@ -313,11 +305,11 @@ class SupabaseStatsService {
         return { data: { attempt: attemptData }, error: statsError };
       }
 
-    // Calculate ranks for this exam
-    await supabase.rpc('calculate_exam_ranks', { exam_name: submission.examId });
+      // Calculate ranks for this exam
+      await supabase.rpc('calculate_exam_ranks', { exam_name: submission.examId });
 
-    // Clear cache to force refresh
-    localStorage.removeItem(this.cacheKey);
+      // Clear cache to force refresh
+      localStorage.removeItem(this.cacheKey);
 
       return { data: { attempt: attemptData, stats: statsData }, error: null };
     } catch (error) {
@@ -332,22 +324,22 @@ class SupabaseStatsService {
       .select(`
         rank,
         best_score,
-        average_score,
-        total_tests,
-        user_profiles!inner(email)
+        user_id,
+        user_profiles!inner(phone)
       `)
       .eq('exam_id', examId)
+      .not('rank', 'is', null)
       .order('rank', { ascending: true })
       .limit(limit);
 
     if (error) return { data: [], error };
 
-    const leaderboard = data?.map((item: any) => ({
+    const leaderboard = data?.map(item => ({
       rank: item.rank,
-      bestScore: item.best_score,
-      averageScore: item.average_score,
-      totalTests: item.total_tests,
-      email: item.user_profiles?.email || 'Unknown'
+      phone: `****${item.user_profiles.phone.slice(-4)}`,
+      score: item.best_score,
+      examId,
+      completedAt: new Date() // This could be enhanced with actual completion time
     })) || [];
 
     return { data: leaderboard, error: null };
@@ -415,7 +407,7 @@ class SupabaseStatsService {
       localStorage.removeItem(this.cacheKey);
       
       // Clear test completion and score caches for this user
-      this.clearTestCaches(user.id, submission.examId, submission.testType || 'mock', submission.testId || 'default');
+      this.clearTestCaches(user.id, submission.examId, submission.testType, submission.testId);
 
       return { data: completionData, error: null };
     } catch (error) {
@@ -503,6 +495,7 @@ class SupabaseStatsService {
     return { data: data || [], error };
   }
 
+  // Individual test score methods
   async submitIndividualTestScore(
     examId: string,
     testType: string,
@@ -535,6 +528,12 @@ class SupabaseStatsService {
         test_type_name: testType,
         test_name: testId
       });
+
+      // Update exam stats (Mock and PYQ only)
+      await supabase.rpc('update_exam_stats_mock_pyq_only', { exam_name: examId });
+
+      // Clear cache to force refresh
+      localStorage.removeItem(this.cacheKey);
 
       return { data: scoreData, error: null };
     } catch (error) {
@@ -616,30 +615,8 @@ class SupabaseStatsService {
     return { data: data || [], error };
   }
 
-  // Update daily visit streak
-  async updateDailyVisit(): Promise<{ success: boolean; error?: any }> {
-    const user = await this.getCurrentUser();
-    if (!user) return { success: false, error: 'User not authenticated' };
-
-    try {
-      const { error } = await supabase.rpc('update_daily_visit', {
-        user_uuid: user.id
-      });
-
-      if (error) {
-        console.error('Error updating daily visit:', error);
-        return { success: false, error };
-      }
-
-      return { success: true };
-    } catch (error) {
-      console.error('Error updating daily visit:', error);
-      return { success: false, error };
-    }
-  }
-
-  // Clear all caches
-  clearAllCaches() {
+  // Clear cache method for manual refresh
+  clearCache() {
     localStorage.removeItem(this.cacheKey);
   }
 }

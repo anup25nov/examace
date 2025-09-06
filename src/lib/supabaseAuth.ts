@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface AuthUser {
   id: string;
   email: string;
+  pin?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -63,12 +64,19 @@ export const verifyOTPCode = async (email: string, otp: string) => {
       console.log('OTP verified successfully');
       
       // Create or update user profile in Supabase
-      await createOrUpdateUserProfile(data.user.id, email);
+      const profileResult = await createOrUpdateUserProfile(data.user.id, email);
+      console.log('Profile creation result:', profileResult);
       
       // Store authentication data for persistence
       localStorage.setItem('userId', data.user.id);
       localStorage.setItem('userEmail', email);
       localStorage.setItem('isAuthenticated', 'true');
+      
+      console.log('Authentication data stored:', {
+        userId: data.user.id,
+        email: email,
+        isAuthenticated: 'true'
+      });
       
       return { success: true, data: data.user };
     }
@@ -81,15 +89,21 @@ export const verifyOTPCode = async (email: string, otp: string) => {
 };
 
 // Create or update user profile in Supabase
-export const createOrUpdateUserProfile = async (userId: string, email: string) => {
+export const createOrUpdateUserProfile = async (userId: string, email: string, pin?: string) => {
   try {
+    const profileData: any = {
+      id: userId,
+      email: email,
+      updated_at: new Date().toISOString()
+    };
+
+    if (pin) {
+      profileData.pin = pin;
+    }
+
     const { data, error } = await supabase
       .from('user_profiles')
-      .upsert({
-        id: userId,
-        email: email,
-        updated_at: new Date().toISOString()
-      }, {
+      .upsert(profileData, {
         onConflict: 'id'
       });
 
@@ -106,10 +120,22 @@ export const createOrUpdateUserProfile = async (userId: string, email: string) =
   }
 };
 
-// Check if user exists
+// Check if user exists and has PIN
 export const checkUserStatus = async (email: string) => {
   try {
     console.log('Checking user status for email:', email);
+    
+    // Check local cache first
+    const cacheKey = `user_status_${email}`;
+    const cachedStatus = localStorage.getItem(cacheKey);
+    if (cachedStatus) {
+      const parsed = JSON.parse(cachedStatus);
+      // Cache for 5 minutes
+      if (Date.now() - parsed.timestamp < 5 * 60 * 1000) {
+        console.log('Using cached user status:', parsed.data);
+        return parsed.data;
+      }
+    }
     
     const { data: userProfile, error } = await supabase
       .from('user_profiles')
@@ -119,70 +145,146 @@ export const checkUserStatus = async (email: string) => {
     
     if (error || !userProfile) {
       console.log('User not found');
-      return { exists: false, data: null };
+      const result = { exists: false, hasPin: false, data: null };
+      // Cache the result
+      localStorage.setItem(cacheKey, JSON.stringify({
+        data: result,
+        timestamp: Date.now()
+      }));
+      return result;
     }
     
-    console.log('User data found:', { exists: true });
-    
-    return {
+    const result = {
       exists: true,
+      hasPin: !!userProfile.pin,
       data: userProfile
     };
+    
+    console.log('User data found:', result);
+    
+    // Cache the result
+    localStorage.setItem(cacheKey, JSON.stringify({
+      data: result,
+      timestamp: Date.now()
+    }));
+    
+    return result;
   } catch (error: any) {
     console.error('Error checking user status:', error);
-    return { exists: false, data: null };
+    return { exists: false, hasPin: false, data: null };
+  }
+};
+
+// Verify PIN for existing user
+export const verifyPIN = async (email: string, pin: string) => {
+  try {
+    console.log('Verifying PIN for email:', email);
+    
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('email', email)
+      .eq('pin', pin)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        console.log('Invalid PIN');
+        return { success: false, error: 'Invalid PIN' };
+      }
+      console.error('Error verifying PIN:', error);
+      return { success: false, error: error.message };
+    }
+
+    if (data) {
+      console.log('PIN verified successfully');
+      
+      // Store authentication data for persistence
+      localStorage.setItem('userId', data.id);
+      localStorage.setItem('userEmail', email);
+      localStorage.setItem('isAuthenticated', 'true');
+      
+      return { success: true, user: data };
+    }
+    
+    return { success: false, error: 'Invalid PIN' };
+  } catch (error: any) {
+    console.error('Error verifying PIN:', error);
+    return { success: false, error: error.message || 'Failed to verify PIN' };
+  }
+};
+
+// Set PIN for user (after OTP verification)
+export const setUserPIN = async (userId: string, pin: string) => {
+  try {
+    console.log('Setting PIN for user:', userId);
+    
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .update({ 
+        pin: pin,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error setting PIN:', error);
+      return { success: false, error: error.message };
+    }
+
+    // Clear user status cache to force refresh
+    const userEmail = localStorage.getItem('userEmail');
+    if (userEmail) {
+      localStorage.removeItem(`user_status_${userEmail}`);
+    }
+
+    console.log('PIN set successfully');
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('Error setting PIN:', error);
+    return { success: false, error: error.message || 'Failed to set PIN' };
   }
 };
 
 // Get current authenticated user
 export const getCurrentAuthUser = async (): Promise<AuthUser | null> => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    // For PIN-based authentication, we rely on localStorage
+    const userId = localStorage.getItem('userId');
+    const userEmail = localStorage.getItem('userEmail');
+    const isAuthenticated = localStorage.getItem('isAuthenticated');
     
-    if (!user) {
-      // Fallback to localStorage for persistent login
-      const userId = localStorage.getItem('userId');
-      const userEmail = localStorage.getItem('userEmail');
+    console.log('getCurrentAuthUser - localStorage check:', {
+      userId: !!userId,
+      userEmail: !!userEmail,
+      isAuthenticated
+    });
+    
+    if (userId && userEmail && isAuthenticated === 'true') {
+      const { data: userProfile } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
       
-      if (userId && userEmail) {
-        const { data: userProfile } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('id', userId)
-          .single();
-        
-        if (userProfile) {
-          return {
-            id: userProfile.id,
-            email: userProfile.email,
-            createdAt: userProfile.created_at,
-            updatedAt: userProfile.updated_at
-          };
-        }
+      if (userProfile) {
+        console.log('User profile found:', userProfile);
+        return {
+          id: userProfile.id,
+          email: userProfile.email,
+          pin: userProfile.pin,
+          createdAt: userProfile.created_at,
+          updatedAt: userProfile.updated_at
+        };
       }
-      
-      return null;
     }
     
-    // Get user profile from Supabase
-    const { data: userProfile } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-    
-    if (userProfile) {
-      return {
-        id: userProfile.id,
-        email: userProfile.email,
-        createdAt: userProfile.created_at,
-        updatedAt: userProfile.updated_at
-      };
-    }
-    
+    console.log('No valid user found in localStorage or database');
     return null;
   } catch (error: any) {
-    console.error('Error getting current user:', error);
+    console.error('Error getting current auth user:', error);
     return null;
   }
 };

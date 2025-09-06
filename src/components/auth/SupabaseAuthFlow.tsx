@@ -4,26 +4,32 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Mail, ArrowLeft } from 'lucide-react';
+import { Loader2, Mail, ArrowLeft, Lock, Key } from 'lucide-react';
 import { 
   sendOTPCode, 
   verifyOTPCode, 
-  checkUserStatus
+  checkUserStatus,
+  verifyPIN,
+  setUserPIN
 } from '@/lib/supabaseAuth';
 
 interface SupabaseAuthFlowProps {
   onAuthSuccess: () => void;
 }
 
-type AuthStep = 'email' | 'otp';
+type AuthStep = 'email' | 'otp' | 'pin-setup' | 'pin-login' | 'forgot-pin';
 
 const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) => {
   const [step, setStep] = useState<AuthStep>('email');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
+  const [pin, setPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [userExists, setUserExists] = useState(false);
+  const [hasPin, setHasPin] = useState(false);
+  const [userId, setUserId] = useState('');
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,20 +45,26 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     setError('');
 
     try {
-      // Check if user exists
+      // Check if user exists and has PIN
       const status = await checkUserStatus(email);
       setUserExists(status.exists);
+      setHasPin(status.hasPin || false);
 
-      // Send OTP
-      const result = await sendOTPCode(email);
-      if (result.success) {
-        setStep('otp');
-        setError('');
+      if (status.exists && status.hasPin) {
+        // User exists and has PIN - go to PIN login
+        setStep('pin-login');
       } else {
-        setError(result.error || 'Failed to send OTP');
+        // New user or user without PIN - send OTP
+        const result = await sendOTPCode(email);
+        if (result.success) {
+          setStep('otp');
+          setError('');
+        } else {
+          setError(result.error || 'Failed to send OTP');
+        }
       }
-    } catch (error) {
-      setError('Failed to send OTP. Please try again.');
+    } catch (error: any) {
+      setError(error.message || 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -60,6 +72,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
 
   const handleOTPSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (otp.length !== 6) {
       setError('Please enter a valid 6-digit OTP');
       return;
@@ -70,162 +83,364 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
 
     try {
       const result = await verifyOTPCode(email, otp);
-      if (result.success) {
-        // Authentication successful, call success callback
-        onAuthSuccess();
+      if (result.success && result.data) {
+        setUserId(result.data.id);
+        
+        if (userExists && !hasPin) {
+          // Existing user without PIN - go to PIN setup
+          setStep('pin-setup');
+        } else if (!userExists) {
+          // New user - go to PIN setup
+          setStep('pin-setup');
+        } else {
+          // Should not happen, but handle gracefully
+          onAuthSuccess();
+        }
       } else {
         setError(result.error || 'Invalid OTP');
       }
-    } catch (error) {
-      setError('Failed to verify OTP. Please try again.');
+    } catch (error: any) {
+      setError(error.message || 'Failed to verify OTP');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleBackToEmail = () => {
-    setStep('email');
-    setOtp('');
+  const handlePINSetup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (pin.length !== 6) {
+      setError('PIN must be 6 digits');
+      return;
+    }
+    
+    if (pin !== confirmPin) {
+      setError('PINs do not match');
+      return;
+    }
+
+    setLoading(true);
     setError('');
+
+    try {
+      const result = await setUserPIN(userId, pin);
+      if (result.success) {
+        onAuthSuccess();
+      } else {
+        setError(result.error || 'Failed to set PIN');
+      }
+    } catch (error: any) {
+      setError(error.message || 'Failed to set PIN');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleResendOTP = async () => {
+  const handlePINLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (pin.length !== 6) {
+      setError('PIN must be 6 digits');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const result = await verifyPIN(email, pin);
+      if (result.success) {
+        onAuthSuccess();
+      } else {
+        setError(result.error || 'Invalid PIN');
+      }
+    } catch (error: any) {
+      setError(error.message || 'Failed to verify PIN');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPIN = async () => {
     setLoading(true);
     setError('');
 
     try {
       const result = await sendOTPCode(email);
       if (result.success) {
-        setError('OTP sent successfully!');
-        setTimeout(() => setError(''), 3000);
+        setStep('otp');
+        setError('');
       } else {
-        setError(result.error || 'Failed to resend OTP');
+        setError(result.error || 'Failed to send OTP');
       }
-    } catch (error) {
-      setError('Failed to resend OTP. Please try again.');
+    } catch (error: any) {
+      setError(error.message || 'An error occurred');
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="w-full max-w-md mx-auto">
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="text-center pb-4">
-          <CardTitle className="text-2xl font-bold text-foreground">
-            {step === 'email' && 'Welcome to ExamAce'}
-            {step === 'otp' && 'Verify Email'}
-          </CardTitle>
-          <CardDescription className="text-muted-foreground">
-            {step === 'email' && 'Enter your email to get started'}
-            {step === 'otp' && `We sent a 6-digit code to ${email}. Check your email inbox and spam folder.`}
-          </CardDescription>
-        </CardHeader>
+  const resetForm = () => {
+    setStep('email');
+    setEmail('');
+    setOtp('');
+    setPin('');
+    setConfirmPin('');
+    setError('');
+    setUserExists(false);
+    setHasPin(false);
+    setUserId('');
+  };
 
-        <CardContent className="space-y-4">
+  const renderEmailStep = () => (
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-bold text-center">Welcome to ExamAce</CardTitle>
+        <CardDescription className="text-center">
+          Enter your email to get started
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleEmailSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email Address</Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="pl-10"
+                required
+              />
+            </div>
+          </div>
+          
           {error && (
-            <Alert variant={error.includes('sent successfully') ? 'default' : 'destructive'}>
-              <AlertDescription>
-                {error}
-              </AlertDescription>
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-
-          {/* Email Input */}
-          {step === 'email' && (
-            <form onSubmit={handleEmailSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10"
-                    required
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Enter your email address to receive a verification code
-                </p>
-              </div>
-
-              <Button type="submit" className="w-full" disabled={loading || !email}>
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  'Continue'
-                )}
-              </Button>
-            </form>
-          )}
-
-          {/* OTP Input */}
-          {step === 'otp' && (
-            <form onSubmit={handleOTPSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="otp">Verification Code</Label>
-                <Input
-                  id="otp"
-                  type="text"
-                  placeholder="123456"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  className="text-center text-lg tracking-widest"
-                  maxLength={6}
-                  required
-                  autoFocus
-                />
-                <p className="text-xs text-muted-foreground text-center">
-                  Enter the 6-digit code sent to your email. If you don't see it, check your spam folder.
-                </p>
-              </div>
-
-              <div className="flex space-x-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleBackToEmail}
-                  className="flex-1"
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back
-                </Button>
-                <Button type="submit" className="flex-1" disabled={loading || otp.length !== 6}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Verifying...
-                    </>
-                  ) : (
-                    'Verify'
-                  )}
-                </Button>
-              </div>
-
-              <div className="text-center">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={handleResendOTP}
-                  disabled={loading}
-                  className="text-sm"
-                >
-                  Didn't receive the code? Resend
-                </Button>
-              </div>
-            </form>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+          
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Checking...
+              </>
+            ) : (
+              'Continue'
+            )}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
+
+  const renderOTPStep = () => (
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-bold text-center">Verify Email</CardTitle>
+        <CardDescription className="text-center">
+          Enter the 6-digit code sent to {email}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleOTPSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="otp">Verification Code</Label>
+            <Input
+              id="otp"
+              type="text"
+              placeholder="Enter 6-digit code"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              maxLength={6}
+              className="text-center text-lg tracking-widest"
+              required
+            />
+          </div>
+          
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
+          <div className="flex space-x-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={resetForm}
+              className="flex-1"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+            <Button type="submit" className="flex-1" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                'Verify'
+              )}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+
+  const renderPINSetupStep = () => (
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-bold text-center">Set Your PIN</CardTitle>
+        <CardDescription className="text-center">
+          Create a 6-digit PIN for quick login
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handlePINSetup} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="pin">PIN</Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="pin"
+                type="password"
+                placeholder="Enter 6-digit PIN"
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                maxLength={6}
+                className="pl-10 text-center text-lg tracking-widest"
+                required
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="confirmPin">Confirm PIN</Label>
+            <div className="relative">
+              <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="confirmPin"
+                type="password"
+                placeholder="Confirm 6-digit PIN"
+                value={confirmPin}
+                onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                maxLength={6}
+                className="pl-10 text-center text-lg tracking-widest"
+                required
+              />
+            </div>
+          </div>
+          
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Setting PIN...
+              </>
+            ) : (
+              'Set PIN & Continue'
+            )}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+
+  const renderPINLoginStep = () => (
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-bold text-center">Enter Your PIN</CardTitle>
+        <CardDescription className="text-center">
+          Welcome back! Enter your 6-digit PIN
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handlePINLogin} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="pin">PIN</Label>
+            <div className="relative">
+              <Key className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="pin"
+                type="password"
+                placeholder="Enter 6-digit PIN"
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                maxLength={6}
+                className="pl-10 text-center text-lg tracking-widest"
+                required
+              />
+            </div>
+          </div>
+          
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
+          <div className="flex space-x-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={resetForm}
+              className="flex-1"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+            <Button type="submit" className="flex-1" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                'Login'
+              )}
+            </Button>
+          </div>
+          
+          <Button
+            type="button"
+            variant="link"
+            onClick={handleForgotPIN}
+            className="w-full text-sm"
+            disabled={loading}
+          >
+            Forgot PIN? Reset with OTP
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+
+  switch (step) {
+    case 'email':
+      return renderEmailStep();
+    case 'otp':
+      return renderOTPStep();
+    case 'pin-setup':
+      return renderPINSetupStep();
+    case 'pin-login':
+      return renderPINLoginStep();
+    default:
+      return renderEmailStep();
+  }
 };
 
 export default SupabaseAuthFlow;

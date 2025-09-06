@@ -5,6 +5,7 @@ import {
   isUserAuthenticated, 
   signOutUser 
 } from '@/lib/supabaseAuth';
+import { supabaseStatsService } from '@/lib/supabaseStats';
 
 export interface AuthUser {
   id: string;
@@ -31,9 +32,16 @@ export const useAuth = () => {
           if (authUser) {
             setUser(authUser);
             setIsAuthenticated(true);
+            
+            // Update daily visit streak
+            try {
+              await supabaseStatsService.updateDailyVisit();
+            } catch (error) {
+              console.error('Error updating daily visit:', error);
+            }
           } else {
-            // Clear invalid auth state
-            localStorage.clear();
+            // Don't clear localStorage immediately - might be a temporary issue
+            console.warn('Auth user not found, but localStorage indicates authentication');
             setIsAuthenticated(false);
             setUser(null);
           }

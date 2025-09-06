@@ -205,7 +205,7 @@ const ExamDashboard = () => {
       // Load user streak
       loadUserStreak();
     }
-  }, [examId, navigate, isAuthenticated, loading, loadAllStats, getExamStatById]);
+  }, [examId, navigate, isAuthenticated, loading]);
 
   if (loading) {
     return (
