@@ -21,7 +21,7 @@
       "topic": "sentence-improvement",
       "marks": 1,
       "negativeMarks": 0.25,
-      "duration": 60,
+      "duration": 1,
       "explanation": "This is a conditional sentence (If-clause). The simple present tense 'park' in the 'if' clause should be followed by the simple future tense 'will fine' in the main clause. The correct phrase is 'will fine you'."
     },
     {
@@ -35,7 +35,7 @@
       "topic": "synonyms-antonyms",
       "marks": 1,
       "negativeMarks": 0.25,
-      "duration": 60,
+      "duration": 1,
       "explanation": "To 'coerce' someone means to compel or force them to do something. The closest synonym is 'pressurize'."
     },
     {
@@ -49,7 +49,7 @@
       "topic": "synonyms-antonyms",
       "marks": 1,
       "negativeMarks": 0.25,
-      "duration": 60,
+      "duration": 1,
       "explanation": "'Expansion' means the process of increasing in size. 'Compression' means the action of compressing or pressing something together, thus reducing its size. It is the most appropriate antonym."
     }
   ]

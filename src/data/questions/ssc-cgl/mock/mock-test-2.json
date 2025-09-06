@@ -35,7 +35,7 @@
       "topic": "spelling-error",
       "marks": 1,
       "negativeMarks": 0.25,
-      "duration": 60,
+      "duration": 1,
       "explanation": "The correct spelling is 'Accommodation'."
     },
     {
@@ -63,7 +63,7 @@
       "topic": "antonyms",
       "marks": 1,
       "negativeMarks": 0.25,
-      "duration": 60,
+      "duration": 1,
       "explanation": "The antonym of 'Transparent' is 'Opaque'."
     },
     {
@@ -91,7 +91,7 @@
       "topic": "geography",
       "marks": 1,
       "negativeMarks": 0.25,
-      "duration": 60,
+      "duration": 1,
       "explanation": "Assam is the largest tea-producing state of India."
     },
     {
@@ -119,7 +119,7 @@
       "topic": "polity",
       "marks": 1,
       "negativeMarks": 0.25,
-      "duration": 60,
+      "duration": 1,
       "explanation": "Article 17 abolishes untouchability in India."
     },
     {
@@ -147,7 +147,7 @@
       "topic": "economy",
       "marks": 1,
       "negativeMarks": 0.25,
-      "duration": 60,
+      "duration": 1,
       "explanation": "Madhabi Puri Buch was the SEBI Chairperson as of April 2024."
     }
   ]
