@@ -313,8 +313,8 @@ const ExamDashboard = () => {
     // Use the actual test type as sectionId
     const sectionId = type; // Use the actual test type (mock/pyq/practice) as sectionId
     const testPath = topicId 
-      ? `/test/${examId}/${sectionId}/${type}/${topicId}`
-      : `/test/${examId}/${sectionId}/${type}/${itemId}`;
+      ? `/test/${examId}/${sectionId}/${itemId}/${topicId}`
+      : `/test/${examId}/${sectionId}/${itemId}`;
     navigate(testPath);
   };
 
@@ -322,8 +322,8 @@ const ExamDashboard = () => {
     // Navigate to solutions view for the completed test
     const sectionId = type; // Use the actual test type (mock/pyq/practice) as sectionId
     const solutionsPath = topicId 
-      ? `/solutions/${examId}/${sectionId}/${type}/${topicId}`
-      : `/solutions/${examId}/${sectionId}/${type}/${itemId}`;
+      ? `/solutions/${examId}/${sectionId}/${itemId}/${topicId}`
+      : `/solutions/${examId}/${sectionId}/${itemId}`;
     navigate(solutionsPath);
   };
 

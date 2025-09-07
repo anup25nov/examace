@@ -70,6 +70,8 @@ const TestInterface = () => {
     timeTaken: number;
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [actualTestType, setActualTestType] = useState<string>('');
+  const [actualTestId, setActualTestId] = useState<string>('');
   const [subjectDistribution, setSubjectDistribution] = useState<Array<{
     subject: string;
     startIndex: number;
@@ -122,20 +124,40 @@ const TestInterface = () => {
       try {
         
         // Determine the correct test ID based on the route parameters
-        let actualTestId = '';
+        let testId = '';
+        let testTypeValue = '';
         
-        if (testType === 'mock') {
-          // Use the topic parameter for mock test ID (e.g., mock-test-1, mock-test-2)
-          actualTestId = topic || 'mock-test-1';
-        } else if (testType === 'pyq') {
-          actualTestId = topic || '2024-day1-shift1';
-        } else if (testType === 'practice') {
-          actualTestId = topic || 'maths-algebra';
+        if (testType && testType.startsWith('mock-')) {
+          // New URL structure: /test/ssc-cgl/mock/mock-test-3
+          testTypeValue = 'mock';
+          testId = testType; // testType is now the actual test ID
+        } else if (testType && testType.startsWith('pyq-')) {
+          // New URL structure: /test/ssc-cgl/pyq/pyq-2023
+          testTypeValue = 'pyq';
+          testId = testType; // testType is now the actual test ID
+        } else if (testType && testType.startsWith('practice-')) {
+          // New URL structure: /test/ssc-cgl/practice/practice-math
+          testTypeValue = 'practice';
+          testId = testType; // testType is now the actual test ID
+        } else {
+          // Fallback to old logic for backward compatibility
+          testTypeValue = testType || 'mock';
+          if (testType === 'mock') {
+            testId = topic || 'mock-test-1';
+          } else if (testType === 'pyq') {
+            testId = topic || '2024-day1-shift1';
+          } else if (testType === 'practice') {
+            testId = topic || 'maths-algebra';
+          }
         }
+        
+        // Set the state variables
+        setActualTestType(testTypeValue);
+        setActualTestId(testId);
         
         
         // Load test data from JSON
-        const loadedTestData = await QuestionLoader.loadQuestions(examId!, testType as 'pyq' | 'practice' | 'mock', actualTestId);
+        const loadedTestData = await QuestionLoader.loadQuestions(examId!, testTypeValue as 'pyq' | 'practice' | 'mock', testId);
         
         if (!loadedTestData) {
           console.error('Failed to load test data');
@@ -332,15 +354,23 @@ const TestInterface = () => {
               })),
               skipped: questions.length - Object.keys(answers).length
             },
-            sectionId!,  // sectionId is the actual test type (mock/pyq/practice)
-            testType!,   // testType is the actual test ID (mock-test-3, etc.)
-            topic        // topic for practice tests
+            actualTestType,  // actualTestType is the test type (mock/pyq/practice)
+            actualTestId,    // actualTestId is the actual test ID (mock-test-3, etc.)
+            topic            // topic for practice tests
           );
 
           // Submit individual test score for Mock and PYQ tests only
-          if (sectionId === 'mock' || sectionId === 'pyq') {
-            // sectionId is the actual test type (mock/pyq), testType is the actual test ID
-            await submitIndividualTestScore(examId, sectionId, testType, score);
+          if (actualTestType === 'mock' || actualTestType === 'pyq') {
+            // Debug: Log the parameters being passed
+            console.log('TestInterface - submitIndividualTestScore parameters:', {
+              examId,
+              testType: actualTestType,
+              testId: actualTestId,
+              score
+            });
+            
+            // actualTestType is the test type (mock/pyq), actualTestId is the actual test ID
+            await submitIndividualTestScore(examId, actualTestType, actualTestId, score);
           }
 
         } catch (error) {

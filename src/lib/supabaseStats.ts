@@ -452,6 +452,15 @@ class SupabaseStatsService {
       // Update user streak
       await (supabase as any).rpc('update_user_streak', { user_uuid: user.id });
 
+      // Update exam stats properly (Mock + PYQ only)
+      if (submission.testType === 'mock' || submission.testType === 'pyq') {
+        await (supabase as any).rpc('update_exam_stats_properly', {
+          user_uuid: user.id,
+          exam_name: submission.examId,
+          new_score: submission.score
+        });
+      }
+
       // Also update exam stats (existing functionality)
       await this.submitTestAttempt(submission);
 
@@ -577,6 +586,14 @@ class SupabaseStatsService {
     if (!user) return { data: null, error: 'User not authenticated' };
 
     try {
+      // Debug: Log the parameters received
+      console.log('supabaseStats - submitIndividualTestScore received:', {
+        examId,
+        testType,
+        testId,
+        score
+      });
+
       const { data, error } = await (supabase as any).rpc('submitindividualtestscore', {
         user_uuid: user.id,
         exam_name: examId,
