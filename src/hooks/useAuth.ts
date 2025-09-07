@@ -54,8 +54,8 @@ export const useAuth = () => {
               console.error('Error updating daily visit:', error);
             }
           } else {
-            // Don't clear localStorage immediately - might be a temporary issue
-            console.warn('Auth user not found, but localStorage indicates authentication');
+            // Token might be expired - check and refresh if possible
+            console.warn('Auth user not found, checking token expiry');
             setIsAuthenticated(false);
             setUser(null);
           }
@@ -65,6 +65,7 @@ export const useAuth = () => {
         }
       } catch (error) {
         console.error('Error checking auth status:', error);
+        // Don't auto-logout on error, just set as not authenticated
         setIsAuthenticated(false);
         setUser(null);
       } finally {

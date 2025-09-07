@@ -4,7 +4,7 @@
 -- Drop and recreate the problematic function
 DROP FUNCTION IF EXISTS public.get_or_create_user_streak(UUID);
 
--- Create the fixed function with explicit table aliases
+-- Create the fixed function with exact parameter name as requested
 CREATE OR REPLACE FUNCTION public.get_or_create_user_streak(
   user_uuid UUID
 )

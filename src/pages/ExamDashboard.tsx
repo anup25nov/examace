@@ -16,7 +16,10 @@ import {
   Brain,
   ChevronRight,
   ChevronDown,
-  CheckCircle
+  CheckCircle,
+  BarChart3,
+  Star,
+  Medal
 } from "lucide-react";
 import { examConfigs } from "@/config/examConfig";
 import { useExamStats } from "@/hooks/useExamStats";
@@ -519,12 +522,12 @@ const ExamDashboard = () => {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 max-w-6xl mx-auto">
-          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
             <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 mx-auto mb-3 bg-blue-100 rounded-full flex items-center justify-center animate-bounce">
-                <Trophy className="w-6 h-6 text-blue-600" />
+              <div className="w-12 h-12 mx-auto mb-3 bg-blue-100 rounded-full flex items-center justify-center">
+                <BarChart3 className="w-6 h-6 text-blue-600" />
               </div>
-              <p className="text-3xl font-bold text-foreground mb-1 animate-pulse">{userStats.totalTests}</p>
+              <p className="text-3xl font-bold text-foreground mb-1">{userStats.totalTests}</p>
               <p className="text-sm font-medium text-muted-foreground">Tests Taken</p>
               <p className="text-xs text-muted-foreground mt-1">Mock + PYQ</p>
               {userStats.totalTests > 0 && (
@@ -538,12 +541,12 @@ const ExamDashboard = () => {
             </CardContent>
           </Card>
           
-          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
             <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 mx-auto mb-3 bg-green-100 rounded-full flex items-center justify-center animate-pulse">
-                <Target className="w-6 h-6 text-green-600" />
+              <div className="w-12 h-12 mx-auto mb-3 bg-green-100 rounded-full flex items-center justify-center">
+                <Star className="w-6 h-6 text-green-600" />
               </div>
-              <p className="text-3xl font-bold text-foreground mb-1 animate-pulse">{userStats.avgScore}</p>
+              <p className="text-3xl font-bold text-foreground mb-1">{userStats.avgScore}</p>
               <p className="text-sm font-medium text-muted-foreground">Average Score</p>
               <p className="text-xs text-muted-foreground mt-1">Mock Only</p>
               {userStats.avgScore > 0 && (
@@ -557,12 +560,12 @@ const ExamDashboard = () => {
             </CardContent>
           </Card>
           
-          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
             <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 mx-auto mb-3 bg-purple-100 rounded-full flex items-center justify-center animate-bounce">
+              <div className="w-12 h-12 mx-auto mb-3 bg-purple-100 rounded-full flex items-center justify-center">
                 <Trophy className="w-6 h-6 text-purple-600" />
               </div>
-              <p className="text-3xl font-bold text-foreground mb-1 animate-pulse">{userStats.bestScore}</p>
+              <p className="text-3xl font-bold text-foreground mb-1">{userStats.bestScore}</p>
               <p className="text-sm font-medium text-muted-foreground">Best Score</p>
               <p className="text-xs text-muted-foreground mt-1">Mock Only</p>
               {userStats.bestScore > 0 && (
@@ -576,12 +579,12 @@ const ExamDashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
             <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 mx-auto mb-3 bg-orange-100 rounded-full flex items-center justify-center animate-pulse">
-                <Trophy className="w-6 h-6 text-orange-600" />
+              <div className="w-12 h-12 mx-auto mb-3 bg-orange-100 rounded-full flex items-center justify-center">
+                <Medal className="w-6 h-6 text-orange-600" />
               </div>
-              <p className="text-3xl font-bold text-foreground mb-1 animate-pulse">{userStats.bestRank || '-'}</p>
+              <p className="text-3xl font-bold text-foreground mb-1">{userStats.bestRank || '-'}</p>
               <p className="text-sm font-medium text-muted-foreground">Best Rank</p>
               <p className="text-xs text-muted-foreground mt-1">Mock Only</p>
               {userStats.bestRank > 0 && (
