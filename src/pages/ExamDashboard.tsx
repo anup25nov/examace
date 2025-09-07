@@ -26,6 +26,9 @@ import { useExamStats } from "@/hooks/useExamStats";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { QuestionLoader } from "@/lib/questionLoader";
+import { analytics } from "@/lib/analytics";
+import { testAvailabilityService } from "@/lib/testAvailability";
+import Footer from "@/components/Footer";
 
 // Icon mapping for dynamic loading
 const iconMap: { [key: string]: any } = {
@@ -53,21 +56,41 @@ const ExamDashboard = () => {
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [completedTests, setCompletedTests] = useState<Set<string>>(new Set());
   const [testScores, setTestScores] = useState<Map<string, { score: number; rank: number; totalParticipants: number }>>(new Map());
+  const [testFilter, setTestFilter] = useState<'all' | 'attempted' | 'not-attempted'>('all');
   const [availableTests, setAvailableTests] = useState<{
-    mock: Array<{ id: string; name: string; description: string }>;
-    pyq: Array<{ id: string; name: string; description: string }>;
-    practice: Array<{ id: string; name: string; description: string }>;
+    mock: Array<{ id: string; name: string; duration: number; questions: any[]; breakdown?: string }>;
+    pyq: Array<{ year: string; papers: Array<{ id: string; name: string; duration: number; questions: any[]; breakdown?: string }> }>;
+    practice: Array<{ id: string; name: string; duration: number; questions: any[]; breakdown?: string }>;
   }>({ mock: [], pyq: [], practice: [] });
 
   const exam = examConfigs[examId as string];
   const userEmail = profile?.email || localStorage.getItem("userEmail");
 
-  // Load available tests
+  // Load available tests dynamically
   useEffect(() => {
     const loadAvailableTests = async () => {
       if (examId) {
-        const tests = await QuestionLoader.getAvailableTests(examId);
-        setAvailableTests(tests);
+        const examConfig = examConfigs[examId];
+        if (!examConfig) return;
+
+        // Get all tests from config
+        const allTests = {
+          mock: examConfig.sections.find(s => s.id === 'mock')?.tests || [],
+          pyq: examConfig.sections.find(s => s.id === 'pyq')?.years || [],
+          practice: examConfig.sections.find(s => s.id === 'practice')?.subjects?.flatMap(subject => 
+            subject.topics?.map(topic => ({
+              id: `${subject.id}-${topic.id}`,
+              name: topic.name,
+              duration: 30, // Default duration for practice tests
+              questions: [], // Empty questions array for practice tests
+              breakdown: `Practice questions - ${subject.name}`
+            })) || []
+          ) || []
+        };
+
+        // Filter to only show available tests
+        const availableTests = await testAvailabilityService.getAvailableTests(examId, allTests);
+        setAvailableTests(availableTests);
       }
     };
     loadAvailableTests();
@@ -89,11 +112,13 @@ const ExamDashboard = () => {
     }
 
     // Check PYQ tests
-    for (const test of availableTests.pyq) {
-      const isCompleted = await isTestCompleted(examId, 'pyq', test.id, null);
-      if (isCompleted) {
-        // For PYQ tests, topicId is null, so the key becomes pyq-testId
-        completed.add(`pyq-${test.id}`);
+    for (const yearData of availableTests.pyq) {
+      for (const paper of yearData.papers) {
+        const isCompleted = await isTestCompleted(examId, 'pyq', paper.id, null);
+        if (isCompleted) {
+          // For PYQ tests, topicId is null, so the key becomes pyq-testId
+          completed.add(`pyq-${paper.id}`);
+        }
       }
     }
 
@@ -131,17 +156,19 @@ const ExamDashboard = () => {
     }
 
     // Load PYQ test scores
-    for (const test of availableTests.pyq) {
-      const scoreResult = await getIndividualTestScore(examId, 'pyq', test.id);
-      // Handle both Supabase result format and fallback format
-      const scoreData = (scoreResult as any).data || scoreResult;
-      if (scoreData && scoreData.score !== null && scoreData.score !== undefined) {
-        // For PYQ tests, topicId is null, so the key becomes pyq-testId
-        scores.set(`pyq-${test.id}`, {
-          score: scoreData.score,
-          rank: scoreData.rank || 0,
-          totalParticipants: scoreData.totalParticipants || 0
-        });
+    for (const yearData of availableTests.pyq) {
+      for (const paper of yearData.papers) {
+        const scoreResult = await getIndividualTestScore(examId, 'pyq', paper.id);
+        // Handle both Supabase result format and fallback format
+        const scoreData = (scoreResult as any).data || scoreResult;
+        if (scoreData && scoreData.score !== null && scoreData.score !== undefined) {
+          // For PYQ tests, topicId is null, so the key becomes pyq-testId
+          scores.set(`pyq-${paper.id}`, {
+            score: scoreData.score,
+            rank: scoreData.rank || 0,
+            totalParticipants: scoreData.totalParticipants || 0
+          });
+        }
       }
     }
 
@@ -207,6 +234,13 @@ const ExamDashboard = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [examId, availableTests.mock.length, availableTests.pyq.length, availableTests.practice.length]);
+
+  // Track page view when component mounts
+  useEffect(() => {
+    if (examId) {
+      analytics.trackPageView(`exam-dashboard-${examId}`, `Exam Dashboard - ${examId}`);
+    }
+  }, [examId]);
 
   // Refresh completion status when user returns to dashboard (e.g., after completing a test)
   useEffect(() => {
@@ -324,6 +358,9 @@ const ExamDashboard = () => {
     });
     
     
+    // Track test start
+    analytics.trackTestStart(examId!, type, itemId);
+    
     // The route expects: /test/:examId/:sectionId/:testType/:topic?
     // Use the actual test type as sectionId
     const sectionId = type; // Use the actual test type (mock/pyq/practice) as sectionId
@@ -334,11 +371,14 @@ const ExamDashboard = () => {
   };
 
   const handleViewSolutions = (type: 'practice' | 'pyq' | 'mock', itemId: string, topicId?: string) => {
+    // Track solution view
+    analytics.trackSolutionView(examId!, type, itemId);
+    
     // Navigate to solutions view for the completed test
-    const sectionId = type; // Use the actual test type (mock/pyq/practice) as sectionId
     const solutionsPath = topicId 
-      ? `/solutions/${examId}/${sectionId}/${itemId}/${topicId}`
-      : `/solutions/${examId}/${sectionId}/${itemId}`;
+      ? `/solutions/${examId}/${type}/${itemId}/${topicId}`
+      : `/solutions/${examId}/${type}/${itemId}`;
+    console.log('Navigating to solutions:', solutionsPath);
     navigate(solutionsPath);
   };
 
@@ -348,6 +388,9 @@ const ExamDashboard = () => {
       ...prev,
       [sectionId]: !prev[sectionId]
     }));
+    
+    // Track section interaction
+    analytics.trackSectionOpen(sectionId, examId!);
   };
 
   // Helper function to create test button with completion indicator
@@ -355,11 +398,14 @@ const ExamDashboard = () => {
     testId: string,
     testName: string,
     testType: 'mock' | 'pyq' | 'practice',
-    topicId?: string,
-    additionalInfo?: string
+    topicId?: string
   ) => {
     const completionKey = topicId ? `${testType}-${testId}-${topicId}` : `${testType}-${testId}`;
     const isCompleted = completedTests.has(completionKey);
+    
+    // Apply filter
+    if (testFilter === 'attempted' && !isCompleted) return null;
+    if (testFilter === 'not-attempted' && isCompleted) return null;
     
     // Get score and rank for Mock and PYQ tests
     const scoreKey = topicId ? `${testType}-${testId}-${topicId}` : `${testType}-${testId}`;
@@ -369,11 +415,16 @@ const ExamDashboard = () => {
       <Card key={testId} className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg ${
         isCompleted ? 'border-green-200 bg-green-50/50 shadow-md' : 'border-border hover:border-primary/20'
       }`}>
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex-1">
-              <div className="flex items-center space-x-2 mb-1">
-                <h3 className="font-semibold text-foreground text-sm">{testName}</h3>
+        <CardContent className="p-5">
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold text-foreground text-base">{testName}</h3>
+              <div className="flex items-center space-x-2">
+                {(testType === 'mock' || testType === 'pyq') && (
+                  <span className="text-xs bg-gradient-to-r from-green-400 to-emerald-500 text-white px-2 py-1 rounded-full font-bold shadow-md animate-pulse">
+                    FREE
+                  </span>
+                )}
                 {isCompleted && (
                   <div className="flex items-center space-x-1">
                     <CheckCircle className="w-4 h-4 text-green-500" />
@@ -381,29 +432,25 @@ const ExamDashboard = () => {
                   </div>
                 )}
               </div>
-              {additionalInfo && (
-                <p className="text-xs text-muted-foreground mb-2">{additionalInfo}</p>
-              )}
             </div>
-            <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           </div>
           
           {/* Show score and rank for Mock and PYQ tests */}
           {testScore && (testType === 'mock' || testType === 'pyq') && (
-            <div className="mb-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
-              <div className="grid grid-cols-2 gap-3">
+            <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="text-center">
-                  <div className="text-lg font-bold text-blue-600">{testScore.score}%</div>
-                  <div className="text-xs text-blue-500 font-medium">Score</div>
+                  <div className="text-xl font-bold text-blue-600">{testScore.score}</div>
+                  <div className="text-sm text-blue-500 font-medium">Score</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-bold text-purple-600">#{testScore.rank}</div>
-                  <div className="text-xs text-purple-500 font-medium">Rank</div>
+                  <div className="text-xl font-bold text-purple-600">#{testScore.rank}</div>
+                  <div className="text-sm text-purple-500 font-medium">Rank</div>
                 </div>
               </div>
               {testScore.totalParticipants > 0 && (
-                <div className="text-center mt-2">
-                  <span className="text-xs text-muted-foreground">
+                <div className="text-center mt-3">
+                  <span className="text-sm text-muted-foreground">
                     out of {testScore.totalParticipants} participants
                   </span>
                 </div>
@@ -412,14 +459,14 @@ const ExamDashboard = () => {
           )}
           
           {/* Action buttons */}
-          <div className="flex flex-col space-y-2">
+          <div className="flex flex-col space-y-3">
             {isCompleted ? (
               <>
-                <div className="flex space-x-2">
+                <div className="flex space-x-3">
                   <Button
                     size="sm"
                     variant="outline"
-                    className="flex-1 h-9 text-xs hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                    className="flex-1 h-10 text-sm hover:bg-blue-50 hover:border-blue-300 transition-colors"
                     onClick={() => handleViewSolutions(testType, testId, topicId)}
                   >
                     📖 View Solutions
@@ -427,7 +474,7 @@ const ExamDashboard = () => {
                   <Button
                     size="sm"
                     variant="default"
-                    className="flex-1 h-9 text-xs bg-primary hover:bg-primary/90 transition-colors"
+                    className="flex-1 h-10 text-sm bg-primary hover:bg-primary/90 transition-colors"
                     onClick={() => handleTestStart(testType, testId, topicId)}
                   >
                     🔄 Retry
@@ -438,7 +485,7 @@ const ExamDashboard = () => {
               <Button
                 size="sm"
                 variant="default"
-                className="w-full h-9 text-xs bg-primary hover:bg-primary/90 transition-colors"
+                className="w-full h-10 text-sm bg-primary hover:bg-primary/90 transition-colors"
                 onClick={() => handleTestStart(testType, testId, topicId)}
               >
                 ▶️ Start Test
@@ -453,7 +500,7 @@ const ExamDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b border-border bg-card/95 backdrop-blur-md sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -465,9 +512,13 @@ const ExamDashboard = () => {
               >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">{exam.name}</h1>
-                <p className="text-sm text-muted-foreground">{exam.fullName}</p>
+              <div className="flex items-center space-x-3">
+                <img 
+                  src="/logos/examace-logo.svg" 
+                  alt="ExamAce Logo" 
+                  className="h-8 w-auto"
+                />
+                <h1 className="text-xl font-bold text-foreground uppercase">{exam.name}</h1>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -487,111 +538,56 @@ const ExamDashboard = () => {
             <Trophy className="w-6 h-6 text-primary animate-pulse" />
             <h3 className="text-xl font-bold text-foreground">Performance Statistics</h3>
           </div>
-          <p className="text-sm text-muted-foreground mb-6 max-w-2xl mx-auto">
-            Track your progress with Mock Tests and Previous Year Questions (PYQ)
-          </p>
-          
-          {/* Motivational Message */}
-          {userStats.totalTests > 0 && (
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4 mb-6 max-w-2xl mx-auto">
-              <div className="flex items-center justify-center space-x-2 mb-2">
-                <span className="text-2xl">🎯</span>
-                <span className="font-semibold text-green-800">
-                  {userStats.totalTests === 1 
-                    ? "Great start! Keep the momentum going! 🚀"
-                    : userStats.totalTests < 5
-                    ? "You're building a strong foundation! 💪"
-                    : userStats.totalTests < 10
-                    ? "Excellent progress! You're on fire! 🔥"
-                    : "Outstanding dedication! You're a champion! 🏆"
-                  }
-                </span>
-              </div>
-              <p className="text-sm text-green-700">
-                {userStats.totalTests === 1 
-                  ? "Complete more tests to unlock your full potential!"
-                  : userStats.totalTests < 5
-                  ? "Consistency is key to success. Keep practicing!"
-                  : userStats.totalTests < 10
-                  ? "You're developing excellent test-taking skills!"
-                  : "Your commitment to learning is inspiring!"
-                }
-              </p>
-            </div>
-          )}
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 max-w-6xl mx-auto">
-          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 mx-auto mb-3 bg-blue-100 rounded-full flex items-center justify-center">
-                <BarChart3 className="w-6 h-6 text-blue-600" />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8 max-w-6xl mx-auto">
+          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-32 flex items-center">
+            <CardContent className="p-4 text-center w-full">
+              <div className="w-10 h-10 mx-auto mb-2 bg-blue-100 rounded-full flex items-center justify-center">
+                <BarChart3 className="w-5 h-5 text-blue-600" />
               </div>
-              <p className="text-3xl font-bold text-foreground mb-1">{userStats.totalTests}</p>
+              <p className="text-2xl font-bold text-foreground mb-1">{userStats.totalTests}</p>
               <p className="text-sm font-medium text-muted-foreground">Tests Taken</p>
-              <p className="text-xs text-muted-foreground mt-1">Mock + PYQ</p>
-              {userStats.totalTests > 0 && (
-                <div className="mt-2 w-full bg-blue-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-1000 ease-out"
-                    style={{ width: `${Math.min((userStats.totalTests / 20) * 100, 100)}%` }}
-                  ></div>
-                </div>
-              )}
             </CardContent>
           </Card>
           
-          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 mx-auto mb-3 bg-green-100 rounded-full flex items-center justify-center">
-                <Star className="w-6 h-6 text-green-600" />
+          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-32 flex items-center">
+            <CardContent className="p-4 text-center w-full">
+              <div className="w-10 h-10 mx-auto mb-2 bg-green-100 rounded-full flex items-center justify-center">
+                <Star className="w-5 h-5 text-green-600" />
               </div>
-              <p className="text-3xl font-bold text-foreground mb-1">{userStats.avgScore}</p>
+              <p className="text-2xl font-bold text-foreground mb-1">{userStats.avgScore}</p>
               <p className="text-sm font-medium text-muted-foreground">Average Score</p>
-              <p className="text-xs text-muted-foreground mt-1">Mock Only</p>
-              {userStats.avgScore > 0 && (
-                <div className="mt-2 w-full bg-green-200 rounded-full h-2">
-                  <div 
-                    className="bg-green-600 h-2 rounded-full transition-all duration-1000 ease-out"
-                    style={{ width: `${Math.min((userStats.avgScore / 100) * 100, 100)}%` }}
-                  ></div>
-                </div>
-              )}
             </CardContent>
           </Card>
           
-          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 mx-auto mb-3 bg-purple-100 rounded-full flex items-center justify-center">
-                <Trophy className="w-6 h-6 text-purple-600" />
+          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-32 flex items-center">
+            <CardContent className="p-4 text-center w-full">
+              <div className="w-10 h-10 mx-auto mb-2 bg-purple-100 rounded-full flex items-center justify-center">
+                <Trophy className="w-5 h-5 text-purple-600" />
               </div>
-              <p className="text-3xl font-bold text-foreground mb-1">{userStats.bestScore}</p>
+              <p className="text-2xl font-bold text-foreground mb-1">{userStats.bestScore}</p>
               <p className="text-sm font-medium text-muted-foreground">Best Score</p>
-              <p className="text-xs text-muted-foreground mt-1">Mock Only</p>
-              {userStats.bestScore > 0 && (
-                <div className="mt-2 w-full bg-purple-200 rounded-full h-2">
-                  <div 
-                    className="bg-purple-600 h-2 rounded-full transition-all duration-1000 ease-out"
-                    style={{ width: `${Math.min((userStats.bestScore / 100) * 100, 100)}%` }}
-                  ></div>
-                </div>
-              )}
             </CardContent>
           </Card>
 
-          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 mx-auto mb-3 bg-orange-100 rounded-full flex items-center justify-center">
-                <Medal className="w-6 h-6 text-orange-600" />
+          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-32 flex items-center">
+            <CardContent className="p-4 text-center w-full">
+              <div className="w-10 h-10 mx-auto mb-2 bg-orange-100 rounded-full flex items-center justify-center">
+                <Medal className="w-5 h-5 text-orange-600" />
               </div>
-              <p className="text-3xl font-bold text-foreground mb-1">{userStats.bestRank || '-'}</p>
+              <p className="text-2xl font-bold text-foreground mb-1">{userStats.bestRank || '-'}</p>
               <p className="text-sm font-medium text-muted-foreground">Best Rank</p>
-              <p className="text-xs text-muted-foreground mt-1">Mock Only</p>
-              {userStats.bestRank > 0 && (
-                <div className="mt-2 text-xs text-orange-600 font-medium">
-                  🏆 Top {Math.round((userStats.bestRank / 100) * 100)}% performer!
-                </div>
-              )}
+            </CardContent>
+          </Card>
+
+          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-32 flex items-center">
+            <CardContent className="p-4 text-center w-full">
+              <div className="w-10 h-10 mx-auto mb-2 bg-yellow-100 rounded-full flex items-center justify-center">
+                <Trophy className="w-5 h-5 text-yellow-600" />
+              </div>
+              <p className="text-2xl font-bold text-foreground mb-1">{userStats.bestScore || '-'}</p>
+              <p className="text-sm font-medium text-muted-foreground">Best Score (Rank 1)</p>
             </CardContent>
           </Card>
 
@@ -603,14 +599,18 @@ const ExamDashboard = () => {
           <CardContent className="p-6 text-center">
             <Play className="w-12 h-12 mx-auto mb-4" />
             <h3 className="text-xl font-bold mb-2">
-              {availableTests.mock.some(test => !completedTests.has(`mock-${test.id}`)) 
+              {availableTests.mock.length > 0 && availableTests.mock.some(test => !completedTests.has(`mock-${test.id}`)) 
                 ? 'Quick Full Mock Test' 
-                : 'All Mock Tests Completed! 🎉'}
+                : availableTests.mock.length > 0 
+                ? 'All Mock Tests Completed! 🎉'
+                : 'Start Your Preparation'}
             </h3>
             <p className="text-white/90 mb-4">
-              {availableTests.mock.some(test => !completedTests.has(`mock-${test.id}`))
-                ? 'Take a complete practice test with 100 questions in 180 minutes'
-                : 'Congratulations! You have completed all available mock tests. Try PYQ or Practice tests to continue improving!'}
+              {availableTests.mock.length > 0 && availableTests.mock.some(test => !completedTests.has(`mock-${test.id}`))
+                ? 'Take a complete practice test to assess your preparation'
+                : availableTests.mock.length > 0
+                ? 'Congratulations! You have completed all available mock tests. Try PYQ or Practice tests to continue improving!'
+                : 'Begin your exam preparation with our comprehensive test series'}
             </p>
             <Button 
               variant="secondary" 
@@ -623,8 +623,8 @@ const ExamDashboard = () => {
                 });
                 
                 if (unattemptedMock) {
-                  handleTestStart('mock', unattemptedMock.id, unattemptedMock.id);
-                } else {
+                  handleTestStart('mock', unattemptedMock.id, null);
+                } else if (availableTests.mock.length > 0) {
                   // All mocks completed - navigate to PYQ section
                   const pyqSection = document.querySelector('[data-section="pyq"]');
                   if (pyqSection) {
@@ -633,16 +633,36 @@ const ExamDashboard = () => {
                     toggleSection('pyq');
                   } else {
                     // Fallback: find first unattempted PYQ
-                    const unattemptedPyq = availableTests.pyq.find(test => {
-                      const completionKey = `pyq-${test.id}`;
-                      return !completedTests.has(completionKey);
-                    });
+                    let unattemptedPyq = null;
+                    for (const yearData of availableTests.pyq) {
+                      unattemptedPyq = yearData.papers.find(paper => {
+                        const completionKey = `pyq-${paper.id}`;
+                        return !completedTests.has(completionKey);
+                      });
+                      if (unattemptedPyq) break;
+                    }
                     
                     if (unattemptedPyq) {
-                      handleTestStart('pyq', unattemptedPyq.id, unattemptedPyq.id);
+                      handleTestStart('pyq', unattemptedPyq.id, null);
                     } else {
-                      alert('Congratulations! You have completed all mock tests. 🎉');
+                      alert('Congratulations! You have completed all available tests. 🎉');
                     }
+                  }
+                } else {
+                  // No mock tests available - try PYQ
+                  let unattemptedPyq = null;
+                  for (const yearData of availableTests.pyq) {
+                    unattemptedPyq = yearData.papers.find(paper => {
+                      const completionKey = `pyq-${paper.id}`;
+                      return !completedTests.has(completionKey);
+                    });
+                    if (unattemptedPyq) break;
+                  }
+                  
+                  if (unattemptedPyq) {
+                    handleTestStart('pyq', unattemptedPyq.id, null);
+                  } else {
+                    alert('No tests available at the moment. Please try again later.');
                   }
                 }
               }}
@@ -652,42 +672,95 @@ const ExamDashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Test Filter */}
+        <div className="mb-6">
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <span className="text-sm font-medium text-muted-foreground mr-2">Filter:</span>
+            <Button
+              variant={testFilter === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setTestFilter('all')}
+              className="text-xs"
+            >
+              All Tests ({availableTests.mock.length + availableTests.pyq.reduce((sum, year) => sum + year.papers.length, 0)})
+            </Button>
+            <Button
+              variant={testFilter === 'attempted' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setTestFilter('attempted')}
+              className="text-xs"
+            >
+              Completed ({Array.from(completedTests).length})
+            </Button>
+            <Button
+              variant={testFilter === 'not-attempted' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setTestFilter('not-attempted')}
+              className="text-xs"
+            >
+              Not Attempted ({(availableTests.mock.length + availableTests.pyq.reduce((sum, year) => sum + year.papers.length, 0)) - Array.from(completedTests).length})
+            </Button>
+          </div>
+        </div>
+
         {/* Main Sections */}
         <div className="space-y-6">
-          {exam.sections.map((section) => (
-            <Card key={section.id} className="gradient-card border-0" data-section={section.id}>
-              <Collapsible 
-                open={openSections[section.id]} 
-                onOpenChange={() => toggleSection(section.id)}
-              >
-                <CollapsibleTrigger asChild>
-                  <CardHeader className="cursor-pointer hover:bg-muted/20 transition-colors">
-                    <CardTitle className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        {iconMap[section.icon] && React.createElement(iconMap[section.icon], {
-                          className: `w-6 h-6 ${section.color}`
-                        })}
-                        <span>{section.name}</span>
-                      </div>
-                      <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${
-                        openSections[section.id] ? 'rotate-180' : ''
-                      }`} />
-                    </CardTitle>
-                  </CardHeader>
-                </CollapsibleTrigger>
+          {exam.sections.map((section) => {
+            const isDisabled = section.id === 'practice';
+            
+            // Check if section has any tests based on filter
+            let hasTests = false;
+            if (section.id === 'mock') {
+              hasTests = availableTests.mock.length > 0;
+            } else if (section.id === 'pyq') {
+              hasTests = availableTests.pyq.length > 0;
+            } else if (section.id === 'practice') {
+              hasTests = availableTests.practice.length > 0;
+            }
+            
+            // Don't render section if no tests available
+            if (!hasTests) return null;
+            
+            return (
+              <Card key={section.id} className={`gradient-card border-0 ${isDisabled ? 'opacity-50' : ''}`} data-section={section.id}>
+                <Collapsible 
+                  open={openSections[section.id]} 
+                  onOpenChange={() => !isDisabled && toggleSection(section.id)}
+                >
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className={`transition-colors ${isDisabled ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-muted/20'}`}>
+                      <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          {iconMap[section.icon] && React.createElement(iconMap[section.icon], {
+                            className: `w-6 h-6 ${section.color}`
+                          })}
+                          <span>{section.name}</span>
+                          {isDisabled && (
+                            <span className="text-xs bg-gradient-to-r from-orange-400 to-red-500 text-white px-3 py-1 rounded-full font-semibold shadow-md">
+                              Coming Soon
+                            </span>
+                          )}
+                        </div>
+                        {!isDisabled && (
+                          <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${
+                            openSections[section.id] ? 'rotate-180' : ''
+                          }`} />
+                        )}
+                      </CardTitle>
+                    </CardHeader>
+                  </CollapsibleTrigger>
 
                 <CollapsibleContent>
                   <CardContent>
                     {/* Mock Tests */}
                     {section.id === 'mock' && availableTests.mock.length > 0 && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                         {availableTests.mock.map((test) => 
                           createTestButton(
                             test.id,
                             test.name, // Use the name from JSON
                             'mock',
-                            null, // Mock tests don't have topicId
-                            test.description // Use the description from JSON
+                            null // Mock tests don't have topicId
                           )
                         )}
                       </div>
@@ -696,30 +769,28 @@ const ExamDashboard = () => {
                     {/* Previous Year Questions */}
                     {section.id === 'pyq' && availableTests.pyq.length > 0 && (
                       <div className="space-y-6">
-                        <Collapsible>
-                          <CollapsibleTrigger asChild>
-                            <Button variant="ghost" className="w-full justify-between p-4 h-auto">
-                              <div className="flex items-center space-x-2">
-                                <FileText className="w-5 h-5 text-warning" />
-                                <span className="text-lg font-semibold">Previous Year Papers ({availableTests.pyq.length} sets)</span>
-                              </div>
-                              <ChevronDown className="w-4 h-4" />
-                            </Button>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                              {availableTests.pyq.map((test) => 
-                                createTestButton(
-                                  test.id,
-                                  test.name, // Use the name from JSON
-                                  'pyq',
-                                  null, // PYQ tests don't have topicId
-                                  test.description // Use the description from JSON
-                                )
-                              )}
-                            </div>
-                          </CollapsibleContent>
-                        </Collapsible>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
+                          {availableTests.pyq.map((yearData) => (
+                            <Card key={yearData.year} className="gradient-card border-0 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group">
+                              <CardContent className="p-4">
+                                <div className="text-center mb-4">
+                                  <h4 className="text-lg font-bold text-foreground mb-2 group-hover:text-primary transition-colors">{yearData.year}</h4>
+                                  <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">{yearData.papers.length} Papers</p>
+                                </div>
+                                <div className="max-h-96 overflow-y-auto space-y-2 pr-2">
+                                  {yearData.papers.map((paper) => 
+                                    createTestButton(
+                                      paper.id,
+                                      paper.name,
+                                      'pyq',
+                                      null
+                                    )
+                                  )}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
                       </div>
                     )}
 
@@ -732,8 +803,7 @@ const ExamDashboard = () => {
                               test.id,
                               test.name, // Use the name from JSON
                               'practice',
-                              test.id,
-                              test.description // Use the description from JSON
+                              test.id
                             )
                           )}
                         </div>
@@ -743,9 +813,11 @@ const ExamDashboard = () => {
                 </CollapsibleContent>
               </Collapsible>
             </Card>
-          ))}
+            );
+          })}
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

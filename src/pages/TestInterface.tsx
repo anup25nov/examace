@@ -18,6 +18,7 @@ import { getQuestionsForTest, getTestDuration } from "@/config/examConfig";
 import { useExamStats } from "@/hooks/useExamStats";
 import { useAuth } from "@/hooks/useAuth";
 import { QuestionLoader, TestData, QuestionWithProps } from "@/lib/questionLoader";
+import TestInstructions from "@/components/TestInstructions";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import SolutionsDisplay from "@/components/SolutionsDisplay";
 
@@ -60,6 +61,7 @@ const TestInterface = () => {
   const [isCompleted, setIsCompleted] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<string>('');
   const [showLanguageSelector, setShowLanguageSelector] = useState(true);
+  const [showInstructions, setShowInstructions] = useState(false);
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
   const [startTime] = useState(Date.now());
   const [loading, setLoading] = useState(true);
@@ -127,25 +129,18 @@ const TestInterface = () => {
         let testId = '';
         let testTypeValue = '';
         
-        if (testType && testType.startsWith('mock-')) {
-          // New URL structure: /test/ssc-cgl/mock/mock-test-3
-          testTypeValue = 'mock';
-          testId = testType; // testType is now the actual test ID
-        } else if (testType && testType.startsWith('pyq-')) {
-          // New URL structure: /test/ssc-cgl/pyq/pyq-2023
-          testTypeValue = 'pyq';
-          testId = testType; // testType is now the actual test ID
-        } else if (testType && testType.startsWith('practice-')) {
-          // New URL structure: /test/ssc-cgl/practice/practice-math
-          testTypeValue = 'practice';
-          testId = testType; // testType is now the actual test ID
+        // URL structure: /test/ssc-cgl/pyq/2024-set-1
+        // sectionId = 'pyq', testType = '2024-set-1', topic = undefined
+        if (sectionId && testType) {
+          testTypeValue = sectionId; // sectionId is the test type (mock/pyq/practice)
+          testId = testType; // testType is the actual test ID
         } else {
           // Fallback to old logic for backward compatibility
           testTypeValue = testType || 'mock';
           if (testType === 'mock') {
             testId = topic || 'mock-test-1';
           } else if (testType === 'pyq') {
-            testId = topic || '2024-day1-shift1';
+            testId = topic || '2024-set-1';
           } else if (testType === 'practice') {
             testId = topic || 'maths-algebra';
           }
@@ -165,6 +160,7 @@ const TestInterface = () => {
           return;
         }
         
+        
         setTestData(loadedTestData);
         setQuestions(loadedTestData.questions);
         
@@ -182,12 +178,14 @@ const TestInterface = () => {
         
         // Check if user has a preferred language
         const preferredLanguage = localStorage.getItem('preferredLanguage');
-        if (preferredLanguage && loadedTestData.examInfo.languages.includes(preferredLanguage)) {
+        if (preferredLanguage && loadedTestData.examInfo?.languages?.includes(preferredLanguage)) {
           setSelectedLanguage(preferredLanguage);
           setShowLanguageSelector(false);
+          setShowInstructions(false);
         } else {
-          setSelectedLanguage(loadedTestData.examInfo.defaultLanguage);
-          setShowLanguageSelector(true);
+          setSelectedLanguage(loadedTestData.examInfo?.defaultLanguage || 'english');
+          setShowLanguageSelector(false);
+          setShowInstructions(true);
         }
         
         setLoading(false);
@@ -206,6 +204,7 @@ const TestInterface = () => {
   const handleLanguageSelect = (language: string) => {
     setSelectedLanguage(language);
     setShowLanguageSelector(false);
+    setShowInstructions(false);
   };
 
   // Timer effect
@@ -427,26 +426,39 @@ const TestInterface = () => {
     );
   }
 
+  // Show instructions page if needed
+  if (showInstructions && testData && testData.examInfo) {
+    return (
+      <TestInstructions
+        examId={examId!}
+        testType={actualTestType}
+        testId={actualTestId}
+        testData={testData}
+        onStartTest={handleLanguageSelect}
+      />
+    );
+  }
+
   // Show language selector if needed
-  if (showLanguageSelector && testData) {
+  if (showLanguageSelector && testData && testData.examInfo) {
     return (
       <LanguageSelector
-        examName={testData.examInfo.examName}
-        testName={testData.examInfo.testName}
-        languages={testData.examInfo.languages}
-        defaultLanguage={testData.examInfo.defaultLanguage}
+        examName={testData.examInfo.examName || 'Exam'}
+        testName={testData.examInfo.testName || 'Test'}
+        languages={testData.examInfo.languages || ['english']}
+        defaultLanguage={testData.examInfo.defaultLanguage || 'english'}
         onLanguageSelect={handleLanguageSelect}
         testData={testData}
       />
     );
   }
 
-  if (questions.length === 0) {
+  if (questions.length === 0 || !testData) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-xl font-bold text-foreground mb-2">No Questions Available</h2>
-          <p className="text-muted-foreground mb-4">This test doesn't have any questions yet.</p>
+          <p className="text-muted-foreground mb-4">This test doesn't have any questions yet or failed to load.</p>
           <Button onClick={() => navigate(`/exam/${examId}`)} variant="outline">
             Go Back to Dashboard
           </Button>
@@ -465,6 +477,7 @@ const TestInterface = () => {
         correctAnswers={testResults.correct}
         timeTaken={testResults.timeTaken}
         onClose={() => navigate(`/exam/${examId}`)}
+        // Don't show highest marks in test completion, only in solutions view
       />
     );
   }
@@ -486,7 +499,7 @@ const TestInterface = () => {
               </Button>
               <div className="min-w-0 flex-1">
                 <h1 className="text-lg font-bold text-foreground truncate">
-                  {testData?.examInfo.testName || topic || testType?.toUpperCase() || "Test"}
+                  {testData?.examInfo?.testName || topic || testType?.toUpperCase() || "Test"}
                 </h1>
                 <p className="text-sm text-muted-foreground">
                   Question {getOriginalQuestionNumber()} of {questions.length}
@@ -564,7 +577,7 @@ const TestInterface = () => {
                           className="text-xs"
                         >
                           <span className="hidden sm:inline">{subjectLabels[subjectInfo.subject] || subjectInfo.subject} ({subjectInfo.count})</span>
-                          <span className="sm:hidden">{subjectLabels[subjectInfo.subject]?.substring(0, 3) || subjectInfo.subject.substring(0, 3)} ({subjectInfo.count})</span>
+                          <span className="sm:hidden">{subjectLabels[subjectInfo.subject]?.substring(0, 3) || subjectInfo.subject?.substring(0, 3) || 'N/A'} ({subjectInfo.count})</span>
                         </Button>
                       );
                     })}
@@ -618,8 +631,8 @@ const TestInterface = () => {
                   {selectedLanguage === 'hindi' ? question.questionHi : question.questionEn}
                 </div>
                 
-                {/* Question Image */}
-                {question.questionImage && (
+                {/* Question Image - Commented out as questionImage property doesn't exist */}
+                {/* {question.questionImage && (
                   <div className="my-4 flex justify-center">
                     <img 
                       src={question.questionImage} 
@@ -628,7 +641,7 @@ const TestInterface = () => {
                       style={{ maxHeight: '400px' }}
                     />
                   </div>
-                )}
+                )} */}
                 
                 <div className="space-y-3">
                   {question.options && question.options.length > 0 ? (

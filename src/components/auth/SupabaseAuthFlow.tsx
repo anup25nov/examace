@@ -134,12 +134,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     setStep('email');
     setEmail('');
     setOtp('');
-    setPin('');
-    setConfirmPin('');
     setError('');
-    setUserExists(false);
-    setHasPin(false);
-    setUserId('');
   };
 
   const renderEmailStep = () => (

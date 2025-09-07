@@ -1,0 +1,23 @@
+{
+  "id": "2023-set-1",
+  "name": "PYQ 2023 Set 1",
+  "duration": 30,
+  "questions": [
+    {
+      "id": 1,
+      "question": "Which planet is known as the Red Planet?",
+      "options": ["Venus", "Mars", "Jupiter", "Saturn"],
+      "correctAnswer": 1,
+      "explanation": "Mars is known as the Red Planet due to its reddish appearance.",
+      "marks": 2
+    },
+    {
+      "id": 2,
+      "question": "What is the chemical symbol for Gold?",
+      "options": ["Go", "Gd", "Au", "Ag"],
+      "correctAnswer": 2,
+      "explanation": "The chemical symbol for Gold is Au (from Latin 'aurum').",
+      "marks": 2
+    }
+  ]
+}

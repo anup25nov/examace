@@ -1,0 +1,20 @@
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="200" height="60" rx="8" fill="url(#gradient2)"/>
+  
+  <!-- SSC Logo -->
+  <circle cx="30" cy="30" r="18" fill="white" opacity="0.95"/>
+  <text x="30" y="36" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#1E40AF" text-anchor="middle">SSC</text>
+  
+  <!-- Text -->
+  <text x="60" y="25" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">SSC CGL</text>
+  <text x="60" y="42" font-family="Arial, sans-serif" font-size="12" fill="#FEF3C7">Combined Graduate Level</text>
+  
+  <!-- Gradient Definition -->
+  <defs>
+    <linearGradient id="gradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#059669;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#047857;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+</svg>

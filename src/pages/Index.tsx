@@ -1,14 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Clock, Trophy, Users, TrendingUp, Brain, Flame } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { BookOpen, Clock, Trophy, Users, TrendingUp, Brain, ChevronRight, Flame, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { examConfigs } from "@/config/examConfig";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { useUserStreak } from "@/hooks/useUserStreak";
+// import { useUserStreak } from "@/hooks/useUserStreak";
+import { analytics } from "@/lib/analytics";
 import { optimizeRouteTransition } from "@/lib/navigationOptimizer";
+import Footer from "@/components/Footer";
 
 // Icon mapping for dynamic loading
 const iconMap: { [key: string]: any } = {
@@ -28,7 +32,12 @@ const Index = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, loading, logout } = useAuth();
   const { profile } = useUserProfile();
-  const { streak, refreshStreak } = useUserStreak();
+
+  // Track page view
+  useEffect(() => {
+    analytics.trackPageView('home', 'ExamAce Home');
+  }, []);
+  // const { streak, refreshStreak } = useUserStreak();
   const [isNavigating, setIsNavigating] = useState(false);
 
 
@@ -41,6 +50,9 @@ const Index = () => {
     if (!isAuthenticated) {
       navigate('/auth');
     } else {
+      // Track exam selection
+      analytics.trackExamSelect(examId);
+      
       setIsNavigating(true);
       // Optimize route transition
       optimizeRouteTransition('/', `/exam/${examId}`);
@@ -73,12 +85,14 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b border-border bg-card/95 backdrop-blur-md sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 gradient-primary rounded-lg flex items-center justify-center">
-              <BookOpen className="w-6 h-6 text-white" />
-            </div>
+            <img 
+              src="/logos/examace-logo.svg" 
+              alt="ExamAce Logo" 
+              className="h-8 w-auto"
+            />
             <div>
               <h1 className="text-xl font-bold text-foreground">ExamAce</h1>
               <p className="text-xs text-muted-foreground">Master Your Success</p>
@@ -92,19 +106,12 @@ const Index = () => {
                 <p className="text-xs text-muted-foreground">
                   {profile?.email || localStorage.getItem("userEmail")}
                 </p>
-                <div className="flex items-center justify-end space-x-1 mt-1">
+                {/* <div className="flex items-center justify-end space-x-1 mt-1">
                   <Flame className="w-4 h-4 text-orange-500" />
                   <span className="text-sm text-orange-600 font-bold">
                     {streak.current_streak} day streak
                   </span>
-                  <button
-                    onClick={refreshStreak}
-                    className="ml-1 text-xs text-orange-500 hover:text-orange-700"
-                    title="Refresh streak"
-                  >
-                    🔄
-                  </button>
-                </div>
+                </div> */}
               </div>
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 Logout
@@ -152,45 +159,91 @@ const Index = () => {
             Choose Your Exam
           </h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {exams.map((exam, index) => (
-              <Card 
+          <div className="space-y-6">
+            {/* Active Exam - SSC CGL (Bigger Card) */}
+            {exams.filter(exam => exam.id === 'ssc-cgl').map((exam) => (
+              <Card
                 key={exam.id}
-                className="exam-card-hover cursor-pointer gradient-card border-0"
+                className="exam-card-hover gradient-card border-0 cursor-pointer hover:shadow-xl transition-all duration-300"
                 onClick={() => handleExamSelect(exam.id)}
-                style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${exam.color} flex items-center justify-center overflow-hidden`}>
+                <CardContent className="p-6 md:p-8">
+                  <div className="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-6">
+                    <div className={`w-16 h-16 md:w-20 md:h-20 rounded-xl bg-gradient-to-r ${exam.color} flex items-center justify-center flex-shrink-0`}>
                       {exam.logo ? (
                         <img 
                           src={exam.logo} 
                           alt={`${exam.name} logo`}
-                          className="w-8 h-8 object-contain"
+                          className="w-12 h-12 md:w-16 md:h-16 object-contain"
                         />
                       ) : (
-                        <exam.icon className="w-6 h-6 text-white" />
+                        <exam.icon className="w-8 h-8 md:w-10 md:h-10 text-white" />
                       )}
                     </div>
+                    <div className="flex-1 text-center md:text-left">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-3">
+                        <h4 className="text-xl md:text-2xl font-bold text-foreground">{exam.name}</h4>
+                        <div className="flex items-center justify-center md:justify-end space-x-2 text-sm bg-green-100 text-green-800 px-3 py-1 rounded-full mt-2 md:mt-0">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span className="font-semibold">Active</span>
+                        </div>
+                      </div>
+                      <p className="text-muted-foreground mb-4 text-sm md:text-base">Start your SSC CGL preparation with comprehensive mock tests and previous year questions</p>
+                      <div className="flex flex-wrap items-center justify-center md:justify-start space-x-4 md:space-x-6 text-sm">
+                        <div className="flex items-center space-x-2">
+                          <Users className="w-4 h-4 text-primary" />
+                          <span className="text-muted-foreground">Mock Tests</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <FileText className="w-4 h-4 text-primary" />
+                          <span className="text-muted-foreground">PYQ Sets</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <BookOpen className="w-4 h-4 text-primary" />
+                          <span className="text-muted-foreground">Practice</span>
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-6 h-6 text-muted-foreground hidden md:block" />
                   </div>
-                  
-                  <h4 className="text-xl font-bold text-foreground mb-2">{exam.name}</h4>
-                  <p className="text-sm text-muted-foreground mb-4">{exam.fullName}</p>
-                  
-                  {/* <div className="flex justify-between text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Enrolled:</span>
-                      <span className="font-medium text-foreground ml-1">{exam.stats.enrolled}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Tests:</span>
-                      <span className="font-medium text-foreground ml-1">{exam.stats.tests}</span>
-                    </div>
-                  </div> */}
                 </CardContent>
               </Card>
             ))}
+
+            {/* Coming Soon Exams (Compact Vertical List) */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold text-muted-foreground mb-4">Coming Soon</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
+                {exams.filter(exam => exam.id !== 'ssc-cgl').map((exam) => (
+                  <Card
+                    key={exam.id}
+                    className="gradient-card border-0 opacity-50 cursor-not-allowed"
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-10 h-10 rounded-lg bg-gradient-to-r ${exam.color} flex items-center justify-center flex-shrink-0`}>
+                          {exam.logo ? (
+                            <img 
+                              src={exam.logo} 
+                              alt={`${exam.name} logo`}
+                              className="w-6 h-6 object-contain"
+                            />
+                          ) : (
+                            <exam.icon className="w-5 h-5 text-white" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-semibold text-foreground truncate">{exam.name}</h4>
+                        </div>
+                        <span className="text-xs bg-gradient-to-r from-orange-400 to-red-500 text-white px-2 py-1 rounded-full font-semibold shadow-md">
+                          Coming Soon
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -225,6 +278,8 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      <Footer />
     </div>
   );
 };

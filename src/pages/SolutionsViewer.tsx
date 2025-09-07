@@ -36,10 +36,28 @@ const SolutionsViewer = () => {
       if (rankData) {
         setRank(rankData.rank);
         setTotalParticipants(rankData.total_participants);
-        setHighestMarks(rankData.highest_marks || rankData.score); // Use highest_marks if available, fallback to current score
+        
+        // Try to get the actual highest score from the database
+        try {
+          const { data: highestScoreData } = await supabaseStatsService.getHighestScoreForTest(examId, testType, testId);
+          if (highestScoreData && highestScoreData.length > 0) {
+            // Get the highest score from the results
+            const maxScore = Math.max(...highestScoreData.map((item: any) => item.score || 0));
+            setHighestMarks(maxScore);
+          } else {
+            // Fallback to current user's score if no other data available
+            setHighestMarks(rankData.score || 0);
+          }
+        } catch (highestScoreError) {
+          console.error('Error fetching highest score:', highestScoreError);
+          // Fallback to current user's score
+          setHighestMarks(rankData.score || 0);
+        }
       }
     } catch (error) {
       console.error('Error fetching rank info:', error);
+      // Set default values if rank info is not available
+      setHighestMarks(0);
     }
   };
 
@@ -64,8 +82,8 @@ const SolutionsViewer = () => {
         // New URL structure: /solutions/ssc-cgl/mock/mock-test-3
         testTypeValue = 'mock';
         testId = testType; // testType is now the actual test ID
-      } else if (testType && testType.startsWith('pyq-')) {
-        // New URL structure: /solutions/ssc-cgl/pyq/pyq-2023
+      } else if (testType && (testType.startsWith('pyq-') || testType.match(/^\d{4}-set-\d+$/))) {
+        // New URL structure: /solutions/ssc-cgl/pyq/2024-set-1
         testTypeValue = 'pyq';
         testId = testType; // testType is now the actual test ID
       } else if (testType && testType.startsWith('practice-')) {
@@ -78,7 +96,7 @@ const SolutionsViewer = () => {
         if (testType === 'mock') {
           testId = topic || 'mock-test-1';
         } else if (testType === 'pyq') {
-          testId = topic || '2024-day1-shift1';
+          testId = topic || '2024-set-1';
         } else if (testType === 'practice') {
           testId = topic || 'maths-algebra';
         }

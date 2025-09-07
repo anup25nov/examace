@@ -97,26 +97,30 @@ const generateMockTests = (questions: QuestionConfig[], count: number = 1): Test
 };
 
 const generatePYQTests = (questions: QuestionConfig[]): { year: string; papers: TestConfig[] }[] => {
-  const years = ["2024"];
+  const years = ["2024", "2023", "2022", "2021", "2020"];
   const yearData: { year: string; papers: TestConfig[] }[] = [];
   
   years.forEach(year => {
     const papers: TestConfig[] = [];
     
-    // Create 2 papers for 2024
+  // Create only available papers for each year
+  const availablePapers = {
+    '2024': ['set-1', 'set-2'],
+    '2023': ['set-1'],
+    '2022': ['set-1'],
+    '2021': ['set-1'],
+    '2020': ['set-1']
+  };
+  
+  const papersForYear = availablePapers[year as keyof typeof availablePapers] || [];
+  papersForYear.forEach(setId => {
     papers.push({
-      id: `${year}-day1-shift1`,
-      name: `PYQ ${year} (Day 1, Shift 1)`,
-      duration: 30, // 2 questions = 30 minutes
-      questions: questions
-    });
-    
-    papers.push({
-      id: `${year}-day1-shift2`,
-      name: `PYQ ${year} (Day 1, Shift 2)`,
+      id: `${year}-${setId}`,
+      name: `PYQ ${year} ${setId.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}`,
       duration: 30,
       questions: questions
     });
+  });
     
     yearData.push({ year, papers });
   });
@@ -182,20 +186,20 @@ export const examConfigs: { [key: string]: ExamConfig } = {
     stats: { enrolled: "2.5M+", tests: "150+" },
     sections: [
       {
-        id: "mock",
-        name: "Full Mock Tests",
-        icon: "Trophy",
-        color: "text-success",
-        type: "mock",
-        tests: generateMockTests(sampleQuestions)
-      },
-      {
         id: "pyq",
         name: "Previous Year Questions",
         icon: "FileText",
         color: "text-warning",
         type: "pyq",
         years: generatePYQTests(sampleQuestions)
+      },
+      {
+        id: "mock",
+        name: "Full Mock Tests",
+        icon: "Trophy",
+        color: "text-success",
+        type: "mock",
+        tests: generateMockTests(sampleQuestions)
       },
       {
         id: "practice",

@@ -674,6 +674,29 @@ class SupabaseStatsService {
     }
   }
 
+  async getHighestScoreForTest(examId: string, testType: string, testId: string): Promise<{ data: SupabaseIndividualTestScore[]; error: any }> {
+    try {
+      const { data, error } = await supabase
+        .from('individual_test_scores')
+        .select('*')
+        .eq('exam_id', examId)
+        .eq('test_type', testType)
+        .eq('test_id', testId)
+        .order('score', { ascending: false })
+        .limit(10); // Get top 10 scores
+
+      if (error) {
+        console.error('Error getting highest score for test:', error);
+        return { data: [], error };
+      }
+
+      return { data: data || [], error: null };
+    } catch (error) {
+      console.error('Error in getHighestScoreForTest:', error);
+      return { data: [], error };
+    }
+  }
+
   // Update daily visit streak
   async updateDailyVisit(): Promise<{ success: boolean; error?: any }> {
     const user = await this.getCurrentUser();

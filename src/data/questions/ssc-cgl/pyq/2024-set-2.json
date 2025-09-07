@@ -1,0 +1,23 @@
+{
+  "id": "2024-set-2",
+  "name": "PYQ 2024 Set 2",
+  "duration": 30,
+  "questions": [
+    {
+      "id": 1,
+      "question": "Which is the smallest state in India?",
+      "options": ["Goa", "Sikkim", "Tripura", "Mizoram"],
+      "correctAnswer": 0,
+      "explanation": "Goa is the smallest state in India by area.",
+      "marks": 2
+    },
+    {
+      "id": 2,
+      "question": "What is the currency of Japan?",
+      "options": ["Yuan", "Yen", "Won", "Dong"],
+      "correctAnswer": 1,
+      "explanation": "The currency of Japan is Yen.",
+      "marks": 2
+    }
+  ]
+}

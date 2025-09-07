@@ -1,0 +1,42 @@
+{
+  "examInfo": {
+    "examId": "ssc-cgl",
+    "examName": "SSC CGL",
+    "testType": "pyq",
+    "testId": "2024-set-1",
+    "testName": "PYQ 2024 Set 1",
+    "totalQuestions": 2,
+    "languages": ["english", "hindi"],
+    "defaultLanguage": "english"
+  },
+  "questions": [
+    {
+      "id": 1,
+      "questionEn": "Which year was the first SSC CGL exam conducted?",
+      "questionHi": "पहली SSC CGL परीक्षा किस वर्ष आयोजित की गई थी?",
+      "options": ["1975", "1980", "1985", "1990"],
+      "correct": 0,
+      "explanation": "The first SSC CGL exam was conducted in 1975.",
+      "difficulty": "medium",
+      "subject": "gk",
+      "topic": "history",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 15
+    },
+    {
+      "id": 2,
+      "questionEn": "What is the full form of SSC?",
+      "questionHi": "SSC का पूरा नाम क्या है?",
+      "options": ["Staff Selection Commission", "State Selection Commission", "Service Selection Commission", "Staff Service Commission"],
+      "correct": 0,
+      "explanation": "SSC stands for Staff Selection Commission.",
+      "difficulty": "easy",
+      "subject": "gk",
+      "topic": "general-knowledge",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 15
+    }
+  ]
+}

@@ -11,13 +11,13 @@ import practiceEnglishGrammar from '@/data/questions/ssc-cgl/practice/english-gr
 
 // Static mapping of test files for reliable loading in production
 const testFileMap: { [key: string]: TestData } = {
-  'ssc-cgl-mock-mock-test-1': mockTest1 as TestData,
-  'ssc-cgl-mock-mock-test-2': mockTest2 as TestData,
-  'ssc-cgl-pyq-2024-day1-shift1': pyq2024Day1Shift1 as TestData,
-  'ssc-cgl-pyq-2024-day1-shift2': pyq2024Day1Shift2 as TestData,
-  'ssc-cgl-pyq-2024-day1-shift3': pyq2024Day1Shift3 as TestData,
-  'ssc-cgl-practice-maths-algebra': practiceMathsAlgebra as TestData,
-  'ssc-cgl-practice-english-grammar': practiceEnglishGrammar as TestData,
+  'ssc-cgl-mock-mock-test-1': mockTest1 as unknown as TestData,
+  'ssc-cgl-mock-mock-test-2': mockTest2 as unknown as TestData,
+  'ssc-cgl-pyq-2024-day1-shift1': pyq2024Day1Shift1 as unknown as TestData,
+  'ssc-cgl-pyq-2024-day1-shift2': pyq2024Day1Shift2 as unknown as TestData,
+  'ssc-cgl-pyq-2024-day1-shift3': pyq2024Day1Shift3 as unknown as TestData,
+  'ssc-cgl-practice-maths-algebra': practiceMathsAlgebra as unknown as TestData,
+  'ssc-cgl-practice-english-grammar': practiceEnglishGrammar as unknown as TestData,
   // Add more test files as needed
 };
 

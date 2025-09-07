@@ -7,6 +7,10 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import DebugInfo from "./components/DebugInfo";
+import AboutUs from "./pages/AboutUs";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import FAQ from "./pages/FAQ";
+import Contact from "./pages/Contact";
 import { 
   AuthWrapper, 
   ExamDashboardWrapper, 
@@ -66,6 +70,11 @@ const App = () => {
                 <SolutionsViewerWrapper />
               </ProtectedRoute>
             } />
+            {/* Footer Pages */}
+            <Route path="/about" element={<AboutUs />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/contact" element={<Contact />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
