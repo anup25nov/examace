@@ -274,7 +274,7 @@ const ExamDashboard = () => {
         lastActive: null
       });
     }
-  }, [examId, allStats]);
+  }, [examId, allStats, testScores]);
 
   if (loading) {
     return (
@@ -481,56 +481,114 @@ const ExamDashboard = () => {
         {/* Stats Overview */}
         <div className="mb-8 text-center">
           <div className="flex items-center justify-center space-x-2 mb-3">
-            <Trophy className="w-6 h-6 text-primary" />
+            <Trophy className="w-6 h-6 text-primary animate-pulse" />
             <h3 className="text-xl font-bold text-foreground">Performance Statistics</h3>
           </div>
           <p className="text-sm text-muted-foreground mb-6 max-w-2xl mx-auto">
             Track your progress with Mock Tests and Previous Year Questions (PYQ)
           </p>
+          
+          {/* Motivational Message */}
+          {userStats.totalTests > 0 && (
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4 mb-6 max-w-2xl mx-auto">
+              <div className="flex items-center justify-center space-x-2 mb-2">
+                <span className="text-2xl">🎯</span>
+                <span className="font-semibold text-green-800">
+                  {userStats.totalTests === 1 
+                    ? "Great start! Keep the momentum going! 🚀"
+                    : userStats.totalTests < 5
+                    ? "You're building a strong foundation! 💪"
+                    : userStats.totalTests < 10
+                    ? "Excellent progress! You're on fire! 🔥"
+                    : "Outstanding dedication! You're a champion! 🏆"
+                  }
+                </span>
+              </div>
+              <p className="text-sm text-green-700">
+                {userStats.totalTests === 1 
+                  ? "Complete more tests to unlock your full potential!"
+                  : userStats.totalTests < 5
+                  ? "Consistency is key to success. Keep practicing!"
+                  : userStats.totalTests < 10
+                  ? "You're developing excellent test-taking skills!"
+                  : "Your commitment to learning is inspiring!"
+                }
+              </p>
+            </div>
+          )}
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 max-w-6xl mx-auto">
-          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
             <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 mx-auto mb-3 bg-blue-100 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 mx-auto mb-3 bg-blue-100 rounded-full flex items-center justify-center animate-bounce">
                 <Trophy className="w-6 h-6 text-blue-600" />
               </div>
-              <p className="text-3xl font-bold text-foreground mb-1">{userStats.totalTests}</p>
+              <p className="text-3xl font-bold text-foreground mb-1 animate-pulse">{userStats.totalTests}</p>
               <p className="text-sm font-medium text-muted-foreground">Tests Taken</p>
               <p className="text-xs text-muted-foreground mt-1">Mock + PYQ</p>
+              {userStats.totalTests > 0 && (
+                <div className="mt-2 w-full bg-blue-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-1000 ease-out"
+                    style={{ width: `${Math.min((userStats.totalTests / 20) * 100, 100)}%` }}
+                  ></div>
+                </div>
+              )}
             </CardContent>
           </Card>
           
-          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
             <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 mx-auto mb-3 bg-green-100 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 mx-auto mb-3 bg-green-100 rounded-full flex items-center justify-center animate-pulse">
                 <Target className="w-6 h-6 text-green-600" />
               </div>
-              <p className="text-3xl font-bold text-foreground mb-1">{userStats.avgScore}</p>
+              <p className="text-3xl font-bold text-foreground mb-1 animate-pulse">{userStats.avgScore}</p>
               <p className="text-sm font-medium text-muted-foreground">Average Score</p>
               <p className="text-xs text-muted-foreground mt-1">Mock Only</p>
+              {userStats.avgScore > 0 && (
+                <div className="mt-2 w-full bg-green-200 rounded-full h-2">
+                  <div 
+                    className="bg-green-600 h-2 rounded-full transition-all duration-1000 ease-out"
+                    style={{ width: `${Math.min((userStats.avgScore / 100) * 100, 100)}%` }}
+                  ></div>
+                </div>
+              )}
             </CardContent>
           </Card>
           
-          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
             <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 mx-auto mb-3 bg-purple-100 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 mx-auto mb-3 bg-purple-100 rounded-full flex items-center justify-center animate-bounce">
                 <Trophy className="w-6 h-6 text-purple-600" />
               </div>
-              <p className="text-3xl font-bold text-foreground mb-1">{userStats.bestScore}</p>
+              <p className="text-3xl font-bold text-foreground mb-1 animate-pulse">{userStats.bestScore}</p>
               <p className="text-sm font-medium text-muted-foreground">Best Score</p>
               <p className="text-xs text-muted-foreground mt-1">Mock Only</p>
+              {userStats.bestScore > 0 && (
+                <div className="mt-2 w-full bg-purple-200 rounded-full h-2">
+                  <div 
+                    className="bg-purple-600 h-2 rounded-full transition-all duration-1000 ease-out"
+                    style={{ width: `${Math.min((userStats.bestScore / 100) * 100, 100)}%` }}
+                  ></div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
             <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 mx-auto mb-3 bg-orange-100 rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 mx-auto mb-3 bg-orange-100 rounded-full flex items-center justify-center animate-pulse">
                 <Trophy className="w-6 h-6 text-orange-600" />
               </div>
-              <p className="text-3xl font-bold text-foreground mb-1">{userStats.bestRank || '-'}</p>
+              <p className="text-3xl font-bold text-foreground mb-1 animate-pulse">{userStats.bestRank || '-'}</p>
               <p className="text-sm font-medium text-muted-foreground">Best Rank</p>
               <p className="text-xs text-muted-foreground mt-1">Mock Only</p>
+              {userStats.bestRank > 0 && (
+                <div className="mt-2 text-xs text-orange-600 font-medium">
+                  🏆 Top {Math.round((userStats.bestRank / 100) * 100)}% performer!
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -549,7 +607,7 @@ const ExamDashboard = () => {
             <p className="text-white/90 mb-4">
               {availableTests.mock.some(test => !completedTests.has(`mock-${test.id}`))
                 ? 'Take a complete practice test with 100 questions in 180 minutes'
-                : 'Congratulations! You have completed all available mock tests.'}
+                : 'Congratulations! You have completed all available mock tests. Try PYQ or Practice tests to continue improving!'}
             </p>
             <Button 
               variant="secondary" 
@@ -564,8 +622,21 @@ const ExamDashboard = () => {
                 if (unattemptedMock) {
                   handleTestStart('mock', unattemptedMock.id, unattemptedMock.id);
                 } else {
-                  // All mocks completed - show congratulations
-                  alert('Congratulations! You have completed all mock tests. 🎉');
+                  // All mocks completed - navigate to PYQ section
+                  const pyqSection = document.querySelector('[data-section="pyq"]');
+                  if (pyqSection) {
+                    pyqSection.scrollIntoView({ behavior: 'smooth' });
+                    // Open the PYQ section
+                    toggleSection('pyq');
+                  } else {
+                    // Fallback: navigate to first available PYQ
+                    if (availableTests.pyq.length > 0) {
+                      const firstPyq = availableTests.pyq[0];
+                      handleTestStart('pyq', firstPyq.id, firstPyq.id);
+                    } else {
+                      alert('Congratulations! You have completed all mock tests. 🎉');
+                    }
+                  }
                 }
               }}
             >
@@ -577,7 +648,7 @@ const ExamDashboard = () => {
         {/* Main Sections */}
         <div className="space-y-6">
           {exam.sections.map((section) => (
-            <Card key={section.id} className="gradient-card border-0">
+            <Card key={section.id} className="gradient-card border-0" data-section={section.id}>
               <Collapsible 
                 open={openSections[section.id]} 
                 onOpenChange={() => toggleSection(section.id)}

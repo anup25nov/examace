@@ -24,6 +24,7 @@ const SolutionsViewer = () => {
   const [actualTestId, setActualTestId] = useState<string>('');
   const [rank, setRank] = useState<number | null>(null);
   const [totalParticipants, setTotalParticipants] = useState<number | null>(null);
+  const [highestMarks, setHighestMarks] = useState<number | null>(null);
 
   useEffect(() => {
     loadTestData();
@@ -35,6 +36,7 @@ const SolutionsViewer = () => {
       if (rankData) {
         setRank(rankData.rank);
         setTotalParticipants(rankData.total_participants);
+        setHighestMarks(rankData.highest_marks || rankData.score); // Use highest_marks if available, fallback to current score
       }
     } catch (error) {
       console.error('Error fetching rank info:', error);
@@ -207,6 +209,7 @@ const SolutionsViewer = () => {
       onClose={() => navigate(`/exam/${examId}`)}
       rank={rank}
       totalParticipants={totalParticipants}
+      highestMarks={highestMarks}
       onUpdateRank={handleUpdateRank}
     />
   );

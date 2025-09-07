@@ -40,6 +40,7 @@ interface SolutionsDisplayProps {
   onClose: () => void;
   rank?: number;
   totalParticipants?: number;
+  highestMarks?: number;
   onUpdateRank?: () => void;
 }
 
@@ -53,6 +54,7 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
   onClose,
   rank,
   totalParticipants,
+  highestMarks,
   onUpdateRank
 }) => {
   const [showExplanations, setShowExplanations] = useState<{ [key: number]: boolean }>(() => {
@@ -203,7 +205,7 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                 Detailed Marks Breakdown
               </h3>
               
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
                 <div className="text-center">
                   <div className="flex items-center justify-center space-x-2 mb-2">
                     <Trophy className="w-5 h-5 text-accent" />
@@ -232,6 +234,33 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                   </div>
                   <p className="text-2xl font-bold text-foreground">{marksBreakdown.attemptedQuestions}/{totalQuestions}</p>
                 </div>
+                {rank && totalParticipants && (
+                  <div className="text-center">
+                    <div className="flex items-center justify-center space-x-2 mb-2">
+                      <Trophy className="w-5 h-5 text-purple-600" />
+                      <span className="text-sm font-medium text-muted-foreground">Rank</span>
+                      <button
+                        onClick={onUpdateRank}
+                        className="text-xs text-purple-500 hover:text-purple-700"
+                        title="Rank will be updated as more students attempt this test"
+                      >
+                        ℹ️
+                      </button>
+                    </div>
+                    <p className="text-2xl font-bold text-foreground">#{rank}</p>
+                    <p className="text-xs text-muted-foreground">of {totalParticipants}</p>
+                  </div>
+                )}
+                {highestMarks && (
+                  <div className="text-center">
+                    <div className="flex items-center justify-center space-x-2 mb-2">
+                      <Trophy className="w-5 h-5 text-orange-600" />
+                      <span className="text-sm font-medium text-muted-foreground">Highest</span>
+                    </div>
+                    <p className="text-2xl font-bold text-foreground">{highestMarks}</p>
+                    <p className="text-xs text-muted-foreground">marks</p>
+                  </div>
+                )}
               </div>
 
               {/* Marks Details */}
