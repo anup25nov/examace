@@ -20,6 +20,8 @@ const SolutionsViewer = () => {
   const [testResults, setTestResults] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [actualTestType, setActualTestType] = useState<string>('');
+  const [actualTestId, setActualTestId] = useState<string>('');
 
   useEffect(() => {
     loadTestData();
@@ -32,8 +34,40 @@ const SolutionsViewer = () => {
       setLoading(true);
       setError('');
 
+      // Determine the correct test ID based on the route parameters
+      let testId = '';
+      let testTypeValue = '';
+      
+      if (testType && testType.startsWith('mock-')) {
+        // New URL structure: /solutions/ssc-cgl/mock/mock-test-3
+        testTypeValue = 'mock';
+        testId = testType; // testType is now the actual test ID
+      } else if (testType && testType.startsWith('pyq-')) {
+        // New URL structure: /solutions/ssc-cgl/pyq/pyq-2023
+        testTypeValue = 'pyq';
+        testId = testType; // testType is now the actual test ID
+      } else if (testType && testType.startsWith('practice-')) {
+        // New URL structure: /solutions/ssc-cgl/practice/practice-math
+        testTypeValue = 'practice';
+        testId = testType; // testType is now the actual test ID
+      } else {
+        // Fallback to old logic for backward compatibility
+        testTypeValue = testType || 'mock';
+        if (testType === 'mock') {
+          testId = topic || 'mock-test-1';
+        } else if (testType === 'pyq') {
+          testId = topic || '2024-day1-shift1';
+        } else if (testType === 'practice') {
+          testId = topic || 'maths-algebra';
+        }
+      }
+      
+      // Set the state variables
+      setActualTestType(testTypeValue);
+      setActualTestId(testId);
+
       // Load test data
-      const data = await QuestionLoader.loadQuestions(examId, testType as 'pyq' | 'practice' | 'mock', topic || testType);
+      const data = await QuestionLoader.loadQuestions(examId, testTypeValue as 'pyq' | 'practice' | 'mock', testId);
       if (!data) {
         setError('Test data not found');
         return;
@@ -45,8 +79,8 @@ const SolutionsViewer = () => {
       // Load user's completion for this test
       const { data: completions } = await supabaseStatsService.getTestCompletions(examId);
       const testCompletion = completions?.find(completion => 
-        completion.test_type === testType && 
-        completion.test_id === (topic || testType)
+        completion.test_type === testTypeValue && 
+        completion.test_id === testId
       );
 
       if (testCompletion) {
