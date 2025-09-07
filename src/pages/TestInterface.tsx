@@ -618,6 +618,18 @@ const TestInterface = () => {
                   {selectedLanguage === 'hindi' ? question.questionHi : question.questionEn}
                 </div>
                 
+                {/* Question Image */}
+                {question.questionImage && (
+                  <div className="my-4 flex justify-center">
+                    <img 
+                      src={question.questionImage} 
+                      alt="Question" 
+                      className="max-w-full h-auto rounded-lg shadow-md border"
+                      style={{ maxHeight: '400px' }}
+                    />
+                  </div>
+                )}
+                
                 <div className="space-y-3">
                   {question.options && question.options.length > 0 ? (
                     question.options.map((option, index) => (
@@ -762,7 +774,7 @@ const TestInterface = () => {
 
       {/* Timer End Popup */}
       <Dialog open={showTimerEndPopup} onOpenChange={() => {}}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md animate-none">
           <DialogHeader>
             <DialogTitle className="text-center text-lg font-bold text-destructive">
               Time's Up!

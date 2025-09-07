@@ -28,6 +28,8 @@ interface Question {
   negativeMarks: number;
   duration: number;
   explanation?: string;
+  questionImage?: string;
+  explanationImage?: string;
 }
 
 interface SolutionsDisplayProps {
@@ -200,95 +202,108 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
             </div>
             {/* Detailed Marks Breakdown */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 mt-6">
-              <h3 className="text-lg font-semibold text-blue-900 mb-4 flex items-center">
+              <h3 className="text-lg font-semibold text-blue-900 mb-6 flex items-center">
                 <Trophy className="w-5 h-5 mr-2" />
-                Detailed Marks Breakdown
+                Detailed Performance Analysis
               </h3>
               
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-4">
-                <div className="text-center">
+              {/* Primary Stats Row */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="text-center bg-white rounded-lg p-4 shadow-sm">
                   <div className="flex items-center justify-center space-x-2 mb-2">
                     <Trophy className="w-5 h-5 text-accent" />
                     <span className="text-sm font-medium text-muted-foreground">Score</span>
                   </div>
                   <p className="text-2xl font-bold text-foreground">{score}%</p>
+                  <p className="text-xs text-muted-foreground">Overall Performance</p>
                 </div>
-                <div className="text-center">
+                <div className="text-center bg-white rounded-lg p-4 shadow-sm">
                   <div className="flex items-center justify-center space-x-2 mb-2">
                     <Target className="w-5 h-5 text-primary" />
-                    <span className="text-sm font-medium text-muted-foreground">Correct</span>
+                    <span className="text-sm font-medium text-muted-foreground">Accuracy</span>
                   </div>
-                  <p className="text-2xl font-bold text-foreground">{marksBreakdown.correctQuestions}/{totalQuestions}</p>
+                  <p className="text-2xl font-bold text-foreground">{marksBreakdown.correctQuestions}/{marksBreakdown.attemptedQuestions}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {marksBreakdown.attemptedQuestions > 0 ? Math.round((marksBreakdown.correctQuestions / marksBreakdown.attemptedQuestions) * 100) : 0}% correct
+                  </p>
                 </div>
-                <div className="text-center">
+                <div className="text-center bg-white rounded-lg p-4 shadow-sm">
                   <div className="flex items-center justify-center space-x-2 mb-2">
                     <Clock className="w-5 h-5 text-warning" />
-                    <span className="text-sm font-medium text-muted-foreground">Time</span>
+                    <span className="text-sm font-medium text-muted-foreground">Time Taken</span>
                   </div>
                   <p className="text-2xl font-bold text-foreground">{formatTime(timeTaken)}</p>
+                  <p className="text-xs text-muted-foreground">Total Duration</p>
                 </div>
-                <div className="text-center">
+                <div className="text-center bg-white rounded-lg p-4 shadow-sm">
                   <div className="flex items-center justify-center space-x-2 mb-2">
                     <BookOpen className="w-5 h-5 text-success" />
                     <span className="text-sm font-medium text-muted-foreground">Attempted</span>
                   </div>
                   <p className="text-2xl font-bold text-foreground">{marksBreakdown.attemptedQuestions}/{totalQuestions}</p>
-                </div>
-                {rank && totalParticipants && (
-                  <div className="text-center">
-                    <div className="flex items-center justify-center space-x-2 mb-2">
-                      <Trophy className="w-5 h-5 text-purple-600" />
-                      <span className="text-sm font-medium text-muted-foreground">Rank</span>
-                      <button
-                        onClick={onUpdateRank}
-                        className="text-xs text-purple-500 hover:text-purple-700"
-                        title="Rank will be updated as more students attempt this test"
-                      >
-                        ℹ️
-                      </button>
-                    </div>
-                    <p className="text-2xl font-bold text-foreground">#{rank}</p>
-                    <p className="text-xs text-muted-foreground">of {totalParticipants}</p>
-                  </div>
-                )}
-                {highestMarks && (
-                  <div className="text-center">
-                    <div className="flex items-center justify-center space-x-2 mb-2">
-                      <Trophy className="w-5 h-5 text-orange-600" />
-                      <span className="text-sm font-medium text-muted-foreground">Highest</span>
-                    </div>
-                    <p className="text-2xl font-bold text-foreground">{highestMarks}</p>
-                    <p className="text-xs text-muted-foreground">marks</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Marks Details */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-blue-200">
-                <div className="text-center">
-                  <div className="flex items-center justify-center space-x-2 mb-2">
-                    <span className="text-sm font-medium text-green-700">Marks Obtained</span>
-                  </div>
-                  <p className="text-xl font-bold text-green-600">+{marksBreakdown.obtainedMarks}</p>
-                  <p className="text-xs text-muted-foreground">out of {marksBreakdown.totalMarks}</p>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center space-x-2 mb-2">
-                    <span className="text-sm font-medium text-red-700">Negative Marks</span>
-                  </div>
-                  <p className="text-xl font-bold text-red-600">-{marksBreakdown.negativeMarks}</p>
-                  <p className="text-xs text-muted-foreground">for {marksBreakdown.incorrectQuestions} wrong answers</p>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center space-x-2 mb-2">
-                    <span className="text-sm font-medium text-blue-700">Net Marks</span>
-                  </div>
-                  <p className="text-xl font-bold text-blue-600">{marksBreakdown.netMarks}</p>
                   <p className="text-xs text-muted-foreground">
-                    {marksBreakdown.skippedQuestions > 0 ? `${marksBreakdown.skippedQuestions} skipped` : 'All attempted'}
+                    {marksBreakdown.skippedQuestions > 0 ? `${marksBreakdown.skippedQuestions} skipped` : 'All questions'}
                   </p>
                 </div>
               </div>
+
+              {/* Marks Breakdown Row */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="text-center bg-green-50 rounded-lg p-4 border border-green-200">
+                  <div className="flex items-center justify-center space-x-2 mb-2">
+                    <span className="text-sm font-medium text-green-700">Marks Obtained</span>
+                  </div>
+                  <p className="text-2xl font-bold text-green-600">+{marksBreakdown.obtainedMarks}</p>
+                  <p className="text-xs text-muted-foreground">out of {marksBreakdown.totalMarks} total</p>
+                </div>
+                <div className="text-center bg-red-50 rounded-lg p-4 border border-red-200">
+                  <div className="flex items-center justify-center space-x-2 mb-2">
+                    <span className="text-sm font-medium text-red-700">Negative Marks</span>
+                  </div>
+                  <p className="text-2xl font-bold text-red-600">-{marksBreakdown.negativeMarks}</p>
+                  <p className="text-xs text-muted-foreground">for {marksBreakdown.incorrectQuestions} wrong answers</p>
+                </div>
+                <div className="text-center bg-blue-50 rounded-lg p-4 border border-blue-200">
+                  <div className="flex items-center justify-center space-x-2 mb-2">
+                    <span className="text-sm font-medium text-blue-700">Net Score</span>
+                  </div>
+                  <p className="text-2xl font-bold text-blue-600">{marksBreakdown.netMarks}</p>
+                  <p className="text-xs text-muted-foreground">Final Marks</p>
+                </div>
+              </div>
+
+              {/* Ranking & Competition Row */}
+              {(rank && totalParticipants) || highestMarks ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-blue-200">
+                  {rank && totalParticipants && (
+                    <div className="text-center bg-purple-50 rounded-lg p-4 border border-purple-200">
+                      <div className="flex items-center justify-center space-x-2 mb-2">
+                        <Trophy className="w-5 h-5 text-purple-600" />
+                        <span className="text-sm font-medium text-purple-700">Your Rank</span>
+                        <button
+                          onClick={onUpdateRank}
+                          className="text-xs text-purple-500 hover:text-purple-700"
+                          title="Rank will be updated as more students attempt this test"
+                        >
+                          ℹ️
+                        </button>
+                      </div>
+                      <p className="text-2xl font-bold text-purple-600">#{rank}</p>
+                      <p className="text-xs text-muted-foreground">out of {totalParticipants} participants</p>
+                    </div>
+                  )}
+                  {highestMarks && (
+                    <div className="text-center bg-orange-50 rounded-lg p-4 border border-orange-200">
+                      <div className="flex items-center justify-center space-x-2 mb-2">
+                        <Trophy className="w-5 h-5 text-orange-600" />
+                        <span className="text-sm font-medium text-orange-700">Highest Score</span>
+                      </div>
+                      <p className="text-2xl font-bold text-orange-600">{highestMarks}</p>
+                      <p className="text-xs text-muted-foreground">marks achieved by anyone</p>
+                    </div>
+                  )}
+                </div>
+              ) : null}
             </div>
           </CardHeader>
         </Card>
@@ -332,6 +347,18 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                       <p className="text-muted-foreground text-sm">
                         {question.questionHi}
                       </p>
+                      
+                      {/* Question Image */}
+                      {question.questionImage && (
+                        <div className="my-4 flex justify-center">
+                          <img 
+                            src={question.questionImage} 
+                            alt="Question" 
+                            className="max-w-full h-auto rounded-lg shadow-md border"
+                            style={{ maxHeight: '300px' }}
+                          />
+                        </div>
+                      )}
                     </div>
                     <div className="ml-4">
                       {isCorrect ? (
@@ -443,6 +470,18 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                         <p className="text-blue-800 text-sm leading-relaxed mb-3">
                           {question.explanation || `This ${question.difficulty} level ${question.subject} question tests your knowledge of ${question.topic}. The correct answer is option ${String.fromCharCode(65 + question.correct)} based on the given options.`}
                         </p>
+                        
+                        {/* Explanation Image */}
+                        {question.explanationImage && (
+                          <div className="mt-3 flex justify-center">
+                            <img 
+                              src={question.explanationImage} 
+                              alt="Explanation" 
+                              className="max-w-full h-auto rounded-lg shadow-sm border"
+                              style={{ maxHeight: '250px' }}
+                            />
+                          </div>
+                        )}
                         <div className="bg-green-50 border border-green-200 rounded p-3">
                           <p className="text-green-800 text-sm font-medium">
                             <strong>Final Answer:</strong> Option {String.fromCharCode(65 + question.correct)} - {question.options[question.correct]}

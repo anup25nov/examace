@@ -162,8 +162,16 @@ const Index = () => {
               >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
-                    <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${exam.color} flex items-center justify-center`}>
-                      <exam.icon className="w-6 h-6 text-white" />
+                    <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${exam.color} flex items-center justify-center overflow-hidden`}>
+                      {exam.logo ? (
+                        <img 
+                          src={exam.logo} 
+                          alt={`${exam.name} logo`}
+                          className="w-8 h-8 object-contain"
+                        />
+                      ) : (
+                        <exam.icon className="w-6 h-6 text-white" />
+                      )}
                     </div>
                   </div>
                   

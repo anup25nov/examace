@@ -47,6 +47,7 @@ export interface ExamConfig {
   fullName: string;
   icon: string;
   color: string;
+  logo?: string;
   stats: {
     enrolled: string;
     tests: string;
@@ -177,6 +178,7 @@ export const examConfigs: { [key: string]: ExamConfig } = {
     fullName: "Staff Selection Commission Combined Graduate Level",
     icon: "BookOpen",
     color: "from-blue-500 to-blue-600",
+    logo: "/logos/ssc-cgl-logo.png",
     stats: { enrolled: "2.5M+", tests: "150+" },
     sections: [
       {
@@ -211,6 +213,7 @@ export const examConfigs: { [key: string]: ExamConfig } = {
     fullName: "Staff Selection Commission Multi Tasking Staff",
     icon: "Users",
     color: "from-green-500 to-green-600",
+    logo: "/logos/ssc-mts-logo.png",
     stats: { enrolled: "1.8M+", tests: "120+" },
     sections: [
       {
@@ -245,6 +248,7 @@ export const examConfigs: { [key: string]: ExamConfig } = {
     fullName: "Railway Recruitment Board Examinations",
     icon: "TrendingUp",
     color: "from-purple-500 to-purple-600",
+    logo: "/logos/railway-logo.png",
     stats: { enrolled: "3.2M+", tests: "200+" },
     sections: [
       {
@@ -279,6 +283,7 @@ export const examConfigs: { [key: string]: ExamConfig } = {
     fullName: "Bank Probationary Officer",
     icon: "Trophy",
     color: "from-orange-500 to-orange-600",
+    logo: "/logos/bank-po-logo.png",
     stats: { enrolled: "1.9M+", tests: "180+" },
     sections: [
       {
@@ -313,6 +318,7 @@ export const examConfigs: { [key: string]: ExamConfig } = {
     fullName: "Indian Air Force Group X & Y",
     icon: "Brain",
     color: "from-red-500 to-red-600",
+    logo: "/logos/airforce-logo.png",
     stats: { enrolled: "850K+", tests: "90+" },
     sections: [
       {

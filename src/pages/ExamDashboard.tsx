@@ -366,7 +366,7 @@ const ExamDashboard = () => {
     const testScore = testScores.get(scoreKey);
 
     return (
-      <Card key={testId} className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${
+      <Card key={testId} className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg ${
         isCompleted ? 'border-green-200 bg-green-50/50 shadow-md' : 'border-border hover:border-primary/20'
       }`}>
         <CardContent className="p-4">
@@ -632,10 +632,14 @@ const ExamDashboard = () => {
                     // Open the PYQ section
                     toggleSection('pyq');
                   } else {
-                    // Fallback: navigate to first available PYQ
-                    if (availableTests.pyq.length > 0) {
-                      const firstPyq = availableTests.pyq[0];
-                      handleTestStart('pyq', firstPyq.id, firstPyq.id);
+                    // Fallback: find first unattempted PYQ
+                    const unattemptedPyq = availableTests.pyq.find(test => {
+                      const completionKey = `pyq-${test.id}`;
+                      return !completedTests.has(completionKey);
+                    });
+                    
+                    if (unattemptedPyq) {
+                      handleTestStart('pyq', unattemptedPyq.id, unattemptedPyq.id);
                     } else {
                       alert('Congratulations! You have completed all mock tests. 🎉');
                     }
