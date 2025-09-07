@@ -268,7 +268,7 @@ export const useExamStats = (examId?: string) => {
         correctAnswers,
         timeTaken,
         answers: answers.details || answers,
-        testType: sectionId,  // sectionId is the test type (mock/pyq/practice)
+        testType: sectionId,  // sectionId is now the actual test type (mock/pyq/practice)
         testId: testId,       // testId is the actual test ID (mock-test-3, etc.)
         topicId: topicId      // topicId for practice tests
       });

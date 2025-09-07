@@ -21,7 +21,7 @@
       "topic": "algebra",
       "marks": 1,
       "negativeMarks": 0.25,
-      "duration": 60,
+      "duration": 0.1,
       "explanation": "The square root of 144 is 12 because 12 × 12 = 144."
     },
     {
@@ -35,7 +35,7 @@
       "topic": "algebra",
       "marks": 1,
       "negativeMarks": 0.25,
-      "duration": 60,
+      "duration": 0.1,
       "explanation": "Solving: 2x + 5 = 15, so 2x = 10, therefore x = 5."
     }
   ]

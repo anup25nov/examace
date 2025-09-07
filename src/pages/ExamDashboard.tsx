@@ -77,7 +77,7 @@ const ExamDashboard = () => {
 
     // Check mock tests
     for (const test of availableTests.mock) {
-      const isCompleted = await isTestCompleted(examId, 'mock', test.id);
+      const isCompleted = await isTestCompleted(examId, 'mock', test.id, test.id);
       if (isCompleted) {
         // For mock tests, we pass test.id as topicId, so the key becomes mock-testId-testId
         completed.add(`mock-${test.id}-${test.id}`);
@@ -86,7 +86,7 @@ const ExamDashboard = () => {
 
     // Check PYQ tests
     for (const test of availableTests.pyq) {
-      const isCompleted = await isTestCompleted(examId, 'pyq', test.id);
+      const isCompleted = await isTestCompleted(examId, 'pyq', test.id, test.id);
       if (isCompleted) {
         // For PYQ tests, we pass test.id as topicId, so the key becomes pyq-testId-testId
         completed.add(`pyq-${test.id}-${test.id}`);
@@ -95,7 +95,7 @@ const ExamDashboard = () => {
 
     // Check practice tests
     for (const test of availableTests.practice) {
-      const isCompleted = await isTestCompleted(examId, 'practice', test.id);
+      const isCompleted = await isTestCompleted(examId, 'practice', test.id, test.id);
       if (isCompleted) {
         // For practice tests, we pass test.id as topicId, so the key becomes practice-testId-testId
         completed.add(`practice-${test.id}-${test.id}`);
@@ -113,26 +113,30 @@ const ExamDashboard = () => {
 
     // Load Mock test scores
     for (const test of availableTests.mock) {
-      const scoreData = await getIndividualTestScore(examId, 'mock', test.id);
-      if (scoreData.score !== null) {
+      const scoreResult = await getIndividualTestScore(examId, 'mock', test.id);
+      // Handle both Supabase result format and fallback format
+      const scoreData = (scoreResult as any).data || scoreResult;
+      if (scoreData && scoreData.score !== null && scoreData.score !== undefined) {
         // For mock tests, we pass test.id as topicId, so the key becomes mock-testId-testId
         scores.set(`mock-${test.id}-${test.id}`, {
           score: scoreData.score,
           rank: scoreData.rank || 0,
-          totalParticipants: scoreData.totalParticipants
+          totalParticipants: scoreData.totalParticipants || 0
         });
       }
     }
 
     // Load PYQ test scores
     for (const test of availableTests.pyq) {
-      const scoreData = await getIndividualTestScore(examId, 'pyq', test.id);
-      if (scoreData.score !== null) {
+      const scoreResult = await getIndividualTestScore(examId, 'pyq', test.id);
+      // Handle both Supabase result format and fallback format
+      const scoreData = (scoreResult as any).data || scoreResult;
+      if (scoreData && scoreData.score !== null && scoreData.score !== undefined) {
         // For PYQ tests, we pass test.id as topicId, so the key becomes pyq-testId-testId
         scores.set(`pyq-${test.id}-${test.id}`, {
           score: scoreData.score,
           rank: scoreData.rank || 0,
-          totalParticipants: scoreData.totalParticipants
+          totalParticipants: scoreData.totalParticipants || 0
         });
       }
     }
@@ -292,8 +296,8 @@ const ExamDashboard = () => {
     
     
     // The route expects: /test/:examId/:sectionId/:testType/:topic?
-    // For mock tests, we need to provide a sectionId
-    const sectionId = 'mock'; // Use 'mock' as sectionId for all test types
+    // Use the actual test type as sectionId
+    const sectionId = type; // Use the actual test type (mock/pyq/practice) as sectionId
     const testPath = topicId 
       ? `/test/${examId}/${sectionId}/${type}/${topicId}`
       : `/test/${examId}/${sectionId}/${type}/${itemId}`;
@@ -302,7 +306,7 @@ const ExamDashboard = () => {
 
   const handleViewSolutions = (type: 'practice' | 'pyq' | 'mock', itemId: string, topicId?: string) => {
     // Navigate to solutions view for the completed test
-    const sectionId = 'mock'; // Use 'mock' as sectionId for all test types
+    const sectionId = type; // Use the actual test type (mock/pyq/practice) as sectionId
     const solutionsPath = topicId 
       ? `/solutions/${examId}/${sectionId}/${type}/${topicId}`
       : `/solutions/${examId}/${sectionId}/${type}/${itemId}`;
