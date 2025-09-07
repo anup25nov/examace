@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,6 +30,33 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
   const [userExists, setUserExists] = useState(false);
   const [hasPin, setHasPin] = useState(false);
   const [userId, setUserId] = useState('');
+  const [resendTimer, setResendTimer] = useState(0);
+  const [canResend, setCanResend] = useState(false);
+
+  // Timer effect for OTP resend
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => {
+          if (prev <= 1) {
+            setCanResend(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
+
+  // Start timer when OTP step is reached
+  useEffect(() => {
+    if (step === 'otp') {
+      setResendTimer(60);
+      setCanResend(false);
+    }
+  }, [step]);
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -180,6 +207,28 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     }
   };
 
+  const handleResendOTP = async () => {
+    if (!canResend) return;
+    
+    setLoading(true);
+    setError('');
+
+    try {
+      const result = await sendOTPCode(email);
+      if (result.success) {
+        setResendTimer(60);
+        setCanResend(false);
+        setError('');
+      } else {
+        setError(result.error || 'Failed to resend OTP');
+      }
+    } catch (error: any) {
+      setError(error.message || 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const resetForm = () => {
     setStep('email');
     setEmail('');
@@ -289,6 +338,24 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
                 'Verify'
               )}
             </Button>
+          </div>
+          
+          <div className="text-center">
+            {canResend ? (
+              <Button
+                type="button"
+                variant="link"
+                onClick={handleResendOTP}
+                className="text-sm"
+                disabled={loading}
+              >
+                Resend OTP
+              </Button>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Resend OTP in {resendTimer}s
+              </p>
+            )}
           </div>
         </form>
       </CardContent>

@@ -34,5 +34,24 @@ export const useUserStreak = () => {
     fetchStreak();
   }, [user, isAuthenticated]);
 
-  return { streak, loading };
+  const refreshStreak = async () => {
+    if (!isAuthenticated || !user) return;
+    
+    setLoading(true);
+    try {
+      const streakData = await supabaseStatsService.getUserStreak();
+      if (streakData?.data) {
+        setStreak({
+          current_streak: streakData.data.current_streak,
+          longest_streak: streakData.data.longest_streak
+        });
+      }
+    } catch (error) {
+      console.error('Failed to refresh user streak:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { streak, loading, refreshStreak };
 };

@@ -11,6 +11,7 @@ interface LanguageSelectorProps {
   languages: string[];
   defaultLanguage: string;
   onLanguageSelect: (language: string) => void;
+  testData?: any; // Add test data to show instructions
 }
 
 export const LanguageSelector = ({ 
@@ -18,7 +19,8 @@ export const LanguageSelector = ({
   testName, 
   languages, 
   defaultLanguage, 
-  onLanguageSelect 
+  onLanguageSelect,
+  testData
 }: LanguageSelectorProps) => {
   const [selectedLanguage, setSelectedLanguage] = useState(defaultLanguage);
 
@@ -77,6 +79,43 @@ export const LanguageSelector = ({
               </div>
             ))}
           </RadioGroup>
+          
+          {/* Test Instructions for Mock Tests */}
+          {testData && testData.examInfo.testType === 'mock' && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+              <h3 className="font-semibold text-blue-900 text-sm">Test Instructions</h3>
+              <div className="space-y-2 text-xs text-blue-800">
+                <div className="flex items-start space-x-2">
+                  <span className="font-medium">•</span>
+                  <span><strong>Total Questions:</strong> {testData.examInfo.totalQuestions}</span>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <span className="font-medium">•</span>
+                  <span><strong>Duration:</strong> {Math.round(testData.questions.reduce((total: number, q: any) => total + q.duration, 0))} minutes</span>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <span className="font-medium">•</span>
+                  <span><strong>Total Marks:</strong> {testData.questions.reduce((total: number, q: any) => total + q.marks, 0)}</span>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <span className="font-medium">•</span>
+                  <span><strong>Negative Marking:</strong> {testData.questions[0]?.negativeMarks || 0.25} marks deducted for each wrong answer</span>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <span className="font-medium">•</span>
+                  <span><strong>Navigation:</strong> Use Next/Previous buttons or question grid to navigate</span>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <span className="font-medium">•</span>
+                  <span><strong>Flagging:</strong> Flag questions for review using the flag icon</span>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <span className="font-medium">•</span>
+                  <span><strong>Submission:</strong> Test auto-submits when time ends or click Submit</span>
+                </div>
+              </div>
+            </div>
+          )}
           
           <Button 
             onClick={handleStart} 

@@ -36,10 +36,15 @@ export const useAuth = () => {
             
             // Update daily visit streak (only once per day)
             try {
-              const today = new Date().toDateString();
+              // Use UTC date for consistency with database
+              const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
               const lastVisitDate = localStorage.getItem('lastVisitDate');
+              
+              console.log('Streak check - Today:', today, 'Last visit:', lastVisitDate);
+              
               if (lastVisitDate !== today) {
-                await supabaseStatsService.updateDailyVisit();
+                const result = await supabaseStatsService.updateDailyVisit();
+                console.log('Daily visit update result:', result);
                 localStorage.setItem('lastVisitDate', today);
                 console.log('Daily visit updated for:', today);
               } else {

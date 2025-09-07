@@ -436,6 +436,7 @@ const TestInterface = () => {
         languages={testData.examInfo.languages}
         defaultLanguage={testData.examInfo.defaultLanguage}
         onLanguageSelect={handleLanguageSelect}
+        testData={testData}
       />
     );
   }
@@ -533,7 +534,7 @@ const TestInterface = () => {
           </div>
           
           {/* Subject Navigation - Only show for Mock and PYQ tests */}
-          {subjectDistribution.length > 0 && (testType === 'mock' || testType === 'pyq') && (
+          {subjectDistribution.length > 0 && (actualTestType === 'mock' || actualTestType === 'pyq') && (
             <div className="bg-card/50 backdrop-blur-sm border-t border-border/50">
               <div className="container mx-auto px-4 py-3">
                 <div className="flex flex-col space-y-3 lg:flex-row lg:items-center lg:justify-between lg:space-y-0">

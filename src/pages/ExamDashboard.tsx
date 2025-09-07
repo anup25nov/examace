@@ -43,6 +43,7 @@ const ExamDashboard = () => {
     totalTests: 0,
     avgScore: 0,
     bestScore: 0,
+    bestRank: 0,
     lastActive: null as Date | null
   });
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
@@ -240,10 +241,19 @@ const ExamDashboard = () => {
       const currentExamStats = allStats.find(stat => stat.examId === examId);
       if (currentExamStats) {
         
+        // Calculate best rank from individual test scores
+        let bestRank = 0;
+        testScores.forEach((scoreData) => {
+          if (scoreData.rank > 0 && (bestRank === 0 || scoreData.rank < bestRank)) {
+            bestRank = scoreData.rank;
+          }
+        });
+
         setUserStats({
           totalTests: currentExamStats.totalTests,
           avgScore: currentExamStats.averageScore,
           bestScore: currentExamStats.bestScore,
+          bestRank: bestRank,
           lastActive: currentExamStats.lastTestDate
         });
       } else {
@@ -251,6 +261,7 @@ const ExamDashboard = () => {
           totalTests: 0,
           avgScore: 0,
           bestScore: 0,
+          bestRank: 0,
           lastActive: null
         });
       }
@@ -259,6 +270,7 @@ const ExamDashboard = () => {
         totalTests: 0,
         avgScore: 0,
         bestScore: 0,
+        bestRank: 0,
         lastActive: null
       });
     }
@@ -351,8 +363,8 @@ const ExamDashboard = () => {
     const testScore = testScores.get(scoreKey);
 
     return (
-      <Card key={testId} className={`relative overflow-hidden transition-all duration-200 hover:shadow-md ${
-        isCompleted ? 'border-green-200 bg-green-50/50' : 'border-border'
+      <Card key={testId} className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${
+        isCompleted ? 'border-green-200 bg-green-50/50 shadow-md' : 'border-border hover:border-primary/20'
       }`}>
         <CardContent className="p-4">
           <div className="flex items-start justify-between mb-3">
@@ -404,7 +416,7 @@ const ExamDashboard = () => {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="flex-1 h-8 text-xs"
+                    className="flex-1 h-9 text-xs hover:bg-blue-50 hover:border-blue-300 transition-colors"
                     onClick={() => handleViewSolutions(testType, testId, topicId)}
                   >
                     📖 View Solutions
@@ -412,7 +424,7 @@ const ExamDashboard = () => {
                   <Button
                     size="sm"
                     variant="default"
-                    className="flex-1 h-8 text-xs"
+                    className="flex-1 h-9 text-xs bg-primary hover:bg-primary/90 transition-colors"
                     onClick={() => handleTestStart(testType, testId, topicId)}
                   >
                     🔄 Retry
@@ -423,7 +435,7 @@ const ExamDashboard = () => {
               <Button
                 size="sm"
                 variant="default"
-                className="w-full h-8 text-xs"
+                className="w-full h-9 text-xs bg-primary hover:bg-primary/90 transition-colors"
                 onClick={() => handleTestStart(testType, testId, topicId)}
               >
                 ▶️ Start Test
@@ -467,41 +479,58 @@ const ExamDashboard = () => {
 
       <div className="container mx-auto px-4 py-8">
         {/* Stats Overview */}
-        <div className="mb-4">
-          <div className="flex items-center space-x-2 mb-2">
-            <Trophy className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold text-foreground">Performance Statistics</h3>
+        <div className="mb-8 text-center">
+          <div className="flex items-center justify-center space-x-2 mb-3">
+            <Trophy className="w-6 h-6 text-primary" />
+            <h3 className="text-xl font-bold text-foreground">Performance Statistics</h3>
           </div>
-          <p className="text-sm text-muted-foreground mb-4">
-            Based on Mock Tests and Previous Year Questions (PYQ) only
+          <p className="text-sm text-muted-foreground mb-6 max-w-2xl mx-auto">
+            Track your progress with Mock Tests and Previous Year Questions (PYQ)
           </p>
         </div>
         
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-          <Card className="gradient-card border-0">
-            <CardContent className="p-4 text-center">
-              <Trophy className="w-8 h-8 mx-auto mb-2 text-accent" />
-              <p className="text-2xl font-bold text-foreground">{userStats.totalTests}</p>
-              <p className="text-sm text-muted-foreground">Tests Taken</p>
-              <p className="text-xs text-muted-foreground">(Mock + PYQ)</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 max-w-6xl mx-auto">
+          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <CardContent className="p-6 text-center">
+              <div className="w-12 h-12 mx-auto mb-3 bg-blue-100 rounded-full flex items-center justify-center">
+                <Trophy className="w-6 h-6 text-blue-600" />
+              </div>
+              <p className="text-3xl font-bold text-foreground mb-1">{userStats.totalTests}</p>
+              <p className="text-sm font-medium text-muted-foreground">Tests Taken</p>
+              <p className="text-xs text-muted-foreground mt-1">Mock + PYQ</p>
             </CardContent>
           </Card>
           
-          <Card className="gradient-card border-0">
-            <CardContent className="p-4 text-center">
-              <Target className="w-8 h-8 mx-auto mb-2 text-primary" />
-              <p className="text-2xl font-bold text-foreground">{userStats.avgScore}%</p>
-              <p className="text-sm text-muted-foreground">Average Score</p>
-              <p className="text-xs text-muted-foreground">(Mock + PYQ)</p>
+          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <CardContent className="p-6 text-center">
+              <div className="w-12 h-12 mx-auto mb-3 bg-green-100 rounded-full flex items-center justify-center">
+                <Target className="w-6 h-6 text-green-600" />
+              </div>
+              <p className="text-3xl font-bold text-foreground mb-1">{userStats.avgScore}</p>
+              <p className="text-sm font-medium text-muted-foreground">Average Score</p>
+              <p className="text-xs text-muted-foreground mt-1">Mock Only</p>
             </CardContent>
           </Card>
           
-          <Card className="gradient-card border-0">
-            <CardContent className="p-4 text-center">
-              <Trophy className="w-8 h-8 mx-auto mb-2 text-success" />
-              <p className="text-2xl font-bold text-foreground">{userStats.bestScore}%</p>
-              <p className="text-sm text-muted-foreground">Best Score</p>
-              <p className="text-xs text-muted-foreground">(Mock + PYQ)</p>
+          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <CardContent className="p-6 text-center">
+              <div className="w-12 h-12 mx-auto mb-3 bg-purple-100 rounded-full flex items-center justify-center">
+                <Trophy className="w-6 h-6 text-purple-600" />
+              </div>
+              <p className="text-3xl font-bold text-foreground mb-1">{userStats.bestScore}</p>
+              <p className="text-sm font-medium text-muted-foreground">Best Score</p>
+              <p className="text-xs text-muted-foreground mt-1">Mock Only</p>
+            </CardContent>
+          </Card>
+
+          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <CardContent className="p-6 text-center">
+              <div className="w-12 h-12 mx-auto mb-3 bg-orange-100 rounded-full flex items-center justify-center">
+                <Trophy className="w-6 h-6 text-orange-600" />
+              </div>
+              <p className="text-3xl font-bold text-foreground mb-1">{userStats.bestRank || '-'}</p>
+              <p className="text-sm font-medium text-muted-foreground">Best Rank</p>
+              <p className="text-xs text-muted-foreground mt-1">Mock Only</p>
             </CardContent>
           </Card>
 
@@ -512,16 +541,31 @@ const ExamDashboard = () => {
         <Card className="exam-card-hover cursor-pointer gradient-primary text-white border-0 mb-8">
           <CardContent className="p-6 text-center">
             <Play className="w-12 h-12 mx-auto mb-4" />
-            <h3 className="text-xl font-bold mb-2">Quick Full Mock Test</h3>
-            <p className="text-white/90 mb-4">Take a complete practice test with 100 questions in 180 minutes</p>
+            <h3 className="text-xl font-bold mb-2">
+              {availableTests.mock.some(test => !completedTests.has(`mock-${test.id}`)) 
+                ? 'Quick Full Mock Test' 
+                : 'All Mock Tests Completed! 🎉'}
+            </h3>
+            <p className="text-white/90 mb-4">
+              {availableTests.mock.some(test => !completedTests.has(`mock-${test.id}`))
+                ? 'Take a complete practice test with 100 questions in 180 minutes'
+                : 'Congratulations! You have completed all available mock tests.'}
+            </p>
             <Button 
               variant="secondary" 
               className="w-full max-w-xs"
               onClick={() => {
-                // Find the first available mock test
-                if (availableTests.mock.length > 0) {
-                  const firstTest = availableTests.mock[0];
-                  handleTestStart('mock', firstTest.id, firstTest.id);
+                // Find the first unattempted mock test
+                const unattemptedMock = availableTests.mock.find(test => {
+                  const completionKey = `mock-${test.id}`;
+                  return !completedTests.has(completionKey);
+                });
+                
+                if (unattemptedMock) {
+                  handleTestStart('mock', unattemptedMock.id, unattemptedMock.id);
+                } else {
+                  // All mocks completed - show congratulations
+                  alert('Congratulations! You have completed all mock tests. 🎉');
                 }
               }}
             >

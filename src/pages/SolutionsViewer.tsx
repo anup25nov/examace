@@ -22,10 +22,30 @@ const SolutionsViewer = () => {
   const [error, setError] = useState('');
   const [actualTestType, setActualTestType] = useState<string>('');
   const [actualTestId, setActualTestId] = useState<string>('');
+  const [rank, setRank] = useState<number | null>(null);
+  const [totalParticipants, setTotalParticipants] = useState<number | null>(null);
 
   useEffect(() => {
     loadTestData();
   }, [examId, sectionId, testType, topic]);
+
+  const fetchRankInfo = async (examId: string, testType: string, testId: string) => {
+    try {
+      const { data: rankData } = await supabaseStatsService.getIndividualTestScore(examId, testType, testId);
+      if (rankData) {
+        setRank(rankData.rank);
+        setTotalParticipants(rankData.total_participants);
+      }
+    } catch (error) {
+      console.error('Error fetching rank info:', error);
+    }
+  };
+
+  const handleUpdateRank = async () => {
+    if (actualTestType && actualTestId) {
+      await fetchRankInfo(examId!, actualTestType, actualTestId);
+    }
+  };
 
   const loadTestData = async () => {
     if (!examId || !testType) return;
@@ -121,6 +141,11 @@ const SolutionsViewer = () => {
           obtainedMarks,
           totalMarks
         });
+
+        // Fetch rank information for Mock and PYQ tests
+        if (testTypeValue === 'mock' || testTypeValue === 'pyq') {
+          await fetchRankInfo(examId, testTypeValue, testId);
+        }
       } else {
         setError('No completion found for this test');
       }
@@ -180,6 +205,9 @@ const SolutionsViewer = () => {
       correctAnswers={testResults.correct}
       timeTaken={testResults.timeTaken}
       onClose={() => navigate(`/exam/${examId}`)}
+      rank={rank}
+      totalParticipants={totalParticipants}
+      onUpdateRank={handleUpdateRank}
     />
   );
 };

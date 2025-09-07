@@ -28,7 +28,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, loading, logout } = useAuth();
   const { profile } = useUserProfile();
-  const { streak } = useUserStreak();
+  const { streak, refreshStreak } = useUserStreak();
   const [isNavigating, setIsNavigating] = useState(false);
 
 
@@ -93,10 +93,17 @@ const Index = () => {
                   {profile?.email || localStorage.getItem("userEmail")}
                 </p>
                 <div className="flex items-center justify-end space-x-1 mt-1">
-                  <Flame className="w-3 h-3 text-orange-500" />
-                  <span className="text-xs text-orange-600 font-medium">
+                  <Flame className="w-4 h-4 text-orange-500" />
+                  <span className="text-sm text-orange-600 font-bold">
                     {streak.current_streak} day streak
                   </span>
+                  <button
+                    onClick={refreshStreak}
+                    className="ml-1 text-xs text-orange-500 hover:text-orange-700"
+                    title="Refresh streak"
+                  >
+                    🔄
+                  </button>
                 </div>
               </div>
               <Button variant="outline" size="sm" onClick={handleLogout}>

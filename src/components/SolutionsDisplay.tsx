@@ -11,7 +11,8 @@ import {
   BookOpen, 
   Clock,
   Target,
-  Trophy
+  Trophy,
+  RefreshCw
 } from 'lucide-react';
 
 interface Question {
@@ -37,6 +38,9 @@ interface SolutionsDisplayProps {
   correctAnswers: number;
   timeTaken: number;
   onClose: () => void;
+  rank?: number;
+  totalParticipants?: number;
+  onUpdateRank?: () => void;
 }
 
 const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
@@ -46,7 +50,10 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
   totalQuestions,
   correctAnswers,
   timeTaken,
-  onClose
+  onClose,
+  rank,
+  totalParticipants,
+  onUpdateRank
 }) => {
   const [showExplanations, setShowExplanations] = useState<{ [key: number]: boolean }>(() => {
     // Show explanations by default for all questions
@@ -165,7 +172,29 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                   <span className="text-blue-600">Net Score:</span>
                   <span className="ml-1 font-semibold text-blue-700">{marksBreakdown.netMarks}/{marksBreakdown.totalMarks}</span>
                 </div>
+                {rank && totalParticipants && (
+                  <div className="text-center">
+                    <span className="text-purple-600">Rank:</span>
+                    <span className="ml-1 font-semibold text-purple-700">#{rank} of {totalParticipants}</span>
+                  </div>
+                )}
               </div>
+              {rank && totalParticipants && onUpdateRank && (
+                <div className="mt-3 text-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onUpdateRank}
+                    className="text-xs"
+                  >
+                    <RefreshCw className="w-3 h-3 mr-1" />
+                    Update Rank
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Rank updates as more students attempt this test
+                  </p>
+                </div>
+              )}
             </div>
             {/* Detailed Marks Breakdown */}
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 mt-6">

@@ -224,7 +224,7 @@ export class QuestionLoader {
                 tests[testType].push({
                   id: fileId,
                   name: testData.examInfo.testName,
-                  description: `${testData.examInfo.totalQuestions} questions • ${this.calculateTotalDuration(testData.questions)} minutes`
+                  description: `${testData.examInfo.totalQuestions} questions • ${Math.round(this.calculateTotalDuration(testData.questions))} minutes • ${this.calculateTotalMarks(testData.questions)} marks`
                 });
               }
             } catch (error) {
