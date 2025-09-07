@@ -77,19 +77,19 @@ const ExamDashboard = () => {
 
     // Check mock tests
     for (const test of availableTests.mock) {
-      const isCompleted = await isTestCompleted(examId, 'mock', test.id, test.id);
+      const isCompleted = await isTestCompleted(examId, 'mock', test.id, null);
       if (isCompleted) {
-        // For mock tests, we pass test.id as topicId, so the key becomes mock-testId-testId
-        completed.add(`mock-${test.id}-${test.id}`);
+        // For mock tests, topicId is null, so the key becomes mock-testId
+        completed.add(`mock-${test.id}`);
       }
     }
 
     // Check PYQ tests
     for (const test of availableTests.pyq) {
-      const isCompleted = await isTestCompleted(examId, 'pyq', test.id, test.id);
+      const isCompleted = await isTestCompleted(examId, 'pyq', test.id, null);
       if (isCompleted) {
-        // For PYQ tests, we pass test.id as topicId, so the key becomes pyq-testId-testId
-        completed.add(`pyq-${test.id}-${test.id}`);
+        // For PYQ tests, topicId is null, so the key becomes pyq-testId
+        completed.add(`pyq-${test.id}`);
       }
     }
 
@@ -117,8 +117,8 @@ const ExamDashboard = () => {
       // Handle both Supabase result format and fallback format
       const scoreData = (scoreResult as any).data || scoreResult;
       if (scoreData && scoreData.score !== null && scoreData.score !== undefined) {
-        // For mock tests, we pass test.id as topicId, so the key becomes mock-testId-testId
-        scores.set(`mock-${test.id}-${test.id}`, {
+        // For mock tests, topicId is null, so the key becomes mock-testId
+        scores.set(`mock-${test.id}`, {
           score: scoreData.score,
           rank: scoreData.rank || 0,
           totalParticipants: scoreData.totalParticipants || 0
@@ -132,8 +132,8 @@ const ExamDashboard = () => {
       // Handle both Supabase result format and fallback format
       const scoreData = (scoreResult as any).data || scoreResult;
       if (scoreData && scoreData.score !== null && scoreData.score !== undefined) {
-        // For PYQ tests, we pass test.id as topicId, so the key becomes pyq-testId-testId
-        scores.set(`pyq-${test.id}-${test.id}`, {
+        // For PYQ tests, topicId is null, so the key becomes pyq-testId
+        scores.set(`pyq-${test.id}`, {
           score: scoreData.score,
           rank: scoreData.rank || 0,
           totalParticipants: scoreData.totalParticipants || 0
@@ -170,12 +170,15 @@ const ExamDashboard = () => {
       // Load test scores
       loadTestScores();
     }
-  }, [examId, availableTests]);
+  }, [examId, availableTests.mock.length, availableTests.pyq.length, availableTests.practice.length]);
 
   // Add a refresh trigger when the component mounts (user navigates back to dashboard)
   useEffect(() => {
     const handleRouteChange = () => {
       if (examId && (availableTests.mock.length > 0 || availableTests.pyq.length > 0 || availableTests.practice.length > 0)) {
+        // Refresh completions and scores when user returns to dashboard
+        checkTestCompletions();
+        loadTestScores();
       }
     };
 
@@ -185,10 +188,21 @@ const ExamDashboard = () => {
     // Also listen for popstate events (back/forward navigation)
     window.addEventListener('popstate', handleRouteChange);
 
+    // Also refresh when component becomes visible (user returns from test)
+    const handleVisibilityChange = () => {
+      if (!document.hidden && examId && (availableTests.mock.length > 0 || availableTests.pyq.length > 0 || availableTests.practice.length > 0)) {
+        checkTestCompletions();
+        loadTestScores();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       window.removeEventListener('popstate', handleRouteChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [examId, availableTests]);
+  }, [examId, availableTests.mock.length, availableTests.pyq.length, availableTests.practice.length]);
 
   // Refresh completion status when user returns to dashboard (e.g., after completing a test)
   useEffect(() => {
@@ -337,76 +351,87 @@ const ExamDashboard = () => {
     const testScore = testScores.get(scoreKey);
 
     return (
-      <Button
-        key={testId}
-        variant="ghost"
-        className="h-auto p-3 justify-between hover:bg-muted/50 relative"
-        onClick={() => handleTestStart(testType, testId, topicId)}
-      >
-        <div className="text-left flex-1">
-          <div className="flex items-center space-x-2">
-            <p className="font-medium text-foreground text-sm">{testName}</p>
-            {isCompleted && (
-              <CheckCircle className="w-4 h-4 text-green-500" />
-            )}
+      <Card key={testId} className={`relative overflow-hidden transition-all duration-200 hover:shadow-md ${
+        isCompleted ? 'border-green-200 bg-green-50/50' : 'border-border'
+      }`}>
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex-1">
+              <div className="flex items-center space-x-2 mb-1">
+                <h3 className="font-semibold text-foreground text-sm">{testName}</h3>
+                {isCompleted && (
+                  <div className="flex items-center space-x-1">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-xs text-green-600 font-medium">Completed</span>
+                  </div>
+                )}
+              </div>
+              {additionalInfo && (
+                <p className="text-xs text-muted-foreground mb-2">{additionalInfo}</p>
+              )}
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
           </div>
-          {additionalInfo && (
-            <p className="text-xs text-muted-foreground">{additionalInfo}</p>
-          )}
           
           {/* Show score and rank for Mock and PYQ tests */}
           {testScore && (testType === 'mock' || testType === 'pyq') && (
-            <div className="mt-2 p-2 bg-muted/50 rounded-md">
-              <div className="text-xs space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-foreground font-medium">
-                    Score: <span className="text-primary font-bold">{testScore.score}%</span>
-                  </span>
-                  {/* <span className="text-muted-foreground">
-                    out of 100 marks
-                  </span> */}
+            <div className="mb-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-center">
+                  <div className="text-lg font-bold text-blue-600">{testScore.score}%</div>
+                  <div className="text-xs text-blue-500 font-medium">Score</div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-foreground font-medium">
-                    Rank: <span className="text-accent font-bold">#{testScore.rank}</span>
-                  </span>
-                  {/* <span className="text-muted-foreground">
-                    out of {testScore.totalParticipants} participants
-                  </span> */}
+                <div className="text-center">
+                  <div className="text-lg font-bold text-purple-600">#{testScore.rank}</div>
+                  <div className="text-xs text-purple-500 font-medium">Rank</div>
                 </div>
               </div>
+              {testScore.totalParticipants > 0 && (
+                <div className="text-center mt-2">
+                  <span className="text-xs text-muted-foreground">
+                    out of {testScore.totalParticipants} participants
+                  </span>
+                </div>
+              )}
             </div>
           )}
           
-          {isCompleted && (
-            <div className="flex items-center space-x-2 mt-2">
+          {/* Action buttons */}
+          <div className="flex flex-col space-y-2">
+            {isCompleted ? (
+              <>
+                <div className="flex space-x-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 h-8 text-xs"
+                    onClick={() => handleViewSolutions(testType, testId, topicId)}
+                  >
+                    📖 View Solutions
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="flex-1 h-8 text-xs"
+                    onClick={() => handleTestStart(testType, testId, topicId)}
+                  >
+                    🔄 Retry
+                  </Button>
+                </div>
+              </>
+            ) : (
               <Button
                 size="sm"
-                variant="outline"
-                className="h-6 px-2 text-xs"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleViewSolutions(testType, testId, topicId);
-                }}
+                variant="default"
+                className="w-full h-8 text-xs"
+                onClick={() => handleTestStart(testType, testId, topicId)}
               >
-                📖 View Solutions
+                ▶️ Start Test
               </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 px-2 text-xs"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleTestStart(testType, testId, topicId);
-                }}
-              >
-                🔄 Retry
-              </Button>
-            </div>
-          )}
-        </div>
-        <ChevronRight className="w-3 h-3 text-muted-foreground" />
-      </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     );
   };
 
@@ -539,7 +564,7 @@ const ExamDashboard = () => {
                             test.id,
                             test.name, // Use the name from JSON
                             'mock',
-                            test.id, // Pass testId as topic parameter
+                            null, // Mock tests don't have topicId
                             test.description // Use the description from JSON
                           )
                         )}
@@ -560,13 +585,13 @@ const ExamDashboard = () => {
                             </Button>
                           </CollapsibleTrigger>
                           <CollapsibleContent>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
                               {availableTests.pyq.map((test) => 
                                 createTestButton(
                                   test.id,
                                   test.name, // Use the name from JSON
                                   'pyq',
-                                  test.id,
+                                  null, // PYQ tests don't have topicId
                                   test.description // Use the description from JSON
                                 )
                               )}
