@@ -1,5 +1,26 @@
 import { QuestionConfig } from '@/config/examConfig';
 
+// Static imports for all test files to ensure they work in production
+import mockTest1 from '@/data/questions/ssc-cgl/mock/mock-test-1.json';
+import mockTest2 from '@/data/questions/ssc-cgl/mock/mock-test-2.json';
+import pyq2024Day1Shift1 from '@/data/questions/ssc-cgl/pyq/2024-day1-shift1.json';
+import pyq2024Day1Shift2 from '@/data/questions/ssc-cgl/pyq/2024-day1-shift2.json';
+import pyq2024Day1Shift3 from '@/data/questions/ssc-cgl/pyq/2024-day1-shift3.json';
+import practiceMathsAlgebra from '@/data/questions/ssc-cgl/practice/maths-algebra.json';
+import practiceEnglishGrammar from '@/data/questions/ssc-cgl/practice/english-grammar.json';
+
+// Static mapping of test files for reliable loading in production
+const testFileMap: { [key: string]: TestData } = {
+  'ssc-cgl-mock-mock-test-1': mockTest1 as TestData,
+  'ssc-cgl-mock-mock-test-2': mockTest2 as TestData,
+  'ssc-cgl-pyq-2024-day1-shift1': pyq2024Day1Shift1 as TestData,
+  'ssc-cgl-pyq-2024-day1-shift2': pyq2024Day1Shift2 as TestData,
+  'ssc-cgl-pyq-2024-day1-shift3': pyq2024Day1Shift3 as TestData,
+  'ssc-cgl-practice-maths-algebra': practiceMathsAlgebra as TestData,
+  'ssc-cgl-practice-english-grammar': practiceEnglishGrammar as TestData,
+  // Add more test files as needed
+};
+
 export interface ExamInfo {
   examId: string;
   examName: string;
@@ -48,7 +69,16 @@ export class QuestionLoader {
         throw new Error(`Missing required parameters: examId=${examId}, testType=${testType}, testId=${testId}`);
       }
       
-      // Construct the file path based on exam, test type, and test ID
+      // First, try to get from static mapping (more reliable in production)
+      const staticKey = `${examId}-${testType}-${testId}`;
+      if (testFileMap[staticKey]) {
+        console.log(`Using static mapping for ${staticKey}`);
+        const testData = testFileMap[staticKey];
+        this.cache.set(cacheKey, testData);
+        return testData;
+      }
+      
+      // Fallback to dynamic import for files not in static mapping
       let filePath = '';
       
       if (testType === 'pyq') {
@@ -66,8 +96,22 @@ export class QuestionLoader {
 
       console.log(`Loading test data from: ${filePath}`);
 
-      // Import the JSON file dynamically
-      const testModule = await import(/* @vite-ignore */ filePath);
+      // Import the JSON file dynamically with better error handling
+      let testModule;
+      try {
+        // Try different import strategies for better compatibility
+        testModule = await import(/* @vite-ignore */ filePath);
+      } catch (importError) {
+        console.warn(`Failed to import ${filePath}, trying alternative approach:`, importError);
+        // Fallback: try without @vite-ignore
+        try {
+          testModule = await import(filePath);
+        } catch (fallbackError) {
+          console.error(`Both import attempts failed for ${filePath}:`, fallbackError);
+          throw new Error(`Cannot load test file: ${filePath}`);
+        }
+      }
+      
       const testData: TestData = testModule.default || testModule;
       
       console.log(`Successfully loaded test data:`, testData);
@@ -195,7 +239,7 @@ export class QuestionLoader {
     return this.cache.size;
   }
 
-  // Get available tests for an exam by dynamically discovering JSON files
+  // Get available tests for an exam using static configuration
   static async getAvailableTests(examId: string): Promise<{
     mock: Array<{ id: string; name: string; description: string }>;
     pyq: Array<{ id: string; name: string; description: string }>;
@@ -208,31 +252,60 @@ export class QuestionLoader {
     };
 
     try {
-      // Define the test types and their corresponding directories
+      // Static configuration for available tests - this is more reliable than dynamic discovery
+      const testConfigs = {
+        'ssc-cgl': {
+          pyq: ['2024-day1-shift1', '2024-day1-shift2', '2024-day1-shift3'],
+          practice: ['maths-algebra', 'english-grammar'],
+          mock: ['mock-test-1', 'mock-test-2'] // Only include existing files
+        },
+        'ssc-mts': {
+          pyq: ['2024-day1-shift1'],
+          practice: ['maths-algebra'],
+          mock: ['mock-test-1']
+        },
+        'railway': {
+          pyq: ['2024-day1-shift1'],
+          practice: ['maths-algebra'],
+          mock: ['mock-test-1']
+        },
+        'bank-po': {
+          pyq: ['2024-day1-shift1'],
+          practice: ['maths-algebra'],
+          mock: ['mock-test-1']
+        },
+        'airforce': {
+          pyq: ['2024-day1-shift1'],
+          practice: ['maths-algebra'],
+          mock: ['mock-test-1']
+        }
+      };
+
+      const examConfig = testConfigs[examId as keyof typeof testConfigs];
+      if (!examConfig) {
+        console.warn(`No test configuration found for exam: ${examId}`);
+        return tests;
+      }
+
+      // Load tests for each type
       const testTypes = ['mock', 'pyq', 'practice'] as const;
       
       for (const testType of testTypes) {
-        try {
-          // Try to load a sample file to get the structure
-          // We'll use a known pattern to discover files
-          const knownFiles = await this.discoverTestFiles(examId, testType);
-          
-          for (const fileId of knownFiles) {
-            try {
-              const testData = await this.loadQuestions(examId, testType, fileId);
-              if (testData) {
-                tests[testType].push({
-                  id: fileId,
-                  name: testData.examInfo.testName,
-                  description: `${testData.examInfo.totalQuestions} questions • ${Math.round(this.calculateTotalDuration(testData.questions))} minutes • ${this.calculateTotalMarks(testData.questions)} marks`
-                });
-              }
-            } catch (error) {
-              console.warn(`Failed to load test ${fileId}:`, error);
+        const testIds = examConfig[testType];
+        
+        for (const testId of testIds) {
+          try {
+            const testData = await this.loadQuestions(examId, testType, testId);
+            if (testData) {
+              tests[testType].push({
+                id: testId,
+                name: testData.examInfo.testName,
+                description: `${testData.examInfo.totalQuestions} questions • ${Math.round(this.calculateTotalDuration(testData.questions))} minutes • ${this.calculateTotalMarks(testData.questions)} marks`
+              });
             }
+          } catch (error) {
+            console.warn(`Failed to load ${testType} test ${testId} for ${examId}:`, error);
           }
-        } catch (error) {
-          console.warn(`Failed to discover ${testType} tests:`, error);
         }
       }
       
