@@ -67,6 +67,7 @@ export interface SupabaseIndividualTestScore {
   score: number;
   rank?: number;
   total_participants?: number;
+  highest_marks?: number; // Add support for highest marks
   completed_at: string;
 }
 

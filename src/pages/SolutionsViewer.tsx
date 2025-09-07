@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, Clock, Target, RotateCcw } from 'lucide-react';
 import { QuestionLoader, TestData, QuestionWithProps } from '@/lib/questionLoader';
 import { useExamStats } from '@/hooks/useExamStats';
 import { supabaseStatsService } from '@/lib/supabaseStats';
@@ -12,7 +10,7 @@ import SolutionsDisplay from '@/components/SolutionsDisplay';
 const SolutionsViewer = () => {
   const { examId, sectionId, testType, topic } = useParams();
   const navigate = useNavigate();
-  const { attempts, loadTestAttempts } = useExamStats(examId);
+  const { loadTestAttempts } = useExamStats(examId);
   
   const [testData, setTestData] = useState<TestData | null>(null);
   const [questions, setQuestions] = useState<QuestionWithProps[]>([]);
@@ -78,18 +76,16 @@ const SolutionsViewer = () => {
       let testId = '';
       let testTypeValue = '';
       
-      if (testType && testType.startsWith('mock-')) {
-        // New URL structure: /solutions/ssc-cgl/mock/mock-test-3
+      // The sectionId tells us the test type, testType is the actual test ID
+      if (sectionId === 'mock') {
         testTypeValue = 'mock';
-        testId = testType; // testType is now the actual test ID
-      } else if (testType && (testType.startsWith('pyq-') || testType.match(/^\d{4}-set-\d+$/))) {
-        // New URL structure: /solutions/ssc-cgl/pyq/2024-set-1
+        testId = testType || 'mock-test-1';
+      } else if (sectionId === 'pyq') {
         testTypeValue = 'pyq';
-        testId = testType; // testType is now the actual test ID
-      } else if (testType && testType.startsWith('practice-')) {
-        // New URL structure: /solutions/ssc-cgl/practice/practice-math
+        testId = testType || '2024-day1-shift1';
+      } else if (sectionId === 'practice') {
         testTypeValue = 'practice';
-        testId = testType; // testType is now the actual test ID
+        testId = testType || 'maths-algebra';
       } else {
         // Fallback to old logic for backward compatibility
         testTypeValue = testType || 'mock';

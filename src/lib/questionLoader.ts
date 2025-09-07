@@ -105,7 +105,7 @@ export class QuestionLoader {
         console.warn(`Failed to import ${filePath}, trying alternative approach:`, importError);
         // Fallback: try without @vite-ignore
         try {
-          testModule = await import(filePath);
+          testModule = await import(/* @vite-ignore */ filePath);
         } catch (fallbackError) {
           console.error(`Both import attempts failed for ${filePath}:`, fallbackError);
           throw new Error(`Cannot load test file: ${filePath}`);

@@ -8,6 +8,8 @@ export interface QuestionConfig {
   difficulty: "easy" | "medium" | "hard";
   subject?: string;
   topic?: string;
+  questionImage?: string; // Add support for question images
+  explanation?: string; // Add support for explanations
 }
 
 export interface TestConfig {

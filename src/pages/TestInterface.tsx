@@ -3,18 +3,15 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { 
   Clock, 
   ArrowLeft, 
   ArrowRight, 
-  CheckCircle, 
   AlertCircle,
-  Flag,
-  RotateCcw
+  Flag
 } from "lucide-react";
-import { getQuestionsForTest, getTestDuration } from "@/config/examConfig";
+// Removed unused imports: getQuestionsForTest, getTestDuration
 import { useExamStats } from "@/hooks/useExamStats";
 import { useAuth } from "@/hooks/useAuth";
 import { QuestionLoader, TestData, QuestionWithProps } from "@/lib/questionLoader";
@@ -129,11 +126,16 @@ const TestInterface = () => {
         let testId = '';
         let testTypeValue = '';
         
-        // URL structure: /test/ssc-cgl/pyq/2024-set-1
-        // sectionId = 'pyq', testType = '2024-set-1', topic = undefined
-        if (sectionId && testType) {
-          testTypeValue = sectionId; // sectionId is the test type (mock/pyq/practice)
-          testId = testType; // testType is the actual test ID
+        // The sectionId tells us the test type, testType is the actual test ID
+        if (sectionId === 'mock') {
+          testTypeValue = 'mock';
+          testId = testType || 'mock-test-1';
+        } else if (sectionId === 'pyq') {
+          testTypeValue = 'pyq';
+          testId = testType || '2024-day1-shift1';
+        } else if (sectionId === 'practice') {
+          testTypeValue = 'practice';
+          testId = testType || 'maths-algebra';
         } else {
           // Fallback to old logic for backward compatibility
           testTypeValue = testType || 'mock';
@@ -360,14 +362,6 @@ const TestInterface = () => {
 
           // Submit individual test score for Mock and PYQ tests only
           if (actualTestType === 'mock' || actualTestType === 'pyq') {
-            // Debug: Log the parameters being passed
-            console.log('TestInterface - submitIndividualTestScore parameters:', {
-              examId,
-              testType: actualTestType,
-              testId: actualTestId,
-              score
-            });
-            
             // actualTestType is the test type (mock/pyq), actualTestId is the actual test ID
             await submitIndividualTestScore(examId, actualTestType, actualTestId, score);
           }
