@@ -51,7 +51,6 @@ const TestInterface = () => {
   useEffect(() => {
     const loadTestData = async () => {
       try {
-        console.log('Route parameters:', { examId, sectionId, testType, topic });
         
         // Determine the correct test ID based on the route parameters
         let actualTestId = '';
@@ -65,7 +64,6 @@ const TestInterface = () => {
           actualTestId = topic || 'maths-algebra';
         }
         
-        console.log('Loading test data for:', { examId, testType, actualTestId });
         
         // Load test data from JSON
         const loadedTestData = await QuestionLoader.loadQuestions(examId!, testType as 'pyq' | 'practice' | 'mock', actualTestId);
@@ -79,11 +77,6 @@ const TestInterface = () => {
         setTestData(loadedTestData);
         setQuestions(loadedTestData.questions);
         
-        console.log('Test data loaded successfully:', {
-          examInfo: loadedTestData.examInfo,
-          questionsCount: loadedTestData.questions.length,
-          firstQuestion: loadedTestData.questions[0]
-        });
         
         // Calculate total duration dynamically from questions
         const totalDuration = QuestionLoader.calculateTotalDuration(loadedTestData.questions);
@@ -173,7 +166,10 @@ const TestInterface = () => {
     
     try {
       const endTime = Date.now();
-      const timeTaken = Math.floor((endTime - startTime) / 1000);
+      const timeTaken = Math.round((endTime - startTime) / 1000);
+      
+      // Ensure we have a clean integer without floating-point precision issues
+      const cleanTimeTaken = Math.round(timeTaken);
       
       let correct = 0;
       let incorrect = 0;
@@ -206,13 +202,6 @@ const TestInterface = () => {
       // Prevent division by zero
       const score = totalMarks > 0 ? Math.round((obtainedMarks / totalMarks) * 100) : 0;
       
-      console.log('Score calculation details:', {
-        totalMarks,
-        obtainedMarks,
-        score,
-        questionsCount: questions.length,
-        answersCount: Object.keys(answers).length
-      });
       
       // Submit test attempt using the new system
       if (examId) {
@@ -222,7 +211,7 @@ const TestInterface = () => {
             score,
             questions.length,
             correct,
-            timeTaken,
+            cleanTimeTaken,
             {
               details: questions.map((question, index) => ({
                 questionId: question.id,
@@ -242,7 +231,6 @@ const TestInterface = () => {
             await submitIndividualTestScore(examId, sectionId, testType, score);
           }
 
-          console.log('Test attempt submitted successfully');
         } catch (error) {
           console.error('Error submitting test attempt:', error);
           // Continue to show solutions even if submission fails
@@ -253,7 +241,7 @@ const TestInterface = () => {
       setTestResults({
         score,
         correct,
-        timeTaken
+        timeTaken: cleanTimeTaken
       });
       setShowSolutions(true);
       setIsCompleted(true);

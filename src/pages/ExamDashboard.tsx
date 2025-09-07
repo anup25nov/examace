@@ -16,8 +16,7 @@ import {
   Brain,
   ChevronRight,
   ChevronDown,
-  CheckCircle,
-  RotateCcw
+  CheckCircle
 } from "lucide-react";
 import { examConfigs } from "@/config/examConfig";
 import { useExamStats } from "@/hooks/useExamStats";
@@ -79,33 +78,27 @@ const ExamDashboard = () => {
     // Check mock tests
     for (const test of availableTests.mock) {
       const isCompleted = await isTestCompleted(examId, 'mock', test.id);
-      console.log(`Mock test ${test.id} completion status:`, isCompleted);
       if (isCompleted) {
         // For mock tests, we pass test.id as topicId, so the key becomes mock-testId-testId
         completed.add(`mock-${test.id}-${test.id}`);
-        console.log(`Added mock-${test.id}-${test.id} to completed set`);
       }
     }
 
     // Check PYQ tests
     for (const test of availableTests.pyq) {
       const isCompleted = await isTestCompleted(examId, 'pyq', test.id);
-      console.log(`PYQ test ${test.id} completion status:`, isCompleted);
       if (isCompleted) {
         // For PYQ tests, we pass test.id as topicId, so the key becomes pyq-testId-testId
         completed.add(`pyq-${test.id}-${test.id}`);
-        console.log(`Added pyq-${test.id}-${test.id} to completed set`);
       }
     }
 
     // Check practice tests
     for (const test of availableTests.practice) {
       const isCompleted = await isTestCompleted(examId, 'practice', test.id);
-      console.log(`Practice test ${test.id} completion status:`, isCompleted);
       if (isCompleted) {
         // For practice tests, we pass test.id as topicId, so the key becomes practice-testId-testId
         completed.add(`practice-${test.id}-${test.id}`);
-        console.log(`Added practice-${test.id}-${test.id} to completed set`);
       }
     }
 
@@ -116,14 +109,11 @@ const ExamDashboard = () => {
   const loadTestScores = async () => {
     if (!examId || !exam) return;
 
-    console.log('Loading test scores for exam:', examId);
     const scores = new Map<string, { score: number; rank: number; totalParticipants: number }>();
 
     // Load Mock test scores
     for (const test of availableTests.mock) {
-      console.log('Loading mock test score for:', test.id);
       const scoreData = await getIndividualTestScore(examId, 'mock', test.id);
-      console.log('Mock test score data:', scoreData);
       if (scoreData.score !== null) {
         // For mock tests, we pass test.id as topicId, so the key becomes mock-testId-testId
         scores.set(`mock-${test.id}-${test.id}`, {
@@ -136,9 +126,7 @@ const ExamDashboard = () => {
 
     // Load PYQ test scores
     for (const test of availableTests.pyq) {
-      console.log('Loading PYQ test score for:', test.id);
       const scoreData = await getIndividualTestScore(examId, 'pyq', test.id);
-      console.log('PYQ test score data:', scoreData);
       if (scoreData.score !== null) {
         // For PYQ tests, we pass test.id as topicId, so the key becomes pyq-testId-testId
         scores.set(`pyq-${test.id}-${test.id}`, {
@@ -149,7 +137,6 @@ const ExamDashboard = () => {
       }
     }
 
-    console.log('Final test scores:', scores);
     setTestScores(scores);
   };
 
@@ -185,11 +172,6 @@ const ExamDashboard = () => {
   useEffect(() => {
     const handleRouteChange = () => {
       if (examId && (availableTests.mock.length > 0 || availableTests.pyq.length > 0 || availableTests.practice.length > 0)) {
-        console.log('Route change detected, refreshing completion status...');
-        // Add a small delay to ensure the component is fully mounted
-        setTimeout(() => {
-          refreshCompletionStatus();
-        }, 100);
       }
     };
 
@@ -208,23 +190,17 @@ const ExamDashboard = () => {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && examId && (availableTests.mock.length > 0 || availableTests.pyq.length > 0 || availableTests.practice.length > 0)) {
-        console.log('Page became visible, refreshing completion status...');
-        refreshCompletionStatus();
       }
     };
 
     const handleFocus = () => {
       if (examId && (availableTests.mock.length > 0 || availableTests.pyq.length > 0 || availableTests.practice.length > 0)) {
-        console.log('Window focused, refreshing completion status...');
-        refreshCompletionStatus();
       }
     };
 
     // Also refresh when the component mounts (user navigates back to dashboard)
     const handlePageShow = () => {
       if (examId && (availableTests.mock.length > 0 || availableTests.pyq.length > 0 || availableTests.practice.length > 0)) {
-        console.log('Page shown, refreshing completion status...');
-        refreshCompletionStatus();
       }
     };
 
@@ -241,20 +217,10 @@ const ExamDashboard = () => {
 
   // Separate useEffect for updating userStats when allStats change
   useEffect(() => {
-    console.log('useEffect triggered - examId:', examId, 'allStats.length:', allStats.length);
-    console.log('allStats content:', allStats);
     
     if (examId && allStats.length > 0) {
       const currentExamStats = allStats.find(stat => stat.examId === examId);
-      console.log('Current exam stats for', examId, ':', currentExamStats);
-      
       if (currentExamStats) {
-        console.log('Setting user stats with:', {
-          totalTests: currentExamStats.totalTests,
-          avgScore: currentExamStats.averageScore,
-          bestScore: currentExamStats.bestScore,
-          lastActive: currentExamStats.lastTestDate
-        });
         
         setUserStats({
           totalTests: currentExamStats.totalTests,
@@ -263,7 +229,6 @@ const ExamDashboard = () => {
           lastActive: currentExamStats.lastTestDate
         });
       } else {
-        console.log('No exam stats found for examId:', examId, 'setting defaults');
         setUserStats({
           totalTests: 0,
           avgScore: 0,
@@ -272,7 +237,6 @@ const ExamDashboard = () => {
         });
       }
     } else if (examId && allStats.length === 0) {
-      console.log('allStats is empty, setting defaults');
       setUserStats({
         totalTests: 0,
         avgScore: 0,
@@ -326,7 +290,6 @@ const ExamDashboard = () => {
       return newMap;
     });
     
-    console.log('Cleared completion status for test:', { type, itemId, topicId: actualTopicId });
     
     // The route expects: /test/:examId/:sectionId/:testType/:topic?
     // For mock tests, we need to provide a sectionId
@@ -346,25 +309,6 @@ const ExamDashboard = () => {
     navigate(solutionsPath);
   };
 
-  // Manual refresh function to force update completion status and scores
-  const refreshCompletionStatus = async () => {
-    console.log('Manual refresh triggered - clearing all caches and reloading data');
-    
-    // Clear all completion and score caches
-    const keysToRemove = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && (key.includes('test_completed_') || key.includes('test_score_'))) {
-        keysToRemove.push(key);
-      }
-    }
-    keysToRemove.forEach(key => localStorage.removeItem(key));
-    console.log('Cleared cache keys:', keysToRemove);
-
-    // Reload completion status and scores
-    await checkTestCompletions();
-    await loadTestScores();
-  };
 
   const toggleSection = (sectionId: string) => {
     setOpenSections(prev => ({
@@ -483,15 +427,6 @@ const ExamDashboard = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={refreshCompletionStatus}
-                className="flex items-center space-x-2"
-              >
-                <RotateCcw className="w-4 h-4" />
-                <span>Refresh</span>
-              </Button>
               <div className="text-right">
                 <p className="text-sm font-medium text-foreground">Welcome!</p>
                 <p className="text-xs text-muted-foreground">{userEmail}</p>

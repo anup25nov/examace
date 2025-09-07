@@ -133,8 +133,6 @@ class SupabaseStatsService {
     }
     keysToRemove.forEach(key => localStorage.removeItem(key));
     
-    console.log('Cleared test caches for:', { userId, examId, testType, testId, topicId });
-    console.log('Removed keys:', keysToRemove);
   }
 
   async getCurrentUser() {
@@ -143,11 +141,6 @@ class SupabaseStatsService {
     const userEmail = localStorage.getItem('userEmail');
     const isAuthenticated = localStorage.getItem('isAuthenticated');
     
-    console.log('getCurrentUser - localStorage data:', {
-      userId,
-      userEmail,
-      isAuthenticated
-    });
     
     if (!userId) {
       console.error('No authenticated user found in localStorage');
@@ -194,7 +187,6 @@ class SupabaseStatsService {
     const user = await this.getCurrentUser();
     if (!user) return { data: [], error: 'User not authenticated' };
 
-    console.log('Getting exam stats for user:', user.id, 'examId:', examId);
 
     // Check cache first for quick response
     const cache = this.getCache();
@@ -202,10 +194,8 @@ class SupabaseStatsService {
       const cachedStats = cache.data.examStats;
       if (examId) {
         const filteredStats = cachedStats.filter((s: SupabaseExamStats) => s.exam_id === examId);
-        console.log('Returning cached exam stats (filtered):', filteredStats);
         return { data: filteredStats, error: null };
       }
-      console.log('Returning cached exam stats (all):', cachedStats);
       return { data: cachedStats, error: null };
     }
 
@@ -221,9 +211,6 @@ class SupabaseStatsService {
 
       const { data, error } = await query.order('created_at', { ascending: false });
 
-      console.log('Exam stats query result:', { data, error, examId, userId: user.id });
-      console.log('Data length:', data?.length);
-      console.log('Data content:', data);
 
       if (error) {
         console.error('Error getting exam stats:', error);
@@ -232,7 +219,6 @@ class SupabaseStatsService {
 
       // If no data found, create default stats
       if (!data || data.length === 0) {
-        console.log('No exam stats found, creating default stats');
         
         if (examId) {
           // Create default stats for specific exam
@@ -257,7 +243,6 @@ class SupabaseStatsService {
             return { data: [], error: insertError };
           }
 
-          console.log('Created default exam stats:', insertData);
           return { data: [insertData], error: null };
         } else {
           // Create default stats for all exams
@@ -282,7 +267,6 @@ class SupabaseStatsService {
             return { data: [], error: insertError };
           }
 
-          console.log('Created default exam stats for all exams:', insertData);
           
           // Cache the results
           if (insertData) {
@@ -302,7 +286,6 @@ class SupabaseStatsService {
         this.setCache(cacheData);
       }
 
-      console.log('Returning exam stats:', data);
       return { data: data || [], error: null };
     } catch (error) {
       console.error('Error getting exam stats:', error);
@@ -326,10 +309,7 @@ class SupabaseStatsService {
   }
 
   async submitTestAttempt(submission: TestSubmissionData): Promise<{ data: any; error: any }> {
-    console.log('submitTestAttempt called with:', submission);
-    
     const user = await this.getCurrentUser();
-    console.log('Current user for test attempt:', user);
     
     if (!user) return { data: null, error: 'User not authenticated' };
 
@@ -349,7 +329,6 @@ class SupabaseStatsService {
       .select()
       .single();
 
-      console.log('Test attempt insert result:', { attemptData, attemptError });
 
       if (attemptError) {
         console.error('Error inserting test attempt:', attemptError);
@@ -364,7 +343,6 @@ class SupabaseStatsService {
       .eq('exam_id', submission.examId)
       .single();
 
-      console.log('Existing stats:', existingStats);
 
     const newTotalTests = (existingStats?.total_tests || 0) + 1;
     const newBestScore = Math.max(existingStats?.best_score || 0, submission.score);
@@ -372,7 +350,6 @@ class SupabaseStatsService {
       ? Math.round(((existingStats.average_score * existingStats.total_tests) + submission.score) / newTotalTests)
       : submission.score;
 
-      console.log('Calculated stats:', { newTotalTests, newBestScore, newAverageScore });
 
     // Update or create exam stats with proper conflict resolution
     const { data: statsData, error: statsError } = await supabase
@@ -390,7 +367,6 @@ class SupabaseStatsService {
       .select()
       .single();
 
-      console.log('Exam stats upsert result:', { statsData, statsError });
 
       if (statsError) {
         console.error('Error updating exam stats:', statsError);
@@ -398,11 +374,6 @@ class SupabaseStatsService {
       }
 
       // Update exam stats properly (Mock + PYQ only)
-      console.log('Calling update_exam_stats_properly with:', {
-        user_uuid: user.id,
-        exam_name: submission.examId,
-        new_score: submission.score
-      });
       
       const { error: statsUpdateError } = await supabase.rpc('update_exam_stats_properly', {
         user_uuid: user.id,
@@ -412,8 +383,6 @@ class SupabaseStatsService {
       
       if (statsUpdateError) {
         console.error('Error in update_exam_stats_properly:', statsUpdateError);
-      } else {
-        console.log('update_exam_stats_properly completed successfully');
       }
 
       // Clear cache to force refresh
@@ -480,10 +449,7 @@ class SupabaseStatsService {
 
   // Test completion tracking methods
   async submitTestCompletion(submission: TestSubmissionData): Promise<{ data: any; error: any }> {
-    console.log('submitTestCompletion called with:', submission);
-    
     const user = await this.getCurrentUser();
-    console.log('Current user:', user);
     
     if (!user) return { data: null, error: 'User not authenticated' };
 
@@ -501,18 +467,8 @@ class SupabaseStatsService {
       answers: submission.answers
     };
     
-    console.log('Storing test completion record:', completionRecord);
 
     try {
-      // First, let's inspect what records actually exist to understand the data structure
-      console.log('Inspecting existing records to understand data structure...');
-      console.log('Search parameters:', {
-        user_id: completionRecord.user_id,
-        exam_id: completionRecord.exam_id,
-        test_type: completionRecord.test_type,
-        test_id: completionRecord.test_id,
-        topic_id: completionRecord.topic_id
-      });
 
       // Get all existing records for this user and exam to understand the data structure
       const { data: allRecords, error: allRecordsError } = await supabase
@@ -526,7 +482,6 @@ class SupabaseStatsService {
         return { data: null, error: allRecordsError };
       }
 
-      console.log('All existing records for this user/exam:', allRecords);
 
       // Find the exact record that matches our parameters
       let existingRecord = null;
@@ -537,15 +492,6 @@ class SupabaseStatsService {
           const topicIdMatch = (record.topic_id === null && completionRecord.topic_id === null) ||
                               (record.topic_id === completionRecord.topic_id);
           
-          console.log('Checking record:', {
-            record_test_type: record.test_type,
-            record_test_id: record.test_id,
-            record_topic_id: record.topic_id,
-            testTypeMatch,
-            testIdMatch,
-            topicIdMatch,
-            overallMatch: testTypeMatch && testIdMatch && topicIdMatch
-          });
           
           return testTypeMatch && testIdMatch && topicIdMatch;
         });
@@ -556,7 +502,6 @@ class SupabaseStatsService {
 
       if (existingRecord) {
         // Record exists, update it using the record's ID
-        console.log('Found existing record, updating it:', existingRecord);
         
         const { data: updateData, error: updateError } = await supabase
           .from('test_completions')
@@ -577,11 +522,9 @@ class SupabaseStatsService {
           return { data: null, error: updateError };
         }
 
-        console.log('Successfully updated existing test completion record');
         completionData = updateData;
       } else {
         // No record exists, but let's be aggressive and clean up any potential conflicts first
-        console.log('No existing record found, but cleaning up any potential conflicts before insert...');
         
         // Delete any records that might conflict with our insert
         // We'll delete based on the unique constraint fields
@@ -600,14 +543,8 @@ class SupabaseStatsService {
 
         const { error: deleteError } = await finalDeleteQuery;
         
-        if (deleteError) {
-          console.log('Delete error (might be expected if no record exists):', deleteError);
-        } else {
-          console.log('Successfully cleaned up any potential conflicting records');
-        }
 
         // Now insert the new record
-        console.log('Inserting new test completion record...');
         
         const { data: insertData, error: insertError } = await supabase
           .from('test_completions')
@@ -620,7 +557,6 @@ class SupabaseStatsService {
           
           // If it still fails, let's try a different approach - delete all records for this test type
           if (insertError.code === '23505') {
-            console.log('Insert still failed after cleanup. Trying broader cleanup...');
             
             // Delete all records for this user, exam, and test type
             const { error: broadDeleteError } = await supabase
@@ -630,11 +566,6 @@ class SupabaseStatsService {
               .eq('exam_id', completionRecord.exam_id)
               .eq('test_type', completionRecord.test_type);
 
-            if (broadDeleteError) {
-              console.log('Broad delete error:', broadDeleteError);
-            } else {
-              console.log('Successfully performed broad cleanup');
-            }
 
             // Try to insert again
             const { data: retryInsertData, error: retryInsertError } = await supabase
@@ -648,37 +579,26 @@ class SupabaseStatsService {
               return { data: null, error: retryInsertError };
             }
 
-            console.log('Successfully inserted test completion after broad cleanup');
             return { data: retryInsertData, error: null };
           }
           
           return { data: null, error: insertError };
         }
 
-        console.log('Successfully inserted new test completion record');
         completionData = insertData;
       }
 
       // Update user streak
-      console.log('Calling update_user_streak with:', { user_uuid: user.id });
       const { error: streakError } = await supabase.rpc('update_user_streak', { user_uuid: user.id });
       
       if (streakError) {
         console.error('Error in update_user_streak:', streakError);
-      } else {
-        console.log('update_user_streak completed successfully');
       }
 
       // Update exam stats properly for Mock and PYQ tests only
       if (submission.testType === 'mock' || submission.testType === 'pyq') {
-        console.log('Updating exam stats for:', submission.testType, 'with score:', submission.score);
         
         try {
-          console.log('Calling update_exam_stats_properly (completion) with:', {
-            user_uuid: user.id,
-            exam_name: submission.examId,
-            new_score: submission.score
-          });
           
           const { error: examStatsError } = await supabase.rpc('update_exam_stats_properly', {
             user_uuid: user.id,
@@ -688,8 +608,6 @@ class SupabaseStatsService {
           
           if (examStatsError) {
             console.error('Error in update_exam_stats_properly (completion):', examStatsError);
-          } else {
-            console.log('Exam stats updated successfully (completion)');
           }
         } catch (error) {
           console.error('Error updating exam stats:', error);
@@ -703,7 +621,6 @@ class SupabaseStatsService {
             submission.testId || 'default',
             submission.score
           );
-          console.log('Individual test score submitted successfully');
         } catch (error) {
           console.error('Error submitting individual test score:', error);
         }

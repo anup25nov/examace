@@ -46,7 +46,6 @@ export const useExamStats = (examId?: string) => {
 
   // Convert Supabase ExamStats to legacy ExamStatsData format
   const convertSupabaseToLegacyFormat = (examStats: SupabaseExamStats[]): ExamStatsData[] => {
-    console.log('Converting Supabase stats to legacy format:', examStats);
     const converted = examStats.map(stat => {
       const convertedStat = {
         examId: stat.exam_id,
@@ -60,10 +59,8 @@ export const useExamStats = (examId?: string) => {
         rank: stat.rank,
         percentile: stat.rank ? Math.round((1 - (stat.rank / 100)) * 100) : undefined
       };
-      console.log('Converted stat:', convertedStat);
       return convertedStat;
     });
-    console.log('All converted stats:', converted);
     return converted;
   };
 
@@ -147,29 +144,21 @@ export const useExamStats = (examId?: string) => {
   // Load all user stats (for dashboard)
   const loadAllStats = async () => {
     if (!getUserId()) {
-      console.log('No user ID found, skipping loadAllStats');
       return;
     }
 
-    console.log('Loading all stats for user:', getUserId());
     setLoading(true);
     try {
       // Try Supabase first, fallback to local
       const { data: supabaseStats, error } = await supabaseStatsService.getExamStats();
       
-      console.log('Supabase stats result:', { data: supabaseStats, error });
-      
       if (!error && supabaseStats.length > 0) {
-        console.log('Using Supabase stats, converting to legacy format');
         const legacyStats = convertSupabaseToLegacyFormat(supabaseStats);
-        console.log('Setting allStats with:', legacyStats);
         setAllStats(legacyStats);
       } else {
-        console.log('Supabase stats failed or empty, falling back to local stats');
         // Fallback to local stats
         const examStats = getExamStats();
         const legacyStats = convertLocalToLegacyFormat(examStats);
-        console.log('Setting allStats with local stats:', legacyStats);
         setAllStats(legacyStats);
       }
     } catch (error) {
@@ -178,7 +167,6 @@ export const useExamStats = (examId?: string) => {
       try {
         const examStats = getExamStats();
         const legacyStats = convertLocalToLegacyFormat(examStats);
-        console.log('Setting allStats with local fallback:', legacyStats);
         setAllStats(legacyStats);
       } catch (localError) {
         console.error('Local fallback failed:', localError);
@@ -270,17 +258,6 @@ export const useExamStats = (examId?: string) => {
   ) => {
     if (!getUserId()) return { success: false, error: 'User not authenticated' };
 
-    // Debug logging to see exact parameters
-    console.log('submitTestAttempt called with:', {
-      targetExamId,
-      score,
-      totalQuestions,
-      correctAnswers,
-      timeTaken,
-      sectionId,
-      testId,
-      topicId
-    });
 
     try {
       // Try Supabase first with new test completion tracking
@@ -307,7 +284,6 @@ export const useExamStats = (examId?: string) => {
         return { success: true, data: supabaseResult };
       } else {
         // Fallback to local storage
-        console.log('Supabase submission failed, using local storage:', error);
         
         const localTestResult = {
           examId: targetExamId,
@@ -324,7 +300,6 @@ export const useExamStats = (examId?: string) => {
           answers: answers.details || []
         };
         
-        console.log('Attempting to save test result locally:', localTestResult);
         
         const testResultId = saveTestResult(localTestResult);
 
