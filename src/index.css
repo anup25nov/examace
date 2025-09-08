@@ -137,6 +137,54 @@ All colors MUST be HSL.
   .animate-scale-in {
     animation: scaleIn 0.4s ease-out forwards;
   }
+
+  /* Mobile-first responsive utilities */
+  .responsive-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4;
+  }
+
+  .responsive-flex {
+    @apply flex flex-col sm:flex-row gap-4;
+  }
+
+  .responsive-text {
+    @apply text-sm sm:text-base lg:text-lg;
+  }
+
+  .mobile-padding {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+
+  .mobile-margin {
+    @apply mb-4 sm:mb-6 lg:mb-8;
+  }
+
+  /* Ensure buttons are touch-friendly on mobile */
+  .mobile-button {
+    @apply h-12 sm:h-10 text-base sm:text-sm min-w-[44px] min-h-[44px];
+  }
+
+  /* Line clamping for text truncation */
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 }
 
 @keyframes fadeIn {

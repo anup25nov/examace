@@ -407,28 +407,28 @@ const ExamDashboard = () => {
     if (testFilter === 'attempted' && !isCompleted) return null;
     if (testFilter === 'not-attempted' && isCompleted) return null;
     
-    // Get score and rank for Mock and PYQ tests
+    // Get score and rank for Mock and PYQ tests  
     const scoreKey = topicId ? `${testType}-${testId}-${topicId}` : `${testType}-${testId}`;
     const testScore = testScores.get(scoreKey);
 
     return (
-      <Card key={testId} className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg ${
+      <Card key={testId} className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${
         isCompleted ? 'border-green-200 bg-green-50/50 shadow-md' : 'border-border hover:border-primary/20'
       }`}>
-        <CardContent className="p-5">
+        <CardContent className="p-4 sm:p-5">
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-foreground text-base">{testName}</h3>
-              <div className="flex items-center space-x-2">
+              <h3 className="font-semibold text-foreground text-sm sm:text-base line-clamp-2">{testName}</h3>
+              <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
                 {(testType === 'mock' || testType === 'pyq') && (
-                  <span className="text-xs bg-gradient-to-r from-green-400 to-emerald-500 text-white px-2 py-1 rounded-full font-bold shadow-md animate-pulse">
+                  <span className="text-xs bg-gradient-to-r from-green-400 to-emerald-500 text-white px-2 py-1 rounded-full font-bold shadow-md">
                     FREE
                   </span>
                 )}
                 {isCompleted && (
                   <div className="flex items-center space-x-1">
                     <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-xs text-green-600 font-medium">Completed</span>
+                    <span className="text-xs text-green-600 font-medium hidden sm:inline">Completed</span>
                   </div>
                 )}
               </div>
@@ -462,7 +462,7 @@ const ExamDashboard = () => {
           <div className="flex flex-col space-y-3">
             {isCompleted ? (
               <>
-                <div className="flex space-x-3">
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
                   <Button
                     size="sm"
                     variant="outline"
@@ -540,14 +540,37 @@ const ExamDashboard = () => {
           </div>
         </div>
         
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8 max-w-6xl mx-auto">
-          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-32 flex items-center">
-            <CardContent className="p-4 text-center w-full">
-              <div className="w-10 h-10 mx-auto mb-2 bg-blue-100 rounded-full flex items-center justify-center">
-                <BarChart3 className="w-5 h-5 text-blue-600" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 max-w-4xl mx-auto">
+          <Card className="text-center gradient-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <CardContent className="p-6">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+                <BarChart3 className="w-8 h-8 text-white" />
               </div>
-              <p className="text-2xl font-bold text-foreground mb-1">{userStats.totalTests}</p>
-              <p className="text-sm font-medium text-muted-foreground">Tests Taken</p>
+              <p className="text-3xl font-bold text-foreground mb-2">{userStats.totalTests}</p>
+              <p className="text-sm text-muted-foreground font-medium">Tests Taken</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="text-center gradient-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <CardContent className="p-6">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center shadow-lg">
+                <Target className="w-8 h-8 text-white" />
+              </div>
+              <p className="text-3xl font-bold text-foreground mb-2">{userStats.avgScore}%</p>
+              <p className="text-sm text-muted-foreground font-medium">Average Score</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="text-center gradient-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <CardContent className="p-6">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">
+                <Trophy className="w-8 h-8 text-white" />
+              </div>
+              <p className="text-3xl font-bold text-foreground mb-2">{userStats.bestScore}%</p>
+              <p className="text-sm text-muted-foreground font-medium">Best Score</p>
+            </CardContent>
+          </Card>
+        </div>
             </CardContent>
           </Card>
           

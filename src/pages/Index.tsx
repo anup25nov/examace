@@ -9,7 +9,7 @@ import { examConfigs } from "@/config/examConfig";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
-// import { useUserStreak } from "@/hooks/useUserStreak";
+import { useUserStreak } from "@/hooks/useUserStreak";
 import { analytics } from "@/lib/analytics";
 import { optimizeRouteTransition } from "@/lib/navigationOptimizer";
 import Footer from "@/components/Footer";
@@ -32,13 +32,13 @@ const Index = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, loading, logout } = useAuth();
   const { profile } = useUserProfile();
+  const { streak, refreshStreak } = useUserStreak();
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // Track page view
   useEffect(() => {
     analytics.trackPageView('home', 'ExamAce Home');
   }, []);
-  // const { streak, refreshStreak } = useUserStreak();
-  const [isNavigating, setIsNavigating] = useState(false);
 
 
   const handleLogout = async () => {
@@ -62,10 +62,13 @@ const Index = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
+          <div className="w-16 h-16 mx-auto mb-4 gradient-primary rounded-full flex items-center justify-center animate-pulse">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-white border-t-transparent"></div>
+          </div>
+          <h2 className="text-xl font-bold text-foreground mb-2">Loading...</h2>
+          <p className="text-muted-foreground">Preparing your dashboard</p>
         </div>
       </div>
     );
@@ -73,10 +76,13 @@ const Index = () => {
 
   if (isNavigating) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Navigating...</p>
+          <div className="w-16 h-16 mx-auto mb-4 gradient-primary rounded-full flex items-center justify-center animate-pulse">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-white border-t-transparent"></div>
+          </div>
+          <h2 className="text-xl font-bold text-foreground mb-2">Navigating...</h2>
+          <p className="text-muted-foreground">Taking you to your exam</p>
         </div>
       </div>
     );
@@ -106,12 +112,12 @@ const Index = () => {
                 <p className="text-xs text-muted-foreground">
                   {profile?.email || localStorage.getItem("userEmail")}
                 </p>
-                {/* <div className="flex items-center justify-end space-x-1 mt-1">
+                <div className="flex items-center justify-end space-x-1 mt-1">
                   <Flame className="w-4 h-4 text-orange-500" />
                   <span className="text-sm text-orange-600 font-bold">
-                    {streak.current_streak} day streak
+                    {streak?.current_streak || 0} day streak
                   </span>
-                </div> */}
+                </div>
               </div>
               <Button variant="outline" size="sm" onClick={handleLogout}>
                 Logout
@@ -155,9 +161,19 @@ const Index = () => {
       {/* Exams Grid */}
       <section className="py-16">
         <div className="container mx-auto px-4">
-          <h3 className="text-3xl font-bold text-center text-foreground mb-12">
-            Choose Your Exam
-          </h3>
+          <div className="text-center mb-12">
+            <h3 className="text-3xl font-bold text-foreground mb-4">
+              Choose Your Exam
+            </h3>
+            {isAuthenticated && (
+              <div className="flex items-center justify-center space-x-2">
+                <Flame className="w-5 h-5 text-orange-500" />
+                <span className="text-lg text-orange-600 font-bold">
+                  {streak?.current_streak || 0} day streak
+                </span>
+              </div>
+            )}
+          </div>
           
           <div className="space-y-6">
             {/* Active Exam - SSC CGL (Bigger Card) */}
