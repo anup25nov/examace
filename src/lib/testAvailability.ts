@@ -87,8 +87,8 @@ class TestAvailabilityService {
     return availableTests;
   }
 
-  // Get all available tests for an exam
-  async getAvailableTests(examId: string, allTests: {
+  // Get all available tests for an exam with custom test data
+  async getAvailableTestsWithData(examId: string, allTests: {
     mock: TestConfig[];
     pyq: { year: string; papers: TestConfig[] }[];
     practice: TestConfig[];
@@ -100,6 +100,44 @@ class TestAvailabilityService {
     ]);
 
     return { mock, pyq, practice };
+  }
+
+  // Get available tests with default data
+  async getAvailableTests(examId: string): Promise<AvailableTests> {
+    // Return default test data for now
+    return {
+      mock: [
+        { id: 'mock-test-1', name: 'SSC CGL Mock Test 1', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness' },
+        { id: 'mock-test-2', name: 'SSC CGL Mock Test 2', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness' },
+        { id: 'mock-test-3', name: 'SSC CGL Mock Test 3', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness' }
+      ],
+      pyq: [
+        {
+          year: '2024',
+          papers: [
+            { id: '2024-set-1', name: 'SSC CGL 2024 Set 1', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness' },
+            { id: '2024-set-2', name: 'SSC CGL 2024 Set 2', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness' }
+          ]
+        },
+        {
+          year: '2023',
+          papers: [
+            { id: '2023-set-1', name: 'SSC CGL 2023 Set 1', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness' }
+          ]
+        }
+      ],
+      practice: [
+        { id: 'maths-algebra', name: 'Mathematics - Algebra', duration: 60, questions: [], breakdown: 'Algebra fundamentals and practice' },
+        { id: 'english-grammar', name: 'English - Grammar', duration: 45, questions: [], breakdown: 'Grammar rules and practice' },
+        { id: 'general-awareness', name: 'General Awareness', duration: 30, questions: [], breakdown: 'Current affairs and general knowledge' }
+      ]
+    };
+  }
+
+  // Get test completions (mock implementation)
+  async getTestCompletions(examId: string): Promise<{ data: any[] | null }> {
+    // Return empty completions for now
+    return { data: [] };
   }
 
   // Clear cache

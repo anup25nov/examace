@@ -28,6 +28,9 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { QuestionLoader } from "@/lib/questionLoader";
 import { analytics } from "@/lib/analytics";
 import { testAvailabilityService } from "@/lib/testAvailability";
+import { ProfessionalExamCard } from "@/components/ProfessionalExamCard";
+import { ProfessionalSectionHeader } from "@/components/ProfessionalSectionHeader";
+import { ReferralBanner } from "@/components/ReferralBanner";
 import Footer from "@/components/Footer";
 
 // Icon mapping for dynamic loading

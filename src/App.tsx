@@ -14,6 +14,7 @@ import Contact from "./pages/Contact";
 import { 
   AuthWrapper, 
   ExamDashboardWrapper, 
+  ProfessionalExamDashboardWrapper,
   TestInterfaceWrapper, 
   ResultAnalysisWrapper,
   SolutionsViewerWrapper
@@ -43,6 +44,11 @@ const App = () => {
             <Route path="/exam/:examId" element={
               <ProtectedRoute>
                 <ExamDashboardWrapper />
+              </ProtectedRoute>
+            } />
+            <Route path="/exam-pro/:examId" element={
+              <ProtectedRoute>
+                <ProfessionalExamDashboardWrapper />
               </ProtectedRoute>
             } />
             <Route path="/test/:examId/:sectionId/:testType" element={

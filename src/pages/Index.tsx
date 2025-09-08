@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { BookOpen, Clock, Trophy, Users, TrendingUp, Brain, ChevronRight, Flame, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { examConfigs } from "@/config/examConfig";
@@ -12,6 +10,13 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { useUserStreak } from "@/hooks/useUserStreak";
 import { analytics } from "@/lib/analytics";
 import { optimizeRouteTransition } from "@/lib/navigationOptimizer";
+import { ProfileDropdown } from "@/components/ProfileDropdown";
+import { MembershipPlans } from "@/components/MembershipPlans";
+import { PaymentModal } from "@/components/PaymentModal";
+import { PhoneUpdateModal } from "@/components/PhoneUpdateModal";
+import { ReferralSystem } from "@/components/ReferralSystem";
+import { ReferralCodeInput } from "@/components/ReferralCodeInput";
+import { TrustIndicators } from "@/components/TrustIndicators";
 import Footer from "@/components/Footer";
 
 // Icon mapping for dynamic loading
@@ -34,6 +39,15 @@ const Index = () => {
   const { profile } = useUserProfile();
   const { streak, refreshStreak } = useUserStreak();
   const [isNavigating, setIsNavigating] = useState(false);
+  
+  // New modal states
+  const [showMembershipPlans, setShowMembershipPlans] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [showReferralSystem, setShowReferralSystem] = useState(false);
+  const [showReferralCodeInput, setShowReferralCodeInput] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [appliedReferralCode, setAppliedReferralCode] = useState<string | null>(null);
 
   // Track page view
   useEffect(() => {
@@ -43,6 +57,50 @@ const Index = () => {
 
   const handleLogout = async () => {
     await logout();
+  };
+
+  // New modal handlers
+  const handleMembershipClick = () => {
+    setShowMembershipPlans(true);
+  };
+
+  const handlePhoneUpdate = () => {
+    setShowPhoneModal(true);
+  };
+
+  const handleSettingsClick = () => {
+    // TODO: Implement settings modal
+    console.log('Settings clicked');
+  };
+
+  const handlePlanSelect = (plan: any) => {
+    setSelectedPlan(plan);
+    setShowMembershipPlans(false);
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentSuccess = (paymentId: string) => {
+    console.log('Payment successful:', paymentId);
+    setShowPaymentModal(false);
+    setSelectedPlan(null);
+    // TODO: Update user membership in database
+  };
+
+  const handlePhoneUpdateSuccess = (phone: string) => {
+    console.log('Phone updated:', phone);
+    setShowPhoneModal(false);
+    // TODO: Update phone in database
+  };
+
+  const handleReferralClick = () => {
+    setShowReferralSystem(true);
+  };
+
+  const handleReferralCodeApplied = (code: string) => {
+    setAppliedReferralCode(code);
+    setShowReferralCodeInput(false);
+    // Show success message
+    console.log('Referral code applied:', code);
   };
 
 
@@ -55,8 +113,8 @@ const Index = () => {
       
       setIsNavigating(true);
       // Optimize route transition
-      optimizeRouteTransition('/', `/exam/${examId}`);
-      navigate(`/exam/${examId}`);
+      optimizeRouteTransition('/', `/exam-pro/${examId}`);
+      navigate(`/exam-pro/${examId}`);
     }
   };
 
@@ -106,23 +164,13 @@ const Index = () => {
           </div>
           
           {isAuthenticated ? (
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <p className="text-sm font-medium text-foreground">Welcome!</p>
-                <p className="text-xs text-muted-foreground">
-                  {profile?.email || localStorage.getItem("userEmail")}
-                </p>
-                <div className="flex items-center justify-end space-x-1 mt-1">
-                  <Flame className="w-4 h-4 text-orange-500" />
-                  <span className="text-sm text-orange-600 font-bold">
-                    {streak?.current_streak || 0} day streak
-                  </span>
-                </div>
-              </div>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                Logout
-              </Button>
-            </div>
+            <ProfileDropdown
+              onLogout={handleLogout}
+              onMembershipClick={handleMembershipClick}
+              onPhoneUpdate={handlePhoneUpdate}
+              onSettingsClick={handleSettingsClick}
+              onReferralClick={handleReferralClick}
+            />
           ) : (
             <Button onClick={() => navigate('/auth')} className="gradient-primary border-0">
               Login
@@ -294,6 +342,54 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* Trust Indicators */}
+      <section className="py-8 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <TrustIndicators />
+        </div>
+      </section>
+
+      {/* Modals */}
+      {showMembershipPlans && (
+        <MembershipPlans
+          onSelectPlan={handlePlanSelect}
+          onClose={() => setShowMembershipPlans(false)}
+          currentPlan={(profile as any)?.membership_plan}
+        />
+      )}
+
+      {showPaymentModal && selectedPlan && (
+        <PaymentModal
+          plan={selectedPlan}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setSelectedPlan(null);
+          }}
+          onPaymentSuccess={handlePaymentSuccess}
+        />
+      )}
+
+      {showPhoneModal && (
+        <PhoneUpdateModal
+          currentPhone={(profile as any)?.phone}
+          onClose={() => setShowPhoneModal(false)}
+          onPhoneUpdate={handlePhoneUpdateSuccess}
+        />
+      )}
+
+      {showReferralSystem && (
+        <ReferralSystem
+          onClose={() => setShowReferralSystem(false)}
+        />
+      )}
+
+      {showReferralCodeInput && (
+        <ReferralCodeInput
+          onReferralApplied={handleReferralCodeApplied}
+          onClose={() => setShowReferralCodeInput(false)}
+        />
+      )}
 
       <Footer />
     </div>

@@ -6,6 +6,7 @@ import { QuestionLoader, TestData, QuestionWithProps } from '@/lib/questionLoade
 import { useExamStats } from '@/hooks/useExamStats';
 import { supabaseStatsService } from '@/lib/supabaseStats';
 import SolutionsDisplay from '@/components/SolutionsDisplay';
+import { ReferralBanner } from '@/components/ReferralBanner';
 
 const SolutionsViewer = () => {
   const { examId, sectionId, testType, topic } = useParams();
@@ -213,19 +214,28 @@ const SolutionsViewer = () => {
   }
 
   return (
-    <SolutionsDisplay
-      questions={questions}
-      userAnswers={userAnswers}
-      score={testResults.score}
-      totalQuestions={testResults.total}
-      correctAnswers={testResults.correct}
-      timeTaken={testResults.timeTaken}
-      onClose={() => navigate(`/exam/${examId}`)}
-      rank={rank}
-      totalParticipants={totalParticipants}
-      highestMarks={highestMarks}
-      onUpdateRank={handleUpdateRank}
-    />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* Referral Banner */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="container mx-auto px-4 py-4">
+          <ReferralBanner variant="compact" />
+        </div>
+      </div>
+      
+      <SolutionsDisplay
+        questions={questions}
+        userAnswers={userAnswers}
+        score={testResults.score}
+        totalQuestions={testResults.total}
+        correctAnswers={testResults.correct}
+        timeTaken={testResults.timeTaken}
+        onClose={() => navigate(`/exam/${examId}`)}
+        rank={rank}
+        totalParticipants={totalParticipants}
+        highestMarks={highestMarks}
+        onUpdateRank={handleUpdateRank}
+      />
+    </div>
   );
 };
 
