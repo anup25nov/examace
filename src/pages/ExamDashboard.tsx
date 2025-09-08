@@ -57,6 +57,7 @@ const ExamDashboard = () => {
   const [completedTests, setCompletedTests] = useState<Set<string>>(new Set());
   const [testScores, setTestScores] = useState<Map<string, { score: number; rank: number; totalParticipants: number }>>(new Map());
   const [testFilter, setTestFilter] = useState<'all' | 'attempted' | 'not-attempted'>('all');
+  const [autoOpenSections, setAutoOpenSections] = useState<Set<string>>(new Set());
   const [availableTests, setAvailableTests] = useState<{
     mock: Array<{ id: string; name: string; duration: number; questions: any[]; breakdown?: string }>;
     pyq: Array<{ year: string; papers: Array<{ id: string; name: string; duration: number; questions: any[]; breakdown?: string }> }>;
@@ -175,6 +176,54 @@ const ExamDashboard = () => {
     setTestScores(scores);
   };
 
+  // Calculate accurate filter counts
+  const getFilterCounts = () => {
+    let completedCount = 0;
+    let notAttemptedCount = 0;
+    
+    // Count mock tests
+    availableTests.mock.forEach(test => {
+      const completionKey = `mock-${test.id}`;
+      if (completedTests.has(completionKey)) {
+        completedCount++;
+      } else {
+        notAttemptedCount++;
+      }
+    });
+    
+    // Count PYQ tests
+    availableTests.pyq.forEach(yearData => {
+      yearData.papers.forEach(paper => {
+        const completionKey = `pyq-${paper.id}`;
+        if (completedTests.has(completionKey)) {
+          completedCount++;
+        } else {
+          notAttemptedCount++;
+        }
+      });
+    });
+    
+    return { completedCount, notAttemptedCount };
+  };
+
+  const { completedCount, notAttemptedCount } = getFilterCounts();
+
+  // Update filter logic
+  const handleFilterChange = (filter: 'all' | 'attempted' | 'not-attempted') => {
+    setTestFilter(filter);
+    
+    // Auto-open sections when filter is applied
+    if (filter !== 'all') {
+      setAutoOpenSections(new Set(['mock', 'pyq']));
+      setOpenSections(prev => ({
+        ...prev,
+        mock: true,
+        pyq: true
+      }));
+    } else {
+      setAutoOpenSections(new Set());
+    }
+  };
 
   useEffect(() => {
     if (loading) return;
@@ -286,9 +335,16 @@ const ExamDashboard = () => {
           }
         });
 
+        // Calculate average score from individual test scores
+        let avgScore = 0;
+        if (testScores.size > 0) {
+          const totalScore = Array.from(testScores.values()).reduce((sum, scoreData) => sum + scoreData.score, 0);
+          avgScore = Math.round(totalScore / testScores.size);
+        }
+
         setUserStats({
           totalTests: currentExamStats.totalTests,
-          avgScore: currentExamStats.averageScore,
+          avgScore: avgScore || currentExamStats.averageScore,
           bestScore: currentExamStats.bestScore,
           bestRank: bestRank,
           lastActive: currentExamStats.lastTestDate
@@ -367,6 +423,14 @@ const ExamDashboard = () => {
     const testPath = topicId 
       ? `/test/${examId}/${sectionId}/${itemId}/${topicId}`
       : `/test/${examId}/${sectionId}/${itemId}`;
+    
+    // Request fullscreen before navigation
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.log('Fullscreen request failed:', err);
+      });
+    }
+    
     navigate(testPath);
   };
 
@@ -412,11 +476,11 @@ const ExamDashboard = () => {
     const testScore = testScores.get(scoreKey);
 
     return (
-      <Card key={testId} className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${
+      <Card key={testId} className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02] h-48 ${
         isCompleted ? 'border-green-200 bg-green-50/50 shadow-md' : 'border-border hover:border-primary/20'
       }`}>
-        <CardContent className="p-4 sm:p-5">
-          <div className="mb-4">
+        <CardContent className="p-4 sm:p-5 h-full flex flex-col">
+          <div className="mb-4 flex-1">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-semibold text-foreground text-sm sm:text-base line-clamp-2">{testName}</h3>
               <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
@@ -435,31 +499,40 @@ const ExamDashboard = () => {
             </div>
           </div>
           
-          {/* Show score and rank for Mock and PYQ tests */}
-          {testScore && (testType === 'mock' || testType === 'pyq') && (
-            <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center">
-                  <div className="text-xl font-bold text-blue-600">{testScore.score}</div>
-                  <div className="text-sm text-blue-500 font-medium">Score</div>
+          {/* Show score and rank for Mock and PYQ tests - Fixed height */}
+          <div className="mb-4 min-h-[80px] flex items-center justify-center">
+            {testScore && (testType === 'mock' || testType === 'pyq') ? (
+              <div className="w-full p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-blue-600">{testScore.score}</div>
+                    <div className="text-sm text-blue-500 font-medium">Score</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-purple-600">#{testScore.rank}</div>
+                    <div className="text-sm text-purple-500 font-medium">Rank</div>
+                  </div>
                 </div>
-                <div className="text-center">
-                  <div className="text-xl font-bold text-purple-600">#{testScore.rank}</div>
-                  <div className="text-sm text-purple-500 font-medium">Rank</div>
+                {testScore.totalParticipants > 0 && (
+                  <div className="text-center mt-3">
+                    <span className="text-sm text-muted-foreground">
+                      out of {testScore.totalParticipants} participants
+                    </span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <div className="text-center text-muted-foreground">
+                  <div className="text-sm">Complete test to see</div>
+                  <div className="text-xs">your score & rank</div>
                 </div>
               </div>
-              {testScore.totalParticipants > 0 && (
-                <div className="text-center mt-3">
-                  <span className="text-sm text-muted-foreground">
-                    out of {testScore.totalParticipants} participants
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
+            )}
+          </div>
           
-          {/* Action buttons */}
-          <div className="flex flex-col space-y-3">
+          {/* Action buttons - Fixed at bottom */}
+          <div className="flex flex-col space-y-3 mt-auto">
             {isCompleted ? (
               <>
                 <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
@@ -540,6 +613,7 @@ const ExamDashboard = () => {
           </div>
         </div>
         
+        {/* Main Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 max-w-4xl mx-auto">
           <Card className="text-center gradient-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
             <CardContent className="p-6">
@@ -571,29 +645,9 @@ const ExamDashboard = () => {
             </CardContent>
           </Card>
         </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-32 flex items-center">
-            <CardContent className="p-4 text-center w-full">
-              <div className="w-10 h-10 mx-auto mb-2 bg-green-100 rounded-full flex items-center justify-center">
-                <Star className="w-5 h-5 text-green-600" />
-              </div>
-              <p className="text-2xl font-bold text-foreground mb-1">{userStats.avgScore}</p>
-              <p className="text-sm font-medium text-muted-foreground">Average Score</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="gradient-card border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-32 flex items-center">
-            <CardContent className="p-4 text-center w-full">
-              <div className="w-10 h-10 mx-auto mb-2 bg-purple-100 rounded-full flex items-center justify-center">
-                <Trophy className="w-5 h-5 text-purple-600" />
-              </div>
-              <p className="text-2xl font-bold text-foreground mb-1">{userStats.bestScore}</p>
-              <p className="text-sm font-medium text-muted-foreground">Best Score</p>
-            </CardContent>
-          </Card>
 
+        {/* Additional Stats Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 max-w-2xl mx-auto">
           <Card className="gradient-card border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-32 flex items-center">
             <CardContent className="p-4 text-center w-full">
               <div className="w-10 h-10 mx-auto mb-2 bg-orange-100 rounded-full flex items-center justify-center">
@@ -607,14 +661,12 @@ const ExamDashboard = () => {
           <Card className="gradient-card border-0 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-32 flex items-center">
             <CardContent className="p-4 text-center w-full">
               <div className="w-10 h-10 mx-auto mb-2 bg-yellow-100 rounded-full flex items-center justify-center">
-                <Trophy className="w-5 h-5 text-yellow-600" />
+                <Star className="w-5 h-5 text-yellow-600" />
               </div>
-              <p className="text-2xl font-bold text-foreground mb-1">{userStats.bestScore || '-'}</p>
-              <p className="text-sm font-medium text-muted-foreground">Best Score (Rank 1)</p>
+              <p className="text-2xl font-bold text-foreground mb-1">{userStats.totalTests}</p>
+              <p className="text-sm font-medium text-muted-foreground">Total Tests</p>
             </CardContent>
           </Card>
-
-
         </div>
 
         {/* Quick Mock Test */}
@@ -702,7 +754,7 @@ const ExamDashboard = () => {
             <Button
               variant={testFilter === 'all' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setTestFilter('all')}
+              onClick={() => handleFilterChange('all')}
               className="text-xs"
             >
               All Tests ({availableTests.mock.length + availableTests.pyq.reduce((sum, year) => sum + year.papers.length, 0)})
@@ -710,18 +762,18 @@ const ExamDashboard = () => {
             <Button
               variant={testFilter === 'attempted' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setTestFilter('attempted')}
+              onClick={() => handleFilterChange('attempted')}
               className="text-xs"
             >
-              Completed ({Array.from(completedTests).length})
+              Completed ({completedCount})
             </Button>
             <Button
               variant={testFilter === 'not-attempted' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setTestFilter('not-attempted')}
+              onClick={() => handleFilterChange('not-attempted')}
               className="text-xs"
             >
-              Not Attempted ({(availableTests.mock.length + availableTests.pyq.reduce((sum, year) => sum + year.papers.length, 0)) - Array.from(completedTests).length})
+              Not Attempted ({notAttemptedCount})
             </Button>
           </div>
         </div>
@@ -793,26 +845,43 @@ const ExamDashboard = () => {
                     {section.id === 'pyq' && availableTests.pyq.length > 0 && (
                       <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
-                          {availableTests.pyq.map((yearData) => (
-                            <Card key={yearData.year} className="gradient-card border-0 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group">
-                              <CardContent className="p-4">
-                                <div className="text-center mb-4">
-                                  <h4 className="text-lg font-bold text-foreground mb-2 group-hover:text-primary transition-colors">{yearData.year}</h4>
-                                  <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">{yearData.papers.length} Papers</p>
-                                </div>
-                                <div className="max-h-96 overflow-y-auto space-y-2 pr-2">
-                                  {yearData.papers.map((paper) => 
-                                    createTestButton(
-                                      paper.id,
-                                      paper.name,
-                                      'pyq',
-                                      null
-                                    )
-                                  )}
-                                </div>
-                              </CardContent>
-                            </Card>
-                          ))}
+                          {availableTests.pyq.map((yearData) => {
+                            // Filter papers based on current filter
+                            const filteredPapers = yearData.papers.filter(paper => {
+                              const completionKey = `pyq-${paper.id}`;
+                              const isCompleted = completedTests.has(completionKey);
+                              
+                              if (testFilter === 'attempted') return isCompleted;
+                              if (testFilter === 'not-attempted') return !isCompleted;
+                              return true; // Show all for 'all' filter
+                            });
+                            
+                            // Don't render year card if no papers match the filter
+                            if (filteredPapers.length === 0) return null;
+                            
+                            return (
+                              <Card key={yearData.year} className="gradient-card border-0 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group">
+                                <CardContent className="p-4">
+                                  <div className="text-center mb-4">
+                                    <h4 className="text-lg font-bold text-foreground mb-2 group-hover:text-primary transition-colors">{yearData.year}</h4>
+                                    <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+                                      {filteredPapers.length} {filteredPapers.length === 1 ? 'Paper' : 'Papers'}
+                                    </p>
+                                  </div>
+                                  <div className="max-h-96 overflow-y-auto space-y-2 pr-2">
+                                    {filteredPapers.map((paper) => 
+                                      createTestButton(
+                                        paper.id,
+                                        paper.name,
+                                        'pyq',
+                                        null
+                                      )
+                                    )}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
