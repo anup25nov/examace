@@ -15,6 +15,7 @@ import {
   AuthWrapper, 
   ExamDashboardWrapper, 
   ProfessionalExamDashboardWrapper,
+  ReferralPageWrapper,
   TestInterfaceWrapper, 
   ResultAnalysisWrapper,
   SolutionsViewerWrapper
@@ -49,6 +50,11 @@ const App = () => {
             <Route path="/exam-pro/:examId" element={
               <ProtectedRoute>
                 <ProfessionalExamDashboardWrapper />
+              </ProtectedRoute>
+            } />
+            <Route path="/referral" element={
+              <ProtectedRoute>
+                <ReferralPageWrapper />
               </ProtectedRoute>
             } />
             <Route path="/test/:examId/:sectionId/:testType" element={

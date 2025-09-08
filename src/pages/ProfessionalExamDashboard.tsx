@@ -58,12 +58,11 @@ const ProfessionalExamDashboard = () => {
   const [completedTests, setCompletedTests] = useState<Set<string>>(new Set());
   const [testScores, setTestScores] = useState<Map<string, { score: number; rank: number; totalParticipants: number }>>(new Map());
   const [testFilter, setTestFilter] = useState<'all' | 'attempted' | 'not-attempted'>('all');
-  const [searchQuery, setSearchQuery] = useState('');
   
   const [availableTests, setAvailableTests] = useState<{
-    mock: Array<{ id: string; name: string; duration: number; questions: any[]; breakdown?: string }>;
-    pyq: Array<{ year: string; papers: Array<{ id: string; name: string; duration: number; questions: any[]; breakdown?: string }> }>;
-    practice: Array<{ id: string; name: string; duration: number; questions: any[]; breakdown?: string }>;
+    mock: Array<{ id: string; name: string; duration: number; questions: any[]; breakdown?: string; isPremium?: boolean }>;
+    pyq: Array<{ year: string; papers: Array<{ id: string; name: string; duration: number; questions: any[]; breakdown?: string; isPremium?: boolean }> }>;
+    practice: Array<{ id: string; name: string; duration: number; questions: any[]; breakdown?: string; isPremium?: boolean }>;
   }>({ mock: [], pyq: [], practice: [] });
 
   const exam = examConfigs[examId as string];
@@ -82,19 +81,20 @@ const ProfessionalExamDashboard = () => {
         // Set default tests if loading fails
         setAvailableTests({
           mock: [
-            { id: 'mock-test-1', name: 'SSC CGL Mock Test 1', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness' },
-            { id: 'mock-test-2', name: 'SSC CGL Mock Test 2', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness' }
+            { id: 'mock-test-1', name: 'SSC CGL Mock Test 1', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness', isPremium: false },
+            { id: 'mock-test-2', name: 'SSC CGL Mock Test 2', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness', isPremium: false },
+            { id: 'mock-test-3', name: 'SSC CGL Premium Mock Test 1', duration: 180, questions: [], breakdown: 'Advanced General Intelligence, English, Quantitative Aptitude, General Awareness', isPremium: true }
           ],
           pyq: [
             {
               year: '2024',
               papers: [
-                { id: '2024-set-1', name: 'SSC CGL 2024 Set 1', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness' }
+                { id: '2024-set-1', name: 'SSC CGL 2024 Set 1', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness', isPremium: false }
               ]
             }
           ],
           practice: [
-            { id: 'maths-algebra', name: 'Mathematics - Algebra', duration: 60, questions: [], breakdown: 'Algebra fundamentals and practice' }
+            { id: 'maths-algebra', name: 'Mathematics - Algebra', duration: 60, questions: [], breakdown: 'Algebra fundamentals and practice', isPremium: true }
           ]
         });
       }
@@ -154,7 +154,7 @@ const ProfessionalExamDashboard = () => {
     };
 
     loadUserData();
-  }, [isAuthenticated, user, examId, loadAllStats, getExamStatById]);
+  }, [isAuthenticated, user, examId]);
 
   // Track page view
   useEffect(() => {
@@ -188,10 +188,6 @@ const ProfessionalExamDashboard = () => {
     if (testFilter === 'attempted' && !isCompleted) return null;
     if (testFilter === 'not-attempted' && isCompleted) return null;
     
-    // Apply search filter
-    if (searchQuery && !testName.toLowerCase().includes(searchQuery.toLowerCase())) {
-      return null;
-    }
     
     // Get score and rank for Mock and PYQ tests  
     const scoreKey = topicId ? `${testType}-${testId}-${topicId}` : `${testType}-${testId}`;
@@ -374,42 +370,31 @@ const ProfessionalExamDashboard = () => {
           </Card>
         )}
 
-        {/* Search and Filter */}
+        {/* Filter Options */}
         <div className="mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search tests..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            
-            <div className="flex space-x-2">
+          <div className="flex justify-center">
+            <div className="flex space-x-2 bg-gray-100 p-1 rounded-lg">
               <Button
-                variant={testFilter === 'all' ? 'default' : 'outline'}
+                variant={testFilter === 'all' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setTestFilter('all')}
-                className="bg-blue-600 hover:bg-blue-700"
+                className={testFilter === 'all' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'text-gray-600 hover:text-gray-900'}
               >
                 All Tests
               </Button>
               <Button
-                variant={testFilter === 'attempted' ? 'default' : 'outline'}
+                variant={testFilter === 'attempted' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setTestFilter('attempted')}
-                className="bg-green-600 hover:bg-green-700"
+                className={testFilter === 'attempted' ? 'bg-green-600 hover:bg-green-700 text-white' : 'text-gray-600 hover:text-gray-900'}
               >
                 Attempted
               </Button>
               <Button
-                variant={testFilter === 'not-attempted' ? 'default' : 'outline'}
+                variant={testFilter === 'not-attempted' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setTestFilter('not-attempted')}
-                className="bg-orange-600 hover:bg-orange-700"
+                className={testFilter === 'not-attempted' ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'text-gray-600 hover:text-gray-900'}
               >
                 Not Attempted
               </Button>
@@ -454,12 +439,12 @@ const ProfessionalExamDashboard = () => {
                 {openSections[section.id] && (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {section.id === 'mock' && availableTests.mock.map((test) =>
-                      createProfessionalTestCard(test.id, test.name, 'mock')
+                      createProfessionalTestCard(test.id, test.name, 'mock', undefined, test.isPremium || false, 'basic')
                     )}
                     
                     {section.id === 'pyq' && availableTests.pyq.map((year) =>
                       year.papers.map((paper) =>
-                        createProfessionalTestCard(paper.id, paper.name, 'pyq')
+                        createProfessionalTestCard(paper.id, paper.name, 'pyq', undefined, paper.isPremium || false, 'basic')
                       )
                     )}
                     

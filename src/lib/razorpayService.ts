@@ -1,4 +1,4 @@
-import { membershipService } from './membershipService';
+import { membershipService } from './membershipServiceSimple';
 import { referralService } from './referralServiceSimple';
 
 // Razorpay types

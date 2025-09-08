@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   getExamStats, 
   getTestResults, 
@@ -142,7 +142,7 @@ export const useExamStats = (examId?: string) => {
   };
 
   // Load all user stats (for dashboard)
-  const loadAllStats = async () => {
+  const loadAllStats = useCallback(async () => {
     if (!getUserId()) {
       return;
     }
@@ -174,12 +174,12 @@ export const useExamStats = (examId?: string) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [getUserId]);
 
   // Get specific exam stat by ID
-  const getExamStatById = (examId: string): ExamStatsData | null => {
+  const getExamStatById = useCallback((examId: string): ExamStatsData | null => {
     return allStats.find(stat => stat.examId === examId) || null;
-  };
+  }, [allStats]);
 
   // Load test attempts for an exam
   const loadTestAttempts = async (targetExamId: string, limit = 20) => {
@@ -351,14 +351,14 @@ export const useExamStats = (examId?: string) => {
   };
 
   // Check if a test is completed
-  const isTestCompleted = async (examId: string, testType: string, testId: string, topicId?: string): Promise<boolean> => {
+  const isTestCompleted = useCallback(async (examId: string, testType: string, testId: string, topicId?: string): Promise<boolean> => {
     try {
       return await supabaseStatsService.isTestCompleted(examId, testType, testId, topicId);
     } catch (error) {
       console.error('Error checking test completion:', error);
       return false;
     }
-  };
+  }, []);
 
   // Get user streak
   const getUserStreak = async () => {
@@ -371,14 +371,14 @@ export const useExamStats = (examId?: string) => {
   };
 
   // Get individual test score
-  const getIndividualTestScore = async (examId: string, testType: string, testId: string) => {
+  const getIndividualTestScore = useCallback(async (examId: string, testType: string, testId: string) => {
     try {
       return await supabaseStatsService.getIndividualTestScore(examId, testType, testId);
     } catch (error) {
       console.error('Error getting individual test score:', error);
       return { score: null, rank: null, totalParticipants: 0 };
     }
-  };
+  }, []);
 
   // Submit individual test score
   const submitIndividualTestScore = async (examId: string, testType: string, testId: string, score: number) => {

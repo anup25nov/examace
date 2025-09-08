@@ -12,7 +12,7 @@ import {
   Zap
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { membershipService } from '@/lib/membershipService';
+import { membershipService } from '@/lib/membershipServiceSimple';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface MockTestAccessControlProps {

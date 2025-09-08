@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from "react-router-dom";
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -43,6 +44,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   onReferralClick
 }) => {
   const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const { profile } = useUserProfile();
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
@@ -168,13 +170,13 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
         </DropdownMenuItem>
         
         {/* Referral Section */}
-        <DropdownMenuItem 
-          onClick={() => {
-            onReferralClick();
-            setIsOpen(false);
-          }}
-          className="flex items-center space-x-2 cursor-pointer"
-        >
+           <DropdownMenuItem 
+             onClick={() => {
+               navigate('/referral');
+               setIsOpen(false);
+             }}
+             className="flex items-center space-x-2 cursor-pointer"
+           >
           <Gift className="w-4 h-4 text-green-600" />
           <div className="flex-1">
             <p className="text-sm font-medium">Referral Program</p>

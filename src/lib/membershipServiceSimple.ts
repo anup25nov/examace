@@ -1,4 +1,7 @@
-import { supabase } from '@/integrations/supabase/client';
+// Simplified Membership Service - Works without database tables
+// This is a temporary implementation until the membership database schema is set up
+
+import { getMembershipPlans } from '@/config/appConfig';
 
 export interface MembershipPlan {
   id: string;
@@ -32,27 +35,30 @@ export interface PaymentRecord {
   created_at: string;
 }
 
-class MembershipService {
+class MembershipServiceSimple {
   // Get user's current membership
   async getUserMembership(userId: string): Promise<UserMembership | null> {
     try {
-      const { data, error } = await supabase
-        .from('user_memberships')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching user membership:', error);
-        return null;
+      // Get from localStorage for now
+      const membershipData = localStorage.getItem(`membership_${userId}`);
+      if (membershipData) {
+        const membership = JSON.parse(membershipData);
+        // Check if membership is still valid
+        const now = new Date();
+        const endDate = new Date(membership.end_date);
+        
+        if (now > endDate) {
+          // Membership expired
+          membership.status = 'expired';
+          localStorage.setItem(`membership_${userId}`, JSON.stringify(membership));
+          return null;
+        }
+        
+        return membership;
       }
-
-      return data;
+      return null;
     } catch (error) {
-      console.error('Error in getUserMembership:', error);
+      console.error('Error fetching user membership:', error);
       return null;
     }
   }
@@ -64,16 +70,6 @@ class MembershipService {
       
       if (!membership) {
         return false; // No active membership
-      }
-
-      // Check if membership is still valid
-      const now = new Date();
-      const endDate = new Date(membership.end_date);
-      
-      if (now > endDate) {
-        // Membership expired, update status
-        await this.updateMembershipStatus(membership.id, 'expired');
-        return false;
       }
 
       // Get the plan details
@@ -92,34 +88,19 @@ class MembershipService {
 
   // Get membership plan details
   async getMembershipPlan(planId: string): Promise<MembershipPlan | null> {
-    const plans: Record<string, MembershipPlan> = {
-      'basic': {
-        id: 'basic',
-        name: 'Basic Plan',
-        price: 30,
-        mockTests: 10,
-        duration: 30,
-        features: ['10 Mock Tests', 'Detailed Solutions', 'Performance Analytics', '30 Days Access']
-      },
-      'premium': {
-        id: 'premium',
-        name: 'Premium Plan',
-        price: 49,
-        mockTests: 25,
-        duration: 60,
-        features: ['25 Mock Tests', 'Detailed Solutions', 'Performance Analytics', '60 Days Access', 'Priority Support']
-      },
-      'pro': {
-        id: 'pro',
-        name: 'Pro Plan',
-        price: 99,
-        mockTests: 50,
-        duration: 90,
-        features: ['50 Mock Tests', 'Detailed Solutions', 'Performance Analytics', '90 Days Access', '24/7 Support', 'Study Materials']
-      }
+    const plans = getMembershipPlans();
+    const plan = plans.find(p => p.id === planId);
+    
+    if (!plan) return null;
+    
+    return {
+      id: plan.id,
+      name: plan.name,
+      price: plan.price,
+      mockTests: plan.mockTests,
+      duration: plan.duration,
+      features: plan.features
     };
-
-    return plans[planId] || null;
   }
 
   // Create new membership after successful payment
@@ -138,41 +119,20 @@ class MembershipService {
       const endDate = new Date();
       endDate.setDate(startDate.getDate() + plan.duration);
 
-      // First, deactivate any existing active memberships
-      await supabase
-        .from('user_memberships')
-        .update({ status: 'cancelled' })
-        .eq('user_id', userId)
-        .eq('status', 'active');
+      const membership: UserMembership = {
+        id: `membership_${Date.now()}`,
+        user_id: userId,
+        plan_id: planId,
+        status: 'active',
+        start_date: startDate.toISOString(),
+        end_date: endDate.toISOString(),
+        payment_id: paymentId,
+        created_at: startDate.toISOString(),
+        updated_at: startDate.toISOString()
+      };
 
-      // Create new membership
-      const { data, error } = await supabase
-        .from('user_memberships')
-        .insert({
-          user_id: userId,
-          plan_id: planId,
-          status: 'active',
-          start_date: startDate.toISOString(),
-          end_date: endDate.toISOString(),
-          payment_id: paymentId
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error creating membership:', error);
-        return { success: false, error: error.message };
-      }
-
-      // Update user profile with membership info
-      await supabase
-        .from('user_profiles')
-        .update({
-          membership_plan: planId,
-          membership_expiry: endDate.toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userId);
+      // Store in localStorage
+      localStorage.setItem(`membership_${userId}`, JSON.stringify(membership));
 
       return { success: true };
     } catch (error: any) {
@@ -184,20 +144,20 @@ class MembershipService {
   // Update membership status
   async updateMembershipStatus(membershipId: string, status: 'active' | 'expired' | 'cancelled'): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from('user_memberships')
-        .update({ 
-          status,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', membershipId);
-
-      if (error) {
-        console.error('Error updating membership status:', error);
-        return false;
+      // Find and update membership in localStorage
+      const keys = Object.keys(localStorage);
+      for (const key of keys) {
+        if (key.startsWith('membership_')) {
+          const membership = JSON.parse(localStorage.getItem(key) || '{}');
+          if (membership.id === membershipId) {
+            membership.status = status;
+            membership.updated_at = new Date().toISOString();
+            localStorage.setItem(key, JSON.stringify(membership));
+            return true;
+          }
+        }
       }
-
-      return true;
+      return false;
     } catch (error) {
       console.error('Error in updateMembershipStatus:', error);
       return false;
@@ -213,23 +173,21 @@ class MembershipService {
     paymentMethod: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const { data, error } = await supabase
-        .from('payments')
-        .insert({
-          user_id: userId,
-          plan_id: planId,
-          amount,
-          payment_id: paymentId,
-          status: 'completed',
-          payment_method: paymentMethod
-        })
-        .select()
-        .single();
+      const payment: PaymentRecord = {
+        id: `payment_${Date.now()}`,
+        user_id: userId,
+        plan_id: planId,
+        amount,
+        payment_id: paymentId,
+        status: 'completed',
+        payment_method: paymentMethod,
+        created_at: new Date().toISOString()
+      };
 
-      if (error) {
-        console.error('Error recording payment:', error);
-        return { success: false, error: error.message };
-      }
+      // Store payment in localStorage
+      const payments = JSON.parse(localStorage.getItem(`payments_${userId}`) || '[]');
+      payments.push(payment);
+      localStorage.setItem(`payments_${userId}`, JSON.stringify(payments));
 
       return { success: true };
     } catch (error: any) {
@@ -241,18 +199,10 @@ class MembershipService {
   // Get user's payment history
   async getPaymentHistory(userId: string): Promise<PaymentRecord[]> {
     try {
-      const { data, error } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching payment history:', error);
-        return [];
-      }
-
-      return data || [];
+      const payments = JSON.parse(localStorage.getItem(`payments_${userId}`) || '[]');
+      return payments.sort((a: PaymentRecord, b: PaymentRecord) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
     } catch (error) {
       console.error('Error in getPaymentHistory:', error);
       return [];
@@ -265,15 +215,6 @@ class MembershipService {
       const membership = await this.getUserMembership(userId);
       
       if (!membership) {
-        return false;
-      }
-
-      // Check if membership is still valid
-      const now = new Date();
-      const endDate = new Date(membership.end_date);
-      
-      if (now > endDate) {
-        await this.updateMembershipStatus(membership.id, 'expired');
         return false;
       }
 
@@ -320,8 +261,8 @@ class MembershipService {
       const endDate = new Date(membership.end_date);
       const daysRemaining = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
 
-      // Get tests used (you'll need to implement this based on your test completion tracking)
-      const testsUsed = 0; // TODO: Implement based on your test completion system
+      // Get tests used from localStorage
+      const testsUsed = parseInt(localStorage.getItem(`tests_used_${userId}`) || '0');
       const testsRemaining = Math.max(0, plan.mockTests - testsUsed);
 
       return {
@@ -345,13 +286,16 @@ class MembershipService {
 
   // Get all membership plans
   async getAllMembershipPlans(): Promise<MembershipPlan[]> {
-    const plans = await Promise.all([
-      this.getMembershipPlan('basic'),
-      this.getMembershipPlan('premium'),
-      this.getMembershipPlan('pro')
-    ]);
+    const configPlans = getMembershipPlans();
     
-    return plans.filter(plan => plan !== null) as MembershipPlan[];
+    return configPlans.map(plan => ({
+      id: plan.id,
+      name: plan.name,
+      price: plan.price,
+      mockTests: plan.mockTests,
+      duration: plan.duration,
+      features: plan.features
+    }));
   }
 
   // Check if user can access a specific test
@@ -373,6 +317,16 @@ class MembershipService {
       return false;
     }
   }
+
+  // Mark test as used
+  async markTestAsUsed(userId: string): Promise<void> {
+    try {
+      const testsUsed = parseInt(localStorage.getItem(`tests_used_${userId}`) || '0');
+      localStorage.setItem(`tests_used_${userId}`, (testsUsed + 1).toString());
+    } catch (error) {
+      console.error('Error marking test as used:', error);
+    }
+  }
 }
 
-export const membershipService = new MembershipService();
+export const membershipService = new MembershipServiceSimple();

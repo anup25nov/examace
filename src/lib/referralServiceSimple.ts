@@ -1,6 +1,8 @@
 // Simplified Referral Service - Works without database tables
 // This is a temporary implementation until the referral database schema is set up
 
+import { getReferralConfig } from '@/config/appConfig';
+
 export interface ReferralStats {
   totalReferrals: number;
   totalEarnings: number;
@@ -11,13 +13,16 @@ export interface ReferralStats {
 }
 
 class ReferralServiceSimple {
-  private readonly COMMISSION_PERCENTAGE = 50; // 50% commission
+  private getCommissionPercentage(): number {
+    return getReferralConfig().commissionPercentage;
+  }
 
   // Generate unique referral code for user
   async generateReferralCode(userId: string): Promise<{ success: boolean; code?: string; error?: string }> {
     try {
       // Generate a simple referral code based on user ID
-      const code = `EXAM${userId.substring(0, 6).toUpperCase()}`;
+      const config = getReferralConfig();
+      const code = `${config.referralCodePrefix}${userId.substring(0, 6).toUpperCase()}`;
       
       // Store in localStorage for now
       localStorage.setItem(`referral_code_${userId}`, code);
@@ -38,12 +43,13 @@ class ReferralServiceSimple {
   ): Promise<{ success: boolean; error?: string }> {
     try {
       // For now, just log the referral
+      const commissionPercentage = this.getCommissionPercentage();
       console.log('Referral processed:', {
         refereeId,
         referralCode,
         purchaseAmount,
         purchaseId,
-        commission: (purchaseAmount * this.COMMISSION_PERCENTAGE) / 100
+        commission: (purchaseAmount * commissionPercentage) / 100
       });
       
       return { success: true };
@@ -100,8 +106,9 @@ class ReferralServiceSimple {
   // Validate referral code
   async validateReferralCode(code: string): Promise<{ valid: boolean; error?: string }> {
     try {
-      // Simple validation - check if it starts with EXAM and has proper length
-      if (!code || !code.startsWith('EXAM') || code.length < 8) {
+      // Simple validation - check if it starts with correct prefix and has proper length
+      const config = getReferralConfig();
+      if (!code || !code.startsWith(config.referralCodePrefix) || code.length < config.referralCodeLength) {
         return { valid: false, error: 'Invalid referral code format' };
       }
       

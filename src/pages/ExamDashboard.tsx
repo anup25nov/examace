@@ -93,7 +93,7 @@ const ExamDashboard = () => {
         };
 
         // Filter to only show available tests
-        const availableTests = await testAvailabilityService.getAvailableTests(examId, allTests);
+        const availableTests = await testAvailabilityService.getAvailableTests(examId);
         setAvailableTests(availableTests);
       }
     };
@@ -321,7 +321,7 @@ const ExamDashboard = () => {
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('pageshow', handlePageShow);
     };
-  }, [examId, availableTests]);
+  }, [examId, availableTests.mock.length, availableTests.pyq.length, availableTests.practice.length]);
 
   // Separate useEffect for updating userStats when allStats change
   useEffect(() => {

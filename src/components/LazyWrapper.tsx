@@ -17,6 +17,7 @@ const LoadingSpinner = () => (
 // Lazy load components
 export const LazyExamDashboard = lazy(() => import('@/pages/ExamDashboard'));
 export const LazyProfessionalExamDashboard = lazy(() => import('@/pages/ProfessionalExamDashboard'));
+export const LazyReferralPage = lazy(() => import('@/pages/ReferralPage'));
 export const LazyTestInterface = lazy(() => import('@/pages/TestInterface'));
 export const LazyResultAnalysis = lazy(() => import('@/pages/ResultAnalysis'));
 export const LazyAuth = lazy(() => import('@/pages/Auth'));
@@ -56,5 +57,11 @@ export const SolutionsViewerWrapper = () => (
 export const ProfessionalExamDashboardWrapper = () => (
   <Suspense fallback={<LoadingSpinner />}>
     <LazyProfessionalExamDashboard />
+  </Suspense>
+);
+
+export const ReferralPageWrapper = () => (
+  <Suspense fallback={<LoadingSpinner />}>
+    <LazyReferralPage />
   </Suspense>
 );

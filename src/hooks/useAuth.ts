@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   getCurrentAuthUser, 
   getCurrentUserId, 
@@ -96,9 +96,9 @@ export const useAuth = () => {
     }
   };
 
-  const getUserId = () => {
+  const getUserId = useCallback(() => {
     return getCurrentUserId();
-  };
+  }, []);
 
   const refreshUser = async () => {
     try {

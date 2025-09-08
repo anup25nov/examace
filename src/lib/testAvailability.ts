@@ -4,9 +4,9 @@
 import { TestConfig } from "@/config/examConfig";
 
 interface AvailableTests {
-  mock: TestConfig[];
-  pyq: { year: string; papers: TestConfig[] }[];
-  practice: TestConfig[];
+  mock: (TestConfig & { isPremium?: boolean })[];
+  pyq: { year: string; papers: (TestConfig & { isPremium?: boolean })[] }[];
+  practice: (TestConfig & { isPremium?: boolean })[];
 }
 
 class TestAvailabilityService {
@@ -107,9 +107,11 @@ class TestAvailabilityService {
     // Return default test data for now
     return {
       mock: [
-        { id: 'mock-test-1', name: 'SSC CGL Mock Test 1', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness' },
-        { id: 'mock-test-2', name: 'SSC CGL Mock Test 2', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness' },
-        { id: 'mock-test-3', name: 'SSC CGL Mock Test 3', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness' }
+        { id: 'mock-test-1', name: 'SSC CGL Mock Test 1', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness', isPremium: false },
+        { id: 'mock-test-2', name: 'SSC CGL Mock Test 2', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness', isPremium: false },
+        { id: 'mock-test-3', name: 'SSC CGL Mock Test 3', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness', isPremium: true },
+        { id: 'mock-test-4', name: 'SSC CGL Premium Mock Test 1', duration: 180, questions: [], breakdown: 'Advanced General Intelligence, English, Quantitative Aptitude, General Awareness', isPremium: true },
+        { id: 'mock-test-5', name: 'SSC CGL Premium Mock Test 2', duration: 180, questions: [], breakdown: 'Advanced General Intelligence, English, Quantitative Aptitude, General Awareness', isPremium: true }
       ],
       pyq: [
         {
