@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import { Button } from '@/components/ui/button';
 import {
@@ -14,33 +14,32 @@ import {
   User, 
   Crown, 
   CreditCard, 
-  Phone, 
-  Settings, 
   LogOut, 
   ChevronDown,
   Flame,
   Star,
   Shield,
   Gift,
-  Users
+  Users,
+  Edit3,
+  DollarSign,
+  CheckCircle
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { ProfileUpdateModal } from './ProfileUpdateModal';
+import { referralService } from '@/lib/referralService';
 
 interface ProfileDropdownProps {
   onLogout: () => void;
   onMembershipClick: () => void;
-  onPhoneUpdate: () => void;
-  onSettingsClick: () => void;
   onReferralClick: () => void;
 }
 
 export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   onLogout,
   onMembershipClick,
-  onPhoneUpdate,
-  onSettingsClick,
   onReferralClick
 }) => {
   const { user, isAuthenticated } = useAuth();
@@ -48,13 +47,41 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   const { profile } = useUserProfile();
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
+  const [showProfileUpdate, setShowProfileUpdate] = useState(false);
+  const [referralStats, setReferralStats] = useState({
+    total_referrals: 0,
+    total_earnings: 0,
+    referral_code: '',
+    max_referrals: 20,
+    commission_rate: 50.00,
+    pending_rewards: 0,
+    verified_referrals: 0,
+    rewarded_referrals: 0
+  });
 
+  // Fetch referral stats - ALWAYS call hooks before any early returns
+  useEffect(() => {
+    const fetchReferralStats = async () => {
+      try {
+        const stats = await referralService.getReferralStats();
+        setReferralStats(stats);
+      } catch (error) {
+        console.error('Error fetching referral stats:', error);
+      }
+    };
+
+    if (isAuthenticated && user) {
+      fetchReferralStats();
+    }
+  }, [isAuthenticated, user]);
+
+  // Early return AFTER all hooks
   if (!isAuthenticated || !user) {
     return null;
   }
 
   const userEmail = profile?.email || localStorage.getItem("userEmail") || "User";
-  const userPhone = (profile as any)?.phone || localStorage.getItem("userPhone") || null;
+  const userName = (profile as any)?.name || localStorage.getItem("userName") || null;
   const membershipPlan = (profile as any)?.membership_plan || "free";
   const membershipExpiry = (profile as any)?.membership_expiry || null;
 
@@ -83,6 +110,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   };
 
   return (
+    <>
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <Button 
@@ -93,7 +121,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
             {getMembershipIcon()}
             <div className={`text-left ${isMobile ? 'flex-1' : ''}`}>
               <p className="text-sm font-medium text-foreground">
-                {isMobile ? 'Profile' : userEmail.split('@')[0]}
+                {isMobile ? 'Profile' : (userName || userEmail.split('@')[0])}
               </p>
             </div>
             <ChevronDown className="w-4 h-4 text-muted-foreground" />
@@ -102,8 +130,8 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
       </DropdownMenuTrigger>
       
       <DropdownMenuContent 
-        align={isMobile ? "start" : "end"} 
-        className={`w-80 ${isMobile ? 'w-full' : ''}`}
+        align="end" 
+        className={`w-80 ${isMobile ? 'w-72 mr-2' : ''}`}
       >
         <DropdownMenuLabel className="flex items-center space-x-2">
           <User className="w-4 h-4" />
@@ -113,26 +141,67 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
         <DropdownMenuSeparator />
         
         {/* User Info Section */}
-        <div className="px-2 py-2">
+        <div className="px-3 py-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg mx-2 mb-2">
           <div className="flex items-center space-x-3 mb-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-semibold text-sm">
-                {userEmail.charAt(0).toUpperCase()}
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold text-lg">
+                {(userName || userEmail).charAt(0).toUpperCase()}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">
+              <p className="text-sm font-semibold text-gray-900 truncate">
+                {userName || userEmail.split('@')[0]}
+              </p>
+              <p className="text-xs text-gray-600 truncate">
                 {userEmail}
               </p>
               <div className="flex items-center space-x-2 mt-1">
                 {getMembershipBadge()}
+                {(profile as any)?.phone_verified && (
+                  <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    Verified
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
           
+          {/* Quick Stats */}
+          <div className="grid grid-cols-2 gap-2 text-center">
+            <div className="bg-white/50 rounded-lg p-2">
+              <p className="text-xs text-gray-600">Referrals</p>
+              <p className="text-sm font-bold text-gray-900">
+                {referralStats.total_referrals || 0}
+              </p>
+            </div>
+            <div className="bg-white/50 rounded-lg p-2">
+              <p className="text-xs text-gray-600">Earnings</p>
+              <p className="text-sm font-bold text-green-600">
+                ₹{referralStats.total_earnings || 0}
+              </p>
+            </div>
+          </div>
         </div>
         
         <DropdownMenuSeparator />
+        
+        {/* Profile Update Section */}
+        <DropdownMenuItem 
+          onClick={() => {
+            setShowProfileUpdate(true);
+            setIsOpen(false);
+          }}
+          className="flex items-center space-x-2 cursor-pointer"
+        >
+          <Edit3 className="w-4 h-4 text-blue-600" />
+          <div className="flex-1">
+            <p className="text-sm font-medium">Update Profile</p>
+            {/* <p className="text-xs text-muted-foreground">
+              Complete your profile information
+            </p> */}
+          </div>
+        </DropdownMenuItem>
         
         {/* Membership Section */}
         <DropdownMenuItem 
@@ -145,9 +214,9 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
           <Crown className="w-4 h-4 text-yellow-500" />
           <div className="flex-1">
             <p className="text-sm font-medium">Membership</p>
-            <p className="text-xs text-muted-foreground">
+            {/* <p className="text-xs text-muted-foreground">
               {membershipPlan === 'free' ? 'Upgrade to unlock premium features' : 'Manage your plan'}
-            </p>
+            </p> */}
           </div>
           {membershipPlan !== 'free' && (
             <Shield className="w-4 h-4 text-green-500" />
@@ -165,42 +234,13 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
           <Gift className="w-4 h-4 text-green-600" />
           <div className="flex-1">
             <p className="text-sm font-medium">Referral Program</p>
-            <p className="text-xs text-muted-foreground">
-              Earn 50% commission on referrals
-            </p>
+            {/* <p className="text-xs text-muted-foreground">
+              {referralStats.total_referrals} referrals • ₹{referralStats.total_earnings.toFixed(0)} earned
+            </p> */}
           </div>
           <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
-            Earn
+            {referralStats.referral_code || 'Get Code'}
           </Badge>
-        </DropdownMenuItem>
-        
-        {/* Phone Number Section */}
-        <DropdownMenuItem 
-          onClick={() => {
-            onPhoneUpdate();
-            setIsOpen(false);
-          }}
-          className="flex items-center space-x-2 cursor-pointer"
-        >
-          <Phone className="w-4 h-4" />
-          <div className="flex-1">
-            <p className="text-sm font-medium">Phone Number</p>
-            <p className="text-xs text-muted-foreground">
-              {userPhone ? `+91 ${userPhone}` : 'Add phone number'}
-            </p>
-          </div>
-        </DropdownMenuItem>
-        
-        {/* Settings Section */}
-        <DropdownMenuItem 
-          onClick={() => {
-            onSettingsClick();
-            setIsOpen(false);
-          }}
-          className="flex items-center space-x-2 cursor-pointer"
-        >
-          <Settings className="w-4 h-4" />
-          <span className="text-sm">Settings</span>
         </DropdownMenuItem>
         
         <DropdownMenuSeparator />
@@ -218,5 +258,16 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    
+    {/* Profile Update Modal */}
+    <ProfileUpdateModal
+      isOpen={showProfileUpdate}
+      onClose={() => setShowProfileUpdate(false)}
+      onSuccess={() => {
+        // Refresh profile data
+        window.location.reload();
+      }}
+    />
+  </>
   );
 };

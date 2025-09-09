@@ -597,7 +597,7 @@ const ExamDashboard = () => {
                   alt="Step2Sarkari Logo" 
                   className="h-8 w-auto"
                 />
-                <h1 className="text-xl font-bold text-foreground uppercase">Step2Sarkari</h1>
+                <h1 className="text-xl font-bold text-foreground uppercase">S2S</h1>
               </div>
             </div>
             <div className="flex items-center space-x-4">

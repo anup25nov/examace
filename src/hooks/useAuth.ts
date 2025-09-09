@@ -6,6 +6,7 @@ import {
   signOutUser 
 } from '@/lib/supabaseAuth';
 import { supabaseStatsService } from '@/lib/supabaseStats';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface AuthUser {
   id: string;
@@ -24,10 +25,26 @@ export const useAuth = () => {
       try {
         console.log('Checking auth status...');
         
+        // First check if we have a valid Supabase session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.warn('Session error (likely invalid refresh token):', sessionError.message);
+          // Clear invalid session data
+          localStorage.removeItem('userId');
+          localStorage.removeItem('userEmail');
+          localStorage.removeItem('isAuthenticated');
+          localStorage.removeItem('lastVisitDate');
+          setIsAuthenticated(false);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+        
         const isAuth = isUserAuthenticated();
         console.log('isUserAuthenticated result:', isAuth);
         
-        if (isAuth) {
+        if (isAuth && session) {
           const authUser = await getCurrentAuthUser();
           console.log('getCurrentAuthUser result:', authUser);
           if (authUser) {
@@ -88,11 +105,19 @@ export const useAuth = () => {
 
   const logout = async () => {
     try {
+      // Sign out from Supabase first
+      await supabase.auth.signOut();
+      
+      // Then use the custom signOutUser function
       await signOutUser();
+      
       setUser(null);
       setIsAuthenticated(false);
     } catch (error) {
       console.error('Error signing out:', error);
+      // Even if there's an error, clear local state
+      setUser(null);
+      setIsAuthenticated(false);
     }
   };
 

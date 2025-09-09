@@ -11,9 +11,9 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-center">
           {/* About Us */}
           <div>
-            <h3 className="text-xl font-bold mb-4">About ExamAce</h3>
+            <h3 className="text-xl font-bold mb-4">About S2S</h3>
             <p className="text-gray-300 mb-4">
-              Your comprehensive platform for competitive exam preparation. Practice with real exam patterns, track your progress, and boost your confidence.
+              Your comprehensive platform for government exam preparation. Practice with real exam patterns, track your progress, and achieve your dream job.
             </p>
             <div className="flex space-x-4 justify-center">
               <a href="https://www.facebook.com/share/19izA8vXoy/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
@@ -46,7 +46,7 @@ const Footer = () => {
             <ul className="space-y-2">
               <li><button onClick={() => navigate("/faq")} className="text-gray-300 hover:text-white transition-colors">FAQ</button></li>
               <li><button onClick={() => navigate("/privacy")} className="text-gray-300 hover:text-white transition-colors">Privacy Policy</button></li>
-              <li><button onClick={() => navigate("/privacy")} className="text-gray-300 hover:text-white transition-colors">Terms of Service</button></li>
+              <li><button onClick={() => navigate("/terms")} className="text-gray-300 hover:text-white transition-colors">Terms of Service</button></li>
               <li><button onClick={() => navigate("/faq")} className="text-gray-300 hover:text-white transition-colors">Help Center</button></li>
               <li><button onClick={() => navigate("/contact")} className="text-gray-300 hover:text-white transition-colors">Contact Us</button></li>
             </ul>
@@ -58,8 +58,8 @@ const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center justify-center space-x-2">
                 <Mail className="w-5 h-5 text-primary" />
-                <a href="mailto:support@examace.com" className="text-gray-300 hover:text-white transition-colors">
-                  support@examace.com
+                <a href="mailto:support@s2s.com" className="text-gray-300 hover:text-white transition-colors">
+                  support@s2s.com
                 </a>
               </div>
               <div className="flex items-center justify-center space-x-2">
@@ -80,7 +80,7 @@ const Footer = () => {
         {/* Copyright */}
         <div className="border-t border-gray-800 mt-8 pt-8 text-center">
           <p className="text-gray-400">
-            © 2024 ExamAce. All rights reserved. | Made with ❤️ for competitive exam aspirants
+            © 2024 S2S - Step2Sarkari. All rights reserved. | Made with ❤️ for government job aspirants
           </p>
         </div>
       </div>
