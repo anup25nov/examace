@@ -487,11 +487,14 @@ const ExamDashboard = () => {
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-semibold text-foreground text-sm sm:text-base line-clamp-2 flex-1">{testName}</h3>
               <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
-                {(testType === 'mock' || testType === 'pyq') && (
-                  <span className="text-xs bg-gradient-to-r from-green-400 to-emerald-500 text-white px-2 py-1 rounded-full font-bold shadow-md">
-                    FREE
-                  </span>
-                )}
+                {/* Always show Paid/Free label for every test */}
+                <span className={`text-xs px-3 py-1 rounded-full font-bold shadow-md ${
+                  testType === 'practice' 
+                    ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white animate-pulse' 
+                    : 'bg-gradient-to-r from-green-400 to-emerald-500 text-white'
+                }`}>
+                  {testType === 'practice' ? 'PAID' : 'FREE'}
+                </span>
                 {isCompleted && (
                   <div className="flex items-center space-x-1">
                     <CheckCircle className="w-4 h-4 text-green-500" />
@@ -591,10 +594,10 @@ const ExamDashboard = () => {
               <div className="flex items-center space-x-3">
                 <img 
                   src="/logos/examace-logo.svg" 
-                  alt="ExamAce Logo" 
+                  alt="Step2Sarkari Logo" 
                   className="h-8 w-auto"
                 />
-                <h1 className="text-xl font-bold text-foreground uppercase">{exam.name}</h1>
+                <h1 className="text-xl font-bold text-foreground uppercase">Step2Sarkari</h1>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -819,11 +822,6 @@ const ExamDashboard = () => {
                             </span>
                           )}
                         </div>
-                        {!isDisabled && (
-                          <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${
-                            openSections[section.id] ? 'rotate-180' : ''
-                          }`} />
-                        )}
                       </CardTitle>
                     </CardHeader>
                   </CollapsibleTrigger>

@@ -113,8 +113,8 @@ const Index = () => {
       
       setIsNavigating(true);
       // Optimize route transition
-      optimizeRouteTransition('/', `/exam-pro/${examId}`);
-      navigate(`/exam-pro/${examId}`);
+      optimizeRouteTransition('/', `/exam/${examId}`);
+      navigate(`/exam/${examId}`);
     }
   };
 
@@ -158,8 +158,8 @@ const Index = () => {
               className="h-8 w-auto"
             />
             <div>
-              <h1 className="text-xl font-bold text-foreground">ExamAce</h1>
-              <p className="text-xs text-muted-foreground">Master Your Success</p>
+              <h1 className="text-xl font-bold text-foreground">Step2Sarkari</h1>
+              <p className="text-xs text-muted-foreground">Seedha Selection</p>
             </div>
           </div>
           
@@ -185,22 +185,22 @@ const Index = () => {
           {/* Streak Display - Only show when authenticated */}
           {isAuthenticated && streak && (
             <div className="mb-6">
-              <div className="inline-flex items-center space-x-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-6 py-3 shadow-lg">
-                <Flame className="w-6 h-6 text-orange-400" />
+              <div className="inline-flex items-center space-x-4 bg-white/15 backdrop-blur-sm border border-white/30 rounded-full px-8 py-4 shadow-xl">
+                <Flame className="w-7 h-7 text-orange-400 animate-pulse" />
                 <div className="text-left">
-                  <div className="text-2xl font-bold text-white">
+                  <div className="text-3xl font-bold text-white drop-shadow-lg">
                     {streak.current_streak || 0}
                   </div>
-                  <div className="text-xs text-white/80 font-medium">
+                  <div className="text-sm text-white/90 font-semibold">
                     Day Streak 🔥
                   </div>
                 </div>
-                <div className="w-px h-8 bg-white/20"></div>
+                <div className="w-px h-10 bg-white/30"></div>
                 <div className="text-left">
-                  <div className="text-lg font-semibold text-white">
+                  <div className="text-2xl font-bold text-white drop-shadow-lg">
                     {streak.longest_streak || 0}
                   </div>
-                  <div className="text-xs text-white/80">
+                  <div className="text-sm text-white/90 font-semibold">
                     Best Streak
                   </div>
                 </div>
@@ -209,10 +209,10 @@ const Index = () => {
           )}
           
           <h2 className="text-4xl md:text-5xl font-bold mb-4 animate-fade-in">
-            Ace Your Competitive Exams
+            Step2Sarkari - Seedha Selection
           </h2>
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto animate-slide-up">
-            Practice with real exam patterns, track your progress, and boost your confidence with our comprehensive test platform.
+            Your direct path to government job success. Practice with real exam patterns, track your progress, and achieve your dream job.
           </p>
           <div className="flex flex-wrap justify-center gap-6 animate-scale-in">
             <div className="flex items-center space-x-2">

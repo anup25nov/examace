@@ -44,7 +44,7 @@ const App = () => {
             } />
             <Route path="/exam/:examId" element={
               <ProtectedRoute>
-                <ExamDashboardWrapper />
+                <ProfessionalExamDashboardWrapper />
               </ProtectedRoute>
             } />
             <Route path="/exam-pro/:examId" element={

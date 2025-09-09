@@ -11,8 +11,6 @@ import {
   Crown,
   Clock,
   Target,
-  TrendingUp,
-  Users,
   Award,
   Zap
 } from 'lucide-react';
@@ -38,8 +36,6 @@ interface ProfessionalExamCardProps {
     marks: number;
     duration: number;
   };
-  difficulty?: 'easy' | 'medium' | 'hard';
-  popularity?: number;
 }
 
 export const ProfessionalExamCard: React.FC<ProfessionalExamCardProps> = ({
@@ -57,9 +53,7 @@ export const ProfessionalExamCard: React.FC<ProfessionalExamCardProps> = ({
   onRetryTest,
   onViewSolutions,
   onUpgradeClick,
-  testInfo,
-  difficulty = 'medium',
-  popularity = 0
+  testInfo
 }) => {
   const getTestTypeConfig = () => {
     switch (testType) {
@@ -106,21 +100,7 @@ export const ProfessionalExamCard: React.FC<ProfessionalExamCardProps> = ({
     }
   };
 
-  const getDifficultyConfig = () => {
-    switch (difficulty) {
-      case 'easy':
-        return { color: 'text-green-600', bg: 'bg-green-100', label: 'Easy' };
-      case 'medium':
-        return { color: 'text-yellow-600', bg: 'bg-yellow-100', label: 'Medium' };
-      case 'hard':
-        return { color: 'text-red-600', bg: 'bg-red-100', label: 'Hard' };
-      default:
-        return { color: 'text-gray-600', bg: 'bg-gray-100', label: 'Medium' };
-    }
-  };
-
   const config = getTestTypeConfig();
-  const difficultyConfig = getDifficultyConfig();
 
   const renderTestContent = () => (
     <Card className={`
@@ -175,18 +155,6 @@ export const ProfessionalExamCard: React.FC<ProfessionalExamCardProps> = ({
               </div>
             )}
 
-            {/* Difficulty and Popularity */}
-            <div className="flex items-center space-x-3 mb-4">
-              <Badge className={`${difficultyConfig.bg} ${difficultyConfig.color} border-0`}>
-                {difficultyConfig.label}
-              </Badge>
-              {popularity > 0 && (
-                <div className="flex items-center space-x-1 text-sm text-gray-600">
-                  <TrendingUp className="w-4 h-4" />
-                  <span>{popularity}% success rate</span>
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Completion Status */}

@@ -95,14 +95,6 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
               <p className="text-sm font-medium text-foreground">
                 {isMobile ? 'Profile' : userEmail.split('@')[0]}
               </p>
-              {!isMobile && (
-                <div className="flex items-center space-x-1">
-                  <Flame className="w-3 h-3 text-orange-500" />
-                  <span className="text-xs text-orange-600">
-                    {localStorage.getItem('currentStreak') || 0} streak
-                  </span>
-                </div>
-              )}
             </div>
             <ChevronDown className="w-4 h-4 text-muted-foreground" />
           </div>
@@ -138,13 +130,6 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
             </div>
           </div>
           
-          {/* Streak Display */}
-          <div className="flex items-center space-x-2 p-2 bg-orange-50 rounded-lg">
-            <Flame className="w-4 h-4 text-orange-500" />
-            <span className="text-sm text-orange-700">
-              {localStorage.getItem('currentStreak') || 0} day streak
-            </span>
-          </div>
         </div>
         
         <DropdownMenuSeparator />

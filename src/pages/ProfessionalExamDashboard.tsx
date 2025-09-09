@@ -32,6 +32,8 @@ import { testAvailabilityService } from "@/lib/testAvailability";
 import { ProfessionalExamCard } from "@/components/ProfessionalExamCard";
 import { ProfessionalSectionHeader } from "@/components/ProfessionalSectionHeader";
 import { ReferralBanner } from "@/components/ReferralBanner";
+import { PYQYearSelector } from "@/components/PYQYearSelector";
+import { MockTestSelector } from "@/components/MockTestSelector";
 import Footer from "@/components/Footer";
 
 const ProfessionalExamDashboard = () => {
@@ -58,6 +60,7 @@ const ProfessionalExamDashboard = () => {
   const [completedTests, setCompletedTests] = useState<Set<string>>(new Set());
   const [testScores, setTestScores] = useState<Map<string, { score: number; rank: number; totalParticipants: number }>>(new Map());
   const [testFilter, setTestFilter] = useState<'all' | 'attempted' | 'not-attempted'>('all');
+  const [selectedPYQYear, setSelectedPYQYear] = useState<string>('');
   
   const [availableTests, setAvailableTests] = useState<{
     mock: Array<{ id: string; name: string; duration: number; questions: any[]; breakdown?: string; isPremium?: boolean }>;
@@ -194,8 +197,6 @@ const ProfessionalExamDashboard = () => {
     const testScore = testScores.get(scoreKey);
 
     // Determine difficulty and popularity based on test type
-    const difficulty = testType === 'pyq' ? 'hard' : testType === 'mock' ? 'medium' : 'easy';
-    const popularity = testType === 'pyq' ? 95 : testType === 'mock' ? 88 : 75;
 
     return (
       <ProfessionalExamCard
@@ -219,8 +220,6 @@ const ProfessionalExamDashboard = () => {
           marks: 200,
           duration: 180
         }}
-        difficulty={difficulty}
-        popularity={popularity}
       />
     );
   };
@@ -250,6 +249,35 @@ const ProfessionalExamDashboard = () => {
     }
     
     return { totalTests, completedCount };
+  };
+
+  // Handler functions for new components
+  const handleTestStart = (type: 'practice' | 'pyq' | 'mock', itemId: string, topicId?: string) => {
+    // Track test start
+    analytics.trackTestStart(examId!, type, itemId);
+    
+    // Navigate to test interface
+    const testPath = topicId 
+      ? `/test/${examId}/${type}/${itemId}/${topicId}`
+      : `/test/${examId}/${type}/${itemId}`;
+    
+    navigate(testPath);
+  };
+
+  const handleMockTestSelect = (testId: string) => {
+    handleTestStart('mock', testId);
+  };
+
+  const handleMockTestRetry = (testId: string) => {
+    handleTestStart('mock', testId);
+  };
+
+  const handleMockTestViewSolutions = (testId: string) => {
+    navigate(`/solutions/${examId}/mock/${testId}`);
+  };
+
+  const handlePYQYearSelect = (year: string) => {
+    setSelectedPYQYear(year);
   };
 
   if (loading) {
@@ -404,58 +432,63 @@ const ProfessionalExamDashboard = () => {
 
         {/* Test Sections */}
         <div className="space-y-8">
-          {exam.sections.map((section) => {
-            const isDisabled = section.id === 'practice';
-            const sectionStats = getSectionStats(section.id);
-            
-            // Check if section has any tests based on filter
-            let hasTests = false;
-            if (section.id === 'mock') {
-              hasTests = availableTests.mock.length > 0;
-            } else if (section.id === 'pyq') {
-              hasTests = availableTests.pyq.length > 0;
-            } else if (section.id === 'practice') {
-              hasTests = availableTests.practice.length > 0;
-            }
-            
-            // Don't render section if no tests available
-            if (!hasTests) return null;
-            
-            return (
-              <div key={section.id} className="space-y-4">
-                <ProfessionalSectionHeader
-                  sectionId={section.id}
-                  sectionName={section.name}
-                  isOpen={openSections[section.id] || false}
-                  isDisabled={isDisabled}
-                  testCount={sectionStats.totalTests}
-                  completedCount={sectionStats.completedCount}
-                  onToggle={() => toggleSection(section.id)}
-                  onUpgradeClick={() => navigate('/membership')}
-                  isPaid={section.id === 'practice'}
-                  requiredPlan="premium"
-                />
-                
-                {openSections[section.id] && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {section.id === 'mock' && availableTests.mock.map((test) =>
-                      createProfessionalTestCard(test.id, test.name, 'mock', undefined, test.isPremium || false, 'basic')
+          {/* Mock Tests Section */}
+          {availableTests.mock.length > 0 && (
+            <MockTestSelector
+              mockTests={availableTests.mock}
+              onTestSelect={handleMockTestSelect}
+              onRetryTest={handleMockTestRetry}
+              onViewSolutions={handleMockTestViewSolutions}
+              completedTests={completedTests}
+              testScores={testScores}
+            />
+          )}
+
+          {/* PYQ Section */}
+          {availableTests.pyq.length > 0 && (
+            <div className="space-y-4">
+              <PYQYearSelector
+                years={availableTests.pyq}
+                onYearSelect={handlePYQYearSelect}
+                selectedYear={selectedPYQYear}
+                completedTests={completedTests}
+                testType="pyq"
+              />
+              
+              {/* PYQ Papers for Selected Year */}
+              {selectedPYQYear && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {availableTests.pyq
+                    .find(year => year.year === selectedPYQYear)
+                    ?.papers.map((paper) =>
+                      createProfessionalTestCard(paper.id, paper.name, 'pyq', undefined, paper.isPremium || false, 'basic')
                     )}
-                    
-                    {section.id === 'pyq' && availableTests.pyq.map((year) =>
-                      year.papers.map((paper) =>
-                        createProfessionalTestCard(paper.id, paper.name, 'pyq', undefined, paper.isPremium || false, 'basic')
-                      )
-                    )}
-                    
-                    {section.id === 'practice' && availableTests.practice.map((test) =>
-                      createProfessionalTestCard(test.id, test.name, 'practice', undefined, true, 'premium')
-                    )}
-                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Practice Section */}
+          {availableTests.practice.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Target className="w-5 h-5 text-primary" />
+                  <h3 className="text-lg font-semibold text-foreground">Practice Tests</h3>
+                </div>
+                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                  <Crown className="w-3 h-3 mr-1" />
+                  PREMIUM
+                </Badge>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {availableTests.practice.map((test) =>
+                  createProfessionalTestCard(test.id, test.name, 'practice', undefined, true, 'premium')
                 )}
               </div>
-            );
-          })}
+            </div>
+          )}
         </div>
 
         {/* Referral Banner at Bottom */}

@@ -118,7 +118,8 @@ class TestAvailabilityService {
           year: '2024',
           papers: [
             { id: '2024-set-1', name: 'SSC CGL 2024 Set 1', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness' },
-            { id: '2024-set-2', name: 'SSC CGL 2024 Set 2', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness' }
+            { id: '2024-set-2', name: 'SSC CGL 2024 Set 2', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness' },
+            { id: '2021-set-1', name: 'SSC CGL 2021 27 June Set 1', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness' }
           ]
         },
         {
