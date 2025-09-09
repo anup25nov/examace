@@ -23,7 +23,7 @@ const PrivacyPolicy = () => {
             </Button>
             <div className="flex items-center space-x-3">
               <img 
-                src="/logos/examace-logo.svg" 
+                src="/logos/alternate_image.png"
                 alt="ExamAce Logo" 
                 className="h-8 w-auto"
               />

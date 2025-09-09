@@ -153,7 +153,7 @@ const Index = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <img 
-              src="/logos/examace-logo.svg" 
+              src="/logos/alternate_image.png"
               alt="ExamAce Logo" 
               className="h-8 w-auto"
             />
