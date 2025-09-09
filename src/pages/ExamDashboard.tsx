@@ -479,13 +479,13 @@ const ExamDashboard = () => {
     const testScore = testScores.get(scoreKey);
 
     return (
-      <Card key={testId} className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02] h-48 ${
+      <Card key={testId} className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02] h-64 ${
         isCompleted ? 'border-green-200 bg-green-50/50 shadow-md' : 'border-border hover:border-primary/20'
       }`}>
         <CardContent className="p-4 sm:p-5 h-full flex flex-col">
           <div className="mb-4 flex-1">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-foreground text-sm sm:text-base line-clamp-2">{testName}</h3>
+              <h3 className="font-semibold text-foreground text-sm sm:text-base line-clamp-2 flex-1">{testName}</h3>
               <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
                 {(testType === 'mock' || testType === 'pyq') && (
                   <span className="text-xs bg-gradient-to-r from-green-400 to-emerald-500 text-white px-2 py-1 rounded-full font-bold shadow-md">

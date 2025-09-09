@@ -132,11 +132,11 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
         </div>
 
         {/* Plans Grid */}
-        <div className={`p-6 ${isMobile ? 'grid grid-cols-1 gap-4' : 'grid grid-cols-1 md:grid-cols-3 gap-6'}`}>
+        <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
           {membershipPlans.map((plan) => (
             <Card 
               key={plan.id}
-              className={`relative cursor-pointer transition-all duration-300 hover:shadow-lg ${
+              className={`relative cursor-pointer transition-all duration-300 hover:shadow-lg h-full flex flex-col ${
                 plan.popular ? 'ring-2 ring-purple-500 shadow-lg' : ''
               } ${currentPlan === plan.id ? 'ring-2 ring-green-500' : ''}`}
               onClick={() => handleSelectPlan(plan)}
@@ -196,8 +196,8 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
                 </div>
               </CardHeader>
 
-              <CardContent className="p-6">
-                <ul className="space-y-3">
+              <CardContent className="p-6 flex-1 flex flex-col">
+                <ul className="space-y-3 flex-1">
                   {plan.features.map((feature, index) => (
                     <li key={index} className="flex items-center space-x-3">
                       <Check className="w-4 h-4 text-green-500 flex-shrink-0" />

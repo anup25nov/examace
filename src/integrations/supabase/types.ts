@@ -56,8 +56,22 @@ export type Database = {
             foreignKeyName: "exam_stats_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "user_membership_summary"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "exam_stats_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exam_stats_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_referral_summary"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -106,8 +120,483 @@ export type Database = {
             foreignKeyName: "individual_test_scores_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "user_membership_summary"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "individual_test_scores_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "individual_test_scores_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_referral_summary"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      membership_plans: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          duration_days: number
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          mock_tests: number
+          name: string
+          original_price: number | null
+          price: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          duration_days: number
+          features?: Json | null
+          id: string
+          is_active?: boolean | null
+          mock_tests: number
+          name: string
+          original_price?: number | null
+          price: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          duration_days?: number
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          mock_tests?: number
+          name?: string
+          original_price?: number | null
+          price?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      membership_transactions: {
+        Row: {
+          amount: number
+          commission_paid: number | null
+          created_at: string | null
+          gateway_response: Json | null
+          id: string
+          membership_id: string | null
+          referral_code_used: string | null
+          transaction_id: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          commission_paid?: number | null
+          created_at?: string | null
+          gateway_response?: Json | null
+          id?: string
+          membership_id?: string | null
+          referral_code_used?: string | null
+          transaction_id: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          commission_paid?: number | null
+          created_at?: string | null
+          gateway_response?: Json | null
+          id?: string
+          membership_id?: string | null
+          referral_code_used?: string | null
+          transaction_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "membership_transactions_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "user_membership_summary"
+            referencedColumns: ["membership_id"]
+          },
+          {
+            foreignKeyName: "membership_transactions_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "user_memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "membership_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_membership_summary"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "membership_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "membership_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_referral_summary"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          payment_id: string
+          payment_method: string
+          plan_id: string
+          razorpay_order_id: string | null
+          razorpay_payment_id: string | null
+          status: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          payment_id: string
+          payment_method: string
+          plan_id: string
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          payment_id?: string
+          payment_method?: string
+          plan_id?: string
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_membership_summary"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "payments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_referral_summary"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          total_earnings: number | null
+          total_referrals: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          total_earnings?: number | null
+          total_referrals?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          total_earnings?: number | null
+          total_referrals?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_codes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_membership_summary"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_codes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_codes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_referral_summary"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      referral_payouts: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          payment_details: Json | null
+          payment_method: string | null
+          processed_at: string | null
+          status: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          payment_details?: Json | null
+          payment_method?: string | null
+          processed_at?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          payment_details?: Json | null
+          payment_method?: string | null
+          processed_at?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_payouts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_membership_summary"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_payouts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_payouts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_referral_summary"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      referral_transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string | null
+          id: string
+          payment_id: string | null
+          referee_id: string | null
+          referrer_id: string | null
+          status: string
+          transaction_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          payment_id?: string | null
+          referee_id?: string | null
+          referrer_id?: string | null
+          status?: string
+          transaction_type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          payment_id?: string | null
+          referee_id?: string | null
+          referrer_id?: string | null
+          status?: string
+          transaction_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_transactions_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "user_membership_summary"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_transactions_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_transactions_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "user_referral_summary"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_transactions_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "user_membership_summary"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_transactions_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_transactions_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "user_referral_summary"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      referrals: {
+        Row: {
+          commission_amount: number
+          commission_percentage: number
+          created_at: string | null
+          id: string
+          paid_at: string | null
+          purchase_amount: number
+          purchase_id: string
+          referee_id: string | null
+          referral_code: string
+          referrer_id: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          commission_amount: number
+          commission_percentage?: number
+          created_at?: string | null
+          id?: string
+          paid_at?: string | null
+          purchase_amount: number
+          purchase_id: string
+          referee_id?: string | null
+          referral_code: string
+          referrer_id?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          commission_amount?: number
+          commission_percentage?: number
+          created_at?: string | null
+          id?: string
+          paid_at?: string | null
+          purchase_amount?: number
+          purchase_id?: string
+          referee_id?: string | null
+          referral_code?: string
+          referrer_id?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "user_membership_summary"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referrals_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referee_id_fkey"
+            columns: ["referee_id"]
+            isOneToOne: false
+            referencedRelation: "user_referral_summary"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "user_membership_summary"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "user_referral_summary"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -150,8 +639,22 @@ export type Database = {
             foreignKeyName: "test_attempts_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "user_membership_summary"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "test_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_referral_summary"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -206,8 +709,80 @@ export type Database = {
             foreignKeyName: "test_completions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "user_membership_summary"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "test_completions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_completions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_referral_summary"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      user_memberships: {
+        Row: {
+          created_at: string | null
+          end_date: string
+          id: string
+          payment_id: string | null
+          plan_id: string
+          start_date: string
+          status: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          end_date: string
+          id?: string
+          payment_id?: string | null
+          plan_id: string
+          start_date: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          end_date?: string
+          id?: string
+          payment_id?: string | null
+          plan_id?: string
+          start_date?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_memberships_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_membership_summary"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_memberships_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_memberships_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_referral_summary"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -216,24 +791,39 @@ export type Database = {
           created_at: string | null
           email: string | null
           id: string
+          membership_expiry: string | null
+          membership_plan: string | null
+          membership_status: string | null
           phone: string | null
           pin: string | null
+          referral_code: string | null
+          referred_by: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           email?: string | null
           id: string
+          membership_expiry?: string | null
+          membership_plan?: string | null
+          membership_status?: string | null
           phone?: string | null
           pin?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           email?: string | null
           id?: string
+          membership_expiry?: string | null
+          membership_plan?: string | null
+          membership_status?: string | null
           phone?: string | null
           pin?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -274,8 +864,22 @@ export type Database = {
             foreignKeyName: "user_streaks_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "user_membership_summary"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_streaks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_streaks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_referral_summary"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -292,6 +896,41 @@ export type Database = {
           rank: number | null
           total_tests: number | null
           updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      user_membership_summary: {
+        Row: {
+          days_remaining: number | null
+          duration_days: number | null
+          email: string | null
+          end_date: string | null
+          is_active: boolean | null
+          membership_expiry: string | null
+          membership_id: string | null
+          membership_plan: string | null
+          membership_status: string | null
+          membership_status_detail: string | null
+          mock_tests: number | null
+          phone: string | null
+          plan_id: string | null
+          plan_name: string | null
+          plan_price: number | null
+          start_date: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      user_referral_summary: {
+        Row: {
+          code_created_at: string | null
+          email: string | null
+          paid_earnings: number | null
+          pending_earnings: number | null
+          referral_code: string | null
+          total_earnings: number | null
+          total_referrals: number | null
           user_id: string | null
         }
         Relationships: []
@@ -319,6 +958,18 @@ export type Database = {
         Args: { p_exam_id: string; p_user_id: string }
         Returns: undefined
       }
+      create_user_referral_code: {
+        Args: { user_uuid: string }
+        Returns: string
+      }
+      expire_old_memberships: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      generate_referral_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_or_create_exam_stats: {
         Args: { exam_name: string; user_uuid: string }
         Returns: {
@@ -333,11 +984,55 @@ export type Database = {
         }[]
       }
       get_or_create_user_streak: {
-        Args: { p_user_id: string }
+        Args: { user_uuid: string }
         Returns: {
+          created_at: string
           current_streak: number
+          id: string
+          last_activity_date: string
           longest_streak: number
           total_tests_taken: number
+          updated_at: string
+          user_id: string
+        }[]
+      }
+      get_referral_dashboard: {
+        Args: { user_uuid: string }
+        Returns: Json
+      }
+      get_referral_leaderboard: {
+        Args: { limit_count?: number }
+        Returns: {
+          email: string
+          rank_position: number
+          total_earnings: number
+          total_referrals: number
+          user_id: string
+        }[]
+      }
+      get_user_membership: {
+        Args: { user_uuid: string }
+        Returns: {
+          days_remaining: number
+          end_date: string
+          membership_id: string
+          plan_id: string
+          start_date: string
+          status: string
+        }[]
+      }
+      get_user_membership_status: {
+        Args: { user_uuid: string }
+        Returns: Json
+      }
+      get_user_referral_stats: {
+        Args: { user_uuid: string }
+        Returns: {
+          paid_earnings: number
+          pending_earnings: number
+          referral_code: string
+          total_earnings: number
+          total_referrals: number
         }[]
       }
       get_user_test_score: {
@@ -353,6 +1048,14 @@ export type Database = {
           total_participants: number
         }[]
       }
+      has_active_membership: {
+        Args: { user_uuid: string }
+        Returns: boolean
+      }
+      has_mock_test_access: {
+        Args: { required_tests: number; user_uuid: string }
+        Returns: boolean
+      }
       is_test_completed: {
         Args: {
           exam_name: string
@@ -363,38 +1066,98 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_test_completed_simple: {
+        Args: {
+          exam_name: string
+          test_name: string
+          test_type_name: string
+          user_uuid: string
+        }
+        Returns: boolean
+      }
+      process_membership_purchase: {
+        Args: {
+          amount_param: number
+          payment_id_param: string
+          plan_id_param: string
+          referral_code_used?: string
+          user_uuid: string
+        }
+        Returns: Json
+      }
+      process_referral: {
+        Args: {
+          purchase_amount_param: number
+          purchase_id_param: string
+          referee_uuid: string
+          referral_code_param: string
+        }
+        Returns: boolean
+      }
+      request_referral_payout: {
+        Args: {
+          amount_param: number
+          payment_details_param: Json
+          payment_method_param: string
+          user_uuid: string
+        }
+        Returns: boolean
+      }
       submitindividualtestscore: {
         Args: {
-          p_exam_id: string
-          p_score: number
-          p_test_id: string
-          p_test_type: string
-          p_user_id: string
+          exam_name: string
+          score_value: number
+          test_name: string
+          test_type_name: string
+          user_uuid: string
         }
         Returns: Json
       }
       update_daily_visit: {
-        Args: { p_user_id: string }
-        Returns: undefined
+        Args: { user_uuid: string }
+        Returns: Json
       }
       update_exam_stats_mock_pyq_only: {
         Args: { exam_name: string }
         Returns: undefined
       }
       update_exam_stats_properly: {
-        Args:
-          | { exam_name: string; new_score: number; user_uuid: string }
-          | {
-              p_exam_id: string
-              p_score: number
-              p_test_type: string
-              p_user_id: string
-            }
-        Returns: undefined
+        Args: { exam_name: string; new_score: number; user_uuid: string }
+        Returns: Json
       }
       update_user_streak: {
         Args: { user_uuid: string }
-        Returns: undefined
+        Returns: Json
+      }
+      upsert_test_completion: {
+        Args: {
+          p_answers?: Json
+          p_correct_answers?: number
+          p_exam_id: string
+          p_score?: number
+          p_test_id: string
+          p_test_type: string
+          p_time_taken?: number
+          p_topic_id?: string
+          p_total_questions?: number
+          p_user_id: string
+        }
+        Returns: Json
+      }
+      upsert_test_completion_simple: {
+        Args: {
+          p_answers?: Json
+          p_correct_answers?: number
+          p_exam_id: string
+          p_score?: number
+          p_test_id: string
+          p_test_type: string
+          p_time_taken?: number
+          p_topic_id?: string
+          p_total_questions?: number
+          p_user_id: string
+        }
+        Returns: Json
       }
     }
     Enums: {

@@ -179,9 +179,35 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Hero Section */}
+          {/* Hero Section with Streak */}
       <section className="gradient-hero text-white py-16">
         <div className="container mx-auto px-4 text-center">
+          {/* Streak Display - Only show when authenticated */}
+          {isAuthenticated && streak && (
+            <div className="mb-6">
+              <div className="inline-flex items-center space-x-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-6 py-3 shadow-lg">
+                <Flame className="w-6 h-6 text-orange-400" />
+                <div className="text-left">
+                  <div className="text-2xl font-bold text-white">
+                    {streak.current_streak || 0}
+                  </div>
+                  <div className="text-xs text-white/80 font-medium">
+                    Day Streak 🔥
+                  </div>
+                </div>
+                <div className="w-px h-8 bg-white/20"></div>
+                <div className="text-left">
+                  <div className="text-lg font-semibold text-white">
+                    {streak.longest_streak || 0}
+                  </div>
+                  <div className="text-xs text-white/80">
+                    Best Streak
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <h2 className="text-4xl md:text-5xl font-bold mb-4 animate-fade-in">
             Ace Your Competitive Exams
           </h2>
@@ -202,7 +228,6 @@ const Index = () => {
               <span>Progress Tracking</span>
             </div>
           </div>
-          
         </div>
       </section>
 
@@ -213,14 +238,6 @@ const Index = () => {
             <h3 className="text-3xl font-bold text-foreground mb-4">
               Choose Your Exam
             </h3>
-            {isAuthenticated && (
-              <div className="flex items-center justify-center space-x-2">
-                <Flame className="w-5 h-5 text-orange-500" />
-                <span className="text-lg text-orange-600 font-bold">
-                  {streak?.current_streak || 0} day streak
-                </span>
-              </div>
-            )}
           </div>
           
           <div className="space-y-6">
