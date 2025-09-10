@@ -35,6 +35,7 @@ import { EnhancedTestCard } from "@/components/EnhancedTestCard";
 import { YearWiseTabs } from "@/components/YearWiseTabs";
 import { testDataLoader, YearData } from "@/lib/testDataLoader";
 import { premiumService, PremiumTest } from "@/lib/premiumService";
+import { examConfigService } from "@/lib/examConfigService";
 import Footer from "@/components/Footer";
 
 // Icon mapping for dynamic loading
@@ -73,6 +74,7 @@ const EnhancedExamDashboard = () => {
   const [userMembership, setUserMembership] = useState(premiumService.getUserMembership());
 
   const exam = examConfigs[examId as string];
+  const examConfig = examConfigService.getExamConfig(examId as string);
   const userEmail = profile?.email || localStorage.getItem("userEmail");
 
   // Load test data from JSON
@@ -269,6 +271,7 @@ const EnhancedExamDashboard = () => {
     let completedCount = 0;
     let notAttemptedCount = 0;
     
+    // Count mock tests
     const allMockTests = [...mockTests.free, ...mockTests.premium];
     allMockTests.forEach(test => {
       const completionKey = `mock-${test.id}`;
@@ -279,6 +282,7 @@ const EnhancedExamDashboard = () => {
       }
     });
     
+    // Count PYQ tests
     pyqData.forEach(yearData => {
       yearData.papers.forEach(paper => {
         const completionKey = `pyq-${paper.id}`;
@@ -290,15 +294,29 @@ const EnhancedExamDashboard = () => {
       });
     });
     
+    // Count practice tests (when they become available)
+    practiceData.forEach(subject => {
+      Object.values(subject.topics).forEach((topic: any) => {
+        topic.sets.forEach((set: PremiumTest) => {
+          const completionKey = `practice-${set.id}-${set.id}`;
+          if (completedTests.has(completionKey)) {
+            completedCount++;
+          } else {
+            notAttemptedCount++;
+          }
+        });
+      });
+    });
+    
     return { completedCount, notAttemptedCount };
   };
 
   const { completedCount, notAttemptedCount } = getFilterCounts();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       {/* Header */}
-      <header className="border-b border-border bg-card/95 backdrop-blur-md sticky top-0 z-50 shadow-sm">
+      <header className="border-b border-border bg-gradient-to-r from-white/95 via-blue-50/95 to-indigo-50/95 backdrop-blur-md sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -344,34 +362,34 @@ const EnhancedExamDashboard = () => {
         </div>
         
         {/* Main Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 max-w-4xl mx-auto">
-          <Card className="text-center gradient-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 max-w-5xl mx-auto">
+          <Card className="text-center border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 text-white">
             <CardContent className="p-6">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
                 <BarChart3 className="w-8 h-8 text-white" />
               </div>
-              <p className="text-3xl font-bold text-foreground mb-2">{userStats.totalTests}</p>
-              <p className="text-sm text-muted-foreground font-medium">Tests Taken</p>
+              <p className="text-3xl font-bold mb-2">{userStats.totalTests}</p>
+              <p className="text-sm text-blue-100 font-medium">Tests Taken</p>
             </CardContent>
           </Card>
           
-          <Card className="text-center gradient-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <Card className="text-center border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-emerald-500 via-green-600 to-teal-600 text-white">
             <CardContent className="p-6">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center shadow-lg">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
                 <Target className="w-8 h-8 text-white" />
               </div>
-              <p className="text-3xl font-bold text-foreground mb-2">{userStats.avgScore}%</p>
-              <p className="text-sm text-muted-foreground font-medium">Average Score</p>
+              <p className="text-3xl font-bold mb-2">{userStats.avgScore}%</p>
+              <p className="text-sm text-green-100 font-medium">Average Score</p>
             </CardContent>
           </Card>
           
-          <Card className="text-center gradient-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <Card className="text-center border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-purple-500 via-violet-600 to-fuchsia-600 text-white">
             <CardContent className="p-6">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
                 <Trophy className="w-8 h-8 text-white" />
               </div>
-              <p className="text-3xl font-bold text-foreground mb-2">{userStats.bestScore}%</p>
-              <p className="text-sm text-muted-foreground font-medium">Best Score</p>
+              <p className="text-3xl font-bold mb-2">{userStats.bestScore}%</p>
+              <p className="text-sm text-purple-100 font-medium">Best Score</p>
             </CardContent>
           </Card>
         </div>
@@ -408,105 +426,40 @@ const EnhancedExamDashboard = () => {
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="mock" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="mock" className="flex items-center space-x-2">
-              <Trophy className="w-4 h-4" />
-              <span>Mock Tests</span>
-            </TabsTrigger>
-            <TabsTrigger value="pyq" className="flex items-center space-x-2">
-              <FileText className="w-4 h-4" />
-              <span>Previous Year</span>
-            </TabsTrigger>
-            <TabsTrigger value="practice" className="flex items-center space-x-2">
-              <BookOpen className="w-4 h-4" />
-              <span>Practice</span>
-            </TabsTrigger>
+        <Tabs defaultValue={examConfig?.tabOrder[0] || "pyq"} className="space-y-6">
+          <TabsList className={`grid w-full grid-cols-${examConfig?.tabOrder.length || 3} bg-gradient-to-r from-slate-100 via-blue-50 to-indigo-100 p-1 rounded-xl shadow-lg border border-white/50`}>
+            {examConfig?.tabOrder.map((tab) => {
+              const isEnabled = examConfigService.isSectionEnabled(examId as string, tab);
+              if (!isEnabled) return null;
+
+              const tabConfig = {
+                pyq: { icon: FileText, label: 'Previous Year' },
+                mock: { icon: Trophy, label: 'Mock Tests' },
+                practice: { icon: BookOpen, label: 'Practice' }
+              };
+
+              const { icon: Icon, label } = tabConfig[tab];
+
+              const tabGradients = {
+                pyq: 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-500',
+                mock: 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500',
+                practice: 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500'
+              };
+
+              return (
+                <TabsTrigger 
+                  key={tab}
+                  value={tab} 
+                  className={`flex items-center space-x-2 ${tabGradients[tab]} data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-lg font-medium`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{label}</span>
+                </TabsTrigger>
+              );
+            })}
           </TabsList>
 
-          {/* Mock Tests Tab */}
-          <TabsContent value="mock" className="space-y-6">
-            <Card className="gradient-card border-0">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-3">
-                  <Trophy className="w-6 h-6 text-success" />
-                  <span>Full Mock Tests</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="free" className="space-y-4">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="free" className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span>Free Tests</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="premium" className="flex items-center space-x-2">
-                      <Crown className="w-4 h-4 text-yellow-500" />
-                      <span>Premium Tests</span>
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="free">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {mockTests.free
-                        .filter(test => {
-                          const isCompleted = completedTests.has(`mock-${test.id}`);
-                          if (testFilter === 'attempted') return isCompleted;
-                          if (testFilter === 'not-attempted') return !isCompleted;
-                          return true;
-                        })
-                        .map((test) => {
-                        const isCompleted = completedTests.has(`mock-${test.id}`);
-                        const testScore = testScores.get(`mock-${test.id}`);
-                        
-                        return (
-                          <EnhancedTestCard
-                            key={test.id}
-                            test={test}
-                            isCompleted={isCompleted}
-                            testScore={testScore}
-                            onStartTest={() => handleTestStart('mock', test.id)}
-                            onViewSolutions={() => handleViewSolutions('mock', test.id)}
-                            onRetry={() => handleTestStart('mock', test.id)}
-                          />
-                        );
-                      })}
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="premium">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {mockTests.premium
-                        .filter(test => {
-                          const isCompleted = completedTests.has(`mock-${test.id}`);
-                          if (testFilter === 'attempted') return isCompleted;
-                          if (testFilter === 'not-attempted') return !isCompleted;
-                          return true;
-                        })
-                        .map((test) => {
-                        const isCompleted = completedTests.has(`mock-${test.id}`);
-                        const testScore = testScores.get(`mock-${test.id}`);
-                        
-                        return (
-                          <EnhancedTestCard
-                            key={test.id}
-                            test={test}
-                            isCompleted={isCompleted}
-                            testScore={testScore}
-                            onStartTest={() => handleTestStart('mock', test.id)}
-                            onViewSolutions={() => handleViewSolutions('mock', test.id)}
-                            onRetry={() => handleTestStart('mock', test.id)}
-                          />
-                        );
-                      })}
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* PYQ Tab */}
+          {/* PYQ Tab - First */}
           <TabsContent value="pyq" className="space-y-6">
             <YearWiseTabs
               years={pyqData}
@@ -519,59 +472,89 @@ const EnhancedExamDashboard = () => {
             />
           </TabsContent>
 
-          {/* Practice Tab */}
-          <TabsContent value="practice" className="space-y-6">
-            <Card className="gradient-card border-0">
-              <CardHeader>
+          {/* Mock Tests Tab - Second */}
+          <TabsContent value="mock" className="space-y-6">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-blue-50 to-indigo-50">
+              <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-t-lg">
                 <CardTitle className="flex items-center space-x-3">
-                  <BookOpen className="w-6 h-6 text-primary" />
-                  <span>Practice Sets (Subject wise)</span>
+                  <div className="p-2 bg-white/20 rounded-lg">
+                    <Trophy className="w-6 h-6 text-white" />
+                  </div>
+                  <span>Full Mock Tests</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
-                  {practiceData.map((subject) => (
-                    <Card key={subject.id} className="border-0 shadow-md">
-                      <CardHeader>
-                        <CardTitle className="text-lg">{subject.name}</CardTitle>
-                        <p className="text-sm text-muted-foreground">{subject.description}</p>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          {Object.entries(subject.topics).map(([topicId, topic]: [string, any]) => (
-                            <div key={topicId} className="space-y-3">
-                              <h4 className="font-semibold text-foreground">{topic.name}</h4>
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {topic.sets
-                                  .filter((set: PremiumTest) => {
-                                    const isCompleted = completedTests.has(`practice-${set.id}-${set.id}`);
-                                    if (testFilter === 'attempted') return isCompleted;
-                                    if (testFilter === 'not-attempted') return !isCompleted;
-                                    return true;
-                                  })
-                                  .map((set: PremiumTest) => {
-                                  const isCompleted = completedTests.has(`practice-${set.id}-${set.id}`);
-                                  const testScore = testScores.get(`practice-${set.id}-${set.id}`);
-                                  
-                                  return (
-                                    <EnhancedTestCard
-                                      key={set.id}
-                                      test={set}
-                                      isCompleted={isCompleted}
-                                      testScore={testScore}
-                                      onStartTest={() => handleTestStart('practice', set.id, set.id)}
-                                      onViewSolutions={() => handleViewSolutions('practice', set.id, set.id)}
-                                      onRetry={() => handleTestStart('practice', set.id, set.id)}
-                                    />
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[...mockTests.free, ...mockTests.premium]
+                    .filter(test => {
+                      const isCompleted = completedTests.has(`mock-${test.id}`);
+                      if (testFilter === 'attempted') return isCompleted;
+                      if (testFilter === 'not-attempted') return !isCompleted;
+                      return true;
+                    })
+                    .map((test) => {
+                    const isCompleted = completedTests.has(`mock-${test.id}`);
+                    const testScore = testScores.get(`mock-${test.id}`);
+                    
+                    return (
+                      <EnhancedTestCard
+                        key={test.id}
+                        test={test}
+                        isCompleted={isCompleted}
+                        testScore={testScore}
+                        onStartTest={() => handleTestStart('mock', test.id)}
+                        onViewSolutions={() => handleViewSolutions('mock', test.id)}
+                        onRetry={() => handleTestStart('mock', test.id)}
+                      />
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Practice Tab - Coming Soon */}
+          <TabsContent value="practice" className="space-y-6">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-purple-50 to-pink-50">
+              <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-t-lg">
+                <CardTitle className="flex items-center space-x-3">
+                  <div className="p-2 bg-white/20 rounded-lg">
+                    <BookOpen className="w-6 h-6 text-white" />
+                  </div>
+                  <span>Practice Sets (Subject wise)</span>
+                  <Badge className="bg-gradient-to-r from-orange-400 to-red-500 text-white px-3 py-1 rounded-full font-semibold shadow-md animate-pulse">
+                    Coming Soon
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12">
+                  <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-orange-100 to-red-100 rounded-full flex items-center justify-center">
+                    <BookOpen className="w-12 h-12 text-orange-500" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-foreground mb-4">Practice Sets Coming Soon!</h3>
+                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                    We're working hard to bring you comprehensive practice sets for all subjects. 
+                    Stay tuned for subject-wise practice questions with detailed solutions.
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                      <span>Quantitative Aptitude</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span>English Language</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span>General Intelligence</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                      <span>General Awareness</span>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

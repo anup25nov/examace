@@ -12,6 +12,7 @@ export interface PremiumTest {
   benefits?: string[];
   date?: string;
   shift?: string;
+  questionData?: any[];
 }
 
 export interface UserMembership {

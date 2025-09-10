@@ -60,8 +60,8 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
 
   return (
     <>
-      <Card className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02] h-80 ${
-        isCompleted ? 'border-green-200 bg-green-50/50 shadow-md' : 'border-border hover:border-primary/20'
+      <Card className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02] hover:border-primary/30 h-80 ${
+        isCompleted ? 'border-green-200 bg-green-50/50 shadow-md' : 'border-border'
       } ${className}`}>
         <CardContent className="p-4 h-full flex flex-col">
           {/* Header */}

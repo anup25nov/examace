@@ -14,7 +14,8 @@ import {
   RotateCcw,
   Play,
   Crown,
-  Lock
+  Lock,
+  CheckCircle
 } from 'lucide-react';
 import { PremiumTest, premiumService } from '@/lib/premiumService';
 import { PremiumPaymentModal } from './PremiumPaymentModal';
@@ -145,25 +146,25 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
 
       {/* Selected Year Content */}
       {selectedYearData && (
-        <Card className="border-0 shadow-lg">
-          <CardHeader className="pb-4">
+        <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-orange-50 to-red-50">
+          <CardHeader className="pb-4 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-t-lg">
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <FileText className="w-6 h-6 text-primary" />
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <FileText className="w-6 h-6 text-white" />
                 </div>
                 <div>
                   <h3 className="text-xl font-bold">SSC CGL {selectedYear}</h3>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-orange-100">
                     {selectedYearData.papers.length} Previous Year Papers
                   </p>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-primary">
+                <div className="text-2xl font-bold text-white">
                   {getYearStats(selectedYear).completed}
                 </div>
-                <div className="text-sm text-muted-foreground">Completed</div>
+                <div className="text-sm text-orange-100">Completed</div>
               </div>
             </CardTitle>
           </CardHeader>
@@ -178,8 +179,8 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                 return (
                   <Card 
                     key={paper.id} 
-                    className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02] h-72 ${
-                      isCompleted ? 'border-green-200 bg-green-50/50 shadow-md' : 'border-border hover:border-primary/20'
+                    className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02] hover:border-primary/30 h-72 ${
+                      isCompleted ? 'border-green-200 bg-green-50/50 shadow-md' : 'border-border'
                     }`}
                   >
                     <CardContent className="p-4 h-full flex flex-col">
@@ -206,8 +207,8 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                             </Badge>
                             {isCompleted && (
                               <div className="flex items-center space-x-1">
-                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                <span className="text-xs text-green-600 font-medium hidden sm:inline">Done</span>
+                                <CheckCircle className="w-4 h-4 text-green-500" />
+                                <span className="text-xs text-green-600 font-medium hidden sm:inline">Completed</span>
                               </div>
                             )}
                           </div>

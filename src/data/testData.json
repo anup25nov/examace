@@ -11,7 +11,29 @@
           "difficulty": "Mixed",
           "description": "Complete mock test covering all subjects",
           "isPremium": false,
-          "price": 0
+          "price": 0,
+          "questionData": [
+            {
+              "id": "q1",
+              "questionEn": "What is the square root of 144?",
+              "questionHi": "144 का वर्गमूल क्या है?",
+              "options": ["10", "12", "14", "16"],
+              "correct": 1,
+              "difficulty": "easy",
+              "subject": "maths",
+              "topic": "algebra"
+            },
+            {
+              "id": "q2",
+              "questionEn": "If 2x + 5 = 15, what is the value of x?",
+              "questionHi": "यदि 2x + 5 = 15, तो x का मान क्या है?",
+              "options": ["3", "5", "7", "10"],
+              "correct": 1,
+              "difficulty": "medium",
+              "subject": "maths",
+              "topic": "algebra"
+            }
+          ]
         },
         {
           "id": "mock-test-2", 

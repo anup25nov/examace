@@ -1,5 +1,5 @@
 import { PremiumTest } from './premiumService';
-import testData from '../data/testData.json';
+import sscCglData from '../data/ssc-cgl.json';
 
 export interface YearData {
   year: string;
@@ -47,7 +47,18 @@ export class TestDataLoader {
       return this.cache.get(examId)!;
     }
 
-    const examData = (testData as any)[examId];
+    let examData: any = null;
+
+    // Load data from individual exam files
+    switch (examId) {
+      case 'ssc-cgl':
+        examData = sscCglData;
+        break;
+      // Add more exam types here as we create their data files
+      default:
+        return null;
+    }
+
     if (!examData) {
       return null;
     }
@@ -148,10 +159,18 @@ export class TestDataLoader {
   }
 
   /**
+   * Get questions for a specific test
+   */
+  getQuestionsForTest(examId: string, testId: string): any[] {
+    const test = this.getTestById(examId, testId);
+    return test?.questionData || [];
+  }
+
+  /**
    * Get available exam IDs
    */
   getAvailableExams(): string[] {
-    return Object.keys(testData as any);
+    return ['ssc-cgl']; // Add more exam IDs as we create their data files
   }
 
   /**
