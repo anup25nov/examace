@@ -1,6 +1,5 @@
-// Payment Service - Complete Integration with Supabase
+// Payment Service - Client-side Integration with API Routes
 import { supabase } from '@/integrations/supabase/client';
-import { razorpayService } from './razorpayService';
 
 export interface PaymentPlan {
   id: string;
@@ -63,55 +62,34 @@ export class PaymentService {
     try {
       const { userId, plan } = request;
 
-      // Create Razorpay order
-      const order = await razorpayService.createOrder({
-        amount: plan.price * 100, // Convert to paise
-        currency: 'INR',
-        receipt: `receipt_${Date.now()}_${userId}`,
-        notes: {
-          user_id: userId,
-          plan_id: plan.id,
-          plan_name: plan.name,
-          mock_tests: plan.mockTests.toString()
-        }
+      // Call API route to create payment
+      const response = await fetch('/api/create-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          plan
+        })
       });
 
-      // Save payment record to database
-      const { data: paymentRecord, error: dbError } = await supabase
-        .from('payments')
-        .insert({
-          payment_id: `PAY_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          user_id: userId,
-          razorpay_order_id: order.id,
-          plan_id: plan.id,
-          amount: plan.price,
-          payment_method: 'razorpay',
-          status: 'created'
-        })
-        .select()
-        .single();
+      const result = await response.json();
 
-      if (dbError) {
-        console.error('Database error creating payment:', dbError);
+      if (!response.ok) {
         return {
           success: false,
-          error: 'Failed to create payment record'
+          error: result.error || 'Failed to create payment'
         };
       }
 
-      return {
-        success: true,
-        paymentId: paymentRecord.id,
-        orderId: order.id,
-        amount: order.amount,
-        currency: order.currency
-      };
+      return result;
 
     } catch (error) {
       console.error('Error creating payment:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
+        error: error instanceof Error ? error.message : 'Failed to create payment'
       };
     }
   }
@@ -123,49 +101,36 @@ export class PaymentService {
     try {
       const { paymentId, razorpayPaymentId, razorpayOrderId, razorpaySignature } = request;
 
-      // Verify payment signature with Razorpay
-      const isValidSignature = await razorpayService.verifyPayment(
-        razorpayPaymentId,
-        razorpayOrderId,
-        razorpaySignature
-      );
-
-      if (!isValidSignature) {
-        return {
-          success: false,
-          error: 'Invalid payment signature'
-        };
-      }
-
-      // Update payment status in database
-      const { error: updateError } = await supabase
-        .from('payments')
-        .update({
-          razorpay_payment_id: razorpayPaymentId,
-          razorpay_signature: razorpaySignature,
-          status: 'paid',
-          paid_at: new Date().toISOString(),
-          payment_method: 'razorpay'
+      // Call API route to verify payment
+      const response = await fetch('/api/verify-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          paymentId,
+          razorpayPaymentId,
+          razorpayOrderId,
+          razorpaySignature
         })
-        .eq('id', paymentId);
+      });
 
-      if (updateError) {
-        console.error('Database error updating payment:', updateError);
+      const result = await response.json();
+
+      if (!response.ok) {
         return {
           success: false,
-          error: 'Failed to update payment status'
+          error: result.error || 'Failed to verify payment'
         };
       }
 
-      return {
-        success: true
-      };
+      return result;
 
     } catch (error) {
       console.error('Error verifying payment:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
+        error: error instanceof Error ? error.message : 'Failed to verify payment'
       };
     }
   }
@@ -259,25 +224,27 @@ export class PaymentService {
    */
   async activateMembership(userId: string, planId: string): Promise<boolean> {
     try {
-      // Calculate expiry date based on plan
-      const expiryDate = new Date();
-      expiryDate.setMonth(expiryDate.getMonth() + 1); // Default 1 month
-
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({
-          membership_plan: planId,
-          membership_expiry: expiryDate.toISOString(),
-          updated_at: new Date().toISOString()
+      // Call API route to activate membership
+      const response = await fetch('/api/activate-membership', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          planId
         })
-        .eq('id', userId);
+      });
 
-      if (error) {
-        console.error('Error activating membership:', error);
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error('Error activating membership:', result.error);
         return false;
       }
 
-      return true;
+      return result.success;
+
     } catch (error) {
       console.error('Error activating membership:', error);
       return false;
