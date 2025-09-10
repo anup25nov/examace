@@ -60,13 +60,18 @@ export class PaymentService {
    * Create a new payment order
    */
   async createPayment(request: CreatePaymentRequest): Promise<CreatePaymentResponse> {
+    console.log('🚀 Starting createPayment with request:', request);
+    
     try {
       const { userId, plan } = request;
+      console.log('📝 Processing payment for user:', userId, 'plan:', plan);
 
       // Create payment record in database first
       const paymentId = `PAY_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      console.log('🆔 Generated payment ID:', paymentId);
       
       // Try to insert with minimal required fields first
+      console.log('💾 Attempting database insert...');
       const { data: paymentRecord, error: dbError } = await supabase
         .from('payments')
         .insert({
@@ -82,12 +87,14 @@ export class PaymentService {
         .single();
 
       if (dbError) {
-        console.error('Database error creating payment:', dbError);
-        // For testing, continue without database record
-        console.warn('Continuing without database record for testing');
+        console.error('❌ Database error creating payment:', dbError);
+        console.warn('⚠️ Continuing without database record for testing');
+      } else {
+        console.log('✅ Database insert successful:', paymentRecord);
       }
 
-      // Create actual Razorpay order
+      // Create order data for Razorpay
+      console.log('🔧 Creating order data...');
       const orderData = {
         amount: plan.price * 100, // Convert to paise
         currency: 'INR',
@@ -98,6 +105,7 @@ export class PaymentService {
           plan_name: plan.name
         }
       };
+      console.log('📋 Order data created:', orderData);
 
       // For client-side integration, we'll use Razorpay's checkout without pre-created orders
       // This approach doesn't require server-side order creation
@@ -109,17 +117,22 @@ export class PaymentService {
         status: 'created',
         created_at: Math.floor(Date.now() / 1000)
       };
+      console.log('🎯 Razorpay order object:', razorpayOrder);
 
-      return {
+      const response = {
         success: true,
         paymentId: paymentRecord?.payment_id || paymentId,
         orderId: null, // No pre-created order
         amount: plan.price,
         currency: 'INR'
       };
+      
+      console.log('✅ Payment creation successful, returning:', response);
+      return response;
 
     } catch (error) {
-      console.error('Error creating payment:', error);
+      console.error('💥 Error creating payment:', error);
+      console.error('💥 Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to create payment order'

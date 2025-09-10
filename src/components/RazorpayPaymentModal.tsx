@@ -62,7 +62,7 @@ export const RazorpayPaymentModal: React.FC<RazorpayPaymentModalProps> = ({
         plan: plan
       });
 
-      if (!paymentResponse.success || !paymentResponse.paymentId || !paymentResponse.orderId) {
+      if (!paymentResponse.success || !paymentResponse.paymentId) {
         throw new Error(paymentResponse.error || 'Failed to create payment order');
       }
 
@@ -70,7 +70,7 @@ export const RazorpayPaymentModal: React.FC<RazorpayPaymentModalProps> = ({
         status: 'processing',
         message: 'Opening payment gateway...',
         paymentId: paymentResponse.paymentId,
-        orderId: paymentResponse.orderId
+        orderId: paymentResponse.orderId || null
       });
 
       // Initialize Razorpay checkout without pre-created order
