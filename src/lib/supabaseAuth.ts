@@ -78,7 +78,11 @@ export const verifyOTPCode = async (email: string, otp: string) => {
         isAuthenticated: 'true'
       });
       
-      return { success: true, data: data.user };
+      return { 
+        success: true, 
+        data: data.user, 
+        isNewUser: profileResult.isNewUser || false 
+      };
     }
     
     return { success: false, error: 'Authentication failed' };
@@ -91,6 +95,29 @@ export const verifyOTPCode = async (email: string, otp: string) => {
 // Create or update user profile in Supabase
 export const createOrUpdateUserProfile = async (userId: string, email: string, pin?: string) => {
   try {
+    // First check if user profile already exists (handle PGRST116 gracefully)
+    let isNewUser = false;
+    try {
+      const { data: existingProfile, error: checkError } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('id', userId)
+        .single();
+
+      if (checkError && checkError.code === 'PGRST116') {
+        // No rows found - this is a new user
+        isNewUser = true;
+      } else if (checkError) {
+        // Some other error occurred
+        console.error('Error checking existing profile:', checkError);
+        return { success: false, error: checkError.message };
+      }
+      // If no error, user exists (isNewUser remains false)
+    } catch (checkError) {
+      // If any other error occurs, assume it's a new user
+      isNewUser = true;
+    }
+
     const profileData: any = {
       id: userId,
       email: email,
@@ -112,8 +139,26 @@ export const createOrUpdateUserProfile = async (userId: string, email: string, p
       return { success: false, error: error.message };
     }
 
+    // If this is a new user, generate referral code at backend
+    if (isNewUser) {
+      try {
+        const { data: referralCode, error: referralError } = await supabase
+          .rpc('create_user_referral_code', { user_uuid: userId });
+
+        if (referralError) {
+          console.error('Error creating referral code:', referralError);
+          // Don't fail the entire process if referral code creation fails
+        } else {
+          console.log('Referral code created for new user:', referralCode);
+        }
+      } catch (referralError) {
+        console.error('Error in referral code creation:', referralError);
+        // Don't fail the entire process if referral code creation fails
+      }
+    }
+
     console.log('User profile created/updated successfully');
-    return { success: true, data };
+    return { success: true, data, isNewUser };
   } catch (error: any) {
     console.error('Error creating/updating user profile:', error);
     return { success: false, error: error.message };

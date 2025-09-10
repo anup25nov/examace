@@ -1,201 +1,156 @@
-# 🌍 Environment Setup Guide
+# 🔧 Environment Setup for Razorpay Integration
 
-## Overview
+## 📋 **Required Environment Variables**
 
-This project now supports separate development and production environments for both Firebase and Supabase. Data storage is verified and logged in development mode.
+Create or update your `.env.local` file with the following variables:
 
-## 📁 Environment Files
+```env
+# Razorpay Configuration
+RAZORPAY_KEY_ID=rzp_test_RFxIToeCLybhiA
+RAZORPAY_KEY_SECRET=MHHKyti0XnceA6iQ4ufzvNtR
+RAZORPAY_WEBHOOK_SECRET=your_webhook_secret_here
 
-### `.env.development`
-- Used when running `npm run dev` or `npm run build:dev`
-- Contains development environment variables
-- **Committed to git** (safe for development)
+# Public Razorpay Key (for frontend)
+NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_RFxIToeCLybhiA
 
-### `.env.production`
-- Used when running `npm run build:prod` or `npm run build`
-- Contains production environment variables
-- **Committed to git** (safe for production)
+# Supabase Configuration (if not already configured)
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url_here
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 
-### `.env.local`
-- Used for local overrides
-- **NOT committed to git** (for sensitive local configs)
-- Overrides other environment files
+# App Configuration
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
 
-## 🔧 Environment Variables
+## 🔑 **How to Get These Values**
 
-### Firebase Configuration
+### **1. Razorpay Credentials**
+- **Key ID**: `rzp_test_RFxIToeCLybhiA` (already provided)
+- **Key Secret**: `MHHKyti0XnceA6iQ4ufzvNtR` (already provided)
+- **Webhook Secret**: Generate in Razorpay Dashboard → Settings → Webhooks
+
+### **2. Supabase Credentials**
+- **URL**: Found in Supabase Dashboard → Settings → API
+- **Anon Key**: Found in Supabase Dashboard → Settings → API
+
+### **3. Webhook Secret**
+1. Go to **Razorpay Dashboard**
+2. Navigate to **Settings** → **Webhooks**
+3. Add webhook URL: `https://yourdomain.com/api/razorpay-webhook`
+4. Copy the **Webhook Secret** and add to `.env.local`
+
+## 🚀 **Setup Steps**
+
+### **Step 1: Create .env.local**
 ```bash
-VITE_FIREBASE_API_KEY=your-firebase-api-key
-VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your-project-id
-VITE_FIREBASE_STORAGE_BUCKET=your-project.firebasestorage.app
-VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-VITE_FIREBASE_APP_ID=your-app-id
-VITE_FIREBASE_MEASUREMENT_ID=your-measurement-id
+# Create the file
+touch .env.local
+
+# Add the content (copy from above)
 ```
 
-### Supabase Configuration
+### **Step 2: Update Values**
+Replace the placeholder values with your actual credentials:
+
+```env
+# Replace these with your actual values
+RAZORPAY_WEBHOOK_SECRET=whsec_your_actual_webhook_secret
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_actual_anon_key
+NEXT_PUBLIC_APP_URL=https://yourdomain.com
+```
+
+### **Step 3: Restart Development Server**
 ```bash
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-key
-VITE_DATABASE_URL=https://your-project.supabase.co
-```
-
-### Environment Identifier
-```bash
-VITE_ENV=development  # or production
-```
-
-## 🚀 Available Scripts
-
-### Development
-```bash
-# Run development server with dev environment
-npm run dev
-
-# Run development server with production environment
-npm run dev:prod
-```
-
-### Building
-```bash
-# Build for development
-npm run build:dev
-
-# Build for production (default)
-npm run build
-npm run build:prod
-```
-
-### Preview
-```bash
-# Preview development build
-npm run preview:dev
-
-# Preview production build
-npm run preview:prod
-```
-
-## 📊 Data Storage Verification
-
-### Automatic Verification
-- Data storage is automatically verified in development mode
-- Console logs show connection status for both Firebase and Supabase
-- Test data is written to verify write permissions
-
-### Manual Verification
-```typescript
-import { testDataStorage, testDataWriting } from '@/lib/dataVerification';
-
-// Test connections
-const results = await testDataStorage();
-
-// Test data writing
-const writeResults = await testDataWriting();
-```
-
-### Console Output in Development
-```
-🔧 Supabase Configuration: { url: "...", environment: "development", hasAnonKey: true }
-🔥 Firebase Configuration: { projectId: "...", environment: "development", hasApiKey: true }
-🔍 Initializing data storage verification...
-📊 Data Storage Verification: { supabase: {...}, firebase: {...}, environment: "development" }
-✍️ Data Writing Test: { supabase: {...}, firebase: {...} }
-✅ Data storage verification completed
-```
-
-## 🗄️ Database Setup
-
-### Supabase Tables
-The following tables are expected in your Supabase database:
-- `user_profiles`
-- `exam_stats`
-- `test_attempts`
-- `test_completions`
-- `user_streaks`
-- `individual_test_scores`
-
-### Firebase Collections
-The following collections are used in Firebase:
-- `users` (user profiles and PIN data)
-- `test_data` (test data for verification)
-
-## 🔒 Security Notes
-
-### Environment Variables
-- All environment variables are prefixed with `VITE_` to be available in the browser
-- Sensitive keys should be kept in `.env.local` (not committed to git)
-- Production keys should be set in your deployment platform
-
-### Database Security
-- Supabase uses Row Level Security (RLS) policies
-- Firebase uses Firestore security rules
-- Both databases are configured for user data isolation
-
-## 🚀 Deployment
-
-### Vercel
-Set environment variables in Vercel dashboard:
-1. Go to your project settings
-2. Navigate to Environment Variables
-3. Add all `VITE_*` variables for production
-
-### Other Platforms
-Ensure all `VITE_*` environment variables are set in your deployment platform.
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-#### 1. Environment Variables Not Loading
-```bash
-# Check if variables are set
-console.log(import.meta.env.VITE_ENV);
-
-# Restart development server after changing .env files
 npm run dev
 ```
 
-#### 2. Database Connection Issues
-- Check console logs for connection errors
-- Verify environment variables are correct
-- Ensure database tables exist
-- Check network connectivity
+## 🔒 **Security Notes**
 
-#### 3. Build Issues
-```bash
-# Clear cache and rebuild
-rm -rf node_modules dist
-npm install
-npm run build
+### **Important:**
+- ✅ **Never commit** `.env.local` to version control
+- ✅ **Use different credentials** for development and production
+- ✅ **Keep webhook secret** secure and private
+- ✅ **Use HTTPS** for production webhook URLs
+
+### **Production Setup:**
+```env
+# Production environment variables
+RAZORPAY_KEY_ID=rzp_live_your_live_key_id
+RAZORPAY_KEY_SECRET=your_live_key_secret
+RAZORPAY_WEBHOOK_SECRET=your_live_webhook_secret
+NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_live_your_live_key_id
+NEXT_PUBLIC_APP_URL=https://yourdomain.com
 ```
 
-## 📝 Current Configuration
+## 🧪 **Testing Environment**
 
-### Development Environment
-- **Firebase**: exam-prod-90097 (shared with production)
-- **Supabase**: talvssmwnsfotoutjlhd.supabase.co (shared with production)
-- **Data Storage**: ✅ Verified and working
+### **Test Mode:**
+- Use the provided test credentials
+- Payments will be in sandbox mode
+- No real money will be charged
 
-### Production Environment
-- **Firebase**: exam-prod-90097
-- **Supabase**: talvssmwnsfotoutjlhd.supabase.co
-- **Data Storage**: ✅ Verified and working
+### **Test Cards:**
+```
+Card Number: 4111 1111 1111 1111
+Expiry: Any future date
+CVV: Any 3 digits
+Name: Any name
+```
 
-## 🎯 Next Steps
+## ✅ **Verification**
 
-1. **Create Separate Dev Database** (Optional)
-   - Create a new Supabase project for development
-   - Update `.env.development` with new credentials
-   - Run migrations on dev database
+### **Check if environment variables are loaded:**
+```javascript
+// In your browser console or component
+console.log('Razorpay Key ID:', process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID);
+console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+```
 
-2. **Set Up CI/CD**
-   - Configure environment variables in deployment platform
-   - Set up automated testing with different environments
+### **Expected Output:**
+```
+Razorpay Key ID: rzp_test_RFxIToeCLybhiA
+Supabase URL: https://your-project.supabase.co
+```
 
-3. **Monitor Data Storage**
-   - Check console logs in development
-   - Monitor database usage in production
-   - Set up alerts for connection issues
+## 🚨 **Troubleshooting**
 
-**Data is being stored successfully in both development and production environments!** 🎉
+### **Issue 1: "Environment variable not found"**
+**Solution:** 
+- Check if `.env.local` exists
+- Restart development server
+- Verify variable names are correct
+
+### **Issue 2: "Invalid Razorpay key"**
+**Solution:**
+- Verify key ID and secret are correct
+- Check if you're using test/live keys appropriately
+- Ensure no extra spaces in the values
+
+### **Issue 3: "Webhook signature verification failed"**
+**Solution:**
+- Check webhook secret is correct
+- Verify webhook URL is accessible
+- Ensure HTTPS is used for production
+
+## 📞 **Need Help?**
+
+If you encounter issues:
+
+1. **Check environment variables** are set correctly
+2. **Restart development server** after changes
+3. **Verify credentials** in Razorpay dashboard
+4. **Check browser console** for errors
+5. **Test with provided test credentials** first
+
+---
+
+## 🎯 **Next Steps**
+
+After setting up environment variables:
+
+1. **Run database migration** (RAZORPAY_DATABASE_SCHEMA.sql)
+2. **Configure webhook** in Razorpay dashboard
+3. **Test payment flow** end-to-end
+4. **Deploy to production** with live credentials
+
+**Your environment is now ready for Razorpay integration!** 🚀

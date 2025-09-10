@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,9 +9,12 @@ import {
   Zap, 
   Shield,
   X,
-  ArrowRight
+  ArrowRight,
+  Loader2
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { membershipPlansService, MembershipPlan as BackendPlan } from '@/lib/membershipPlansService';
+import { RazorpayPaymentModal } from './RazorpayPaymentModal';
 
 interface MembershipPlan {
   id: string;
@@ -19,12 +22,13 @@ interface MembershipPlan {
   description: string;
   price: number;
   originalPrice?: number;
-  mockTests: number;
   features: string[];
   popular?: boolean;
   icon: React.ReactNode;
   color: string;
   bgColor: string;
+  duration_months: number;
+  currency: string;
 }
 
 interface MembershipPlansProps {
@@ -33,69 +37,41 @@ interface MembershipPlansProps {
   currentPlan?: string;
 }
 
-const membershipPlans: MembershipPlan[] = [
-  {
-    id: 'basic',
-    name: 'Basic Plan',
-    description: 'Perfect for getting started',
-    price: 30,
-    originalPrice: 50,
-    mockTests: 10,
-    features: [
-      '10 Mock Tests',
-      'Detailed Solutions',
-      'Performance Analytics',
-      '30 Days Access',
-      'Email Support'
-    ],
-    icon: <Star className="w-6 h-6" />,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50 border-blue-200'
-  },
-  {
-    id: 'premium',
-    name: 'Premium Plan',
-    description: 'Most popular choice',
-    price: 49,
-    originalPrice: 99,
-    mockTests: 25,
-    features: [
-      '25 Mock Tests',
-      'Detailed Solutions',
-      'Performance Analytics',
-      '60 Days Access',
-      'Priority Support',
-      'Study Materials',
-      'Progress Tracking'
-    ],
-    popular: true,
-    icon: <Crown className="w-6 h-6" />,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50 border-purple-200'
-  },
-  {
-    id: 'pro',
-    name: 'Pro Plan',
-    description: 'Maximum value for serious learners',
-    price: 99,
-    originalPrice: 199,
-    mockTests: 50,
-    features: [
-      '50 Mock Tests',
-      'Detailed Solutions',
-      'Performance Analytics',
-      '90 Days Access',
-      '24/7 Support',
-      'Study Materials',
-      'Progress Tracking',
-      'Personalized Recommendations',
-      'Exam Strategies'
-    ],
-    icon: <Zap className="w-6 h-6" />,
-    color: 'text-gold-600',
-    bgColor: 'bg-yellow-50 border-yellow-200'
+// Helper function to get plan styling
+const getPlanStyling = (planId: string) => {
+  switch (planId) {
+    case 'free':
+      return {
+        icon: <Star className="w-6 h-6" />,
+        color: 'text-gray-600',
+        bgColor: 'bg-gray-50 border-gray-200'
+      };
+    case 'monthly':
+      return {
+        icon: <Star className="w-6 h-6" />,
+        color: 'text-blue-600',
+        bgColor: 'bg-blue-50 border-blue-200'
+      };
+    case 'yearly':
+      return {
+        icon: <Crown className="w-6 h-6" />,
+        color: 'text-purple-600',
+        bgColor: 'bg-purple-50 border-purple-200'
+      };
+    case 'lifetime':
+      return {
+        icon: <Zap className="w-6 h-6" />,
+        color: 'text-yellow-600',
+        bgColor: 'bg-yellow-50 border-yellow-200'
+      };
+    default:
+      return {
+        icon: <Star className="w-6 h-6" />,
+        color: 'text-gray-600',
+        bgColor: 'bg-gray-50 border-gray-200'
+      };
   }
-];
+};
 
 export const MembershipPlans: React.FC<MembershipPlansProps> = ({
   onSelectPlan,
@@ -104,10 +80,70 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [plans, setPlans] = useState<MembershipPlan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPlanForPayment, setSelectedPlanForPayment] = useState<MembershipPlan | null>(null);
+
+  // Load plans from backend
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        setLoading(true);
+        const response = await membershipPlansService.getMembershipPlans();
+        
+        if (response.success && response.plans) {
+          // Convert backend plans to frontend format
+          const convertedPlans: MembershipPlan[] = response.plans
+            .filter(plan => plan.id !== 'free') // Exclude free plan from payment options
+            .map(plan => {
+              const styling = getPlanStyling(plan.id);
+              return {
+                id: plan.id,
+                name: plan.name,
+                description: plan.description,
+                price: plan.price,
+                features: plan.features,
+                popular: plan.id === 'yearly', // Mark yearly as popular
+                icon: styling.icon,
+                color: styling.color,
+                bgColor: styling.bgColor,
+                duration_months: plan.duration_months,
+                currency: plan.currency
+              };
+            });
+          
+          setPlans(convertedPlans);
+        } else {
+          setError(response.error || 'Failed to load plans');
+        }
+      } catch (err) {
+        setError('Failed to load membership plans');
+        console.error('Error loading plans:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPlans();
+  }, []);
 
   const handleSelectPlan = (plan: MembershipPlan) => {
     setSelectedPlan(plan.id);
     onSelectPlan(plan);
+  };
+
+  const handleBuyPlan = (plan: MembershipPlan) => {
+    setSelectedPlanForPayment(plan);
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentSuccess = (paymentId: string) => {
+    setShowPaymentModal(false);
+    setSelectedPlanForPayment(null);
+    // You can add success handling here
+    console.log('Payment successful:', paymentId);
   };
 
   return (
@@ -132,8 +168,26 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
         </div>
 
         {/* Plans Grid */}
-        <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-          {membershipPlans.map((plan) => (
+        <div className="p-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+              <span className="ml-2 text-gray-600">Loading plans...</span>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <div className="text-red-600 mb-4">
+                <X className="w-12 h-12 mx-auto mb-2" />
+                <p className="text-lg font-medium">Failed to load plans</p>
+                <p className="text-sm text-gray-600">{error}</p>
+              </div>
+              <Button onClick={() => window.location.reload()} variant="outline">
+                Try Again
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {plans.map((plan) => (
             <Card 
               key={plan.id}
               className={`relative cursor-pointer transition-all duration-300 hover:shadow-lg h-full flex flex-col ${
@@ -177,16 +231,16 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
                 <div className="mt-4">
                   <div className="flex items-center justify-center space-x-2">
                     <span className="text-3xl font-bold text-gray-900">
-                      ₹{plan.price}
+                      {membershipPlansService.formatPrice(plan.price, plan.currency)}
                     </span>
                     {plan.originalPrice && (
                       <span className="text-lg text-gray-500 line-through">
-                        ₹{plan.originalPrice}
+                        {membershipPlansService.formatPrice(plan.originalPrice, plan.currency)}
                       </span>
                     )}
                   </div>
                   <p className="text-sm text-gray-600 mt-1">
-                    {plan.mockTests} Mock Tests
+                    {membershipPlansService.getDurationDisplay(plan.duration_months)}
                   </p>
                   {plan.originalPrice && (
                     <Badge variant="secondary" className="mt-2 bg-green-100 text-green-800">
@@ -210,7 +264,7 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
                   className={`w-full mt-6 ${plan.popular ? 'bg-purple-600 hover:bg-purple-700' : 'bg-blue-600 hover:bg-blue-700'}`}
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleSelectPlan(plan);
+                    handleBuyPlan(plan);
                   }}
                 >
                   {currentPlan === plan.id ? (
@@ -228,6 +282,8 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
               </CardContent>
             </Card>
           ))}
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -237,11 +293,26 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
               All plans include 7-day money-back guarantee
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              Secure payment powered by Razorpay
+              Secure payment powered by Razorpay • All major cards & UPI accepted
             </p>
           </div>
         </div>
       </div>
+
+      {/* Razorpay Payment Modal */}
+      {showPaymentModal && selectedPlanForPayment && (
+        <RazorpayPaymentModal
+          plan={{
+            id: selectedPlanForPayment.id,
+            name: selectedPlanForPayment.name,
+            price: selectedPlanForPayment.price,
+            mockTests: 50, // You can adjust this based on your plan
+            description: selectedPlanForPayment.description
+          }}
+          onClose={() => setShowPaymentModal(false)}
+          onPaymentSuccess={handlePaymentSuccess}
+        />
+      )}
     </div>
   );
 };

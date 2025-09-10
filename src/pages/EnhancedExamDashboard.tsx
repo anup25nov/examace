@@ -35,7 +35,9 @@ import { YearWiseTabs } from "@/components/YearWiseTabs";
 import { testDataLoader, YearData } from "@/lib/testDataLoader";
 import { premiumService, PremiumTest } from "@/lib/premiumService";
 import { examConfigService } from "@/lib/examConfigService";
+import { supabase } from "@/integrations/supabase/client";
 import Footer from "@/components/Footer";
+import { AdminAccess } from "@/components/admin/AdminAccess";
 
 // Icon mapping for dynamic loading
 const iconMap: { [key: string]: any } = {
@@ -58,8 +60,10 @@ const EnhancedExamDashboard = () => {
     avgScore: 0,
     bestScore: 0,
     bestRank: 0,
-    lastActive: null as Date | null
+    lastActive: null as Date | null,
+    avgScoreLast10: 0
   });
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
   
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [completedTests, setCompletedTests] = useState<Set<string>>(new Set());
@@ -76,6 +80,8 @@ const EnhancedExamDashboard = () => {
   const exam = examConfigs[examId as string];
   const examConfig = examConfigService.getExamConfig(examId as string);
   const userEmail = profile?.email || localStorage.getItem("userEmail");
+  const userName = (profile as any)?.name || localStorage.getItem("userName");
+  const displayName = userName || userEmail?.split('@')[0] || "User";
 
   // Load test data from JSON
   useEffect(() => {
@@ -118,6 +124,30 @@ const EnhancedExamDashboard = () => {
     }
 
     setCompletedTests(completed);
+  };
+
+  // Load performance stats (best score and average of last 10 tests)
+  const loadPerformanceStats = async () => {
+    if (!examId || !user?.id) return;
+    
+    try {
+      const { data, error } = await supabase.rpc('get_user_performance_stats' as any, {
+        user_uuid: user.id,
+        exam_name: examId
+      });
+      
+      if (!error && data && Array.isArray(data) && data.length > 0) {
+        const stats = data[0] as any;
+        setUserStats(prev => ({
+          ...prev,
+          bestScore: stats.best_score || 0,
+          avgScoreLast10: stats.average_score_last_10 || 0,
+          totalTests: stats.total_tests || 0
+        }));
+      }
+    } catch (error) {
+      console.error('Error loading performance stats:', error);
+    }
   };
 
   // Load individual test scores
@@ -168,6 +198,7 @@ const EnhancedExamDashboard = () => {
 
     if (examId) {
       loadAllStats();
+      loadPerformanceStats();
     }
   }, [examId, navigate, isAuthenticated, loading]);
 
@@ -201,7 +232,8 @@ const EnhancedExamDashboard = () => {
           avgScore: avgScore || currentExamStats.averageScore,
           bestScore: currentExamStats.bestScore,
           bestRank: bestRank,
-          lastActive: currentExamStats.lastTestDate
+          lastActive: currentExamStats.lastTestDate,
+          avgScoreLast10: 0 // Will be updated by loadPerformanceStats
         });
       }
     }
@@ -312,7 +344,7 @@ const EnhancedExamDashboard = () => {
     setActiveTab(value);
   };
 
-  const handleMessageAction = (actionType: string) => {
+  const handleMessageAction = (actionType: string, purchaseLink?: string) => {
     if (actionType === 'mock') {
       // Switch to mock tab and show all tests
       setActiveTab('mock');
@@ -322,8 +354,14 @@ const EnhancedExamDashboard = () => {
       setActiveTab('pyq');
       setTestFilter('all');
     } else if (actionType === 'premium') {
-      // Handle premium exploration (could open premium modal or navigate to premium page)
-      console.log('Explore premium content');
+      // Handle premium exploration with purchase link
+      if (purchaseLink) {
+        // Navigate to premium page with specific plan and feature
+        navigate(purchaseLink);
+      } else {
+        // Fallback to general premium page
+        navigate('/premium');
+      }
     }
   };
 
@@ -331,6 +369,7 @@ const EnhancedExamDashboard = () => {
   const getSectionMessage = (section: string) => {
     const { completedCount, notAttemptedCount } = getFilterCounts(section);
     const totalCount = completedCount + notAttemptedCount;
+    const currentMembership = userMembership;
     
     if (testFilter === 'attempted' && completedCount === 0) {
       if (section === 'mock') {
@@ -352,43 +391,65 @@ const EnhancedExamDashboard = () => {
       }
     }
     
-    if (testFilter === 'attempted' && completedCount > 0 && notAttemptedCount > 0) {
-      if (section === 'mock') {
-        return {
-          type: 'success',
-          message: `Great progress! You've completed ${completedCount} mock tests. Keep going!`,
-          icon: '🎉',
-          actionText: 'Continue Mock Tests',
-          actionType: 'mock'
-        };
-      } else if (section === 'pyq') {
-        return {
-          type: 'success',
-          message: `Excellent! You've completed ${completedCount} PYQ sets. Continue your journey!`,
-          icon: '📖',
-          actionText: 'Continue PYQ Tests',
-          actionType: 'pyq'
-        };
-      }
-    }
-    
+    // Check if user has completed all free content
     if (testFilter === 'attempted' && completedCount > 0 && notAttemptedCount === 0) {
       if (section === 'mock') {
-        return {
-          type: 'congratulations',
-          message: 'Congratulations! You have completed all available mock tests! Consider upgrading to premium for more challenges.',
-          icon: '🏆',
-          actionText: 'Explore Premium',
-          actionType: 'premium'
-        };
+        // Check if user has premium membership
+        if (!currentMembership || !currentMembership.isPremium) {
+          return {
+            type: 'congratulations',
+            message: '🎉 Excellent! You\'ve completed all free mock tests! Upgrade to Premium for 50+ advanced mock tests with detailed analytics.',
+            icon: '🏆',
+            actionText: 'Upgrade to Premium',
+            actionType: 'premium',
+            purchaseLink: '/premium?plan=basic&feature=mock-tests'
+          };
+        } else if (currentMembership.planType === 'monthly' || currentMembership.planType === 'yearly') {
+          return {
+            type: 'congratulations',
+            message: '🚀 Outstanding! You\'ve mastered all basic mock tests! Upgrade to Pro for unlimited access to all premium features.',
+            icon: '💎',
+            actionText: 'Upgrade to Pro',
+            actionType: 'premium',
+            purchaseLink: '/premium?plan=pro&feature=unlimited-access'
+          };
+        } else {
+          return {
+            type: 'congratulations',
+            message: '🌟 Phenomenal! You\'ve completed all available mock tests! You\'re truly mastering this exam!',
+            icon: '👑',
+            actionText: 'View All Tests',
+            actionType: 'mock'
+          };
+        }
       } else if (section === 'pyq') {
-        return {
-          type: 'congratulations',
-          message: 'Amazing! You have completed all available PYQ sets! Ready for premium content?',
-          icon: '🎓',
-          actionText: 'Explore Premium',
-          actionType: 'premium'
-        };
+        if (!currentMembership || !currentMembership.isPremium) {
+          return {
+            type: 'congratulations',
+            message: '📚 Amazing! You\'ve solved all free PYQ sets! Get Premium access to 10+ years of previous year papers with solutions.',
+            icon: '🎓',
+            actionText: 'Upgrade to Premium',
+            actionType: 'premium',
+            purchaseLink: '/premium?plan=basic&feature=pyq-access'
+          };
+        } else if (currentMembership.planType === 'monthly' || currentMembership.planType === 'yearly') {
+          return {
+            type: 'congratulations',
+            message: '🔥 Incredible! You\'ve completed all basic PYQ sets! Upgrade to Pro for exclusive access to all years and detailed analysis.',
+            icon: '💎',
+            actionText: 'Upgrade to Pro',
+            actionType: 'premium',
+            purchaseLink: '/premium?plan=pro&feature=complete-pyq'
+          };
+        } else {
+          return {
+            type: 'congratulations',
+            message: '🏅 Outstanding! You\'ve mastered all available PYQ sets! Your preparation is top-notch!',
+            icon: '👑',
+            actionText: 'View All PYQ',
+            actionType: 'pyq'
+          };
+        }
       }
     }
     
@@ -421,9 +482,17 @@ const EnhancedExamDashboard = () => {
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-right">
-                <p className="text-sm font-medium text-foreground">Welcome!</p>
+                <p className="text-sm font-medium text-foreground">Welcome, {displayName}!</p>
                 <p className="text-xs text-muted-foreground">{userEmail}</p>
               </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAdminPanel(true)}
+                className="text-xs"
+              >
+                Admin
+              </Button>
             </div>
           </div>
         </div>
@@ -451,23 +520,23 @@ const EnhancedExamDashboard = () => {
             </CardContent>
           </Card>
           
-          <Card className="text-center border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-emerald-500 via-green-600 to-teal-600 text-white">
-            <CardContent className="p-6">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                <Target className="w-8 h-8 text-white" />
-              </div>
-              <p className="text-3xl font-bold mb-2">{userStats.avgScore}%</p>
-              <p className="text-sm text-green-100 font-medium">Average Score</p>
-            </CardContent>
-          </Card>
-          
           <Card className="text-center border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-purple-500 via-violet-600 to-fuchsia-600 text-white">
             <CardContent className="p-6">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
                 <Trophy className="w-8 h-8 text-white" />
               </div>
-              <p className="text-3xl font-bold mb-2">{userStats.bestScore}%</p>
+              <p className="text-3xl font-bold mb-2">{userStats.bestScore}</p>
               <p className="text-sm text-purple-100 font-medium">Best Score</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="text-center border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-orange-500 via-red-600 to-pink-600 text-white">
+            <CardContent className="p-6">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                <Star className="w-8 h-8 text-white" />
+              </div>
+              <p className="text-3xl font-bold mb-2">{userStats.avgScoreLast10}</p>
+              <p className="text-sm text-orange-100 font-medium">Avg Score</p>
             </CardContent>
           </Card>
         </div>
@@ -584,7 +653,7 @@ const EnhancedExamDashboard = () => {
                           </p>
                         </div>
                         <Button
-                          onClick={() => handleMessageAction(message.actionType)}
+                          onClick={() => handleMessageAction(message.actionType, message.purchaseLink)}
                           className={`${
                             message.type === 'info' ? 'bg-blue-600 hover:bg-blue-700' :
                             message.type === 'success' ? 'bg-green-600 hover:bg-green-700' :
@@ -698,6 +767,11 @@ const EnhancedExamDashboard = () => {
         </Tabs>
       </div>
       <Footer />
+
+      {/* Admin Panel */}
+      {showAdminPanel && (
+        <AdminAccess onClose={() => setShowAdminPanel(false)} />
+      )}
     </div>
   );
 };

@@ -93,7 +93,7 @@
           "name": "SSC CGL 2024 - Set 1",
           "date": "2024-07-01",
           "shift": "Shift 1",
-          "duration": 180,
+          "duration": 1800,
           "questions": 100,
           "subjects": ["Quantitative Aptitude", "English Language", "General Intelligence", "General Awareness"],
           "difficulty": "Actual Exam Level",

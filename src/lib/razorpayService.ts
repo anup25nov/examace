@@ -1,284 +1,482 @@
-import { membershipService } from './membershipServiceSimple';
-import { referralService } from './referralServiceSimple';
+// Razorpay Service - Server-side only
+import Razorpay from 'razorpay';
+import crypto from 'crypto';
 
-// Razorpay types
-interface RazorpayOptions {
-  key: string;
+// Check if we're on the server side
+const isServer = typeof window === 'undefined';
+
+// Initialize Razorpay instance (server-side only)
+const razorpay = isServer ? new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_RFxIToeCLybhiA',
+  key_secret: process.env.RAZORPAY_KEY_SECRET || 'MHHKyti0XnceA6iQ4ufzvNtR',
+}) : null;
+
+export interface RazorpayOrderData {
   amount: number;
   currency: string;
-  name: string;
-  description: string;
-  order_id?: string;
-  prefill?: {
-    name?: string;
-    email?: string;
-    contact?: string;
-  };
+  receipt: string;
   notes?: Record<string, string>;
-  theme?: {
-    color: string;
-  };
-  handler: (response: RazorpayResponse) => void;
-  modal?: {
-    ondismiss: () => void;
-  };
 }
 
-interface RazorpayResponse {
-  razorpay_payment_id: string;
-  razorpay_order_id: string;
-  razorpay_signature: string;
+export interface RazorpayOrderResponse {
+  id: string;
+  amount: number;
+  currency: string;
+  receipt: string;
+  status: string;
+  created_at: number;
 }
 
-interface RazorpayInstance {
-  open: () => void;
-  close: () => void;
+export interface RazorpayPaymentData {
+  id: string;
+  order_id: string;
+  amount: number;
+  currency: string;
+  status: string;
+  method: string;
+  description: string;
+  created_at: number;
+  razorpay_payment_id?: string;
+  razorpay_order_id?: string;
+  razorpay_signature?: string;
 }
 
-declare global {
-  interface Window {
-    Razorpay: new (options: RazorpayOptions) => RazorpayInstance;
-  }
+export interface RazorpayPaymentResponse {
+  success: boolean;
+  message?: string;
+  payment_id?: string;
+  order_id?: string;
+  amount?: number;
+  currency?: string;
+  error?: string;
 }
 
-class RazorpayService {
-  private readonly RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_1234567890';
-  private readonly CURRENCY = 'INR';
+export class RazorpayService {
+  /**
+   * Create a new Razorpay order
+   */
+  async createOrder(orderData: RazorpayOrderData): Promise<RazorpayOrderResponse> {
+    if (!isServer || !razorpay) {
+      throw new Error('Razorpay service is only available on the server side');
+    }
 
-  // Load Razorpay script
-  private async loadRazorpayScript(): Promise<boolean> {
-    return new Promise((resolve) => {
-      if (window.Razorpay) {
-        resolve(true);
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  }
-
-  // Create Razorpay order
-  private async createRazorpayOrder(amount: number, planId: string): Promise<{ orderId: string; error?: string }> {
     try {
-      // In a real implementation, you would call your backend API to create the order
-      // For now, we'll simulate this with a mock order ID
-      const orderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      return { orderId };
-    } catch (error: any) {
+      const order = await razorpay.orders.create({
+        amount: orderData.amount,
+        currency: orderData.currency,
+        receipt: orderData.receipt,
+        notes: orderData.notes || {}
+      });
+
+      return {
+        id: order.id,
+        amount: order.amount as number,
+        currency: order.currency,
+        receipt: order.receipt,
+        status: order.status,
+        created_at: order.created_at,
+      };
+    } catch (error) {
       console.error('Error creating Razorpay order:', error);
-      return { orderId: '', error: error.message };
+      throw new Error('Failed to create payment order');
     }
   }
 
-  // Verify payment signature
-  private async verifyPaymentSignature(paymentData: RazorpayResponse): Promise<boolean> {
+  /**
+   * Verify payment signature
+   */
+  async verifyPayment(paymentId: string, orderId: string, signature: string): Promise<boolean> {
+    if (!isServer) {
+      throw new Error('Payment verification is only available on the server side');
+    }
+
     try {
-      // In a real implementation, you would call your backend API to verify the signature
-      // For now, we'll simulate successful verification
-      await new Promise(resolve => setTimeout(resolve, 500));
-      return true;
+      const expectedSignature = crypto
+        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || 'MHHKyti0XnceA6iQ4ufzvNtR')
+        .update(`${orderId}|${paymentId}`)
+        .digest('hex');
+
+      return expectedSignature === signature;
     } catch (error) {
       console.error('Error verifying payment signature:', error);
       return false;
     }
   }
 
-  // Process payment with Razorpay
-  async processPayment(
-    planId: string,
-    amount: number,
-    userEmail: string,
-    userName?: string,
-    userPhone?: string
-  ): Promise<{ success: boolean; paymentId?: string; error?: string }> {
+  /**
+   * Capture payment
+   */
+  async capturePayment(paymentId: string, amount: number, currency: string = 'INR'): Promise<any> {
     try {
-      // Load Razorpay script
-      const scriptLoaded = await this.loadRazorpayScript();
-      if (!scriptLoaded) {
-        return { success: false, error: 'Failed to load payment gateway' };
-      }
+      const payment = await razorpay.payments.capture(paymentId, amount * 100, currency);
+      return payment;
+    } catch (error) {
+      console.error('Error capturing payment:', error);
+      throw new Error('Failed to capture payment');
+    }
+  }
 
-      // Create order
-      const orderResult = await this.createRazorpayOrder(amount, planId);
-      if (orderResult.error) {
-        return { success: false, error: orderResult.error };
-      }
+  /**
+   * Get payment details
+   */
+  async getPayment(paymentId: string): Promise<RazorpayPaymentData> {
+    try {
+      const payment = await razorpay.payments.fetch(paymentId);
+      return {
+        id: payment.id,
+        order_id: payment.order_id,
+        amount: payment.amount as number,
+        currency: payment.currency,
+        status: payment.status,
+        method: payment.method,
+        description: payment.description,
+        created_at: payment.created_at,
+      };
+    } catch (error) {
+      console.error('Error fetching payment:', error);
+      throw new Error('Failed to fetch payment details');
+    }
+  }
 
-      // Get user info
-      const user = {
-        name: userName || 'User',
-        email: userEmail,
-        contact: userPhone || ''
+  /**
+   * Get order details
+   */
+  async getOrder(orderId: string): Promise<any> {
+    try {
+      const order = await razorpay.orders.fetch(orderId);
+      return order;
+    } catch (error) {
+      console.error('Error fetching order:', error);
+      throw new Error('Failed to fetch order details');
+    }
+  }
+
+  /**
+   * Refund payment
+   */
+  async refundPayment(paymentId: string, amount?: number, notes?: string): Promise<any> {
+    try {
+      const refundData: any = {
+        payment_id: paymentId,
       };
 
-      // Razorpay options
-      const options: RazorpayOptions = {
-        key: this.RAZORPAY_KEY_ID,
-        amount: amount * 100, // Convert to paise
-        currency: this.CURRENCY,
-        name: 'ExamAce',
-        description: `ExamAce ${planId} Plan`,
-        order_id: orderResult.orderId,
-        prefill: user,
-        notes: {
-          plan_id: planId,
-          user_email: userEmail
-        },
-        theme: {
-          color: '#3B82F6'
-        },
-        handler: async (response: RazorpayResponse) => {
-          try {
-            // Verify payment signature
-            const isValid = await this.verifyPaymentSignature(response);
-            if (!isValid) {
-              throw new Error('Payment verification failed');
-            }
-
-            // Get current user ID
-            const userId = localStorage.getItem('userId');
-            if (!userId) {
-              throw new Error('User not authenticated');
-            }
-
-            // Record payment
-            const paymentResult = await membershipService.recordPayment(
-              userId,
-              planId,
-              amount,
-              response.razorpay_payment_id,
-              'card'
-            );
-
-            if (!paymentResult.success) {
-              throw new Error(paymentResult.error || 'Failed to record payment');
-            }
-
-            // Create membership
-            const membershipResult = await membershipService.createMembership(
-              userId,
-              planId,
-              response.razorpay_payment_id
-            );
-
-            if (!membershipResult.success) {
-              throw new Error(membershipResult.error || 'Failed to create membership');
-            }
-
-            // Process referral if applicable
-            await referralService.applyPendingReferralCode(userId, amount, response.razorpay_payment_id);
-
-            // Success callback
-            if (this.onPaymentSuccess) {
-              this.onPaymentSuccess(response.razorpay_payment_id);
-            }
-
-          } catch (error: any) {
-            console.error('Payment processing error:', error);
-            if (this.onPaymentError) {
-              this.onPaymentError(error.message);
-            }
-          }
-        },
-        modal: {
-          ondismiss: () => {
-            if (this.onPaymentDismiss) {
-              this.onPaymentDismiss();
-            }
-          }
-        }
-      };
-
-      // Open Razorpay checkout
-      const razorpay = new window.Razorpay(options);
-      razorpay.open();
-
-      return { success: true };
-
-    } catch (error: any) {
-      console.error('Error processing payment:', error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  // Payment callbacks
-  public onPaymentSuccess?: (paymentId: string) => void;
-  public onPaymentError?: (error: string) => void;
-  public onPaymentDismiss?: () => void;
-
-  // Set payment callbacks
-  setCallbacks(callbacks: {
-    onSuccess?: (paymentId: string) => void;
-    onError?: (error: string) => void;
-    onDismiss?: () => void;
-  }) {
-    this.onPaymentSuccess = callbacks.onSuccess;
-    this.onPaymentError = callbacks.onError;
-    this.onPaymentDismiss = callbacks.onDismiss;
-  }
-
-  // Get payment methods
-  getPaymentMethods() {
-    return [
-      {
-        id: 'card',
-        name: 'Card Payment',
-        description: 'Credit/Debit card payment',
-        icon: '💳',
-        enabled: true
-      },
-      {
-        id: 'upi',
-        name: 'UPI Payment',
-        description: 'Pay using UPI apps',
-        icon: '📱',
-        enabled: true
-      },
-      {
-        id: 'netbanking',
-        name: 'Net Banking',
-        description: 'Online banking payment',
-        icon: '🏦',
-        enabled: true
-      },
-      {
-        id: 'wallet',
-        name: 'Wallet',
-        description: 'Paytm, PhonePe, etc.',
-        icon: '👛',
-        enabled: true
+      if (amount) {
+        refundData.amount = amount * 100; // Convert to paise
       }
-    ];
-  }
 
-  // Validate payment amount
-  validateAmount(amount: number): { valid: boolean; error?: string } {
-    if (amount < 1) {
-      return { valid: false, error: 'Amount must be at least ₹1' };
+      if (notes) {
+        refundData.notes = { reason: notes };
+      }
+
+      const refund = await razorpay.payments.refund(paymentId, refundData);
+      return refund;
+    } catch (error) {
+      console.error('Error refunding payment:', error);
+      throw new Error('Failed to refund payment');
     }
-    if (amount > 100000) {
-      return { valid: false, error: 'Amount cannot exceed ₹1,00,000' };
+  }
+
+  /**
+   * Get refund details
+   */
+  async getRefund(refundId: string): Promise<any> {
+    try {
+      const refund = await razorpay.refunds.fetch(refundId);
+      return refund;
+    } catch (error) {
+      console.error('Error fetching refund:', error);
+      throw new Error('Failed to fetch refund details');
     }
-    return { valid: true };
   }
 
-  // Get supported currencies
-  getSupportedCurrencies() {
-    return ['INR'];
+  /**
+   * Get all payments for an order
+   */
+  async getOrderPayments(orderId: string): Promise<any[]> {
+    try {
+      const payments = await razorpay.orders.fetchPayments(orderId);
+      return payments.items;
+    } catch (error) {
+      console.error('Error fetching order payments:', error);
+      throw new Error('Failed to fetch order payments');
+    }
   }
 
-  // Check if Razorpay is available
-  isAvailable(): boolean {
-    return !!window.Razorpay;
+  /**
+   * Create a customer
+   */
+  async createCustomer(customerData: {
+    name: string;
+    email: string;
+    contact?: string;
+    notes?: Record<string, string>;
+  }): Promise<any> {
+    try {
+      const customer = await razorpay.customers.create(customerData);
+      return customer;
+    } catch (error) {
+      console.error('Error creating customer:', error);
+      throw new Error('Failed to create customer');
+    }
+  }
+
+  /**
+   * Get customer details
+   */
+  async getCustomer(customerId: string): Promise<any> {
+    try {
+      const customer = await razorpay.customers.fetch(customerId);
+      return customer;
+    } catch (error) {
+      console.error('Error fetching customer:', error);
+      throw new Error('Failed to fetch customer details');
+    }
+  }
+
+  /**
+   * Update customer
+   */
+  async updateCustomer(customerId: string, updateData: any): Promise<any> {
+    try {
+      const customer = await razorpay.customers.edit(customerId, updateData);
+      return customer;
+    } catch (error) {
+      console.error('Error updating customer:', error);
+      throw new Error('Failed to update customer');
+    }
+  }
+
+  /**
+   * Get all customers
+   */
+  async getCustomers(options?: {
+    count?: number;
+    skip?: number;
+  }): Promise<any> {
+    try {
+      const customers = await razorpay.customers.all(options);
+      return customers;
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+      throw new Error('Failed to fetch customers');
+    }
+  }
+
+  /**
+   * Create a subscription
+   */
+  async createSubscription(subscriptionData: {
+    plan_id: string;
+    customer_id: string;
+    total_count: number;
+    start_at?: number;
+    expire_by?: number;
+    notes?: Record<string, string>;
+  }): Promise<any> {
+    try {
+      const subscription = await razorpay.subscriptions.create(subscriptionData);
+      return subscription;
+    } catch (error) {
+      console.error('Error creating subscription:', error);
+      throw new Error('Failed to create subscription');
+    }
+  }
+
+  /**
+   * Get subscription details
+   */
+  async getSubscription(subscriptionId: string): Promise<any> {
+    try {
+      const subscription = await razorpay.subscriptions.fetch(subscriptionId);
+      return subscription;
+    } catch (error) {
+      console.error('Error fetching subscription:', error);
+      throw new Error('Failed to fetch subscription details');
+    }
+  }
+
+  /**
+   * Cancel subscription
+   */
+  async cancelSubscription(subscriptionId: string, cancelAtCycleEnd: boolean = false): Promise<any> {
+    try {
+      const subscription = await razorpay.subscriptions.cancel(subscriptionId, cancelAtCycleEnd);
+      return subscription;
+    } catch (error) {
+      console.error('Error cancelling subscription:', error);
+      throw new Error('Failed to cancel subscription');
+    }
+  }
+
+  /**
+   * Pause subscription
+   */
+  async pauseSubscription(subscriptionId: string, pauseAt: 'now' | 'cycle' = 'now'): Promise<any> {
+    try {
+      const subscription = await razorpay.subscriptions.pause(subscriptionId, {
+        pause_at: pauseAt as 'now'
+      });
+      return subscription;
+    } catch (error) {
+      console.error('Error pausing subscription:', error);
+      throw new Error('Failed to pause subscription');
+    }
+  }
+
+  /**
+   * Resume subscription
+   */
+  async resumeSubscription(subscriptionId: string): Promise<any> {
+    try {
+      const subscription = await razorpay.subscriptions.resume(subscriptionId);
+      return subscription;
+    } catch (error) {
+      console.error('Error resuming subscription:', error);
+      throw new Error('Failed to resume subscription');
+    }
+  }
+
+  /**
+   * Get all subscriptions
+   */
+  async getSubscriptions(options?: {
+    count?: number;
+    skip?: number;
+    plan_id?: string;
+    customer_id?: string;
+  }): Promise<any> {
+    try {
+      const subscriptions = await razorpay.subscriptions.all(options);
+      return subscriptions;
+    } catch (error) {
+      console.error('Error fetching subscriptions:', error);
+      throw new Error('Failed to fetch subscriptions');
+    }
+  }
+
+  /**
+   * Create a plan
+   */
+  async createPlan(planData: {
+    period: 'daily' | 'weekly' | 'monthly' | 'yearly';
+    interval: number;
+    item: {
+      name: string;
+      amount: number;
+      currency: string;
+      description?: string;
+    };
+    notes?: Record<string, string>;
+  }): Promise<any> {
+    try {
+      const plan = await razorpay.plans.create(planData);
+      return plan;
+    } catch (error) {
+      console.error('Error creating plan:', error);
+      throw new Error('Failed to create plan');
+    }
+  }
+
+  /**
+   * Get plan details
+   */
+  async getPlan(planId: string): Promise<any> {
+    try {
+      const plan = await razorpay.plans.fetch(planId);
+      return plan;
+    } catch (error) {
+      console.error('Error fetching plan:', error);
+      throw new Error('Failed to fetch plan details');
+    }
+  }
+
+  /**
+   * Get all plans
+   */
+  async getPlans(options?: {
+    count?: number;
+    skip?: number;
+  }): Promise<any> {
+    try {
+      const plans = await razorpay.plans.all(options);
+      return plans;
+    } catch (error) {
+      console.error('Error fetching plans:', error);
+      throw new Error('Failed to fetch plans');
+    }
+  }
+
+  /**
+   * Verify webhook signature
+   */
+  verifyWebhookSignature(body: string, signature: string, secret: string): boolean {
+    try {
+      const expectedSignature = crypto
+        .createHmac('sha256', secret)
+        .update(body)
+        .digest('hex');
+
+      return expectedSignature === signature;
+    } catch (error) {
+      console.error('Error verifying webhook signature:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Verify payment signature (for RazorpayPaymentService compatibility)
+   */
+  async verifyPaymentSignature(paymentData: RazorpayPaymentData): Promise<boolean> {
+    if (!paymentData.razorpay_payment_id || !paymentData.razorpay_order_id || !paymentData.razorpay_signature) {
+      return false;
+    }
+    return this.verifyPayment(
+      paymentData.razorpay_payment_id,
+      paymentData.razorpay_order_id,
+      paymentData.razorpay_signature
+    );
+  }
+
+  /**
+   * Get payment details (for RazorpayPaymentService compatibility)
+   */
+  async getPaymentDetails(paymentId: string): Promise<any> {
+    return this.getPayment(paymentId);
+  }
+
+  /**
+   * Convert paise to rupees
+   */
+  paiseToRupees(paise: number): number {
+    return paise / 100;
+  }
+
+  /**
+   * Get Razorpay key ID
+   */
+  getKeyId(): string {
+    if (isServer) {
+      return process.env.RAZORPAY_KEY_ID || 'rzp_test_RFxIToeCLybhiA';
+    } else {
+      return import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_RFxIToeCLybhiA';
+    }
+  }
+
+  /**
+   * Format amount for display
+   */
+  formatAmount(amount: number): string {
+    return `₹${amount}`;
+  }
+
+  /**
+   * Get Razorpay instance (for advanced usage)
+   */
+  getInstance(): Razorpay {
+    return razorpay;
   }
 }
 
+// Export singleton instance
 export const razorpayService = new RazorpayService();
+export default razorpayService;

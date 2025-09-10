@@ -19,7 +19,7 @@ import {
   Target
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { referralService, ReferralStats } from '@/lib/referralServiceSimple';
+import { referralService, ReferralStats } from '@/lib/referralService';
 
 const ReferralPage = () => {
   const navigate = useNavigate();
@@ -41,7 +41,7 @@ const ReferralPage = () => {
     
     try {
       setLoading(true);
-      const stats = await referralService.getReferralStats(user.id);
+      const stats = await referralService.getReferralStats();
       setReferralStats(stats);
     } catch (error) {
       console.error('Error loading referral stats:', error);
@@ -61,20 +61,22 @@ const ReferralPage = () => {
   };
 
   const shareReferralLink = async () => {
-    if (!referralStats) return;
+    if (!referralStats?.referral_code) return;
+    
+    const referralLink = `${window.location.origin}/signup?ref=${referralStats.referral_code}`;
     
     if (navigator.share) {
       try {
         await navigator.share({
           title: 'Join ExamAce - Exam Preparation Platform',
-          text: `Use my referral code ${referralStats.referralCode} to get started with ExamAce!`,
-          url: referralStats.referralLink
+          text: `Use my referral code ${referralStats.referral_code} to get started with ExamAce!`,
+          url: referralLink
         });
       } catch (error) {
         console.error('Error sharing:', error);
       }
     } else {
-      copyToClipboard(referralStats.referralLink);
+      copyToClipboard(referralLink);
     }
   };
 
@@ -153,7 +155,7 @@ const ReferralPage = () => {
               <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
                 <CardContent className="p-6 text-center">
                   <Users className="w-8 h-8 text-blue-600 mx-auto mb-3" />
-                  <div className="text-2xl font-bold text-blue-900">{referralStats.totalReferrals}</div>
+                  <div className="text-2xl font-bold text-blue-900">{referralStats.total_referrals}</div>
                   <div className="text-sm text-blue-700">Total Referrals</div>
                 </CardContent>
               </Card>
@@ -161,7 +163,7 @@ const ReferralPage = () => {
               <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
                 <CardContent className="p-6 text-center">
                   <DollarSign className="w-8 h-8 text-green-600 mx-auto mb-3" />
-                  <div className="text-2xl font-bold text-green-900">₹{referralStats.totalEarnings}</div>
+                  <div className="text-2xl font-bold text-green-900">₹{referralStats.total_earnings}</div>
                   <div className="text-sm text-green-700">Total Earnings</div>
                 </CardContent>
               </Card>
@@ -169,7 +171,7 @@ const ReferralPage = () => {
               <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
                 <CardContent className="p-6 text-center">
                   <TrendingUp className="w-8 h-8 text-orange-600 mx-auto mb-3" />
-                  <div className="text-2xl font-bold text-orange-900">₹{referralStats.pendingEarnings}</div>
+                  <div className="text-2xl font-bold text-orange-900">₹{referralStats.pending_rewards}</div>
                   <div className="text-sm text-orange-700">Pending Earnings</div>
                 </CardContent>
               </Card>
@@ -177,7 +179,7 @@ const ReferralPage = () => {
               <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
                 <CardContent className="p-6 text-center">
                   <Award className="w-8 h-8 text-purple-600 mx-auto mb-3" />
-                  <div className="text-2xl font-bold text-purple-900">₹{referralStats.paidEarnings}</div>
+                  <div className="text-2xl font-bold text-purple-900">₹{referralStats.rewarded_referrals}</div>
                   <div className="text-sm text-purple-700">Paid Earnings</div>
                 </CardContent>
               </Card>
@@ -189,12 +191,12 @@ const ReferralPage = () => {
                 <div className="text-center">
                   <h3 className="text-2xl font-bold mb-4">Your Referral Code</h3>
                   <div className="bg-white/20 rounded-lg p-4 mb-6">
-                    <div className="text-3xl font-mono font-bold">{referralStats.referralCode}</div>
+                    <div className="text-3xl font-mono font-bold">{referralStats.referral_code}</div>
                   </div>
                   
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <Button
-                      onClick={() => copyToClipboard(referralStats.referralLink)}
+                      onClick={() => copyToClipboard(`${window.location.origin}/signup?ref=${referralStats.referral_code}`)}
                       className="bg-white text-green-600 hover:bg-gray-100"
                     >
                       {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
@@ -203,8 +205,7 @@ const ReferralPage = () => {
                     
                     <Button
                       onClick={shareReferralLink}
-                      variant="outline"
-                      className="border-white text-white hover:bg-white/20"
+                      className="bg-white/20 text-white border-white hover:bg-white/30"
                     >
                       <Share2 className="w-4 h-4 mr-2" />
                       Share

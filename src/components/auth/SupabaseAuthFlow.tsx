@@ -98,19 +98,12 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
       const result = await verifyOTPCode(email, otp);
       if (result.success && result.data) {
         // Check if this is a new user (first time signup)
-        const userId = localStorage.getItem('userId');
-        if (userId) {
-          // Check if user already has a referral code (existing user)
-          const existingCode = await referralService.getUserReferralCode();
-          if (!existingCode) {
-            // This is a new user, show referral code step
-            setIsNewUser(true);
-            setStep('referral');
-          } else {
-            // Existing user, proceed to success
-            onAuthSuccess();
-          }
+        if (result.isNewUser) {
+          // This is a new user, show referral code step
+          setIsNewUser(true);
+          setStep('referral');
         } else {
+          // Existing user, proceed to success
           onAuthSuccess();
         }
       } else {
@@ -135,8 +128,6 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
         const result = await referralService.createReferralTracking(referralCode.trim());
         if (result.success) {
           console.log('Referral code applied successfully:', result);
-          // Generate user's own referral code
-          await referralService.generateReferralCode();
           onAuthSuccess();
         } else {
           setError(result.message || 'Invalid referral code');
@@ -147,32 +138,13 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
         setLoading(false);
       }
     } else {
-      // No referral code provided, just generate user's own code and proceed
-      setLoading(true);
-      try {
-        await referralService.generateReferralCode();
-        onAuthSuccess();
-      } catch (error) {
-        console.error('Error generating referral code:', error);
-        onAuthSuccess(); // Proceed anyway
-      } finally {
-        setLoading(false);
-      }
+      // No referral code provided, proceed directly
+      onAuthSuccess();
     }
   };
 
   const handleSkipReferral = async () => {
-    setLoading(true);
-    try {
-      // Generate user's own referral code even if they skip
-      await referralService.generateReferralCode();
-      onAuthSuccess();
-    } catch (error) {
-      console.error('Error generating referral code:', error);
-      onAuthSuccess(); // Proceed anyway
-    } finally {
-      setLoading(false);
-    }
+    onAuthSuccess();
   };
 
   const handleResendOTP = async () => {

@@ -22,6 +22,10 @@ export class TwilioSMSService {
 
     if (!this.accountSid || !this.authToken || !this.fromNumber) {
       console.warn('⚠️ Twilio credentials not found in environment variables');
+      console.warn('Please set the following environment variables:');
+      console.warn('- VITE_TWILIO_ACCOUNT_SID');
+      console.warn('- VITE_TWILIO_AUTH_TOKEN');
+      console.warn('- VITE_TWILIO_PHONE_NUMBER');
     } else {
       console.log('✅ Twilio service initialized (browser-compatible)');
     }
@@ -34,7 +38,18 @@ export class TwilioSMSService {
         console.warn('⚠️ Twilio credentials not configured. SMS will not be sent.');
         return { 
           success: false, 
-          error: 'SMS service not configured. Please set Twilio credentials in environment variables.' 
+          error: 'SMS service not configured. Please set Twilio credentials in environment variables:\n- VITE_TWILIO_ACCOUNT_SID\n- VITE_TWILIO_AUTH_TOKEN\n- VITE_TWILIO_PHONE_NUMBER' 
+        };
+      }
+
+      // Check for placeholder values
+      if (this.accountSid.includes('your_twilio_account_sid_here') || 
+          this.authToken.includes('your_twilio_auth_token_here') ||
+          this.fromNumber.includes('your_twilio_phone_number_here')) {
+        console.warn('⚠️ Twilio credentials contain placeholder values. Please set real credentials.');
+        return { 
+          success: false, 
+          error: 'Twilio credentials contain placeholder values. Please set real credentials in environment variables.' 
         };
       }
 

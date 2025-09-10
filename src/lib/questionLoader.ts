@@ -23,8 +23,8 @@ const convertToTestData = (test: any, examId: string, testType: string, testId: 
       difficulty: q.difficulty || 'medium',
       subject: q.subject || 'general',
       topic: q.topic || 'general',
-      marks: 1,
-      negativeMarks: 0.25,
+      marks: 2,
+      negativeMarks: 0.5,
       duration: 60
     }))
   };

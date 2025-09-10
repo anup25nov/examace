@@ -238,9 +238,9 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
               {referralStats.total_referrals} referrals • ₹{referralStats.total_earnings.toFixed(0)} earned
             </p> */}
           </div>
-          <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
+          {/* <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
             {referralStats.referral_code || 'Get Code'}
-          </Badge>
+          </Badge> */}
         </DropdownMenuItem>
         
         <DropdownMenuSeparator />

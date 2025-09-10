@@ -56,10 +56,13 @@ export const DailyAccolades: React.FC<DailyAccoladesProps> = ({ isFirstVisit, on
           {/* Content */}
           <div className="animate-in slide-in-from-bottom-4 fade-in-0 duration-500 delay-300">
             <h3 className="text-2xl font-bold text-gray-900 mb-2">
-              Welcome Back! 🎉
+              {isFirstVisit ? 'Welcome to ExamAce! 🎉' : 'Welcome Back! 🎉'}
             </h3>
             <p className="text-gray-600 mb-6">
-              Great to see you again! Keep up the momentum and achieve your goals.
+              {isFirstVisit 
+                ? 'Welcome to your exam preparation journey! Let\'s achieve your goals together.'
+                : 'Great to see you again! Keep up the momentum and achieve your goals.'
+              }
             </p>
             
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-4 mb-6">
@@ -80,7 +83,7 @@ export const DailyAccolades: React.FC<DailyAccoladesProps> = ({ isFirstVisit, on
               className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95"
             >
               <CheckCircle className="w-5 h-5 inline mr-2" />
-              Let's Continue Learning!
+              {isFirstVisit ? "Let's Start Learning!" : "Let's Continue Learning!"}
             </button>
           </div>
         </div>

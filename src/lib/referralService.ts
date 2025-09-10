@@ -178,46 +178,38 @@ class ReferralService {
       const user = await this.getCurrentUser();
       if (!user) return null;
 
-      // Get referral code from user profile
-      const { data: profile, error } = await supabase
-        .from('user_profiles')
-        .select('referral_code')
-        .eq('id', user.id)
-        .single();
+      // Get referral code from referral_codes table
+      const { data: referralCodes, error } = await supabase
+        .from('referral_codes')
+        .select('code')
+        .eq('user_id', user.id)
+        .eq('is_active', true);
 
       if (error) {
         console.error('Error getting referral code:', error);
         return null;
       }
 
-      return (profile as any)?.referral_code || null;
+      // Return the first active referral code, or null if none found
+      return referralCodes && referralCodes.length > 0 ? referralCodes[0].code : null;
     } catch (error) {
       console.error('Error in getUserReferralCode:', error);
       return null;
     }
   }
 
-  // Generate referral code for user
+  // Generate referral code for user using database function
   async generateReferralCode(): Promise<string | null> {
     try {
       const user = await this.getCurrentUser();
       if (!user) return null;
 
-      // Generate a simple referral code
-      const referralCode = user.id.substring(0, 3).toUpperCase() + 
-                          Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+      // Use the database function to create referral code
+      const { data: referralCode, error } = await supabase
+        .rpc('create_user_referral_code', { user_uuid: user.id });
 
-      // Update user profile with the generated referral code
-      const { error: updateError } = await supabase
-        .from('user_profiles')
-        .update({ 
-          referral_code: referralCode,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
-
-      if (updateError) {
-        console.error('Error updating user profile with referral code:', updateError);
+      if (error) {
+        console.error('Error creating referral code:', error);
         return null;
       }
 
@@ -245,15 +237,12 @@ class ReferralService {
         };
       }
 
-      // Get user profile data
-      const { data: profile, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('referral_code, referral_earnings, total_referrals')
-        .eq('id', user.id)
-        .single();
+      // Use database function to get referral stats
+      const { data: stats, error } = await supabase
+        .rpc('get_user_referral_stats', { user_uuid: user.id });
 
-      if (profileError) {
-        console.error('Error fetching profile:', profileError);
+      if (error || !stats || stats.length === 0) {
+        console.error('Error fetching referral stats:', error);
         return {
           total_referrals: 0,
           total_earnings: 0,
@@ -266,15 +255,16 @@ class ReferralService {
         };
       }
 
+      const stat = stats[0];
       return {
-        total_referrals: (profile as any)?.total_referrals || 0,
-        total_earnings: (profile as any)?.referral_earnings || 0,
-        referral_code: (profile as any)?.referral_code || '',
+        total_referrals: stat.total_referrals || 0,
+        total_earnings: stat.total_earnings || 0,
+        referral_code: stat.referral_code || '',
         max_referrals: 20,
         commission_rate: 50.00,
-        pending_rewards: 0,
+        pending_rewards: stat.pending_earnings || 0,
         verified_referrals: 0,
-        rewarded_referrals: 0
+        rewarded_referrals: stat.paid_earnings || 0
       };
     } catch (error) {
       console.error('Error in getReferralStats:', error);
@@ -335,11 +325,12 @@ class ReferralService {
         };
       }
 
-      // Check if referral code exists
+      // Check if referral code exists in referral_codes table
       const { data, error } = await supabase
-        .from('user_profiles')
-        .select('id, referral_code')
-        .eq('referral_code', referralCode.toUpperCase())
+        .from('referral_codes')
+        .select('user_id, code')
+        .eq('code', referralCode.toUpperCase())
+        .eq('is_active', true)
         .single();
 
       if (error || !data) {
@@ -351,7 +342,7 @@ class ReferralService {
 
       // Check if user is trying to use their own referral code
       const user = await this.getCurrentUser();
-      if (user && data.id === user.id) {
+      if (user && data.user_id === user.id) {
         return {
           valid: false,
           message: 'Cannot use your own referral code'
@@ -361,7 +352,7 @@ class ReferralService {
       return {
         valid: true,
         message: 'Valid referral code',
-        referrerId: data.id
+        referrerId: data.user_id
       };
     } catch (error) {
       console.error('Error in validateReferralCode:', error);

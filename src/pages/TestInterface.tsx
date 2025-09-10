@@ -94,6 +94,7 @@ const TestInterface = () => {
   const [filteredQuestions, setFilteredQuestions] = useState<QuestionWithProps[]>([]);
   const questionGridRef = useRef<HTMLDivElement>(null);
   const [showTimerEndPopup, setShowTimerEndPopup] = useState(false);
+  const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
 
   // Helper function to get original question number
   const getOriginalQuestionNumber = () => {
@@ -310,6 +311,12 @@ const TestInterface = () => {
   const handleSubmit = async () => {
     if (isSubmitting) return; // Prevent double submission
     
+    // Show confirmation dialog first
+    setShowSubmitConfirmation(true);
+  };
+
+  const confirmSubmit = async () => {
+    setShowSubmitConfirmation(false);
     setIsSubmitting(true);
     
     try {
@@ -810,6 +817,48 @@ const TestInterface = () => {
             <p className="text-muted-foreground">
               Your test time has ended. The test will be automatically submitted.
             </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Submit Confirmation Dialog */}
+      <Dialog open={showSubmitConfirmation} onOpenChange={setShowSubmitConfirmation}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-lg font-bold">
+              Confirm Test Submission
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-center py-4">
+            <div className="flex items-center justify-center mb-4">
+              <AlertCircle className="w-12 h-12 text-warning" />
+            </div>
+            <p className="text-muted-foreground mb-4">
+              Are you sure you want to submit your test? This action cannot be undone.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button
+                variant="outline"
+                onClick={() => setShowSubmitConfirmation(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={confirmSubmit}
+                className="flex-1 bg-primary hover:bg-primary/90"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Submitting...
+                  </>
+                ) : (
+                  'Submit Test'
+                )}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
