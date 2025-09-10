@@ -5,6 +5,11 @@ import { Mail, Phone, MapPin, Facebook, Instagram, Linkedin } from 'lucide-react
 const Footer = () => {
   const navigate = useNavigate();
 
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <footer className="bg-gray-900 text-white py-16">
       <div className="container mx-auto px-4">
@@ -32,11 +37,11 @@ const Footer = () => {
           <div>
             <h3 className="text-xl font-bold mb-4">Quick Links</h3>
             <ul className="space-y-2">
-              <li><button onClick={() => navigate("/")} className="text-gray-300 hover:text-white transition-colors">Home</button></li>
-              <li><button onClick={() => navigate("/exam/ssc-cgl")} className="text-gray-300 hover:text-white transition-colors">Mock Tests</button></li>
-              <li><button onClick={() => navigate("/exam/ssc-cgl")} className="text-gray-300 hover:text-white transition-colors">Previous Year Questions</button></li>
-              <li><button onClick={() => navigate("/exam/ssc-cgl")} className="text-gray-300 hover:text-white transition-colors">Practice Sets</button></li>
-              <li><button onClick={() => navigate("/exam/ssc-cgl")} className="text-gray-300 hover:text-white transition-colors">Performance Analytics</button></li>
+              <li><button onClick={() => handleNavigation("/")} className="text-gray-300 hover:text-white transition-colors">Home</button></li>
+              <li><button onClick={() => handleNavigation("/exam/ssc-cgl")} className="text-gray-300 hover:text-white transition-colors">Mock Tests</button></li>
+              <li><button onClick={() => handleNavigation("/exam/ssc-cgl")} className="text-gray-300 hover:text-white transition-colors">Previous Year Questions</button></li>
+              <li><button onClick={() => handleNavigation("/exam/ssc-cgl")} className="text-gray-300 hover:text-white transition-colors">Practice Sets</button></li>
+              <li><button onClick={() => handleNavigation("/exam/ssc-cgl")} className="text-gray-300 hover:text-white transition-colors">Performance Analytics</button></li>
             </ul>
           </div>
 
@@ -44,11 +49,11 @@ const Footer = () => {
           <div>
             <h3 className="text-xl font-bold mb-4">Support</h3>
             <ul className="space-y-2">
-              <li><button onClick={() => navigate("/faq")} className="text-gray-300 hover:text-white transition-colors">FAQ</button></li>
-              <li><button onClick={() => navigate("/privacy")} className="text-gray-300 hover:text-white transition-colors">Privacy Policy</button></li>
-              <li><button onClick={() => navigate("/terms")} className="text-gray-300 hover:text-white transition-colors">Terms of Service</button></li>
-              <li><button onClick={() => navigate("/faq")} className="text-gray-300 hover:text-white transition-colors">Help Center</button></li>
-              <li><button onClick={() => navigate("/contact")} className="text-gray-300 hover:text-white transition-colors">Contact Us</button></li>
+              <li><button onClick={() => handleNavigation("/faq")} className="text-gray-300 hover:text-white transition-colors">FAQ</button></li>
+              <li><button onClick={() => handleNavigation("/privacy")} className="text-gray-300 hover:text-white transition-colors">Privacy Policy</button></li>
+              <li><button onClick={() => handleNavigation("/terms")} className="text-gray-300 hover:text-white transition-colors">Terms of Service</button></li>
+              <li><button onClick={() => handleNavigation("/faq")} className="text-gray-300 hover:text-white transition-colors">Help Center</button></li>
+              <li><button onClick={() => handleNavigation("/contact")} className="text-gray-300 hover:text-white transition-colors">Contact Us</button></li>
             </ul>
           </div>
 

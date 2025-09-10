@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { PremiumTest } from '@/lib/premiumService';
 import { PremiumPaymentModal } from './PremiumPaymentModal';
+import { TestStartModal } from './TestStartModal';
 
 interface TestScore {
   score: number;
@@ -27,9 +28,10 @@ interface EnhancedTestCardProps {
   test: PremiumTest;
   isCompleted: boolean;
   testScore?: TestScore;
-  onStartTest: () => void;
+  onStartTest: (language?: string) => void;
   onViewSolutions: () => void;
   onRetry: () => void;
+  testType?: 'mock' | 'pyq';
   className?: string;
 }
 
@@ -40,17 +42,23 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
   onStartTest,
   onViewSolutions,
   onRetry,
+  testType = 'mock',
   className = ''
 }) => {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showTestStartModal, setShowTestStartModal] = useState(false);
   const [hasAccess, setHasAccess] = useState(!test.isPremium);
 
   const handleStartTest = () => {
     if (test.isPremium && !hasAccess) {
       setShowPaymentModal(true);
     } else {
-      onStartTest();
+      setShowTestStartModal(true);
     }
+  };
+
+  const handleStartWithLanguage = (language: string) => {
+    onStartTest(language);
   };
 
   const handlePaymentSuccess = () => {
@@ -110,12 +118,6 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
                 </div>
               </div>
               
-              <div className="flex items-center space-x-1">
-                <Trophy className="w-3 h-3 text-yellow-500" />
-                <span className="text-xs text-muted-foreground">{test.difficulty}</span>
-              </div>
-              
-              <p className="text-xs text-muted-foreground line-clamp-2">{test.description}</p>
             </div>
           </div>
           
@@ -216,6 +218,15 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
         onClose={() => setShowPaymentModal(false)}
         test={test}
         onPurchaseSuccess={handlePaymentSuccess}
+      />
+
+      {/* Test Start Modal */}
+      <TestStartModal
+        isOpen={showTestStartModal}
+        onClose={() => setShowTestStartModal(false)}
+        onStart={handleStartWithLanguage}
+        test={test}
+        testType={testType}
       />
     </>
   );

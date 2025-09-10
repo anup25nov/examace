@@ -30,7 +30,6 @@ import { useExamStats } from "@/hooks/useExamStats";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { analytics } from "@/lib/analytics";
-import { ReferralBanner } from "@/components/ReferralBanner";
 import { EnhancedTestCard } from "@/components/EnhancedTestCard";
 import { YearWiseTabs } from "@/components/YearWiseTabs";
 import { testDataLoader, YearData } from "@/lib/testDataLoader";
@@ -66,6 +65,7 @@ const EnhancedExamDashboard = () => {
   const [completedTests, setCompletedTests] = useState<Set<string>>(new Set());
   const [testScores, setTestScores] = useState<Map<string, { score: number; rank: number; totalParticipants: number }>>(new Map());
   const [testFilter, setTestFilter] = useState<'all' | 'attempted' | 'not-attempted'>('all');
+  const [activeTab, setActiveTab] = useState<string>('pyq');
   
   // New state for enhanced features
   const [mockTests, setMockTests] = useState<{ free: PremiumTest[]; premium: PremiumTest[] }>({ free: [], premium: [] });
@@ -231,13 +231,18 @@ const EnhancedExamDashboard = () => {
     );
   }
 
-  const handleTestStart = (type: 'practice' | 'pyq' | 'mock', itemId: string, topicId?: string) => {
+  const handleTestStart = (type: 'practice' | 'pyq' | 'mock', itemId: string, topicId?: string, language?: string) => {
     analytics.trackTestStart(examId!, type, itemId);
     
     const sectionId = type;
-    const testPath = topicId 
+    let testPath = topicId 
       ? `/test/${examId}/${sectionId}/${itemId}/${topicId}`
       : `/test/${examId}/${sectionId}/${itemId}`;
+    
+    // Add language parameter if provided
+    if (language) {
+      testPath += `?lang=${language}`;
+    }
     
     if (document.documentElement.requestFullscreen) {
       document.documentElement.requestFullscreen().catch(err => {
@@ -266,39 +271,29 @@ const EnhancedExamDashboard = () => {
     analytics.trackSectionOpen(sectionId, examId!);
   };
 
-  // Calculate filter counts
-  const getFilterCounts = () => {
+  // Calculate filter counts for specific section
+  const getFilterCounts = (section?: string) => {
     let completedCount = 0;
     let notAttemptedCount = 0;
     
-    // Count mock tests
-    const allMockTests = [...mockTests.free, ...mockTests.premium];
-    allMockTests.forEach(test => {
-      const completionKey = `mock-${test.id}`;
-      if (completedTests.has(completionKey)) {
-        completedCount++;
-      } else {
-        notAttemptedCount++;
-      }
-    });
-    
-    // Count PYQ tests
-    pyqData.forEach(yearData => {
-      yearData.papers.forEach(paper => {
-        const completionKey = `pyq-${paper.id}`;
+    if (!section || section === 'mock') {
+      // Count mock tests
+      const allMockTests = [...mockTests.free, ...mockTests.premium];
+      allMockTests.forEach(test => {
+        const completionKey = `mock-${test.id}`;
         if (completedTests.has(completionKey)) {
           completedCount++;
         } else {
           notAttemptedCount++;
         }
       });
-    });
+    }
     
-    // Count practice tests (when they become available)
-    practiceData.forEach(subject => {
-      Object.values(subject.topics).forEach((topic: any) => {
-        topic.sets.forEach((set: PremiumTest) => {
-          const completionKey = `practice-${set.id}-${set.id}`;
+    if (!section || section === 'pyq') {
+      // Count PYQ tests
+      pyqData.forEach(yearData => {
+        yearData.papers.forEach(paper => {
+          const completionKey = `pyq-${paper.id}`;
           if (completedTests.has(completionKey)) {
             completedCount++;
           } else {
@@ -306,12 +301,99 @@ const EnhancedExamDashboard = () => {
           }
         });
       });
-    });
+    }
     
     return { completedCount, notAttemptedCount };
   };
 
-  const { completedCount, notAttemptedCount } = getFilterCounts();
+  const { completedCount, notAttemptedCount } = getFilterCounts(activeTab);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+  };
+
+  const handleMessageAction = (actionType: string) => {
+    if (actionType === 'mock') {
+      // Switch to mock tab and show all tests
+      setActiveTab('mock');
+      setTestFilter('all');
+    } else if (actionType === 'pyq') {
+      // Switch to pyq tab and show all tests
+      setActiveTab('pyq');
+      setTestFilter('all');
+    } else if (actionType === 'premium') {
+      // Handle premium exploration (could open premium modal or navigate to premium page)
+      console.log('Explore premium content');
+    }
+  };
+
+  // Get section-specific messages for edge cases
+  const getSectionMessage = (section: string) => {
+    const { completedCount, notAttemptedCount } = getFilterCounts(section);
+    const totalCount = completedCount + notAttemptedCount;
+    
+    if (testFilter === 'attempted' && completedCount === 0) {
+      if (section === 'mock') {
+        return {
+          type: 'info',
+          message: 'Attempt your first mock test to see your progress here!',
+          icon: '🎯',
+          actionText: 'Start Mock Test',
+          actionType: 'mock'
+        };
+      } else if (section === 'pyq') {
+        return {
+          type: 'info',
+          message: 'Start solving previous year questions to track your completion!',
+          icon: '📚',
+          actionText: 'Start PYQ Test',
+          actionType: 'pyq'
+        };
+      }
+    }
+    
+    if (testFilter === 'attempted' && completedCount > 0 && notAttemptedCount > 0) {
+      if (section === 'mock') {
+        return {
+          type: 'success',
+          message: `Great progress! You've completed ${completedCount} mock tests. Keep going!`,
+          icon: '🎉',
+          actionText: 'Continue Mock Tests',
+          actionType: 'mock'
+        };
+      } else if (section === 'pyq') {
+        return {
+          type: 'success',
+          message: `Excellent! You've completed ${completedCount} PYQ sets. Continue your journey!`,
+          icon: '📖',
+          actionText: 'Continue PYQ Tests',
+          actionType: 'pyq'
+        };
+      }
+    }
+    
+    if (testFilter === 'attempted' && completedCount > 0 && notAttemptedCount === 0) {
+      if (section === 'mock') {
+        return {
+          type: 'congratulations',
+          message: 'Congratulations! You have completed all available mock tests! Consider upgrading to premium for more challenges.',
+          icon: '🏆',
+          actionText: 'Explore Premium',
+          actionType: 'premium'
+        };
+      } else if (section === 'pyq') {
+        return {
+          type: 'congratulations',
+          message: 'Amazing! You have completed all available PYQ sets! Ready for premium content?',
+          icon: '🎓',
+          actionText: 'Explore Premium',
+          actionType: 'premium'
+        };
+      }
+    }
+    
+    return null;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
@@ -348,10 +430,6 @@ const EnhancedExamDashboard = () => {
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Referral Banner */}
-        <div className="mb-6">
-          <ReferralBanner variant="banner" />
-        </div>
 
         {/* Stats Overview */}
         <div className="mb-8 text-center">
@@ -396,7 +474,7 @@ const EnhancedExamDashboard = () => {
 
         {/* Test Filter */}
         <div className="mb-6">
-          <div className="flex flex-wrap items-center justify-center gap-2">
+          <div className="flex flex-wrap items-center justify-center gap-4">
             <span className="text-sm font-medium text-muted-foreground mr-2">Filter:</span>
             <Button
               variant={testFilter === 'all' ? 'default' : 'outline'}
@@ -426,8 +504,8 @@ const EnhancedExamDashboard = () => {
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue={examConfig?.tabOrder[0] || "pyq"} className="space-y-6">
-          <TabsList className={`grid w-full grid-cols-${examConfig?.tabOrder.length || 3} bg-gradient-to-r from-slate-100 via-blue-50 to-indigo-100 p-1 rounded-xl shadow-lg border border-white/50`}>
+        <Tabs defaultValue={examConfig?.tabOrder[0] || "pyq"} value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2 bg-gradient-to-r from-slate-100 via-blue-50 to-indigo-100 p-1 rounded-xl shadow-lg border border-white/50">
             {examConfig?.tabOrder.map((tab) => {
               const isEnabled = examConfigService.isSectionEnabled(examId as string, tab);
               if (!isEnabled) return null;
@@ -465,10 +543,12 @@ const EnhancedExamDashboard = () => {
               years={pyqData}
               completedTests={completedTests}
               testScores={testScores}
-              onStartTest={(testId) => handleTestStart('pyq', testId)}
+              onStartTest={(testId, language) => handleTestStart('pyq', testId, undefined, language)}
               onViewSolutions={(testId) => handleViewSolutions('pyq', testId)}
               onRetry={(testId) => handleTestStart('pyq', testId)}
               testFilter={testFilter}
+              sectionMessage={getSectionMessage('pyq')}
+              onMessageAction={handleMessageAction}
             />
           </TabsContent>
 
@@ -484,6 +564,40 @@ const EnhancedExamDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
+                {(() => {
+                  const message = getSectionMessage('mock');
+                  return message ? (
+                    <div className={`mb-6 p-4 rounded-lg border ${
+                      message.type === 'info' ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200' :
+                      message.type === 'success' ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200' :
+                      'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200'
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="text-2xl">{message.icon}</div>
+                          <p className={`font-medium ${
+                            message.type === 'info' ? 'text-blue-700' :
+                            message.type === 'success' ? 'text-green-700' :
+                            'text-yellow-700'
+                          }`}>
+                            {message.message}
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() => handleMessageAction(message.actionType)}
+                          className={`${
+                            message.type === 'info' ? 'bg-blue-600 hover:bg-blue-700' :
+                            message.type === 'success' ? 'bg-green-600 hover:bg-green-700' :
+                            'bg-yellow-600 hover:bg-yellow-700'
+                          } text-white`}
+                          size="sm"
+                        >
+                          {message.actionText}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {[...mockTests.free, ...mockTests.premium]
                     .filter(test => {
@@ -502,9 +616,10 @@ const EnhancedExamDashboard = () => {
                         test={test}
                         isCompleted={isCompleted}
                         testScore={testScore}
-                        onStartTest={() => handleTestStart('mock', test.id)}
+                        onStartTest={(language) => handleTestStart('mock', test.id, undefined, language)}
                         onViewSolutions={() => handleViewSolutions('mock', test.id)}
                         onRetry={() => handleTestStart('mock', test.id)}
+                        testType="mock"
                       />
                     );
                   })}
@@ -529,7 +644,7 @@ const EnhancedExamDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-center py-12">
-                  <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-orange-100 to-red-100 rounded-full flex items-center justify-center">
+                  <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-orange-100 to-red-100 rounded-full flex items-center justify-center animate-pulse">
                     <BookOpen className="w-12 h-12 text-orange-500" />
                   </div>
                   <h3 className="text-2xl font-bold text-foreground mb-4">Practice Sets Coming Soon!</h3>
@@ -537,21 +652,42 @@ const EnhancedExamDashboard = () => {
                     We're working hard to bring you comprehensive practice sets for all subjects. 
                     Stay tuned for subject-wise practice questions with detailed solutions.
                   </p>
+                  
+                  {/* Practice Categories Preview */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto mb-8">
+                    <div className="p-4 border border-purple-200 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 hover:shadow-md transition-all duration-300">
+                      <h4 className="font-semibold text-purple-700 mb-2">Subject-wise Practice</h4>
+                      <p className="text-sm text-purple-600">Targeted practice for each subject</p>
+                    </div>
+                    <div className="p-4 border border-purple-200 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 hover:shadow-md transition-all duration-300">
+                      <h4 className="font-semibold text-purple-700 mb-2">Topic-wise Practice</h4>
+                      <p className="text-sm text-purple-600">Focus on specific topics</p>
+                    </div>
+                    <div className="p-4 border border-purple-200 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 hover:shadow-md transition-all duration-300">
+                      <h4 className="font-semibold text-purple-700 mb-2">Difficulty Levels</h4>
+                      <p className="text-sm text-purple-600">Easy, Medium, Hard practice sets</p>
+                    </div>
+                    <div className="p-4 border border-purple-200 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 hover:shadow-md transition-all duration-300">
+                      <h4 className="font-semibold text-purple-700 mb-2">Performance Analytics</h4>
+                      <p className="text-sm text-purple-600">Track your progress</p>
+                    </div>
+                  </div>
+                  
                   <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                      <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
                       <span>Quantitative Aptitude</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
                       <span>English Language</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                       <span>General Intelligence</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
                       <span>General Awareness</span>
                     </div>
                   </div>

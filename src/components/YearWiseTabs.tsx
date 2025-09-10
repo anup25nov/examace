@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { PremiumTest, premiumService } from '@/lib/premiumService';
 import { PremiumPaymentModal } from './PremiumPaymentModal';
+import { TestStartModal } from './TestStartModal';
 
 interface YearData {
   year: string;
@@ -29,11 +30,19 @@ interface YearWiseTabsProps {
   years: YearData[];
   completedTests: Set<string>;
   testScores: Map<string, { score: number; rank: number; totalParticipants: number }>;
-  onStartTest: (testId: string) => void;
+  onStartTest: (testId: string, language?: string) => void;
   onViewSolutions: (testId: string) => void;
   onRetry: (testId: string) => void;
   testFilter?: 'all' | 'attempted' | 'not-attempted';
   className?: string;
+  sectionMessage?: {
+    type: string;
+    message: string;
+    icon: string;
+    actionText: string;
+    actionType: string;
+  } | null;
+  onMessageAction?: (actionType: string) => void;
 }
 
 export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
@@ -44,12 +53,16 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
   onViewSolutions,
   onRetry,
   testFilter = 'all',
-  className = ''
+  className = '',
+  sectionMessage,
+  onMessageAction
 }) => {
   const [selectedYear, setSelectedYear] = useState(years[0]?.year || '');
   const [currentPage, setCurrentPage] = useState(0);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showTestStartModal, setShowTestStartModal] = useState(false);
   const [selectedPremiumTest, setSelectedPremiumTest] = useState<PremiumTest | null>(null);
+  const [selectedTestForStart, setSelectedTestForStart] = useState<PremiumTest | null>(null);
   const papersPerPage = 6;
 
   const selectedYearData = years.find(year => year.year === selectedYear);
@@ -84,7 +97,14 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
       setSelectedPremiumTest(paper);
       setShowPaymentModal(true);
     } else {
-      onStartTest(paper.id);
+      setSelectedTestForStart(paper);
+      setShowTestStartModal(true);
+    }
+  };
+
+  const handleStartWithLanguage = (language: string) => {
+    if (selectedTestForStart) {
+      onStartTest(selectedTestForStart.id, language);
     }
   };
 
@@ -112,6 +132,11 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
         {years.map((yearData) => {
           const stats = getYearStats(yearData.year);
           const isSelected = selectedYear === yearData.year;
+          
+          // Hide year if filter is 'attempted' and no completed tests
+          if (testFilter === 'attempted' && stats.completed === 0) {
+            return null;
+          }
           
           return (
             <Button
@@ -143,6 +168,39 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
           );
         })}
       </div>
+
+      {/* Section Message */}
+      {sectionMessage && (
+        <div className={`p-4 rounded-lg border ${
+          sectionMessage.type === 'info' ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200' :
+          sectionMessage.type === 'success' ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200' :
+          'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200'
+        }`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="text-2xl">{sectionMessage.icon}</div>
+              <p className={`font-medium ${
+                sectionMessage.type === 'info' ? 'text-blue-700' :
+                sectionMessage.type === 'success' ? 'text-green-700' :
+                'text-yellow-700'
+              }`}>
+                {sectionMessage.message}
+              </p>
+            </div>
+            <Button
+              onClick={() => onMessageAction?.(sectionMessage.actionType)}
+              className={`${
+                sectionMessage.type === 'info' ? 'bg-blue-600 hover:bg-blue-700' :
+                sectionMessage.type === 'success' ? 'bg-green-600 hover:bg-green-700' :
+                'bg-yellow-600 hover:bg-yellow-700'
+              } text-white`}
+              size="sm"
+            >
+              {sectionMessage.actionText}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Selected Year Content */}
       {selectedYearData && (
@@ -232,7 +290,6 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                             <span className="text-xs text-muted-foreground">{paper.questions} questions</span>
                           </div>
                           
-                          <p className="text-xs text-muted-foreground line-clamp-2">{paper.description}</p>
                         </div>
                       </div>
                       
@@ -374,6 +431,17 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
           onClose={() => setShowPaymentModal(false)}
           test={selectedPremiumTest}
           onPurchaseSuccess={handlePaymentSuccess}
+        />
+      )}
+
+      {/* Test Start Modal */}
+      {selectedTestForStart && (
+        <TestStartModal
+          isOpen={showTestStartModal}
+          onClose={() => setShowTestStartModal(false)}
+          onStart={handleStartWithLanguage}
+          test={selectedTestForStart}
+          testType="pyq"
         />
       )}
     </div>
