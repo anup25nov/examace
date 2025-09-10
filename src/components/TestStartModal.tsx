@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Clock, 
   FileText, 
@@ -40,10 +41,13 @@ export const TestStartModal: React.FC<TestStartModalProps> = ({
   testType
 }) => {
   const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [hasReadInstructions, setHasReadInstructions] = useState(false);
 
   const handleStart = () => {
-    onStart(selectedLanguage);
-    onClose();
+    if (hasReadInstructions) {
+      onStart(selectedLanguage);
+      onClose();
+    }
   };
 
   const getTestTypeInfo = () => {
@@ -220,6 +224,29 @@ export const TestStartModal: React.FC<TestStartModalProps> = ({
             </CardContent>
           </Card>
 
+          {/* Consent Checkbox */}
+          <Card className="border-0 shadow-lg">
+            <CardContent className="pt-6">
+              <div className="flex items-start space-x-3">
+                <Checkbox
+                  id="consent"
+                  checked={hasReadInstructions}
+                  onCheckedChange={(checked) => setHasReadInstructions(checked as boolean)}
+                  className="mt-1"
+                />
+                <Label htmlFor="consent" className="text-sm leading-relaxed cursor-pointer">
+                  I have read and understood all the instructions above. I am ready to start the test and understand that:
+                  <ul className="mt-2 ml-4 space-y-1 text-xs text-muted-foreground">
+                    <li>• The test will be automatically submitted when time expires</li>
+                    <li>• I cannot pause or restart the test once started</li>
+                    <li>• My answers will be saved automatically</li>
+                    <li>• I can navigate between questions freely</li>
+                  </ul>
+                </Label>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <Button
@@ -231,9 +258,10 @@ export const TestStartModal: React.FC<TestStartModalProps> = ({
             </Button>
             <Button
               onClick={handleStart}
-              className={`flex-1 h-12 bg-gradient-to-r ${testInfo.color} hover:opacity-90 text-white font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg`}
+              disabled={!hasReadInstructions}
+              className={`flex-1 h-12 bg-gradient-to-r ${testInfo.color} hover:opacity-90 text-white font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
             >
-              Start Test
+              {hasReadInstructions ? 'Start Test' : 'Please read instructions first'}
             </Button>
           </div>
         </div>

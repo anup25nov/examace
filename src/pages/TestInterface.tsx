@@ -15,9 +15,22 @@ import {
 import { useExamStats } from "@/hooks/useExamStats";
 import { useAuth } from "@/hooks/useAuth";
 import { QuestionLoader, TestData, QuestionWithProps } from "@/lib/questionLoader";
-import TestInstructions from "@/components/TestInstructions";
-import { LanguageSelector } from "@/components/LanguageSelector";
 import SolutionsDisplay from "@/components/SolutionsDisplay";
+
+// Fallback function for calculating total duration
+const calculateTotalDurationFallback = (questions: QuestionWithProps[]): number => {
+  if (!questions || questions.length === 0) {
+    return 60; // Default 1 hour
+  }
+  
+  // Sum up all question durations (in seconds) and convert to minutes
+  const totalSeconds = questions.reduce((total, question) => {
+    return total + (question.duration || 60); // Default 60 seconds per question
+  }, 0);
+  
+  // Convert to minutes and round to nearest integer
+  return Math.round(totalSeconds / 60);
+};
 
 // Utility function to analyze subject distribution
 const analyzeSubjectDistribution = (questions: QuestionWithProps[]) => {
@@ -57,11 +70,10 @@ const TestInterface = () => {
   const [timeLeft, setTimeLeft] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<string>('');
-  const [showLanguageSelector, setShowLanguageSelector] = useState(true);
-  const [showInstructions, setShowInstructions] = useState(false);
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
   const [startTime] = useState(Date.now());
   const [loading, setLoading] = useState(true);
+  const [testStarted, setTestStarted] = useState(false);
   const [showSolutions, setShowSolutions] = useState(false);
   const [testResults, setTestResults] = useState<{
     score: number;
@@ -175,20 +187,22 @@ const TestInterface = () => {
         
         
         // Calculate total duration dynamically from questions and round to integer
-        const totalDuration = Math.round(QuestionLoader.calculateTotalDuration(loadedTestData.questions));
+        let totalDuration = 60; // Default fallback
+        try {
+          if (QuestionLoader.calculateTotalDuration) {
+            totalDuration = Math.round(QuestionLoader.calculateTotalDuration(loadedTestData.questions));
+          } else {
+            // Use local fallback function
+            totalDuration = calculateTotalDurationFallback(loadedTestData.questions);
+          }
+        } catch (error) {
+          console.warn('Error calculating duration, using fallback:', error);
+          totalDuration = calculateTotalDurationFallback(loadedTestData.questions);
+        }
         setTimeLeft(totalDuration * 60); // Convert minutes to seconds
         
-        // Check if user has a preferred language
-        const preferredLanguage = localStorage.getItem('preferredLanguage');
-        if (preferredLanguage && loadedTestData.examInfo?.languages?.includes(preferredLanguage)) {
-          setSelectedLanguage(preferredLanguage);
-          setShowLanguageSelector(false);
-          setShowInstructions(false);
-        } else {
-          setSelectedLanguage(loadedTestData.examInfo?.defaultLanguage || 'english');
-          setShowLanguageSelector(false);
-          setShowInstructions(true);
-        }
+        // Set default language
+        setSelectedLanguage(loadedTestData.examInfo?.defaultLanguage || 'english');
         
         setLoading(false);
       } catch (error) {
@@ -202,19 +216,18 @@ const TestInterface = () => {
     }
   }, [examId, sectionId, testType, topic]);
 
-  // Handle language selection
+  // Handle language selection and start test
   const handleLanguageSelect = (language: string) => {
     setSelectedLanguage(language);
-    setShowLanguageSelector(false);
-    setShowInstructions(false);
+    setTestStarted(true);
   };
 
-  // Timer effect
+  // Timer effect - only start when test is actually started
   useEffect(() => {
-    if (timeLeft > 0 && !isCompleted && !loading) {
+    if (timeLeft > 0 && !isCompleted && !loading && testStarted) {
       const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
       return () => clearTimeout(timer);
-    } else if (timeLeft === 0 && !isCompleted && !loading && !showTimerEndPopup) {
+    } else if (timeLeft === 0 && !isCompleted && !loading && testStarted && !showTimerEndPopup) {
       setShowTimerEndPopup(true);
       // Auto-submit after 1 second
       setTimeout(() => {
@@ -222,7 +235,7 @@ const TestInterface = () => {
         handleSubmit();
       }, 1000);
     }
-  }, [timeLeft, isCompleted, loading, showTimerEndPopup]);
+  }, [timeLeft, isCompleted, loading, testStarted, showTimerEndPopup]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -420,30 +433,33 @@ const TestInterface = () => {
     );
   }
 
-  // Show instructions page if needed
-  if (showInstructions && testData && testData.examInfo) {
+  // Show start test screen if test is loaded but not started
+  if (!testStarted && testData && questions.length > 0) {
     return (
-      <TestInstructions
-        examId={examId!}
-        testType={actualTestType}
-        testId={actualTestId}
-        testData={testData}
-        onStartTest={handleLanguageSelect}
-      />
-    );
-  }
-
-  // Show language selector if needed
-  if (showLanguageSelector && testData && testData.examInfo) {
-    return (
-      <LanguageSelector
-        examName={testData.examInfo.examName || 'Exam'}
-        testName={testData.examInfo.testName || 'Test'}
-        languages={testData.examInfo.languages || ['english']}
-        defaultLanguage={testData.examInfo.defaultLanguage || 'english'}
-        onLanguageSelect={handleLanguageSelect}
-        testData={testData}
-      />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+            <Clock className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Test Ready!</h2>
+          <p className="text-muted-foreground mb-6">
+            Your test is loaded and ready to start. Click the button below to begin.
+          </p>
+          <div className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              <p><strong>Duration:</strong> {Math.round(timeLeft / 60)} minutes</p>
+              <p><strong>Questions:</strong> {questions.length}</p>
+              <p><strong>Language:</strong> {selectedLanguage === 'en' ? 'English' : selectedLanguage === 'hi' ? 'Hindi' : 'Both'}</p>
+            </div>
+            <Button 
+              onClick={() => setTestStarted(true)}
+              className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:opacity-90 text-white font-semibold"
+            >
+              Start Test Now
+            </Button>
+          </div>
+        </div>
+      </div>
     );
   }
 

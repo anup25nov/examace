@@ -199,4 +199,21 @@ export class QuestionLoader {
   static getCacheSize(): number {
     return this.cache.size;
   }
+
+  /**
+   * Calculate total duration for a set of questions
+   */
+  static calculateTotalDuration(questions: QuestionWithProps[]): number {
+    if (!questions || questions.length === 0) {
+      return 0;
+    }
+    
+    // Sum up all question durations (in seconds) and convert to minutes
+    const totalSeconds = questions.reduce((total, question) => {
+      return total + (question.duration || 60); // Default 60 seconds per question
+    }, 0);
+    
+    // Convert to minutes and round to nearest integer
+    return Math.round(totalSeconds / 60);
+  }
 }

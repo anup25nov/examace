@@ -563,7 +563,7 @@ const EnhancedExamDashboard = () => {
                   <span>Full Mock Tests</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 {(() => {
                   const message = getSectionMessage('mock');
                   return message ? (
