@@ -21,7 +21,7 @@ export interface PaymentData {
   plan_name: string;
   amount: number;
   currency: string;
-  status: 'created' | 'paid' | 'failed' | 'cancelled';
+  status: 'pending' | 'paid' | 'verified' | 'failed' | 'expired' | 'disputed' | 'refunded';
   payment_method?: string;
   created_at: string;
   updated_at: string;
@@ -76,7 +76,7 @@ export class PaymentService {
           plan_name: plan.name,
           amount: plan.price,
           payment_method: 'razorpay',
-          status: 'created'
+          status: 'pending'
         })
         .select()
         .single();
