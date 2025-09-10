@@ -101,13 +101,10 @@ export class PaymentService {
         }
       };
 
-      // For client-side, we'll create a mock order ID that matches Razorpay format
-      // In production, this should be done via Supabase Edge Functions
-      const mockOrderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      // Simulate Razorpay order creation
+      // For client-side integration, we'll use Razorpay's checkout without pre-created orders
+      // This approach doesn't require server-side order creation
       const razorpayOrder = {
-        id: mockOrderId,
+        id: null, // No pre-created order needed
         amount: orderData.amount,
         currency: orderData.currency,
         receipt: orderData.receipt,
@@ -115,19 +112,10 @@ export class PaymentService {
         created_at: Math.floor(Date.now() / 1000)
       };
 
-      // Update payment record with actual order ID
-      await supabase
-        .from('payments')
-        .update({
-          razorpay_order_id: razorpayOrder.id,
-          updated_at: new Date().toISOString()
-        })
-        .eq('payment_id', paymentRecord.payment_id);
-
       return {
         success: true,
         paymentId: paymentRecord.payment_id,
-        orderId: razorpayOrder.id,
+        orderId: null, // No pre-created order
         amount: plan.price,
         currency: 'INR'
       };
@@ -148,23 +136,12 @@ export class PaymentService {
     try {
       const { paymentId, razorpayPaymentId, razorpayOrderId, razorpaySignature } = request;
 
-      // For client-side, we'll simulate signature verification
-      // In production, this should be done via Supabase Edge Functions
-      console.log('Payment verification:', {
-        paymentId,
-        razorpayPaymentId,
-        razorpayOrderId,
-        razorpaySignature
-      });
-
-      // Simulate successful verification for testing
-      const isValidSignature = true;
-
-      // Update payment status in database
+      // Update payment record with Razorpay details
       const { error: updateError } = await supabase
         .from('payments')
         .update({
           razorpay_payment_id: razorpayPaymentId,
+          razorpay_order_id: razorpayOrderId,
           razorpay_signature: razorpaySignature,
           status: 'paid',
           paid_at: new Date().toISOString(),

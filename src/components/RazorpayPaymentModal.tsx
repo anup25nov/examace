@@ -73,14 +73,14 @@ export const RazorpayPaymentModal: React.FC<RazorpayPaymentModalProps> = ({
         orderId: paymentResponse.orderId
       });
 
-      // Initialize Razorpay checkout
+      // Initialize Razorpay checkout without pre-created order
       const options = {
         key: razorpayClientService.getKeyId(),
         amount: paymentResponse.amount * 100, // Convert to paise
         currency: paymentResponse.currency,
         name: 'ExamAce',
         description: plan.name,
-        order_id: paymentResponse.orderId,
+        // No order_id - Razorpay will create order automatically
         image: '/logo.png',
         handler: async (response: any) => {
           try {
