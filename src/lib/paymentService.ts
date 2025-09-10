@@ -1,5 +1,5 @@
 // Payment Service - Client-side Integration with Supabase
-// import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface PaymentPlan {
   id: string;
@@ -69,15 +69,36 @@ export class PaymentService {
       const paymentId = `PAY_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       console.log('🆔 Generated payment ID:', paymentId);
       
-      // Skip database insert for now to isolate the issue
-      console.log('⏭️ Skipping database insert for testing...');
+      // Create payment record in database
+      console.log('💾 Creating payment record in database...');
+      const { data: paymentRecord, error: dbError } = await supabase
+        .from('payments')
+        .insert({
+          payment_id: paymentId,
+          user_id: userId,
+          plan_id: plan.id,
+          plan_name: plan.name,
+          amount: plan.price,
+          payment_method: 'razorpay',
+          status: 'pending'
+        } as any)
+        .select()
+        .single();
+
+      if (dbError) {
+        console.error('❌ Database error creating payment:', dbError);
+        // Continue with fallback payment ID
+        console.warn('⚠️ Continuing with fallback payment ID');
+      } else {
+        console.log('✅ Database insert successful:', paymentRecord);
+      }
       
       // Create order data for Razorpay
       console.log('🔧 Creating order data...');
       const orderData = {
         amount: plan.price * 100, // Convert to paise
         currency: 'INR',
-        receipt: paymentId,
+        receipt: paymentRecord?.payment_id || paymentId,
         notes: {
           user_id: userId,
           plan_id: plan.id,
@@ -86,22 +107,10 @@ export class PaymentService {
       };
       console.log('📋 Order data created:', orderData);
 
-      // For client-side integration, we'll use Razorpay's checkout without pre-created orders
-      // This approach doesn't require server-side order creation
-      const razorpayOrder = {
-        id: null, // No pre-created order needed
-        amount: orderData.amount,
-        currency: orderData.currency,
-        receipt: orderData.receipt,
-        status: 'created',
-        created_at: Math.floor(Date.now() / 1000)
-      };
-      console.log('🎯 Razorpay order object:', razorpayOrder);
-
       const response = {
         success: true,
-        paymentId: paymentId,
-        orderId: null, // No pre-created order
+        paymentId: paymentRecord?.payment_id || paymentId,
+        orderId: null, // No pre-created order - Razorpay will create dynamically
         amount: plan.price,
         currency: 'INR'
       };
@@ -132,9 +141,28 @@ export class PaymentService {
 
       console.log('🔍 Verifying payment:', { paymentId, razorpayPaymentId, razorpayOrderId });
 
-      // For testing, just return success without database update
-      console.log('✅ Payment verification successful (testing mode)');
+      // Update payment record with Razorpay details
+      const { error: updateError } = await supabase
+        .from('payments')
+        .update({
+          razorpay_payment_id: razorpayPaymentId,
+          razorpay_order_id: razorpayOrderId,
+          razorpay_signature: razorpaySignature,
+          status: 'paid',
+          paid_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('payment_id', paymentId);
 
+      if (updateError) {
+        console.error('❌ Database error updating payment:', updateError);
+        return {
+          success: false,
+          error: 'Failed to update payment status'
+        };
+      }
+
+      console.log('✅ Payment verification successful');
       return {
         success: true
       };
@@ -155,9 +183,25 @@ export class PaymentService {
     try {
       console.log('🎯 Activating membership for user:', userId, 'plan:', planId);
       
-      // For testing, just return success without database update
-      console.log('✅ Membership activation successful (testing mode)');
-      
+      // Calculate expiry date (default 1 month)
+      const expiryDate = new Date();
+      expiryDate.setMonth(expiryDate.getMonth() + 1);
+
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          membership_plan: planId,
+          membership_expiry: expiryDate.toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (error) {
+        console.error('❌ Error activating membership:', error);
+        return false;
+      }
+
+      console.log('✅ Membership activation successful');
       return true;
     } catch (error) {
       console.error('Error activating membership:', error);
