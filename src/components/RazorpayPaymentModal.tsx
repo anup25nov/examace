@@ -74,13 +74,15 @@ export const RazorpayPaymentModal: React.FC<RazorpayPaymentModalProps> = ({
       });
 
       // Initialize Razorpay checkout
-      const options = razorpayClientService.createDefaultOptions(
-        paymentResponse.orderId,
-        paymentResponse.amount,
-        paymentResponse.currency,
-        'ExamAce',
-        plan.name,
-        async (response: any) => {
+      const options = {
+        key: razorpayClientService.getKeyId(),
+        amount: paymentResponse.amount * 100, // Convert to paise
+        currency: paymentResponse.currency,
+        name: 'ExamAce',
+        description: plan.name,
+        order_id: paymentResponse.orderId,
+        image: '/logo.png',
+        handler: async (response: any) => {
           try {
             setPaymentState({ status: 'processing', message: 'Verifying payment...' });
 
@@ -126,26 +128,32 @@ export const RazorpayPaymentModal: React.FC<RazorpayPaymentModalProps> = ({
             });
           }
         },
-        {
+        prefill: {
           name: (user as any).user_metadata?.full_name || (user as any).user_metadata?.name || '',
           email: user.email || '',
           contact: (user as any).user_metadata?.phone || ''
-        }
-      );
-
-      // Add custom modal dismiss handler
-      options.modal = {
-        ondismiss: () => {
-          if (paymentState.status === 'processing') {
-            setPaymentState({ status: 'idle', message: '' });
+        },
+        theme: {
+          color: '#2563eb',
+          backdrop_color: '#000000',
+          backdrop_opacity: 0.5
+        },
+        modal: {
+          ondismiss: () => {
+            if (paymentState.status === 'processing') {
+              setPaymentState({ status: 'idle', message: '' });
+            }
           }
-        }
+        },
+        retry: {
+          enabled: true,
+          max_count: 3
+        },
+        timeout: 900,
+        remember_customer: true
       };
 
       // Open Razorpay checkout
-      await razorpayClientService.openCheckout(options);
-      
-      // Add payment failed handler
       const rzp = new (window as any).Razorpay(options);
       rzp.on('payment.failed', (response: any) => {
         console.error('Payment failed:', response);
@@ -154,6 +162,7 @@ export const RazorpayPaymentModal: React.FC<RazorpayPaymentModalProps> = ({
           message: `Payment failed: ${response.error.description || 'Unknown error'}`
         });
       });
+      rzp.open();
 
     } catch (error) {
       console.error('Payment error:', error);
