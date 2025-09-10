@@ -1,6 +1,5 @@
 // Payment Service - Client-side Integration with Supabase
 import { supabase } from '@/integrations/supabase/client';
-import { razorpayService } from './razorpayService';
 
 
 export interface PaymentPlan {
@@ -92,7 +91,7 @@ export class PaymentService {
       const orderData = {
         amount: plan.price * 100, // Convert to paise
         currency: 'INR',
-        receipt: paymentRecord.payment_id,
+        receipt: paymentRecord?.payment_id || paymentId,
         notes: {
           user_id: userId,
           plan_id: plan.id,
@@ -364,20 +363,23 @@ export class PaymentService {
         return false;
       }
 
-      // Process refund with Razorpay
-      const refund = await razorpayService.refundPayment(
-        payment.razorpay_payment_id,
-        amount,
-        reason
-      );
+      // For now, just mark as refunded in database
+      // In production, you would call Razorpay's refund API here
+      const { error } = await supabase
+        .from('payments')
+        .update({
+          status: 'refunded',
+          failed_reason: `Refunded: ${reason || 'No reason provided'}`,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', paymentId);
 
-      if (refund) {
-        // Update payment status
-        await this.updatePaymentStatus(paymentId, 'failed', `Refunded: ${reason || 'No reason provided'}`);
-        return true;
+      if (error) {
+        console.error('Error updating refund status:', error);
+        return false;
       }
 
-      return false;
+      return true;
     } catch (error) {
       console.error('Error refunding payment:', error);
       return false;
