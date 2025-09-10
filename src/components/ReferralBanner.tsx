@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { referralService } from '@/lib/referralServiceSimple';
+import { referralBannerService } from '@/lib/referralBannerService';
 
 interface ReferralBannerProps {
   className?: string;
@@ -26,13 +27,15 @@ export const ReferralBanner: React.FC<ReferralBannerProps> = ({
   variant = 'banner' 
 }) => {
   const { user, isAuthenticated } = useAuth();
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
   const [copied, setCopied] = useState(false);
   const [referralStats, setReferralStats] = useState<any>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isAuthenticated && user) {
       loadReferralStats();
+      // Check if banner should be shown based on dismissal history
+      setIsVisible(referralBannerService.shouldShowBanner());
     }
   }, [isAuthenticated, user]);
 
@@ -55,6 +58,11 @@ export const ReferralBanner: React.FC<ReferralBannerProps> = ({
     } catch (error) {
       console.error('Failed to copy:', error);
     }
+  };
+
+  const handleDismiss = () => {
+    referralBannerService.dismissBanner();
+    setIsVisible(false);
   };
 
   if (!isAuthenticated || !isVisible) {
@@ -100,7 +108,7 @@ export const ReferralBanner: React.FC<ReferralBannerProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setIsVisible(false)}
+              onClick={handleDismiss}
               className="text-gray-500 hover:text-gray-700"
             >
               <X className="w-4 h-4" />
@@ -192,7 +200,7 @@ export const ReferralBanner: React.FC<ReferralBannerProps> = ({
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => setIsVisible(false)}
+              onClick={handleDismiss}
               className="text-white hover:bg-white/20"
             >
               <X className="w-4 h-4" />

@@ -20,6 +20,7 @@ import {
   ResultAnalysisWrapper,
   SolutionsViewerWrapper
 } from "@/components/LazyWrapper";
+import { EnhancedExamDashboardWrapper } from "@/components/EnhancedExamDashboardWrapper";
 
 const queryClient = new QueryClient();
 
@@ -44,7 +45,7 @@ const App = () => {
             } />
             <Route path="/exam/:examId" element={
               <ProtectedRoute>
-                <ProfessionalExamDashboardWrapper />
+                <EnhancedExamDashboardWrapper />
               </ProtectedRoute>
             } />
             <Route path="/exam-pro/:examId" element={
