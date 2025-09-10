@@ -177,17 +177,17 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                 const testScore = testScores.get(`pyq-${paper.id}`);
 
                 return (
-                  <Card 
-                    key={paper.id} 
-                    className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02] hover:border-primary/30 h-72 ${
-                      isCompleted ? 'border-green-200 bg-green-50/50 shadow-md' : 'border-border'
-                    }`}
-                  >
+        <Card
+          key={paper.id}
+          className={`relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.03] hover:border-primary/40 h-72 group ${
+            isCompleted ? 'border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg' : 'border-border bg-gradient-to-br from-white to-slate-50'
+          }`}
+        >
                     <CardContent className="p-4 h-full flex flex-col">
                       {/* Header */}
                       <div className="mb-4 flex-1">
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-semibold text-foreground text-sm line-clamp-2 flex-1">
+                          <h4 className="font-semibold text-foreground text-sm line-clamp-2 flex-1 group-hover:text-primary transition-colors duration-300">
                             {paper.name}
                           </h4>
                           <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
@@ -206,7 +206,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                               )}
                             </Badge>
                             {isCompleted && (
-                              <div className="flex items-center space-x-1">
+                              <div className="flex items-center space-x-1 animate-bounce">
                                 <CheckCircle className="w-4 h-4 text-green-500" />
                                 <span className="text-xs text-green-600 font-medium hidden sm:inline">Completed</span>
                               </div>
@@ -268,7 +268,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                             <Button
                               size="sm"
                               variant="outline"
-                              className="flex-1 h-8 text-xs hover:bg-blue-50 hover:border-blue-300"
+                              className="flex-1 h-8 text-xs hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 hover:scale-105 hover:shadow-md"
                               onClick={() => onViewSolutions(paper.id)}
                             >
                               <Eye className="w-3 h-3 mr-1" />
@@ -277,7 +277,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                             <Button
                               size="sm"
                               variant="default"
-                              className="flex-1 h-8 text-xs bg-primary hover:bg-primary/90"
+                              className="flex-1 h-8 text-xs bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105 hover:shadow-md"
                               onClick={() => onRetry(paper.id)}
                             >
                               <RotateCcw className="w-3 h-3 mr-1" />
@@ -288,7 +288,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                           <Button
                             size="sm"
                             variant="default"
-                            className="w-full h-8 text-xs bg-primary hover:bg-primary/90"
+                            className="w-full h-8 text-xs bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105 hover:shadow-md"
                             onClick={() => handleStartTest(paper)}
                             disabled={paper.isPremium && !premiumService.hasAccess(paper.id)}
                           >

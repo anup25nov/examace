@@ -442,7 +442,7 @@ const EnhancedExamDashboard = () => {
 
               const tabGradients = {
                 pyq: 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-500',
-                mock: 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-500',
+                mock: 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-green-500',
                 practice: 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500'
               };
 
@@ -474,8 +474,8 @@ const EnhancedExamDashboard = () => {
 
           {/* Mock Tests Tab - Second */}
           <TabsContent value="mock" className="space-y-6">
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-blue-50 to-indigo-50">
-              <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-t-lg">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-emerald-50 to-green-50">
+              <CardHeader className="bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-t-lg">
                 <CardTitle className="flex items-center space-x-3">
                   <div className="p-2 bg-white/20 rounded-lg">
                     <Trophy className="w-6 h-6 text-white" />

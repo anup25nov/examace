@@ -60,14 +60,14 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
 
   return (
     <>
-      <Card className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02] hover:border-primary/30 h-80 ${
-        isCompleted ? 'border-green-200 bg-green-50/50 shadow-md' : 'border-border'
-      } ${className}`}>
+    <Card className={`relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.03] hover:border-primary/40 h-80 group ${
+      isCompleted ? 'border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg' : 'border-border bg-gradient-to-br from-white to-slate-50'
+    } ${className}`}>
         <CardContent className="p-4 h-full flex flex-col">
           {/* Header */}
           <div className="mb-4 flex-1">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-foreground text-sm sm:text-base line-clamp-2 flex-1">
+              <h3 className="font-semibold text-foreground text-sm sm:text-base line-clamp-2 flex-1 group-hover:text-primary transition-colors duration-300">
                 {test.name}
               </h3>
               <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
@@ -89,7 +89,7 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
                 
                 {/* Completion Status */}
                 {isCompleted && (
-                  <div className="flex items-center space-x-1">
+                  <div className="flex items-center space-x-1 animate-bounce">
                     <CheckCircle className="w-4 h-4 text-green-500" />
                     <span className="text-xs text-green-600 font-medium hidden sm:inline">Completed</span>
                   </div>
@@ -158,7 +158,7 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
                 <Button
                   size="sm"
                   variant="outline"
-                  className="flex-1 h-10 text-sm hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                  className="flex-1 h-10 text-sm hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 hover:scale-105 hover:shadow-md"
                   onClick={onViewSolutions}
                 >
                   <Eye className="w-4 h-4 mr-1" />
@@ -167,7 +167,7 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
                 <Button
                   size="sm"
                   variant="default"
-                  className="flex-1 h-10 text-sm bg-primary hover:bg-primary/90 transition-colors"
+                  className="flex-1 h-10 text-sm bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105 hover:shadow-md"
                   onClick={onRetry}
                 >
                   <RotateCcw className="w-4 h-4 mr-1" />
@@ -178,7 +178,7 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
               <Button
                 size="sm"
                 variant="default"
-                className="w-full h-10 text-sm bg-primary hover:bg-primary/90 transition-colors"
+                className="w-full h-10 text-sm bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105 hover:shadow-md"
                 onClick={handleStartTest}
                 disabled={test.isPremium && !hasAccess}
               >
