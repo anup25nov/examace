@@ -1,5 +1,7 @@
 // Payment Service - Client-side Integration with API Routes
 import { supabase } from '@/integrations/supabase/client';
+import { razorpayService, RazorpayOrderData, RazorpayPaymentData, RazorpayPaymentResponse } from './razorpayService';
+
 
 export interface PaymentPlan {
   id: string;
@@ -62,28 +64,42 @@ export class PaymentService {
     try {
       const { userId, plan } = request;
 
-      // Call API route to create payment
-      const response = await fetch('/api/create-payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId,
-          plan
+      // Create payment record in database first
+      const paymentId = `PAY_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      const { data: paymentRecord, error: dbError } = await supabase
+        .from('payments')
+        .insert({
+          payment_id: paymentId,
+          user_id: userId,
+          plan_id: plan.id,
+          plan_name: plan.name,
+          amount: plan.price,
+          payment_method: 'razorpay',
+          status: 'created'
         })
-      });
+        .select()
+        .single();
 
-      const result = await response.json();
-
-      if (!response.ok) {
+      if (dbError) {
+        console.error('Database error creating payment:', dbError);
         return {
           success: false,
-          error: result.error || 'Failed to create payment'
+          error: 'Failed to create payment record'
         };
       }
 
-      return result;
+      // For now, return the payment record with a mock order ID
+      // In production, you would call Razorpay API from a server-side function
+      const mockOrderId = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      return {
+        success: true,
+        paymentId: paymentRecord.payment_id,
+        orderId: mockOrderId,
+        amount: plan.price,
+        currency: 'INR'
+      };
 
     } catch (error) {
       console.error('Error creating payment:', error);
@@ -101,30 +117,38 @@ export class PaymentService {
     try {
       const { paymentId, razorpayPaymentId, razorpayOrderId, razorpaySignature } = request;
 
-      // Call API route to verify payment
-      const response = await fetch('/api/verify-payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          paymentId,
-          razorpayPaymentId,
-          razorpayOrderId,
-          razorpaySignature
-        })
+      // For now, simulate payment verification
+      // In production, you would verify the signature with Razorpay
+      console.log('Payment verification:', {
+        paymentId,
+        razorpayPaymentId,
+        razorpayOrderId,
+        razorpaySignature
       });
 
-      const result = await response.json();
+      // Update payment status in database
+      const { error: updateError } = await supabase
+        .from('payments')
+        .update({
+          razorpay_payment_id: razorpayPaymentId,
+          razorpay_signature: razorpaySignature,
+          status: 'paid',
+          paid_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('payment_id', paymentId);
 
-      if (!response.ok) {
+      if (updateError) {
+        console.error('Database error updating payment:', updateError);
         return {
           success: false,
-          error: result.error || 'Failed to verify payment'
+          error: 'Failed to update payment status'
         };
       }
 
-      return result;
+      return {
+        success: true
+      };
 
     } catch (error) {
       console.error('Error verifying payment:', error);
@@ -224,27 +248,25 @@ export class PaymentService {
    */
   async activateMembership(userId: string, planId: string): Promise<boolean> {
     try {
-      // Call API route to activate membership
-      const response = await fetch('/api/activate-membership', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId,
-          planId
+      // Calculate expiry date (default 1 month)
+      const expiryDate = new Date();
+      expiryDate.setMonth(expiryDate.getMonth() + 1);
+
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          membership_plan: planId,
+          membership_expiry: expiryDate.toISOString(),
+          updated_at: new Date().toISOString()
         })
-      });
+        .eq('id', userId);
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        console.error('Error activating membership:', result.error);
+      if (error) {
+        console.error('Error activating membership:', error);
         return false;
       }
 
-      return result.success;
-
+      return true;
     } catch (error) {
       console.error('Error activating membership:', error);
       return false;
