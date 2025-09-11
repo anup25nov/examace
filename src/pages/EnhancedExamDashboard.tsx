@@ -28,6 +28,7 @@ import {
 import { examConfigs } from "@/config/examConfig";
 import { useExamStats } from "@/hooks/useExamStats";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdmin } from "@/hooks/useAdmin";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { analytics } from "@/lib/analytics";
 import { EnhancedTestCard } from "@/components/EnhancedTestCard";
@@ -54,6 +55,7 @@ const EnhancedExamDashboard = () => {
   const { user, isAuthenticated, loading } = useAuth();
   const { profile } = useUserProfile();
   const { allStats, loadAllStats, getExamStatById, isTestCompleted, getIndividualTestScore } = useExamStats();
+  const { isAdmin, loading: adminLoading } = useAdmin();
   
   const [userStats, setUserStats] = useState({
     totalTests: 0,
@@ -485,14 +487,16 @@ const EnhancedExamDashboard = () => {
                 <p className="text-sm font-medium text-foreground">Welcome, {displayName}!</p>
                 <p className="text-xs text-muted-foreground">{userEmail}</p>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowAdminPanel(true)}
-                className="text-xs"
-              >
-                Admin
-              </Button>
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAdminPanel(true)}
+                  className="text-xs"
+                >
+                  Admin
+                </Button>
+              )}
             </div>
           </div>
         </div>

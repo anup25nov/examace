@@ -331,7 +331,7 @@ class ReferralService {
         .select('user_id, code')
         .eq('code', referralCode.toUpperCase())
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
       if (error || !data) {
         return {

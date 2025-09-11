@@ -19,6 +19,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useProfileManagement } from '@/hooks/useProfileManagement';
+import { profileService } from '@/lib/profileService';
 
 interface ProfileUpdateModalProps {
   isOpen: boolean;
@@ -83,6 +84,13 @@ export const ProfileUpdateModal: React.FC<ProfileUpdateModalProps> = ({
       return;
     }
 
+    // Check if phone number is already in use
+    const isPhoneUnique = await profileService.isPhoneUnique(profileData.phone);
+    if (!isPhoneUnique) {
+      alert('This phone number is already in use by another user. Please use a different number.');
+      return;
+    }
+
     const result = await sendOTP(profileData.phone);
     if (result.success) {
       setOtpSent(true);
@@ -115,27 +123,27 @@ export const ProfileUpdateModal: React.FC<ProfileUpdateModalProps> = ({
     }
   };
 
+  // Validation function to check if save button should be enabled
+  const isFormValid = () => {
+    const hasValidName = profileData.name.trim().length >= 2;
+    const hasValidPhone = profileData.phone && profileData.phone.length === 10 && /^[0-9]{10}$/.test(profileData.phone);
+    const isPhoneVerified = profileData.isPhoneVerified;
+    const hasValidUpi = profileData.referralEarnings === 0 || (profileData.upiId.trim() && /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$/.test(profileData.upiId));
+    
+    return hasValidName && hasValidPhone && isPhoneVerified && hasValidUpi;
+  };
+
   const saveProfile = async () => {
-    if (!profileData.name.trim()) {
-      alert('Please enter your name');
-      return;
-    }
-
-    if (!profileData.phone || profileData.phone.length !== 10) {
-      alert('Please enter a valid phone number');
-      return;
-    }
-
-    if (profileData.referralEarnings > 0 && !profileData.upiId.trim()) {
-      alert('Please enter your UPI ID for withdrawals');
+    if (!isFormValid()) {
+      alert('Please complete all required fields and verify your phone number before saving.');
       return;
     }
 
     const success = await updateProfile({
-      name: profileData.name,
+      name: profileData.name.trim(),
       phone: profileData.phone,
       phone_verified: profileData.isPhoneVerified,
-      upi_id: profileData.upiId
+      upi_id: profileData.upiId.trim()
     });
 
     if (success) {
@@ -172,8 +180,20 @@ export const ProfileUpdateModal: React.FC<ProfileUpdateModalProps> = ({
                     value={profileData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     placeholder="Enter your full name"
-                    className="mt-1"
+                    className={`mt-1 ${
+                      profileData.name.trim().length >= 2 
+                        ? 'border-green-500 focus:border-green-500' 
+                        : profileData.name.trim().length > 0 
+                          ? 'border-red-500 focus:border-red-500' 
+                          : ''
+                    }`}
                   />
+                  {profileData.name.trim().length > 0 && profileData.name.trim().length < 2 && (
+                    <p className="text-red-500 text-xs mt-1">Name must be at least 2 characters</p>
+                  )}
+                  {profileData.name.trim().length >= 2 && (
+                    <p className="text-green-500 text-xs mt-1">✓ Valid name</p>
+                  )}
                 </div>
 
                 <div>
@@ -184,7 +204,13 @@ export const ProfileUpdateModal: React.FC<ProfileUpdateModalProps> = ({
                       value={profileData.phone}
                       onChange={(e) => handleInputChange('phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
                       placeholder="10-digit mobile number"
-                      className="flex-1"
+                      className={`flex-1 ${
+                        profileData.phone && profileData.phone.length === 10 && /^[0-9]{10}$/.test(profileData.phone)
+                          ? 'border-green-500 focus:border-green-500' 
+                          : profileData.phone && profileData.phone.length > 0
+                            ? 'border-red-500 focus:border-red-500' 
+                            : ''
+                      }`}
                       maxLength={10}
                     />
                     {!profileData.isPhoneVerified && (
@@ -199,6 +225,15 @@ export const ProfileUpdateModal: React.FC<ProfileUpdateModalProps> = ({
                     )}
                   </div>
                   
+                  {profileData.phone && profileData.phone.length > 0 && profileData.phone.length < 10 && (
+                    <p className="text-red-500 text-xs mt-1">Phone number must be 10 digits</p>
+                  )}
+                  {profileData.phone && profileData.phone.length === 10 && !/^[0-9]{10}$/.test(profileData.phone) && (
+                    <p className="text-red-500 text-xs mt-1">Phone number must contain only digits</p>
+                  )}
+                  {profileData.phone && profileData.phone.length === 10 && /^[0-9]{10}$/.test(profileData.phone) && !profileData.isPhoneVerified && (
+                    <p className="text-orange-500 text-xs mt-1">✓ Valid format - Please verify with OTP</p>
+                  )}
                   {profileData.isPhoneVerified && (
                     <div className="flex items-center space-x-2 mt-2">
                       <CheckCircle className="w-4 h-4 text-green-600" />
@@ -284,8 +319,12 @@ export const ProfileUpdateModal: React.FC<ProfileUpdateModalProps> = ({
             {!otpSent && !verifyingOtp && (
               <Button
                 onClick={saveProfile}
-                disabled={loading}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                disabled={loading || !isFormValid()}
+                className={`flex-1 ${
+                  isFormValid() 
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700' 
+                    : 'bg-gray-400 cursor-not-allowed'
+                }`}
               >
                 {loading ? (
                   <>

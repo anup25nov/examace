@@ -69,7 +69,7 @@ const TestInterface = () => {
   const [answers, setAnswers] = useState<{ [key: number]: number }>({});
   const [timeLeft, setTimeLeft] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState<string>('');
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('english');
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
   const [startTime] = useState(Date.now());
   const [loading, setLoading] = useState(true);
@@ -93,7 +93,6 @@ const TestInterface = () => {
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [filteredQuestions, setFilteredQuestions] = useState<QuestionWithProps[]>([]);
   const questionGridRef = useRef<HTMLDivElement>(null);
-  const [showTimerEndPopup, setShowTimerEndPopup] = useState(false);
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
 
   // Helper function to get original question number
@@ -129,6 +128,19 @@ const TestInterface = () => {
       setCurrentQuestion(0);
     }
   };
+
+  // Load language preference from localStorage or URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const languageFromUrl = urlParams.get('language');
+    const languageFromStorage = localStorage.getItem('preferredLanguage');
+    
+    if (languageFromUrl) {
+      setSelectedLanguage(languageFromUrl);
+    } else if (languageFromStorage) {
+      setSelectedLanguage(languageFromStorage);
+    }
+  }, []);
 
   // Load questions and set timer
   useEffect(() => {
@@ -228,15 +240,11 @@ const TestInterface = () => {
     if (timeLeft > 0 && !isCompleted && !loading && testStarted) {
       const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
       return () => clearTimeout(timer);
-    } else if (timeLeft === 0 && !isCompleted && !loading && testStarted && !showTimerEndPopup) {
-      setShowTimerEndPopup(true);
-      // Auto-submit after 1 second
-      setTimeout(() => {
-        setShowTimerEndPopup(false);
-        handleSubmit();
-      }, 1000);
+    } else if (timeLeft === 0 && !isCompleted && !loading && testStarted) {
+      // Auto-submit immediately when time is up without showing popup
+      handleSubmit(true); // Skip confirmation for time up
     }
-  }, [timeLeft, isCompleted, loading, testStarted, showTimerEndPopup]);
+  }, [timeLeft, isCompleted, loading, testStarted]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -308,11 +316,15 @@ const TestInterface = () => {
     setFlagged(newFlagged);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (skipConfirmation = false) => {
     if (isSubmitting) return; // Prevent double submission
     
-    // Show confirmation dialog first
-    setShowSubmitConfirmation(true);
+    // Show confirmation dialog first unless explicitly skipped (for time up)
+    if (skipConfirmation) {
+      await confirmSubmit();
+    } else {
+      setShowSubmitConfirmation(true);
+    }
   };
 
   const confirmSubmit = async () => {
@@ -456,7 +468,7 @@ const TestInterface = () => {
             <div className="text-sm text-muted-foreground">
               <p><strong>Duration:</strong> {Math.round(timeLeft / 60)} minutes</p>
               <p><strong>Questions:</strong> {questions.length}</p>
-              <p><strong>Language:</strong> {selectedLanguage === 'en' ? 'English' : selectedLanguage === 'hi' ? 'Hindi' : 'Both'}</p>
+              <p><strong>Language:</strong> {selectedLanguage === 'english' ? 'English' : selectedLanguage === 'hindi' ? 'Hindi' : 'Both'}</p>
             </div>
             <Button 
               onClick={() => setTestStarted(true)}
@@ -543,7 +555,7 @@ const TestInterface = () => {
                 </span>
               </div>
               <Button 
-                onClick={handleSubmit} 
+                onClick={() => handleSubmit()} 
                 className="gradient-primary border-0 text-sm sm:text-base"
                 disabled={isSubmitting}
               >
@@ -802,24 +814,6 @@ const TestInterface = () => {
         </div>
       </div>
 
-      {/* Timer End Popup */}
-      <Dialog open={showTimerEndPopup} onOpenChange={() => {}}>
-        <DialogContent className="sm:max-w-md animate-none">
-          <DialogHeader>
-            <DialogTitle className="text-center text-lg font-bold text-destructive">
-              Time's Up!
-            </DialogTitle>
-          </DialogHeader>
-          <div className="text-center py-4">
-            <div className="flex items-center justify-center mb-4">
-              <Clock className="w-12 h-12 text-destructive" />
-            </div>
-            <p className="text-muted-foreground">
-              Your test time has ended. The test will be automatically submitted.
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Submit Confirmation Dialog */}
       <Dialog open={showSubmitConfirmation} onOpenChange={setShowSubmitConfirmation}>

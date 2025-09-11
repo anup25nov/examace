@@ -491,7 +491,7 @@ const ExamDashboard = () => {
                 <span className={`text-xs px-3 py-1 rounded-full font-bold shadow-md ${
                   testType === 'practice' 
                     ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white animate-pulse' 
-                    : 'bg-gradient-to-r from-green-400 to-emerald-500 text-white'
+                    : 'bg-gradient-to-r from-green-400 to-emerald-500 text-white animate-pulse border-2 border-green-300 shadow-lg'
                 }`}>
                   {testType === 'practice' ? 'PAID' : 'FREE'}
                 </span>

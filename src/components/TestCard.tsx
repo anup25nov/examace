@@ -116,7 +116,7 @@ export const TestCard: React.FC<TestCardProps> = ({
                   PAID
                 </Badge>
               ) : (
-                <Badge className="bg-gradient-to-r from-green-400 to-emerald-500 text-white px-2 py-1 rounded-full font-bold shadow-md">
+                <Badge className="bg-gradient-to-r from-green-400 to-emerald-500 text-white px-2 py-1 rounded-full font-bold shadow-md animate-pulse border-2 border-green-300 shadow-lg">
                   FREE
                 </Badge>
               )}

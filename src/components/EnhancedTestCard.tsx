@@ -51,7 +51,8 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
 
   const handleStartTest = () => {
     if (test.isPremium && !hasAccess) {
-      setShowPaymentModal(true);
+      // Redirect to membership portal instead of showing payment modal
+      window.location.href = '/membership';
     } else {
       setShowTestStartModal(true);
     }
@@ -68,9 +69,12 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
 
   return (
     <>
-    <Card className={`relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.03] hover:border-primary/40 h-80 group ${
-      isCompleted ? 'border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg' : 'border-border bg-gradient-to-br from-white to-slate-50'
-    } ${className}`}>
+    <Card 
+      className={`relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.03] hover:border-primary/40 h-80 group ${
+        isCompleted ? 'border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg' : 'border-border bg-gradient-to-br from-white to-slate-50'
+      } ${test.isPremium && !hasAccess ? 'cursor-pointer' : ''} ${className}`}
+      onClick={test.isPremium && !hasAccess ? () => window.location.href = '/membership' : undefined}
+    >
         <CardContent className="p-4 h-full flex flex-col">
           {/* Header */}
           <div className="mb-4 flex-1">
@@ -83,12 +87,13 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
                 <Badge className={`text-xs px-3 py-1 rounded-full font-bold shadow-md ${
                   test.isPremium 
                     ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white animate-pulse' 
-                    : 'bg-gradient-to-r from-green-400 to-emerald-500 text-white'
+                    : 'bg-gradient-to-r from-green-400 to-emerald-500 text-white animate-pulse border-2 border-green-300 shadow-lg'
                 }`}>
                   {test.isPremium ? (
                     <div className="flex items-center space-x-1">
                       <Crown className="w-3 h-3" />
                       <span>PREMIUM</span>
+                      {!hasAccess && <span className="text-xs ml-1">👆</span>}
                     </div>
                   ) : (
                     'FREE'
@@ -117,7 +122,11 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
                   <span>{test.questions} questions</span>
                 </div>
               </div>
-              
+              {test.isPremium && !hasAccess && (
+                <div className="text-xs text-orange-600 font-medium text-center bg-orange-50 p-2 rounded">
+                  Click to upgrade to Premium
+                </div>
+              )}
             </div>
           </div>
           

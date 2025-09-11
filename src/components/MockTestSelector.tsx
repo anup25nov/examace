@@ -119,7 +119,7 @@ export const MockTestSelector: React.FC<MockTestSelectorProps> = ({
                           {test.name}
                         </h3>
                         <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
-                          <span className="text-xs bg-gradient-to-r from-green-400 to-emerald-500 text-white px-3 py-1 rounded-full font-bold shadow-md">
+                          <span className="text-xs bg-gradient-to-r from-green-400 to-emerald-500 text-white px-3 py-1 rounded-full font-bold shadow-md animate-pulse border-2 border-green-300 shadow-lg">
                             FREE
                           </span>
                           {isCompleted && (

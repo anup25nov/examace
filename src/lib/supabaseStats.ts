@@ -198,61 +198,67 @@ class SupabaseStatsService {
       if (!data || data.length === 0) {
         
         if (examId) {
-          // Create default stats for specific exam
-          const defaultStats = {
-            user_id: user.id,
-            exam_id: examId,
-            total_tests: 0,
-            best_score: 0,
-            average_score: 0,
-            last_test_date: null,
-            rank: null
-          };
+          // Use the upsert function for specific exam
+          const { error: upsertError } = await (supabase as any).rpc('upsert_exam_stats', {
+            p_user_id: user.id,
+            p_exam_id: examId,
+            p_total_tests: 0,
+            p_best_score: 0,
+            p_average_score: 0,
+            p_rank: null,
+            p_last_test_date: null
+          });
 
-          const { data: insertData, error: insertError } = await supabase
+          if (upsertError) {
+            console.error('Error creating default exam stats:', upsertError);
+            return { data: [], error: upsertError };
+          }
+
+          // Fetch the created/updated stats
+          const { data: fetchData, error: fetchError } = await supabase
             .from('exam_stats')
-            .insert(defaultStats)
-            .select()
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('exam_id', examId)
             .single();
 
-          if (insertError) {
-            console.error('Error creating default exam stats:', insertError);
-            return { data: [], error: insertError };
+          if (fetchError) {
+            console.error('Error fetching exam stats:', fetchError);
+            return { data: [], error: fetchError };
           }
 
-          return { data: [insertData], error: null };
+          return { data: [fetchData], error: null };
         } else {
-          // Create default stats for all exams
-          const examIds = ['ssc-cgl', 'ssc-mts', 'railway', 'bank-po', 'airforce'];
-          const defaultStatsArray = examIds.map(examId => ({
-            user_id: user.id,
-            exam_id: examId,
-            total_tests: 0,
-            best_score: 0,
-            average_score: 0,
-            last_test_date: null,
-            rank: null
-          }));
+          // Use the initialize function for all exams
+          const { error: initError } = await (supabase as any).rpc('initialize_user_exam_stats', {
+            p_user_id: user.id
+          });
 
-          const { data: insertData, error: insertError } = await supabase
-            .from('exam_stats')
-            .insert(defaultStatsArray)
-            .select();
-
-          if (insertError) {
-            console.error('Error creating default exam stats:', insertError);
-            return { data: [], error: insertError };
+          if (initError) {
+            console.error('Error initializing exam stats:', initError);
+            return { data: [], error: initError };
           }
 
-          
+          // Fetch all exam stats for the user
+          const { data: fetchData, error: fetchError } = await supabase
+            .from('exam_stats')
+            .select('*')
+            .eq('user_id', user.id)
+            .in('exam_id', ['ssc-cgl', 'ssc-mts', 'railway', 'bank-po', 'airforce']);
+
+          if (fetchError) {
+            console.error('Error fetching exam stats:', fetchError);
+            return { data: [], error: fetchError };
+          }
+
           // Cache the results
-          if (insertData) {
+          if (fetchData) {
             const cacheData = this.getCache()?.data || {};
-            cacheData.examStats = insertData;
+            cacheData.examStats = fetchData;
             this.setCache(cacheData);
           }
 
-          return { data: insertData || [], error: null };
+          return { data: fetchData || [], error: null };
         }
       }
 

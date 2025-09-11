@@ -252,7 +252,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                             <Badge className={`text-xs px-2 py-1 ${
                               paper.isPremium 
                                 ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white animate-pulse' 
-                                : 'bg-gradient-to-r from-green-400 to-emerald-500 text-white'
+                                : 'bg-gradient-to-r from-green-400 to-emerald-500 text-white animate-pulse border-2 border-green-300 shadow-lg'
                             }`}>
                               {paper.isPremium ? (
                                 <div className="flex items-center space-x-1">
@@ -260,7 +260,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                                   <span>PREMIUM</span>
                                 </div>
                               ) : (
-                                'FREE'
+                                <span className="animate-pulse">FREE</span>
                               )}
                             </Badge>
                             {isCompleted && (

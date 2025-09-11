@@ -21,6 +21,7 @@ import {
   SolutionsViewerWrapper
 } from "@/components/LazyWrapper";
 import { EnhancedExamDashboardWrapper } from "@/components/EnhancedExamDashboardWrapper";
+import Membership from "./pages/Membership";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,11 @@ const App = () => {
             <Route path="/referral" element={
               <ProtectedRoute>
                 <ReferralPageWrapper />
+              </ProtectedRoute>
+            } />
+            <Route path="/membership" element={
+              <ProtectedRoute>
+                <Membership />
               </ProtectedRoute>
             } />
             <Route path="/test/:examId/:sectionId/:testType" element={

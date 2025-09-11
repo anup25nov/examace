@@ -65,9 +65,55 @@ class ProfileService {
     }
   }
 
+  // Check if email is unique
+  async isEmailUnique(email: string, excludeUserId?: string): Promise<boolean> {
+    try {
+      const { data, error } = await (supabase as any).rpc('check_email_uniqueness', {
+        p_email: email
+      });
+
+      if (error) {
+        console.error('Error checking email uniqueness:', error);
+        return false;
+      }
+
+      return Boolean(data);
+    } catch (error) {
+      console.error('Error in isEmailUnique:', error);
+      return false;
+    }
+  }
+
+  // Check if phone is unique
+  async isPhoneUnique(phone: string, excludeUserId?: string): Promise<boolean> {
+    try {
+      const { data, error } = await (supabase as any).rpc('check_phone_uniqueness', {
+        p_phone: phone
+      });
+
+      if (error) {
+        console.error('Error checking phone uniqueness:', error);
+        return false;
+      }
+
+      return Boolean(data);
+    } catch (error) {
+      console.error('Error in isPhoneUnique:', error);
+      return false;
+    }
+  }
+
   // Update user profile
   async updateUserProfile(userId: string, profileData: Partial<ProfileData>): Promise<boolean> {
     try {
+      // Check uniqueness before updating
+      if (profileData.phone) {
+        const isPhoneUnique = await this.isPhoneUnique(profileData.phone, userId);
+        if (!isPhoneUnique) {
+          throw new Error('Phone number is already in use by another user');
+        }
+      }
+
       const updateData: any = {
         phone: profileData.phone,
         updated_at: new Date().toISOString()
