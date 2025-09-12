@@ -31,6 +31,8 @@ export const ReferralSharing: React.FC<ReferralSharingProps> = ({ onClose }) => 
     referral_code: '',
     max_referrals: 20,
     commission_rate: 50.00,
+    pending_earnings: 0,
+    paid_earnings: 0,
     pending_rewards: 0,
     verified_referrals: 0,
     rewarded_referrals: 0

@@ -58,6 +58,8 @@ export interface ReferralStats {
   referral_code: string;
   max_referrals: number;
   commission_rate: number;
+  pending_earnings: number;
+  paid_earnings: number;
   pending_rewards: number;
   verified_referrals: number;
   rewarded_referrals: number;
@@ -225,16 +227,18 @@ class ReferralService {
     try {
       const user = await this.getCurrentUser();
       if (!user) {
-        return {
-          total_referrals: 0,
-          total_earnings: 0,
-          referral_code: '',
-          max_referrals: 20,
-          commission_rate: 50.00,
-          pending_rewards: 0,
-          verified_referrals: 0,
-          rewarded_referrals: 0
-        };
+      return {
+        total_referrals: 0,
+        total_earnings: 0,
+        referral_code: '',
+        max_referrals: 20,
+        commission_rate: 50.00,
+        pending_earnings: 0,
+        paid_earnings: 0,
+        pending_rewards: 0,
+        verified_referrals: 0,
+        rewarded_referrals: 0
+      };
       }
 
       // Use database function to get referral stats
@@ -243,16 +247,18 @@ class ReferralService {
 
       if (error || !stats || stats.length === 0) {
         console.error('Error fetching referral stats:', error);
-        return {
-          total_referrals: 0,
-          total_earnings: 0,
-          referral_code: '',
-          max_referrals: 20,
-          commission_rate: 50.00,
-          pending_rewards: 0,
-          verified_referrals: 0,
-          rewarded_referrals: 0
-        };
+      return {
+        total_referrals: 0,
+        total_earnings: 0,
+        referral_code: '',
+        max_referrals: 20,
+        commission_rate: 50.00,
+        pending_earnings: 0,
+        paid_earnings: 0,
+        pending_rewards: 0,
+        verified_referrals: 0,
+        rewarded_referrals: 0
+      };
       }
 
       const stat = stats[0];
@@ -262,6 +268,8 @@ class ReferralService {
         referral_code: stat.referral_code || '',
         max_referrals: 20,
         commission_rate: 50.00,
+        pending_earnings: stat.pending_earnings || 0,
+        paid_earnings: stat.paid_earnings || 0,
         pending_rewards: stat.pending_earnings || 0,
         verified_referrals: 0,
         rewarded_referrals: stat.paid_earnings || 0
@@ -274,6 +282,8 @@ class ReferralService {
         referral_code: '',
         max_referrals: 20,
         commission_rate: 50.00,
+        pending_earnings: 0,
+        paid_earnings: 0,
         pending_rewards: 0,
         verified_referrals: 0,
         rewarded_referrals: 0
@@ -422,6 +432,105 @@ class ReferralService {
       console.log('Referral link clicked:', referralCode);
     } catch (error) {
       console.error('Error tracking referral click:', error);
+    }
+  }
+
+  // Get referral dashboard data
+  async getReferralDashboard(): Promise<{
+    referralCode: string;
+    totalReferrals: number;
+    totalEarnings: number;
+    pendingEarnings: number;
+    paidEarnings: number;
+    recentReferrals: any[];
+  }> {
+    const stats = await this.getReferralStats();
+    return {
+      referralCode: stats.referral_code,
+      totalReferrals: stats.total_referrals,
+      totalEarnings: stats.total_earnings,
+      pendingEarnings: stats.pending_earnings,
+      paidEarnings: stats.paid_earnings,
+      recentReferrals: []
+    };
+  }
+
+  // Apply referral code (alias for createReferralTracking)
+  async applyReferralCode(referralCode: string) {
+    return this.createReferralTracking(referralCode);
+  }
+
+  // Generate referral link (alias for createReferralLink)
+  async generateReferralLink(customLink?: string) {
+    return this.createReferralLink(customLink);
+  }
+
+  // Get referral leaderboard
+  async getReferralLeaderboard() {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_referral_leaderboard', { limit_count: 10 });
+
+      if (error) {
+        console.error('Error fetching leaderboard:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error in getReferralLeaderboard:', error);
+      return [];
+    }
+  }
+
+  // Request referral payout
+  async requestReferralPayout(amount: number, paymentMethod: string, paymentDetails: any) {
+    try {
+      const user = await this.getCurrentUser();
+      if (!user) {
+        return { success: false, message: 'User not authenticated' };
+      }
+
+      const { data, error } = await supabase
+        .rpc('request_referral_payout', {
+          user_uuid: user.id,
+          amount_param: amount,
+          payment_method_param: paymentMethod,
+          payment_details_param: paymentDetails
+        });
+
+      if (error) {
+        console.error('Error requesting payout:', error);
+        return { success: false, message: error.message };
+      }
+
+      return { success: data, message: data ? 'Payout requested successfully' : 'Insufficient funds' };
+    } catch (error) {
+      console.error('Error in requestReferralPayout:', error);
+      return { success: false, message: 'Failed to request payout' };
+    }
+  }
+
+  // Process referral from URL
+  async processReferralFromURL() {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const referralCode = urlParams.get('ref');
+      
+      if (referralCode) {
+        // Track the click
+        await this.trackReferralClick(referralCode);
+        
+        // Store in session for later use during signup
+        sessionStorage.setItem('pendingReferralCode', referralCode);
+        
+        return { success: true, referralCode };
+      }
+      
+      return { success: false, message: 'No referral code in URL' };
+    } catch (error) {
+      console.error('Error processing referral from URL:', error);
+      return { success: false, message: 'Failed to process referral' };
     }
   }
 }

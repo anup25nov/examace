@@ -92,7 +92,7 @@ export const verifyOTPCode = async (email: string, otp: string) => {
   }
 };
 
-// Create or update user profile in Supabase
+// Create or update user profile in Supabase using direct approach
 export const createOrUpdateUserProfile = async (userId: string, email: string, pin?: string) => {
   try {
     console.log('Creating/updating user profile for:', { userId, email });
@@ -202,7 +202,7 @@ export const createOrUpdateUserProfile = async (userId: string, email: string, p
       }
     }
 
-    // If this is a new user, generate referral code at backend
+    // If this is a new user, try to create referral code
     if (isNewUser) {
       try {
         const { data: referralCode, error: referralError } = await supabase
@@ -218,10 +218,28 @@ export const createOrUpdateUserProfile = async (userId: string, email: string, p
         console.error('Error in referral code creation:', referralError);
         // Don't fail the entire process if referral code creation fails
       }
+
+      // Try to create default exam stats
+      try {
+        const { error: statsError } = await supabase
+          .rpc('create_all_default_exam_stats', { p_user_id: userId });
+
+        if (statsError) {
+          console.error('Error creating exam stats:', statsError);
+          // Don't fail the entire process if exam stats creation fails
+        } else {
+          console.log('Default exam stats created for new user');
+        }
+      } catch (statsError) {
+        console.error('Error in exam stats creation:', statsError);
+      }
     }
 
-    console.log('User profile created/updated successfully:', { isNewUser });
-    return { success: true, data, isNewUser };
+    return { 
+      success: true, 
+      data: { id: userId, email }, 
+      isNewUser 
+    };
   } catch (error: any) {
     console.error('Error creating/updating user profile:', error);
     return { success: false, error: error.message };
