@@ -1,0 +1,7 @@
+<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100%" height="100%" fill="#e3f2fd"/>
+  <text x="50%" y="20%" font-family="Arial, sans-serif" font-size="20" fill="#1976d2" text-anchor="middle">Step-by-step Solution:</text>
+  <text x="50%" y="40%" font-family="Arial, sans-serif" font-size="18" fill="#333333" text-anchor="middle">15 + 25</text>
+  <text x="50%" y="55%" font-family="Arial, sans-serif" font-size="18" fill="#333333" text-anchor="middle">= 40</text>
+  <text x="50%" y="75%" font-family="Arial, sans-serif" font-size="16" fill="#666666" text-anchor="middle">This is basic arithmetic addition</text>
+</svg>

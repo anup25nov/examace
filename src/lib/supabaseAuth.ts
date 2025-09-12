@@ -95,26 +95,36 @@ export const verifyOTPCode = async (email: string, otp: string) => {
 // Create or update user profile in Supabase
 export const createOrUpdateUserProfile = async (userId: string, email: string, pin?: string) => {
   try {
-    // First check if user profile already exists (handle PGRST116 gracefully)
+    console.log('Creating/updating user profile for:', { userId, email });
+    
+    // Check if user profile already exists to determine if this is a new user
     let isNewUser = false;
     try {
       const { data: existingProfile, error: checkError } = await supabase
         .from('user_profiles')
-        .select('id')
+        .select('id, email')
         .eq('id', userId)
-        .single();
+        .maybeSingle(); // Use maybeSingle() to handle missing profiles gracefully
 
-      if (checkError && checkError.code === 'PGRST116') {
-        // No rows found - this is a new user
-        isNewUser = true;
-      } else if (checkError) {
-        // Some other error occurred
+      if (checkError) {
         console.error('Error checking existing profile:', checkError);
         return { success: false, error: checkError.message };
       }
-      // If no error, user exists (isNewUser remains false)
+
+      // If no data returned, this is a new user
+      if (!existingProfile) {
+        isNewUser = true;
+      } else {
+        // Check if email has changed (this shouldn't happen in normal flow)
+        if (existingProfile.email !== email) {
+          console.warn('Email mismatch detected:', { 
+            existing: existingProfile.email, 
+            new: email 
+          });
+        }
+      }
     } catch (checkError) {
-      // If any other error occurs, assume it's a new user
+      console.error('Error in profile check:', checkError);
       isNewUser = true;
     }
 
@@ -128,15 +138,68 @@ export const createOrUpdateUserProfile = async (userId: string, email: string, p
       profileData.pin = pin;
     }
 
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .upsert(profileData, {
-        onConflict: 'id'
-      });
+    // Use a direct approach to handle email conflicts
+    let data, error;
+    
+    try {
+      // First, try to delete any existing records with this email (except current user)
+      const { error: deleteError } = await supabase
+        .from('user_profiles')
+        .delete()
+        .eq('email', email)
+        .neq('id', userId);
+
+      if (deleteError) {
+        console.warn('Error deleting duplicate emails:', deleteError);
+        // Continue anyway, the insert might still work
+      }
+
+      // Now try to insert the new record
+      const insertResult = await supabase
+        .from('user_profiles')
+        .insert(profileData)
+        .select()
+        .single();
+      
+      data = insertResult.data;
+      error = insertResult.error;
+      
+      // If insert fails, try update
+      if (error && (error.code === '23505' || error.message.includes('already in use'))) {
+        console.log('Insert failed, trying update...');
+        const updateResult = await supabase
+          .from('user_profiles')
+          .update(profileData)
+          .eq('id', userId)
+          .select()
+          .single();
+        
+        data = updateResult.data;
+        error = updateResult.error;
+        isNewUser = false;
+      }
+      
+    } catch (upsertError: any) {
+      console.error('Error in direct upsert logic:', upsertError);
+      error = upsertError;
+    }
 
     if (error) {
-      console.error('Error creating/updating user profile:', error);
+      console.error('Error upserting user profile:', error);
       return { success: false, error: error.message };
+    }
+
+    // If PIN is provided, update the profile with PIN
+    if (pin) {
+      const { error: pinError } = await supabase
+        .from('user_profiles')
+        .update({ pin: pin })
+        .eq('id', userId);
+
+      if (pinError) {
+        console.error('Error updating PIN:', pinError);
+        // Don't fail the entire process if PIN update fails
+      }
     }
 
     // If this is a new user, generate referral code at backend
@@ -157,7 +220,7 @@ export const createOrUpdateUserProfile = async (userId: string, email: string, p
       }
     }
 
-    console.log('User profile created/updated successfully');
+    console.log('User profile created/updated successfully:', { isNewUser });
     return { success: true, data, isNewUser };
   } catch (error: any) {
     console.error('Error creating/updating user profile:', error);

@@ -8,8 +8,9 @@ export interface QuestionConfig {
   difficulty: "easy" | "medium" | "hard";
   subject?: string;
   topic?: string;
-  questionImage?: string; // Add support for question images
-  explanation?: string; // Add support for explanations
+  questionImage?: string; // Path to question image (e.g., "math-diagram.png")
+  explanation?: string; // Text explanation
+  explanationImage?: string; // Path to explanation image (e.g., "solution-diagram.png")
 }
 
 export interface TestConfig {

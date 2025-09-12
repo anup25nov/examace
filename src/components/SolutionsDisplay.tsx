@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Home
 } from 'lucide-react';
+import ImageDisplay from '@/components/ImageDisplay';
 
 interface Question {
   id: string;
@@ -300,11 +301,12 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                       {/* Question Image */}
                       {question.questionImage && (
                         <div className="my-4 flex justify-center">
-                          <img 
-                            src={question.questionImage} 
-                            alt="Question" 
-                            className="max-w-full h-auto rounded-lg shadow-md border"
-                            style={{ maxHeight: '300px' }}
+                          <ImageDisplay
+                            imagePath={question.questionImage}
+                            alt="Question image"
+                            maxHeight="300px"
+                            showZoom={true}
+                            showDownload={true}
                           />
                         </div>
                       )}
@@ -423,11 +425,13 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                         {/* Explanation Image */}
                         {question.explanationImage && (
                           <div className="mt-3 flex justify-center">
-                            <img 
-                              src={question.explanationImage} 
-                              alt="Explanation" 
-                              className="max-w-full h-auto rounded-lg shadow-sm border"
-                              style={{ maxHeight: '250px' }}
+                            <ImageDisplay
+                              imagePath={question.explanationImage}
+                              alt="Solution explanation"
+                              maxHeight="250px"
+                              showZoom={true}
+                              showDownload={true}
+                              caption="Step-by-step solution diagram"
                             />
                           </div>
                         )}

@@ -16,6 +16,7 @@ import { useExamStats } from "@/hooks/useExamStats";
 import { useAuth } from "@/hooks/useAuth";
 import { QuestionLoader, TestData, QuestionWithProps } from "@/lib/questionLoader";
 import SolutionsDisplay from "@/components/SolutionsDisplay";
+import ImageDisplay from "@/components/ImageDisplay";
 
 // Fallback function for calculating total duration
 const calculateTotalDurationFallback = (questions: QuestionWithProps[]): number => {
@@ -660,17 +661,18 @@ const TestInterface = () => {
                   {selectedLanguage === 'hindi' ? question.questionHi : question.questionEn}
                 </div>
                 
-                {/* Question Image - Commented out as questionImage property doesn't exist */}
-                {/* {question.questionImage && (
+                {/* Question Image */}
+                {question.questionImage && (
                   <div className="my-4 flex justify-center">
-                    <img 
-                      src={question.questionImage} 
-                      alt="Question" 
-                      className="max-w-full h-auto rounded-lg shadow-md border"
-                      style={{ maxHeight: '400px' }}
+                    <ImageDisplay
+                      imagePath={question.questionImage}
+                      alt="Question image"
+                      maxHeight="400px"
+                      showZoom={true}
+                      showDownload={true}
                     />
                   </div>
-                )} */}
+                )}
                 
                 <div className="space-y-3">
                   {question.options && question.options.length > 0 ? (

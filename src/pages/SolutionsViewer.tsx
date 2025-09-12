@@ -7,6 +7,7 @@ import { useExamStats } from '@/hooks/useExamStats';
 import { supabaseStatsService } from '@/lib/supabaseStats';
 import SolutionsDisplay from '@/components/SolutionsDisplay';
 import { ReferralBanner } from '@/components/ReferralBanner';
+import ImageDisplay from '@/components/ImageDisplay';
 
 const SolutionsViewer = () => {
   const { examId, sectionId, testType, topic } = useParams();

@@ -40,10 +40,15 @@ class ProfileService {
         .from('user_profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle(); // Use maybeSingle() to handle missing profiles gracefully
 
       if (error) {
         console.error('Error fetching profile:', error);
+        return null;
+      }
+
+      if (!data) {
+        console.log('No profile found for user:', userId);
         return null;
       }
 
@@ -283,10 +288,19 @@ class ProfileService {
         .from('user_profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle(); // Use maybeSingle() to handle missing profiles gracefully
 
       if (error) {
         console.error('Error fetching referral stats:', error);
+        return {
+          totalReferrals: 0,
+          totalEarnings: 0,
+          pendingEarnings: 0
+        };
+      }
+
+      if (!data) {
+        console.log('No profile found for referral stats:', userId);
         return {
           totalReferrals: 0,
           totalEarnings: 0,
