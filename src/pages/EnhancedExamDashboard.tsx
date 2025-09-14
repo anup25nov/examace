@@ -78,6 +78,23 @@ const EnhancedExamDashboard = () => {
   const [pyqData, setPyqData] = useState<YearData[]>([]);
   const [practiceData, setPracticeData] = useState<any[]>([]);
   const [userMembership, setUserMembership] = useState(premiumService.getUserMembership());
+  
+  // Load user membership status
+  useEffect(() => {
+    const loadMembershipStatus = async () => {
+      if (user?.id) {
+        try {
+          // Update membership status from the service
+          const membership = premiumService.getUserMembership();
+          setUserMembership(membership);
+        } catch (error) {
+          console.error('Error loading membership status:', error);
+        }
+      }
+    };
+    
+    loadMembershipStatus();
+  }, [user?.id]);
 
   const exam = examConfigs[examId as string];
   const examConfig = examConfigService.getExamConfig(examId as string);

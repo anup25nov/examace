@@ -200,6 +200,31 @@
             "topic": "number-series"
           }
         ]
+      },
+      {
+        "id": "ssc-cgl-2024-set-4",
+        "name": "SSC CGL 2024 - Set 4",
+        "date": "2024-07-02", 
+        "shift": "Shift 1",
+        "duration": 180,
+        "questions": 100,
+        "subjects": ["Quantitative Aptitude", "English Language", "General Intelligence", "General Awareness"],
+        "difficulty": "Actual Exam Level",
+        "description": "Previous Year Question Paper - 2024",
+        "isPremium": true,
+        "price": 0,
+        "questionData": [
+          {
+            "id": "q1",
+            "questionEn": "Find the misssssing number: 2, 4, 8, 16, ?",
+            "questionHi": "लुप्त संख्या ज्ञात करें: 2, 4, 8, 16, ?",
+            "options": ["24", "32", "28", "20"],
+            "correct": 1,
+            "difficulty": "medium",
+            "subject": "general-intelligence",
+            "topic": "number-series"
+          }
+        ]
       }
     ],
     "2023": [

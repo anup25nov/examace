@@ -16,7 +16,7 @@ interface SupabaseAuthFlowProps {
   onAuthSuccess: () => void;
 }
 
-type AuthStep = 'phone' | 'otp';
+type AuthStep = 'phone' | 'otp' | 'referral';
 
 const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) => {
   const [step, setStep] = useState<AuthStep>('phone');
@@ -27,6 +27,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
   const [error, setError] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
   const [canResend, setCanResend] = useState(false);
+  const [isNewUser, setIsNewUser] = useState(false);
 
   // Timer effect for OTP resend
   useEffect(() => {
@@ -67,21 +68,6 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     setError('');
 
     try {
-      // Validate referral code if provided
-      if (referralCode.trim()) {
-        const { data: referralData, error: referralError } = await supabase
-          .from('referral_codes')
-          .select('code')
-          .eq('code', referralCode.trim().toUpperCase())
-          .single();
-        
-        if (referralError || !referralData) {
-          setError('Invalid referral code');
-          setLoading(false);
-          return;
-        }
-      }
-
       // Always send OTP - no PIN concept
       const result = await sendOTPCode(phone);
       if (result.success) {
@@ -108,61 +94,90 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     setLoading(true);
     setError('');
 
-    
     try {
       const result = await verifyOTPCode(phone, otp);
       if (result.success && result.data) {
         // Check if this is a new user (first time signup)
         if (result.isNewUser) {
-          // Apply referral code if provided during phone input
-          if (referralCode.trim()) {
-            try {
-              // Get the referrer's user_id from the referral code
-              const { data: referrerData, error: referrerError } = await supabase
-                .from('referral_codes')
-                .select('user_id')
-                .eq('code', referralCode.trim().toUpperCase())
-                .single();
-              
-              if (!referrerError && referrerData) {
-                // Create referral transaction
-                const { error: transactionError } = await supabase
-                  .from('referral_transactions')
-                  .insert({
-                    referrer_id: referrerData.user_id,
-                    referee_id: result.data.id,
-                    status: 'pending',
-                    amount: 0.00
-                  });
-                
-                if (!transactionError) {
-                  // Update referrer's total referrals count
-                  await supabase
-                    .from('referral_codes')
-                    .update({ 
-                      updated_at: new Date().toISOString()
-                    })
-                    .eq('user_id', referrerData.user_id);
-                  
-                  console.log('Referral code applied successfully');
-                } else {
-                  console.warn('Referral code application failed:', transactionError);
-                }
-              }
-            } catch (referralError) {
-              console.warn('Referral code application failed:', referralError);
-              // Continue with signup even if referral fails
-            }
-          }
+          setIsNewUser(true);
+          setStep('referral');
+        } else {
+          // Existing user - proceed directly
+          onAuthSuccess();
         }
-        
-        // Proceed to success for both new and existing users
-        onAuthSuccess();
       } else {
         setError(result.error || 'Invalid OTP');
       }
     } catch (error: any) {
       setError(error.message || 'Failed to verify OTP');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReferralSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    setLoading(true);
+    setError('');
+
+    try {
+      // Apply referral code if provided
+      if (referralCode.trim()) {
+        try {
+          // Get the referrer's user_id from the referral code
+          const { data: referrerData, error: referrerError } = await supabase
+            .from('referral_codes')
+            .select('user_id')
+            .eq('code', referralCode.trim().toUpperCase())
+            .single();
+          
+          if (!referrerError && referrerData) {
+            // Get current user ID
+            const { data: { user } } = await supabase.auth.getUser();
+            
+            if (user) {
+              // Create referral transaction
+              const { error: transactionError } = await supabase
+                .from('referral_transactions')
+                .insert({
+                  referrer_id: referrerData.user_id,
+                  referee_id: user.id,
+                  status: 'pending',
+                  amount: 0.00
+                });
+              
+              if (!transactionError) {
+                // Update referrer's total referrals count
+                await supabase
+                  .from('referral_codes')
+                  .update({ 
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('user_id', referrerData.user_id);
+                
+                console.log('Referral code applied successfully');
+              } else {
+                console.warn('Referral code application failed:', transactionError);
+              }
+            }
+          } else {
+            setError('Invalid referral code');
+            setLoading(false);
+            return;
+          }
+        } catch (referralError) {
+          console.warn('Referral code application failed:', referralError);
+          setError('Failed to apply referral code');
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // Proceed to success
+      onAuthSuccess();
+    } catch (error: any) {
+      setError(error.message || 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -197,6 +212,11 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     setOtp('');
     setReferralCode('');
     setError('');
+    setIsNewUser(false);
+  };
+
+  const skipReferral = () => {
+    onAuthSuccess();
   };
 
   const renderPhoneStep = () => (
@@ -229,21 +249,6 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="referralCode">Referral Code (Optional)</Label>
-            <Input
-              id="referralCode"
-              type="text"
-              placeholder="Enter referral code if you have one"
-              value={referralCode}
-              onChange={(e) => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20))}
-              className="text-center font-mono tracking-wider"
-              maxLength={20}
-            />
-            <p className="text-xs text-muted-foreground">
-              Get rewards when someone uses your referral code
-            </p>
-          </div>
           
           {error && (
             <Alert variant="destructive">
@@ -337,12 +342,71 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     </Card>
   );
 
+  const renderReferralStep = () => (
+    <Card className="w-full max-w-md mx-auto">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-bold text-center">Welcome to ExamAce!</CardTitle>
+        <CardDescription className="text-center">
+          Do you have a referral code?
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleReferralSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="referralCode">Referral Code (Optional)</Label>
+            <Input
+              id="referralCode"
+              type="text"
+              placeholder="Enter referral code if you have one"
+              value={referralCode}
+              onChange={(e) => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20))}
+              className="text-center font-mono tracking-wider"
+              maxLength={20}
+            />
+            <p className="text-xs text-muted-foreground">
+              Get rewards when someone uses your referral code
+            </p>
+          </div>
+          
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
+          <div className="flex space-x-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={skipReferral}
+              className="flex-1"
+              disabled={loading}
+            >
+              Skip
+            </Button>
+            <Button type="submit" className="flex-1" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Applying...
+                </>
+              ) : (
+                'Continue'
+              )}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
 
   switch (step) {
     case 'phone':
       return renderPhoneStep();
     case 'otp':
       return renderOTPStep();
+    case 'referral':
+      return renderReferralStep();
     default:
       return renderPhoneStep();
   }

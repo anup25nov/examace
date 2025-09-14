@@ -57,7 +57,7 @@ BEGIN
   WITH user_stats AS (
     SELECT 
       COUNT(*) as test_count,
-      SUM(score) as total_score,
+      SUM(score) as user_total_score,
       AVG(score) as avg_score,
       MAX(score) as best_score,
       SUM(time_taken) as total_time,
@@ -69,9 +69,9 @@ BEGIN
   rank_stats AS (
     SELECT 
       COUNT(*) as total_users,
-      COUNT(*) FILTER (WHERE total_score > (SELECT total_score FROM user_stats)) as users_below
+      COUNT(*) FILTER (WHERE user_total_score > (SELECT user_total_score FROM user_stats)) as users_below
     FROM (
-      SELECT user_id, SUM(score) as total_score
+      SELECT user_id, SUM(score) as user_total_score
       FROM test_completions 
       WHERE exam_id = exam_name
       GROUP BY user_id
@@ -79,7 +79,7 @@ BEGIN
   )
   SELECT 
     COALESCE(us.test_count, 0)::INTEGER as total_tests,
-    COALESCE(us.total_score, 0)::INTEGER as total_score,
+    COALESCE(us.user_total_score, 0)::INTEGER as total_score,
     COALESCE(us.avg_score, 0)::DECIMAL(5,2) as average_score,
     COALESCE(us.best_score, 0)::INTEGER as best_score,
     COALESCE(us.total_time, 0)::INTEGER as total_time_taken,

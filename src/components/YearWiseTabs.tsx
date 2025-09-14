@@ -93,9 +93,12 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
   };
 
   const handleStartTest = (paper: PremiumTest) => {
-    if (paper.isPremium && !premiumService.hasAccess(paper.id)) {
-      setSelectedPremiumTest(paper);
-      setShowPaymentModal(true);
+    // Check if paper is premium and user doesn't have access
+    if (paper.isPremium) {
+      // For now, redirect to membership page instead of showing payment modal
+      // This ensures consistent behavior across the app
+      window.location.href = '/membership';
+      return;
     } else {
       setSelectedTestForStart(paper);
       setShowTestStartModal(true);
