@@ -1,0 +1,682 @@
+[
+    {
+      "table_name": "auth.users",
+      "constraint_name": "users_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "auth.refresh_tokens",
+      "constraint_name": "refresh_tokens_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "auth.instances",
+      "constraint_name": "instances_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "auth.audit_log_entries",
+      "constraint_name": "audit_log_entries_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "auth.schema_migrations",
+      "constraint_name": "schema_migrations_pkey",
+      "definition": "PRIMARY KEY (version)"
+    },
+    {
+      "table_name": "storage.buckets",
+      "constraint_name": "buckets_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "user_profiles",
+      "constraint_name": "user_profiles_phone_unique",
+      "definition": "UNIQUE (phone)"
+    },
+    {
+      "table_name": "storage.objects",
+      "constraint_name": "objects_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "storage.objects",
+      "constraint_name": "objects_bucketId_fkey",
+      "definition": "FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id)"
+    },
+    {
+      "table_name": "storage.migrations",
+      "constraint_name": "migrations_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "storage.migrations",
+      "constraint_name": "migrations_name_key",
+      "definition": "UNIQUE (name)"
+    },
+    {
+      "table_name": "vault.secrets",
+      "constraint_name": "secrets_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "auth.users",
+      "constraint_name": "users_email_change_confirm_status_check",
+      "definition": "CHECK (((email_change_confirm_status >= 0) AND (email_change_confirm_status <= 2)))"
+    },
+    {
+      "table_name": "auth.identities",
+      "constraint_name": "identities_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "auth.refresh_tokens",
+      "constraint_name": "refresh_tokens_token_unique",
+      "definition": "UNIQUE (token)"
+    },
+    {
+      "table_name": "realtime.schema_migrations",
+      "constraint_name": "schema_migrations_pkey",
+      "definition": "PRIMARY KEY (version)"
+    },
+    {
+      "table_name": "storage.s3_multipart_uploads",
+      "constraint_name": "s3_multipart_uploads_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "storage.s3_multipart_uploads",
+      "constraint_name": "s3_multipart_uploads_bucket_id_fkey",
+      "definition": "FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id)"
+    },
+    {
+      "table_name": "auth.sessions",
+      "constraint_name": "sessions_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "auth.sessions",
+      "constraint_name": "sessions_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "auth.refresh_tokens",
+      "constraint_name": "refresh_tokens_session_id_fkey",
+      "definition": "FOREIGN KEY (session_id) REFERENCES auth.sessions(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "auth.mfa_factors",
+      "constraint_name": "mfa_factors_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "auth.mfa_factors",
+      "constraint_name": "mfa_factors_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "auth.mfa_challenges",
+      "constraint_name": "mfa_challenges_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "auth.mfa_challenges",
+      "constraint_name": "mfa_challenges_auth_factor_id_fkey",
+      "definition": "FOREIGN KEY (factor_id) REFERENCES auth.mfa_factors(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "auth.mfa_amr_claims",
+      "constraint_name": "mfa_amr_claims_session_id_authentication_method_pkey",
+      "definition": "UNIQUE (session_id, authentication_method)"
+    },
+    {
+      "table_name": "auth.mfa_amr_claims",
+      "constraint_name": "mfa_amr_claims_session_id_fkey",
+      "definition": "FOREIGN KEY (session_id) REFERENCES auth.sessions(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "auth.mfa_amr_claims",
+      "constraint_name": "amr_id_pk",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "auth.sso_providers",
+      "constraint_name": "resource_id not empty",
+      "definition": "CHECK (((resource_id = NULL::text) OR (char_length(resource_id) > 0)))"
+    },
+    {
+      "table_name": "auth.sso_providers",
+      "constraint_name": "sso_providers_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "auth.sso_domains",
+      "constraint_name": "domain not empty",
+      "definition": "CHECK ((char_length(domain) > 0))"
+    },
+    {
+      "table_name": "auth.sso_domains",
+      "constraint_name": "sso_domains_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "auth.sso_domains",
+      "constraint_name": "sso_domains_sso_provider_id_fkey",
+      "definition": "FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "auth.saml_providers",
+      "constraint_name": "metadata_xml not empty",
+      "definition": "CHECK ((char_length(metadata_xml) > 0))"
+    },
+    {
+      "table_name": "auth.saml_providers",
+      "constraint_name": "metadata_url not empty",
+      "definition": "CHECK (((metadata_url = NULL::text) OR (char_length(metadata_url) > 0)))"
+    },
+    {
+      "table_name": "auth.saml_providers",
+      "constraint_name": "entity_id not empty",
+      "definition": "CHECK ((char_length(entity_id) > 0))"
+    },
+    {
+      "table_name": "auth.saml_providers",
+      "constraint_name": "saml_providers_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "auth.saml_providers",
+      "constraint_name": "saml_providers_entity_id_key",
+      "definition": "UNIQUE (entity_id)"
+    },
+    {
+      "table_name": "auth.saml_providers",
+      "constraint_name": "saml_providers_sso_provider_id_fkey",
+      "definition": "FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "auth.saml_relay_states",
+      "constraint_name": "request_id not empty",
+      "definition": "CHECK ((char_length(request_id) > 0))"
+    },
+    {
+      "table_name": "auth.saml_relay_states",
+      "constraint_name": "saml_relay_states_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "auth.saml_relay_states",
+      "constraint_name": "saml_relay_states_sso_provider_id_fkey",
+      "definition": "FOREIGN KEY (sso_provider_id) REFERENCES auth.sso_providers(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "user_profiles",
+      "constraint_name": "valid_phone_check",
+      "definition": "CHECK ((((phone)::text ~ '^[0-9]{10}$'::text) OR (phone IS NULL)))"
+    },
+    {
+      "table_name": "auth.users",
+      "constraint_name": "users_phone_key",
+      "definition": "UNIQUE (phone)"
+    },
+    {
+      "table_name": "auth.flow_state",
+      "constraint_name": "flow_state_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "auth.saml_relay_states",
+      "constraint_name": "saml_relay_states_flow_state_id_fkey",
+      "definition": "FOREIGN KEY (flow_state_id) REFERENCES auth.flow_state(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "auth.identities",
+      "constraint_name": "identities_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "auth.identities",
+      "constraint_name": "identities_provider_id_provider_unique",
+      "definition": "UNIQUE (provider_id, provider)"
+    },
+    {
+      "table_name": "auth.one_time_tokens",
+      "constraint_name": "one_time_tokens_token_hash_check",
+      "definition": "CHECK ((char_length(token_hash) > 0))"
+    },
+    {
+      "table_name": "auth.one_time_tokens",
+      "constraint_name": "one_time_tokens_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "auth.one_time_tokens",
+      "constraint_name": "one_time_tokens_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "auth.mfa_factors",
+      "constraint_name": "mfa_factors_last_challenged_at_key",
+      "definition": "UNIQUE (last_challenged_at)"
+    },
+    {
+      "table_name": "storage.s3_multipart_uploads_parts",
+      "constraint_name": "s3_multipart_uploads_parts_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "storage.s3_multipart_uploads_parts",
+      "constraint_name": "s3_multipart_uploads_parts_upload_id_fkey",
+      "definition": "FOREIGN KEY (upload_id) REFERENCES storage.s3_multipart_uploads(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "storage.s3_multipart_uploads_parts",
+      "constraint_name": "s3_multipart_uploads_parts_bucket_id_fkey",
+      "definition": "FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id)"
+    },
+    {
+      "table_name": "realtime.subscription",
+      "constraint_name": "pk_subscription",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "realtime.messages",
+      "constraint_name": "messages_pkey",
+      "definition": "PRIMARY KEY (id, inserted_at)"
+    },
+    {
+      "table_name": "auth.oauth_clients",
+      "constraint_name": "oauth_clients_client_name_length",
+      "definition": "CHECK ((char_length(client_name) <= 1024))"
+    },
+    {
+      "table_name": "auth.oauth_clients",
+      "constraint_name": "oauth_clients_client_uri_length",
+      "definition": "CHECK ((char_length(client_uri) <= 2048))"
+    },
+    {
+      "table_name": "auth.oauth_clients",
+      "constraint_name": "oauth_clients_logo_uri_length",
+      "definition": "CHECK ((char_length(logo_uri) <= 2048))"
+    },
+    {
+      "table_name": "auth.oauth_clients",
+      "constraint_name": "oauth_clients_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "auth.oauth_clients",
+      "constraint_name": "oauth_clients_client_id_key",
+      "definition": "UNIQUE (client_id)"
+    },
+    {
+      "table_name": "supabase_migrations.schema_migrations",
+      "constraint_name": "schema_migrations_pkey",
+      "definition": "PRIMARY KEY (version)"
+    },
+    {
+      "table_name": "supabase_migrations.schema_migrations",
+      "constraint_name": "schema_migrations_idempotency_key_key",
+      "definition": "UNIQUE (idempotency_key)"
+    },
+    {
+      "table_name": "user_profiles",
+      "constraint_name": "user_profiles_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "user_profiles",
+      "constraint_name": "user_profiles_id_fkey",
+      "definition": "FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "exam_stats",
+      "constraint_name": "exam_stats_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "exam_stats",
+      "constraint_name": "exam_stats_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES user_profiles(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "test_attempts",
+      "constraint_name": "test_attempts_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "test_attempts",
+      "constraint_name": "test_attempts_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES user_profiles(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "storage.prefixes",
+      "constraint_name": "prefixes_pkey",
+      "definition": "PRIMARY KEY (bucket_id, level, name)"
+    },
+    {
+      "table_name": "storage.prefixes",
+      "constraint_name": "prefixes_bucketId_fkey",
+      "definition": "FOREIGN KEY (bucket_id) REFERENCES storage.buckets(id)"
+    },
+    {
+      "table_name": "storage.buckets_analytics",
+      "constraint_name": "buckets_analytics_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "test_completions",
+      "constraint_name": "test_completions_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "test_completions",
+      "constraint_name": "test_completions_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES user_profiles(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "user_streaks",
+      "constraint_name": "user_streaks_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "user_streaks",
+      "constraint_name": "user_streaks_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES user_profiles(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "individual_test_scores",
+      "constraint_name": "individual_test_scores_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "individual_test_scores",
+      "constraint_name": "individual_test_scores_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES user_profiles(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "individual_test_scores",
+      "constraint_name": "individual_test_scores_unique",
+      "definition": "UNIQUE (user_id, exam_id, test_type, test_id)"
+    },
+    {
+      "table_name": "exam_stats",
+      "constraint_name": "exam_stats_user_exam_unique",
+      "definition": "UNIQUE (user_id, exam_id)"
+    },
+    {
+      "table_name": "test_completions",
+      "constraint_name": "test_completions_unique",
+      "definition": "UNIQUE (user_id, exam_id, test_type, test_id, topic_id)"
+    },
+    {
+      "table_name": "user_memberships",
+      "constraint_name": "user_memberships_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "user_memberships",
+      "constraint_name": "user_memberships_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES user_profiles(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "referral_codes",
+      "constraint_name": "referral_codes_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "referral_codes",
+      "constraint_name": "referral_codes_code_key",
+      "definition": "UNIQUE (code)"
+    },
+    {
+      "table_name": "referral_codes",
+      "constraint_name": "referral_codes_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES user_profiles(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "referral_payouts",
+      "constraint_name": "referral_payouts_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "referral_payouts",
+      "constraint_name": "referral_payouts_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES user_profiles(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "membership_transactions",
+      "constraint_name": "membership_transactions_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "membership_transactions",
+      "constraint_name": "membership_transactions_transaction_id_key",
+      "definition": "UNIQUE (transaction_id)"
+    },
+    {
+      "table_name": "membership_transactions",
+      "constraint_name": "membership_transactions_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES user_profiles(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "membership_transactions",
+      "constraint_name": "membership_transactions_membership_id_fkey",
+      "definition": "FOREIGN KEY (membership_id) REFERENCES user_memberships(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "user_profiles",
+      "constraint_name": "valid_upi_check",
+      "definition": "CHECK ((((upi_id)::text ~ '^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$'::text) OR ((upi_id)::text = ''::text) OR (upi_id IS NULL)))"
+    },
+    {
+      "table_name": "daily_visits",
+      "constraint_name": "daily_visits_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "daily_visits",
+      "constraint_name": "unique_daily_visit",
+      "definition": "UNIQUE (user_id, visit_date)"
+    },
+    {
+      "table_name": "daily_visits",
+      "constraint_name": "daily_visits_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "phone_verifications",
+      "constraint_name": "phone_verifications_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "phone_verifications",
+      "constraint_name": "phone_verifications_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "referral_mappings",
+      "constraint_name": "referral_mappings_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "referral_mappings",
+      "constraint_name": "referral_mappings_referred_id_key",
+      "definition": "UNIQUE (referred_id)"
+    },
+    {
+      "table_name": "referral_mappings",
+      "constraint_name": "referral_mappings_referrer_id_fkey",
+      "definition": "FOREIGN KEY (referrer_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "referral_mappings",
+      "constraint_name": "referral_mappings_referred_id_fkey",
+      "definition": "FOREIGN KEY (referred_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "referral_earnings",
+      "constraint_name": "referral_earnings_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "referral_earnings",
+      "constraint_name": "referral_earnings_referrer_id_fkey",
+      "definition": "FOREIGN KEY (referrer_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "referral_earnings",
+      "constraint_name": "referral_earnings_referred_id_fkey",
+      "definition": "FOREIGN KEY (referred_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "referral_transactions",
+      "constraint_name": "referral_transactions_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "referral_transactions",
+      "constraint_name": "referral_transactions_referrer_id_fkey",
+      "definition": "FOREIGN KEY (referrer_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "referral_transactions",
+      "constraint_name": "referral_transactions_referred_id_fkey",
+      "definition": "FOREIGN KEY (referred_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "referral_tracking",
+      "constraint_name": "referral_tracking_status_check",
+      "definition": "CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'verified'::character varying, 'rewarded'::character varying, 'expired'::character varying])::text[])))"
+    },
+    {
+      "table_name": "referral_tracking",
+      "constraint_name": "referral_tracking_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "referral_tracking",
+      "constraint_name": "referral_tracking_referrer_id_fkey",
+      "definition": "FOREIGN KEY (referrer_id) REFERENCES user_profiles(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "referral_tracking",
+      "constraint_name": "referral_tracking_referred_id_fkey",
+      "definition": "FOREIGN KEY (referred_id) REFERENCES user_profiles(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "referral_rewards",
+      "constraint_name": "referral_rewards_reward_type_check",
+      "definition": "CHECK (((reward_type)::text = ANY ((ARRAY['verification'::character varying, 'purchase'::character varying, 'milestone'::character varying])::text[])))"
+    },
+    {
+      "table_name": "referral_rewards",
+      "constraint_name": "referral_rewards_status_check",
+      "definition": "CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'credited'::character varying, 'failed'::character varying, 'cancelled'::character varying])::text[])))"
+    },
+    {
+      "table_name": "referral_rewards",
+      "constraint_name": "referral_rewards_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "referral_rewards",
+      "constraint_name": "referral_rewards_referrer_id_fkey",
+      "definition": "FOREIGN KEY (referrer_id) REFERENCES user_profiles(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "referral_rewards",
+      "constraint_name": "referral_rewards_referred_id_fkey",
+      "definition": "FOREIGN KEY (referred_id) REFERENCES user_profiles(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "referral_rewards",
+      "constraint_name": "referral_rewards_tracking_id_fkey",
+      "definition": "FOREIGN KEY (tracking_id) REFERENCES referral_tracking(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "referral_links",
+      "constraint_name": "referral_links_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "referral_links",
+      "constraint_name": "referral_links_user_id_fkey",
+      "definition": "FOREIGN KEY (user_id) REFERENCES user_profiles(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "referral_events",
+      "constraint_name": "referral_events_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "referral_events",
+      "constraint_name": "referral_events_referrer_id_fkey",
+      "definition": "FOREIGN KEY (referrer_id) REFERENCES user_profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "table_name": "referral_events",
+      "constraint_name": "referral_events_referred_id_fkey",
+      "definition": "FOREIGN KEY (referred_id) REFERENCES user_profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "table_name": "referral_events",
+      "constraint_name": "referral_events_tracking_id_fkey",
+      "definition": "FOREIGN KEY (tracking_id) REFERENCES referral_tracking(id) ON DELETE SET NULL"
+    },
+    {
+      "table_name": "membership_plans",
+      "constraint_name": "membership_plans_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "membership_features",
+      "constraint_name": "membership_features_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "membership_features",
+      "constraint_name": "membership_features_plan_id_fkey",
+      "definition": "FOREIGN KEY (plan_id) REFERENCES membership_plans(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "payment_verifications",
+      "constraint_name": "valid_verification_status",
+      "definition": "CHECK ((status = ANY (ARRAY['pending'::text, 'verified'::text, 'failed'::text, 'disputed'::text])))"
+    },
+    {
+      "table_name": "payment_verifications",
+      "constraint_name": "payment_verifications_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "payment_audit_log",
+      "constraint_name": "payment_audit_log_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "payment_audit_log",
+      "constraint_name": "payment_audit_log_performed_by_fkey",
+      "definition": "FOREIGN KEY (performed_by) REFERENCES auth.users(id)"
+    },
+    {
+      "table_name": "otp_verifications",
+      "constraint_name": "otp_verifications_verification_type_check",
+      "definition": "CHECK ((verification_type = ANY (ARRAY['email'::text, 'phone'::text, 'both'::text])))"
+    },
+    {
+      "table_name": "otp_verifications",
+      "constraint_name": "otp_verifications_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "webhook_events",
+      "constraint_name": "webhook_events_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "webhook_events",
+      "constraint_name": "webhook_events_event_id_key",
+      "definition": "UNIQUE (event_id)"
+    }
+  ]

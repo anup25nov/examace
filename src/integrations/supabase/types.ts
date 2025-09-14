@@ -789,39 +789,33 @@ export type Database = {
       user_profiles: {
         Row: {
           created_at: string | null
-          email: string | null
           id: string
           membership_expiry: string | null
           membership_plan: string | null
           membership_status: string | null
-          phone: string | null
-          pin: string | null
+          phone: string
           referral_code: string | null
           referred_by: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
-          email?: string | null
           id: string
           membership_expiry?: string | null
           membership_plan?: string | null
           membership_status?: string | null
-          phone?: string | null
-          pin?: string | null
+          phone: string
           referral_code?: string | null
           referred_by?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
-          email?: string | null
           id?: string
           membership_expiry?: string | null
           membership_plan?: string | null
           membership_status?: string | null
-          phone?: string | null
-          pin?: string | null
+          phone?: string
           referral_code?: string | null
           referred_by?: string | null
           updated_at?: string | null
@@ -904,7 +898,6 @@ export type Database = {
         Row: {
           days_remaining: number | null
           duration_days: number | null
-          email: string | null
           end_date: string | null
           is_active: boolean | null
           membership_expiry: string | null
@@ -925,7 +918,7 @@ export type Database = {
       user_referral_summary: {
         Row: {
           code_created_at: string | null
-          email: string | null
+          phone: string | null
           paid_earnings: number | null
           pending_earnings: number | null
           referral_code: string | null
@@ -1003,7 +996,7 @@ export type Database = {
       get_referral_leaderboard: {
         Args: { limit_count?: number }
         Returns: {
-          email: string
+          phone: string
           rank_position: number
           total_earnings: number
           total_referrals: number

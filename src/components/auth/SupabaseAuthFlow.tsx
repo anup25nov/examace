@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Mail, ArrowLeft, Gift } from 'lucide-react';
+import { Loader2, Phone, ArrowLeft, Gift } from 'lucide-react';
 import { 
   sendOTPCode, 
   verifyOTPCode
@@ -15,11 +15,11 @@ interface SupabaseAuthFlowProps {
   onAuthSuccess: () => void;
 }
 
-type AuthStep = 'email' | 'otp' | 'referral';
+type AuthStep = 'phone' | 'otp' | 'referral';
 
 const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) => {
-  const [step, setStep] = useState<AuthStep>('email');
-  const [email, setEmail] = useState('');
+  const [step, setStep] = useState<AuthStep>('phone');
+  const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [referralCode, setReferralCode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -53,13 +53,13 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     }
   }, [step]);
 
-  const handleEmailSubmit = async (e: React.FormEvent) => {
+  const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError('Please enter a valid email address');
+    // Basic phone validation (10 digits for Indian numbers)
+    const phoneRegex = /^[6-9]\d{9}$/;
+    if (!phoneRegex.test(phone)) {
+      setError('Please enter a valid 10-digit phone number');
       return;
     }
 
@@ -68,7 +68,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
 
     try {
       // Always send OTP - no PIN concept
-      const result = await sendOTPCode(email);
+      const result = await sendOTPCode(phone);
       if (result.success) {
         setStep('otp');
         setError('');
@@ -95,7 +95,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
 
     
     try {
-      const result = await verifyOTPCode(email, otp);
+      const result = await verifyOTPCode(phone, otp);
       if (result.success && result.data) {
         // Check if this is a new user (first time signup)
         if (result.isNewUser) {
@@ -154,7 +154,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     setError('');
 
     try {
-      const result = await sendOTPCode(email);
+      const result = await sendOTPCode(phone);
       if (result.success) {
         setResendTimer(60);
         setCanResend(false);
@@ -170,38 +170,42 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
   };
 
   const resetForm = () => {
-    setStep('email');
-    setEmail('');
+    setStep('phone');
+    setPhone('');
     setOtp('');
     setReferralCode('');
     setError('');
     setIsNewUser(false);
   };
 
-  const renderEmailStep = () => (
+  const renderPhoneStep = () => (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold text-center">Welcome to ExamAce</CardTitle>
         <CardDescription className="text-center">
-          Enter your email to get started
+          Enter your phone number to get started
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleEmailSubmit} className="space-y-4">
+        <form onSubmit={handlePhoneSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email Address</Label>
+            <Label htmlFor="phone">Phone Number</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="phone"
+                type="tel"
+                placeholder="Enter your 10-digit phone number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                 className="pl-10"
+                maxLength={10}
                 required
               />
             </div>
+            <p className="text-xs text-muted-foreground">
+              We'll send you an OTP to verify your number
+            </p>
           </div>
           
           {error && (
@@ -214,10 +218,10 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Checking...
+                Sending OTP...
               </>
             ) : (
-              'Continue'
+              'Send OTP'
             )}
           </Button>
         </form>
@@ -228,9 +232,9 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
   const renderOTPStep = () => (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Verify Email</CardTitle>
+        <CardTitle className="text-2xl font-bold text-center">Verify Phone</CardTitle>
         <CardDescription className="text-center">
-          Enter the 6-digit code sent to {email}
+          Enter the 6-digit code sent to +91{phone}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -365,14 +369,14 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
   );
 
   switch (step) {
-    case 'email':
-      return renderEmailStep();
+    case 'phone':
+      return renderPhoneStep();
     case 'otp':
       return renderOTPStep();
     case 'referral':
       return renderReferralStep();
     default:
-      return renderEmailStep();
+      return renderPhoneStep();
   }
 };
 

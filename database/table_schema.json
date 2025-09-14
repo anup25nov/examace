@@ -1,0 +1,250 @@
+[
+    {
+      "table_schema": "auth",
+      "table_name": "oauth_clients"
+    },
+    {
+      "table_schema": "extensions",
+      "table_name": "pg_stat_statements_info"
+    },
+    {
+      "table_schema": "extensions",
+      "table_name": "pg_stat_statements"
+    },
+    {
+      "table_schema": "auth",
+      "table_name": "sso_domains"
+    },
+    {
+      "table_schema": "auth",
+      "table_name": "mfa_amr_claims"
+    },
+    {
+      "table_schema": "auth",
+      "table_name": "saml_providers"
+    },
+    {
+      "table_schema": "supabase_migrations",
+      "table_name": "schema_migrations"
+    },
+    {
+      "table_schema": "auth",
+      "table_name": "instances"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "exam_stats"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "test_attempts"
+    },
+    {
+      "table_schema": "storage",
+      "table_name": "migrations"
+    },
+    {
+      "table_schema": "auth",
+      "table_name": "refresh_tokens"
+    },
+    {
+      "table_schema": "vault",
+      "table_name": "secrets"
+    },
+    {
+      "table_schema": "vault",
+      "table_name": "decrypted_secrets"
+    },
+    {
+      "table_schema": "storage",
+      "table_name": "prefixes"
+    },
+    {
+      "table_schema": "storage",
+      "table_name": "buckets_analytics"
+    },
+    {
+      "table_schema": "auth",
+      "table_name": "users"
+    },
+    {
+      "table_schema": "auth",
+      "table_name": "audit_log_entries"
+    },
+    {
+      "table_schema": "auth",
+      "table_name": "saml_relay_states"
+    },
+    {
+      "table_schema": "auth",
+      "table_name": "sessions"
+    },
+    {
+      "table_schema": "auth",
+      "table_name": "flow_state"
+    },
+    {
+      "table_schema": "auth",
+      "table_name": "identities"
+    },
+    {
+      "table_schema": "auth",
+      "table_name": "one_time_tokens"
+    },
+    {
+      "table_schema": "auth",
+      "table_name": "schema_migrations"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "otp_verifications"
+    },
+    {
+      "table_schema": "auth",
+      "table_name": "mfa_factors"
+    },
+    {
+      "table_schema": "auth",
+      "table_name": "mfa_challenges"
+    },
+    {
+      "table_schema": "auth",
+      "table_name": "sso_providers"
+    },
+    {
+      "table_schema": "realtime",
+      "table_name": "schema_migrations"
+    },
+    {
+      "table_schema": "storage",
+      "table_name": "buckets"
+    },
+    {
+      "table_schema": "storage",
+      "table_name": "s3_multipart_uploads_parts"
+    },
+    {
+      "table_schema": "storage",
+      "table_name": "s3_multipart_uploads"
+    },
+    {
+      "table_schema": "storage",
+      "table_name": "objects"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "membership_transactions"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "referral_payouts"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "payment_verifications"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "payment_audit_log"
+    },
+    {
+      "table_schema": "realtime",
+      "table_name": "subscription"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "test_completions"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "individual_test_scores"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_streaks"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_memberships"
+    },
+    {
+      "table_schema": "realtime",
+      "table_name": "messages"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_profiles"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "referral_codes"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "daily_visits"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_membership_summary"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_referral_summary"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "exam_stats_with_defaults"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_profile_summary"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "webhook_events"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "phone_verifications"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "referral_mappings"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "referral_earnings"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "referral_tracking"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "referral_rewards"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "referral_links"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "referral_events"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "referral_transactions"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "membership_features"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "membership_plans_view"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "membership_plans"
+    }
+  ]

@@ -1,0 +1,42 @@
+[
+    {
+      "table_schema": "extensions",
+      "table_name": "pg_stat_statements_info",
+      "view_definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"
+    },
+    {
+      "table_schema": "extensions",
+      "table_name": "pg_stat_statements",
+      "view_definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    shared_blk_read_time,\n    shared_blk_write_time,\n    local_blk_read_time,\n    local_blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time,\n    jit_deform_count,\n    jit_deform_time,\n    stats_since,\n    minmax_stats_since\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, shared_blk_read_time, shared_blk_write_time, local_blk_read_time, local_blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time, jit_deform_count, jit_deform_time, stats_since, minmax_stats_since);"
+    },
+    {
+      "table_schema": "vault",
+      "table_name": "decrypted_secrets",
+      "view_definition": null
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_membership_summary",
+      "view_definition": " SELECT up.id AS user_id,\n    up.phone,\n    up.membership_status,\n    up.membership_plan,\n    up.membership_expiry,\n    um.id AS membership_id,\n    um.plan_id,\n    um.start_date,\n    um.end_date,\n    um.status AS membership_status_detail,\n    mp.name AS plan_name,\n    mp.price AS plan_price,\n    mp.duration_days,\n    mp.mock_tests,\n    mp.is_active AS plan_is_active,\n        CASE\n            WHEN (um.end_date > now()) THEN true\n            ELSE false\n        END AS membership_is_active,\n        CASE\n            WHEN (um.end_date > now()) THEN EXTRACT(day FROM (um.end_date - now()))\n            ELSE (0)::numeric\n        END AS days_remaining\n   FROM ((user_profiles up\n     LEFT JOIN user_memberships um ON (((up.id = um.user_id) AND ((um.status)::text = 'active'::text))))\n     LEFT JOIN membership_plans mp ON (((um.plan_id)::text = mp.id)));"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_referral_summary",
+      "view_definition": " SELECT up.id AS user_id,\n    up.phone,\n    rc.code AS referral_code,\n    rc.created_at AS code_created_at,\n    COALESCE(rc.total_referrals, 0) AS total_referrals,\n    COALESCE(rc.total_earnings, (0)::numeric) AS total_earnings,\n    COALESCE((rc.total_earnings - COALESCE(sum(rp.amount), (0)::numeric)), (0)::numeric) AS pending_earnings,\n    COALESCE(sum(rp.amount), (0)::numeric) AS paid_earnings\n   FROM ((user_profiles up\n     LEFT JOIN referral_codes rc ON ((up.id = rc.user_id)))\n     LEFT JOIN referral_payouts rp ON (((up.id = rp.user_id) AND ((rp.status)::text = 'completed'::text))))\n  GROUP BY up.id, up.phone, rc.code, rc.created_at, rc.total_referrals, rc.total_earnings;"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "exam_stats_with_defaults",
+      "view_definition": " SELECT id,\n    user_id,\n    exam_id,\n    COALESCE(total_tests, 0) AS total_tests,\n    COALESCE(best_score, 0) AS best_score,\n    COALESCE(average_score, 0) AS average_score,\n    rank,\n    last_test_date,\n    created_at,\n    updated_at\n   FROM exam_stats es;"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "user_profile_summary",
+      "view_definition": " SELECT id,\n    phone,\n    membership_status,\n    membership_plan,\n    membership_expiry,\n    referral_code,\n    referred_by,\n    created_at,\n    updated_at\n   FROM user_profiles up;"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "membership_plans_view",
+      "view_definition": " SELECT id,\n    name,\n    description,\n    price,\n    currency,\n    duration_months,\n    features,\n    display_order,\n        CASE\n            WHEN (duration_months = 0) THEN 'Free'::text\n            WHEN (duration_months = 1) THEN 'Monthly'::text\n            WHEN (duration_months = 12) THEN 'Yearly'::text\n            WHEN (duration_months = 999) THEN 'Lifetime'::text\n            ELSE concat(duration_months, ' months')\n        END AS duration_display,\n        CASE\n            WHEN (duration_months = 0) THEN (0)::numeric\n            WHEN (duration_months = 1) THEN price\n            WHEN (duration_months = 12) THEN round((price / (12)::numeric), 2)\n            WHEN (duration_months = 999) THEN round((price / (1200)::numeric), 2)\n            ELSE round((price / (duration_months)::numeric), 2)\n        END AS monthly_equivalent\n   FROM membership_plans mp\n  WHERE (is_active = true)\n  ORDER BY display_order;"
+    }
+  ]

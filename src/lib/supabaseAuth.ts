@@ -1,21 +1,23 @@
-// Supabase email authentication service
+// Supabase phone authentication service
 import { supabase } from '@/integrations/supabase/client';
 
 export interface AuthUser {
   id: string;
-  email: string;
-  pin?: string;
+  phone: string;
   createdAt: string;
   updatedAt: string;
 }
 
-// Send OTP to email using Supabase
-export const sendOTPCode = async (email: string) => {
+// Send OTP to phone using Supabase
+export const sendOTPCode = async (phone: string) => {
   try {
-    console.log('Starting OTP send process for email:', email);
+    console.log('Starting OTP send process for phone:', phone);
+    
+    // Ensure phone number is in international format
+    const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
     
     const { data, error } = await supabase.auth.signInWithOtp({
-      email: email,
+      phone: formattedPhone,
       options: {
         shouldCreateUser: true
       }
@@ -25,8 +27,8 @@ export const sendOTPCode = async (email: string) => {
       console.error('Error sending OTP:', error);
       let errorMessage = 'Failed to send OTP';
       
-      if (error.message?.includes('Invalid email')) {
-        errorMessage = 'Invalid email format.';
+      if (error.message?.includes('Invalid phone')) {
+        errorMessage = 'Invalid phone number format.';
       } else if (error.message?.includes('too many requests')) {
         errorMessage = 'Too many requests. Please try again later.';
       } else if (error.message) {
@@ -36,7 +38,7 @@ export const sendOTPCode = async (email: string) => {
       return { success: false, error: errorMessage };
     }
 
-    console.log('OTP sent successfully to email');
+    console.log('OTP sent successfully to phone');
     return { success: true, data };
   } catch (error: any) {
     console.error('Error sending OTP:', error);
@@ -45,14 +47,17 @@ export const sendOTPCode = async (email: string) => {
 };
 
 // Verify OTP code using Supabase
-export const verifyOTPCode = async (email: string, otp: string) => {
+export const verifyOTPCode = async (phone: string, otp: string) => {
   try {
-    console.log('Verifying OTP for email:', email);
+    console.log('Verifying OTP for phone:', phone);
+    
+    // Ensure phone number is in international format
+    const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
     
     const { data, error } = await supabase.auth.verifyOtp({
-      email: email,
+      phone: formattedPhone,
       token: otp,
-      type: 'email'
+      type: 'sms'
     });
 
     if (error) {
@@ -64,17 +69,17 @@ export const verifyOTPCode = async (email: string, otp: string) => {
       console.log('OTP verified successfully');
       
       // Create or update user profile in Supabase
-      const profileResult = await createOrUpdateUserProfile(data.user.id, email);
+      const profileResult = await createOrUpdateUserProfile(data.user.id, formattedPhone);
       console.log('Profile creation result:', profileResult);
       
       // Store authentication data for persistence
       localStorage.setItem('userId', data.user.id);
-      localStorage.setItem('userEmail', email);
+      localStorage.setItem('userPhone', formattedPhone);
       localStorage.setItem('isAuthenticated', 'true');
       
       console.log('Authentication data stored:', {
         userId: data.user.id,
-        email: email,
+        phone: formattedPhone,
         isAuthenticated: 'true'
       });
       
@@ -93,16 +98,16 @@ export const verifyOTPCode = async (email: string, otp: string) => {
 };
 
 // Create or update user profile in Supabase using direct approach
-export const createOrUpdateUserProfile = async (userId: string, email: string, pin?: string) => {
+export const createOrUpdateUserProfile = async (userId: string, phone: string) => {
   try {
-    console.log('Creating/updating user profile for:', { userId, email });
+    console.log('Creating/updating user profile for:', { userId, phone });
     
     // Check if user profile already exists to determine if this is a new user
     let isNewUser = false;
     try {
       const { data: existingProfile, error: checkError } = await supabase
         .from('user_profiles')
-        .select('id, email')
+        .select('id, phone')
         .eq('id', userId)
         .maybeSingle(); // Use maybeSingle() to handle missing profiles gracefully
 
@@ -115,11 +120,11 @@ export const createOrUpdateUserProfile = async (userId: string, email: string, p
       if (!existingProfile) {
         isNewUser = true;
       } else {
-        // Check if email has changed (this shouldn't happen in normal flow)
-        if (existingProfile.email !== email) {
-          console.warn('Email mismatch detected:', { 
-            existing: existingProfile.email, 
-            new: email 
+        // Check if phone has changed (this shouldn't happen in normal flow)
+        if (existingProfile.phone !== phone) {
+          console.warn('Phone mismatch detected:', { 
+            existing: existingProfile.phone, 
+            new: phone 
           });
         }
       }
@@ -130,27 +135,23 @@ export const createOrUpdateUserProfile = async (userId: string, email: string, p
 
     const profileData: any = {
       id: userId,
-      email: email,
+      phone: phone,
       updated_at: new Date().toISOString()
     };
 
-    if (pin) {
-      profileData.pin = pin;
-    }
-
-    // Use a direct approach to handle email conflicts
+    // Use a direct approach to handle phone conflicts
     let data, error;
     
     try {
-      // First, try to delete any existing records with this email (except current user)
+      // First, try to delete any existing records with this phone (except current user)
       const { error: deleteError } = await supabase
         .from('user_profiles')
         .delete()
-        .eq('email', email)
+        .eq('phone', phone)
         .neq('id', userId);
 
       if (deleteError) {
-        console.warn('Error deleting duplicate emails:', deleteError);
+        console.warn('Error deleting duplicate phones:', deleteError);
         // Continue anyway, the insert might still work
       }
 
@@ -189,19 +190,6 @@ export const createOrUpdateUserProfile = async (userId: string, email: string, p
       return { success: false, error: error.message };
     }
 
-    // If PIN is provided, update the profile with PIN
-    if (pin) {
-      const { error: pinError } = await supabase
-        .from('user_profiles')
-        .update({ pin: pin })
-        .eq('id', userId);
-
-      if (pinError) {
-        console.error('Error updating PIN:', pinError);
-        // Don't fail the entire process if PIN update fails
-      }
-    }
-
     // If this is a new user, try to create referral code
     if (isNewUser) {
       try {
@@ -237,7 +225,7 @@ export const createOrUpdateUserProfile = async (userId: string, email: string, p
 
     return { 
       success: true, 
-      data: { id: userId, email }, 
+      data: { id: userId, phone }, 
       isNewUser 
     };
   } catch (error: any) {
@@ -246,13 +234,13 @@ export const createOrUpdateUserProfile = async (userId: string, email: string, p
   }
 };
 
-// Check if user exists and has PIN
-export const checkUserStatus = async (email: string) => {
+// Check if user exists (for phone-based auth, we don't need PIN check)
+export const checkUserStatus = async (phone: string) => {
   try {
-    console.log('Checking user status for email:', email);
+    console.log('Checking user status for phone:', phone);
     
     // Check local cache first
-    const cacheKey = `user_status_${email}`;
+    const cacheKey = `user_status_${phone}`;
     const cachedStatus = localStorage.getItem(cacheKey);
     if (cachedStatus) {
       const parsed = JSON.parse(cachedStatus);
@@ -266,12 +254,12 @@ export const checkUserStatus = async (email: string) => {
     const { data: userProfile, error } = await supabase
       .from('user_profiles')
       .select('*')
-      .eq('email', email)
+      .eq('phone', phone)
       .maybeSingle();
     
     if (error || !userProfile) {
       console.log('User not found');
-      const result = { exists: false, hasPin: false, data: null };
+      const result = { exists: false, data: null };
       // Cache the result
       localStorage.setItem(cacheKey, JSON.stringify({
         data: result,
@@ -282,7 +270,6 @@ export const checkUserStatus = async (email: string) => {
     
     const result = {
       exists: true,
-      hasPin: !!userProfile.pin,
       data: userProfile
     };
     
@@ -297,82 +284,11 @@ export const checkUserStatus = async (email: string) => {
     return result;
   } catch (error: any) {
     console.error('Error checking user status:', error);
-    return { exists: false, hasPin: false, data: null };
+    return { exists: false, data: null };
   }
 };
 
-// Verify PIN for existing user
-export const verifyPIN = async (email: string, pin: string) => {
-  try {
-    console.log('Verifying PIN for email:', email);
-    
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('email', email)
-      .eq('pin', pin)
-      .maybeSingle();
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        console.log('Invalid PIN');
-        return { success: false, error: 'Invalid PIN' };
-      }
-      console.error('Error verifying PIN:', error);
-      return { success: false, error: error.message };
-    }
-
-    if (data) {
-      console.log('PIN verified successfully');
-      
-      // Store authentication data for persistence
-      localStorage.setItem('userId', data.id);
-      localStorage.setItem('userEmail', email);
-      localStorage.setItem('isAuthenticated', 'true');
-      
-      return { success: true, user: data };
-    }
-    
-    return { success: false, error: 'Invalid PIN' };
-  } catch (error: any) {
-    console.error('Error verifying PIN:', error);
-    return { success: false, error: error.message || 'Failed to verify PIN' };
-  }
-};
-
-// Set PIN for user (after OTP verification)
-export const setUserPIN = async (userId: string, pin: string) => {
-  try {
-    console.log('Setting PIN for user:', userId);
-    
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .update({ 
-        pin: pin,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', userId)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error setting PIN:', error);
-      return { success: false, error: error.message };
-    }
-
-    // Clear user status cache to force refresh
-    const userEmail = localStorage.getItem('userEmail');
-    if (userEmail) {
-      localStorage.removeItem(`user_status_${userEmail}`);
-    }
-
-    console.log('PIN set successfully');
-    return { success: true, data };
-  } catch (error: any) {
-    console.error('Error setting PIN:', error);
-    return { success: false, error: error.message || 'Failed to set PIN' };
-  }
-};
+// Note: PIN-based authentication has been removed in favor of OTP-only authentication
 
 // Cache for user profile to prevent infinite loops
 let userProfileCache: { [key: string]: { data: AuthUser | null; timestamp: number } } = {};
@@ -387,20 +303,20 @@ export const clearUserProfileCache = () => {
 // Get current authenticated user
 export const getCurrentAuthUser = async (): Promise<AuthUser | null> => {
   try {
-    // For PIN-based authentication, we rely on localStorage
+    // For phone-based authentication, we rely on localStorage
     const userId = localStorage.getItem('userId');
-    const userEmail = localStorage.getItem('userEmail');
+    const userPhone = localStorage.getItem('userPhone');
     const isAuthenticated = localStorage.getItem('isAuthenticated');
     
     console.log('getCurrentAuthUser - localStorage check:', {
       userId: !!userId,
-      userEmail: !!userEmail,
+      userPhone: !!userPhone,
       isAuthenticated
     });
     
-    if (userId && userEmail && isAuthenticated === 'true') {
+    if (userId && userPhone && isAuthenticated === 'true') {
       // Check cache first
-      const cacheKey = `${userId}-${userEmail}`;
+      const cacheKey = `${userId}-${userPhone}`;
       const cached = userProfileCache[cacheKey];
       
       if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
@@ -419,8 +335,7 @@ export const getCurrentAuthUser = async (): Promise<AuthUser | null> => {
         console.log('User profile found:', userProfile);
         const authUser = {
           id: userProfile.id,
-          email: userProfile.email,
-          pin: userProfile.pin,
+          phone: userProfile.phone,
           createdAt: userProfile.created_at,
           updatedAt: userProfile.updated_at
         };
@@ -459,10 +374,10 @@ export const getCurrentUserId = (): string | null => {
 export const isUserAuthenticated = (): boolean => {
   const isAuth = localStorage.getItem('isAuthenticated') === 'true';
   const userId = localStorage.getItem('userId');
-  const userEmail = localStorage.getItem('userEmail');
+  const userPhone = localStorage.getItem('userPhone');
   
-  console.log('Auth check result:', { isAuth, userId: !!userId, userEmail: !!userEmail });
-  return isAuth && !!userId && !!userEmail;
+  console.log('Auth check result:', { isAuth, userId: !!userId, userPhone: !!userPhone });
+  return isAuth && !!userId && !!userPhone;
 };
 
 // Sign out user (only when explicitly requested)
@@ -491,7 +406,7 @@ export const refreshUser = async () => {
     if (user) {
       // Update localStorage with fresh data
       localStorage.setItem('userId', user.id);
-      localStorage.setItem('userEmail', user.email || '');
+      localStorage.setItem('userPhone', user.phone || '');
       localStorage.setItem('isAuthenticated', 'true');
       
       return { success: true, user };
