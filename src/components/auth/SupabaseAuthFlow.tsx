@@ -4,19 +4,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Phone, ArrowLeft, Gift } from 'lucide-react';
+import { Loader2, Phone, ArrowLeft } from 'lucide-react';
 import { 
   sendOTPCode, 
   verifyOTPCode
 } from '@/lib/supabaseAuth';
-import { referralService } from '@/lib/referralService';
 import OTPInput from './OTPInput';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SupabaseAuthFlowProps {
   onAuthSuccess: () => void;
 }
 
-type AuthStep = 'phone' | 'otp' | 'referral';
+type AuthStep = 'phone' | 'otp';
 
 const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) => {
   const [step, setStep] = useState<AuthStep>('phone');
@@ -27,7 +27,6 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
   const [error, setError] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
   const [canResend, setCanResend] = useState(false);
-  const [isNewUser, setIsNewUser] = useState(false);
 
   // Timer effect for OTP resend
   useEffect(() => {
@@ -68,6 +67,21 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     setError('');
 
     try {
+      // Validate referral code if provided
+      if (referralCode.trim()) {
+        const { data: referralData, error: referralError } = await supabase
+          .from('referral_codes')
+          .select('code')
+          .eq('code', referralCode.trim().toUpperCase())
+          .single();
+        
+        if (referralError || !referralData) {
+          setError('Invalid referral code');
+          setLoading(false);
+          return;
+        }
+      }
+
       // Always send OTP - no PIN concept
       const result = await sendOTPCode(phone);
       if (result.success) {
@@ -100,13 +114,50 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
       if (result.success && result.data) {
         // Check if this is a new user (first time signup)
         if (result.isNewUser) {
-          // This is a new user, show referral code step
-          setIsNewUser(true);
-          setStep('referral');
-        } else {
-          // Existing user, proceed to success
-          onAuthSuccess();
+          // Apply referral code if provided during phone input
+          if (referralCode.trim()) {
+            try {
+              // Get the referrer's user_id from the referral code
+              const { data: referrerData, error: referrerError } = await supabase
+                .from('referral_codes')
+                .select('user_id')
+                .eq('code', referralCode.trim().toUpperCase())
+                .single();
+              
+              if (!referrerError && referrerData) {
+                // Create referral transaction
+                const { error: transactionError } = await supabase
+                  .from('referral_transactions')
+                  .insert({
+                    referrer_id: referrerData.user_id,
+                    referee_id: result.data.id,
+                    status: 'pending',
+                    amount: 0.00
+                  });
+                
+                if (!transactionError) {
+                  // Update referrer's total referrals count
+                  await supabase
+                    .from('referral_codes')
+                    .update({ 
+                      updated_at: new Date().toISOString()
+                    })
+                    .eq('user_id', referrerData.user_id);
+                  
+                  console.log('Referral code applied successfully');
+                } else {
+                  console.warn('Referral code application failed:', transactionError);
+                }
+              }
+            } catch (referralError) {
+              console.warn('Referral code application failed:', referralError);
+              // Continue with signup even if referral fails
+            }
+          }
         }
+        
+        // Proceed to success for both new and existing users
+        onAuthSuccess();
       } else {
         setError(result.error || 'Invalid OTP');
       }
@@ -117,36 +168,6 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     }
   };
 
-  const handleReferralSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (referralCode.trim()) {
-      setLoading(true);
-      setError('');
-
-      try {
-        // Validate and apply referral code
-        const result = await referralService.createReferralTracking(referralCode.trim());
-        if (result.success) {
-          console.log('Referral code applied successfully:', result);
-          onAuthSuccess();
-        } else {
-          setError(result.message || 'Invalid referral code');
-        }
-      } catch (error: any) {
-        setError(error.message || 'Failed to apply referral code');
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      // No referral code provided, proceed directly
-      onAuthSuccess();
-    }
-  };
-
-  const handleSkipReferral = async () => {
-    onAuthSuccess();
-  };
 
   const handleResendOTP = async () => {
     if (!canResend) return;
@@ -176,7 +197,6 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     setOtp('');
     setReferralCode('');
     setError('');
-    setIsNewUser(false);
   };
 
   const renderPhoneStep = () => (
@@ -206,6 +226,22 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
             </div>
             <p className="text-xs text-muted-foreground">
               We'll send you an OTP to verify your number
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="referralCode">Referral Code (Optional)</Label>
+            <Input
+              id="referralCode"
+              type="text"
+              placeholder="Enter referral code if you have one"
+              value={referralCode}
+              onChange={(e) => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20))}
+              className="text-center font-mono tracking-wider"
+              maxLength={20}
+            />
+            <p className="text-xs text-muted-foreground">
+              Get rewards when someone uses your referral code
             </p>
           </div>
           
@@ -301,78 +337,12 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     </Card>
   );
 
-  const renderReferralStep = () => (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center flex items-center justify-center space-x-2">
-          <Gift className="w-6 h-6 text-green-600" />
-          <span>Referral Code</span>
-        </CardTitle>
-        <CardDescription className="text-center">
-          Do you have a referral code? Enter it to earn rewards!
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleReferralSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="referralCode">Referral Code (Optional)</Label>
-            <div className="relative">
-              <Gift className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="referralCode"
-                type="text"
-                placeholder="Enter referral code (e.g., ABC1234)"
-                value={referralCode}
-                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                className="pl-10"
-                maxLength={10}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Get rewards when your referred friends make their first purchase!
-            </p>
-          </div>
-          
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          
-          <div className="space-y-2">
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                'Continue'
-              )}
-            </Button>
-            
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="w-full" 
-              onClick={handleSkipReferral}
-              disabled={loading}
-            >
-              Skip for now
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
-  );
 
   switch (step) {
     case 'phone':
       return renderPhoneStep();
     case 'otp':
       return renderOTPStep();
-    case 'referral':
-      return renderReferralStep();
     default:
       return renderPhoneStep();
   }

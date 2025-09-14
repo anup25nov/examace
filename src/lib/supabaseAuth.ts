@@ -72,6 +72,62 @@ export const verifyOTPCode = async (phone: string, otp: string) => {
       const profileResult = await createOrUpdateUserProfile(data.user.id, formattedPhone);
       console.log('Profile creation result:', profileResult);
       
+      // If profile creation failed, try direct database operations
+      if (!profileResult.success) {
+        console.log('Profile creation failed, trying direct database operations...');
+        try {
+          // Try to create user profile directly
+          const { error: profileError } = await supabase
+            .from('user_profiles')
+            .insert({
+              id: data.user.id,
+              phone: formattedPhone,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
+          
+          if (profileError) {
+            console.error('Direct profile creation failed:', profileError);
+          } else {
+            console.log('Direct profile creation successful');
+            
+            // Create referral code for new user
+            try {
+              // Check if referral code already exists
+              const { data: existingReferral, error: checkError } = await supabase
+                .from('referral_codes')
+                .select('id')
+                .eq('user_id', data.user.id)
+                .maybeSingle();
+              
+              if (!checkError && !existingReferral) {
+                const referralCode = data.user.id.substring(0, 8).toUpperCase();
+                const { error: referralError } = await supabase
+                  .from('referral_codes')
+                  .insert({
+                    user_id: data.user.id,
+                    code: referralCode,
+                    total_referrals: 0,
+                    total_earnings: 0.00
+                  });
+                
+                if (referralError) {
+                  console.error('Referral code creation failed:', referralError);
+                } else {
+                  console.log('Referral code created successfully:', referralCode);
+                }
+              } else {
+                console.log('Referral code already exists or check failed');
+              }
+            } catch (referralError) {
+              console.error('Error creating referral code:', referralError);
+            }
+          }
+        } catch (fallbackError) {
+          console.error('Error in fallback operations:', fallbackError);
+        }
+      }
+      
       // Store authentication data for persistence
       localStorage.setItem('userId', data.user.id);
       localStorage.setItem('userPhone', formattedPhone);
@@ -139,38 +195,29 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string) =
       updated_at: new Date().toISOString()
     };
 
-    // Use a direct approach to handle phone conflicts
+    // Use a safer approach to handle user profile creation
     let data, error;
     
     try {
-      // First, try to delete any existing records with this phone (except current user)
-      const { error: deleteError } = await supabase
+      // First, check if user profile already exists
+      const { data: existingUser, error: checkError } = await supabase
         .from('user_profiles')
-        .delete()
-        .eq('phone', phone)
-        .neq('id', userId);
+        .select('id, phone')
+        .eq('id', userId)
+        .maybeSingle();
 
-      if (deleteError) {
-        console.warn('Error deleting duplicate phones:', deleteError);
-        // Continue anyway, the insert might still work
-      }
-
-      // Now try to insert the new record
-      const insertResult = await supabase
-        .from('user_profiles')
-        .insert(profileData)
-        .select()
-        .single();
-      
-      data = insertResult.data;
-      error = insertResult.error;
-      
-      // If insert fails, try update
-      if (error && (error.code === '23505' || error.message.includes('already in use'))) {
-        console.log('Insert failed, trying update...');
+      if (checkError) {
+        console.error('Error checking existing user:', checkError);
+        error = checkError;
+      } else if (existingUser) {
+        // User already exists, just update if needed
+        console.log('User profile already exists, updating...');
         const updateResult = await supabase
           .from('user_profiles')
-          .update(profileData)
+          .update({
+            phone: phone,
+            updated_at: new Date().toISOString()
+          })
           .eq('id', userId)
           .select()
           .single();
@@ -178,10 +225,21 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string) =
         data = updateResult.data;
         error = updateResult.error;
         isNewUser = false;
+      } else {
+        // User doesn't exist, create new profile
+        console.log('Creating new user profile...');
+        const insertResult = await supabase
+          .from('user_profiles')
+          .insert(profileData)
+          .select()
+          .single();
+        
+        data = insertResult.data;
+        error = insertResult.error;
       }
       
     } catch (upsertError: any) {
-      console.error('Error in direct upsert logic:', upsertError);
+      console.error('Error in user profile operations:', upsertError);
       error = upsertError;
     }
 
@@ -193,14 +251,35 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string) =
     // If this is a new user, try to create referral code
     if (isNewUser) {
       try {
-        const { data: referralCode, error: referralError } = await supabase
-          .rpc('create_user_referral_code', { user_uuid: userId });
+        // Check if referral code already exists
+        const { data: existingReferral, error: checkReferralError } = await supabase
+          .from('referral_codes')
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
 
-        if (referralError) {
-          console.error('Error creating referral code:', referralError);
-          // Don't fail the entire process if referral code creation fails
+        if (checkReferralError) {
+          console.error('Error checking existing referral code:', checkReferralError);
+        } else if (!existingReferral) {
+          // Create referral code only if it doesn't exist
+          const referralCode = userId.substring(0, 8).toUpperCase();
+          const { error: referralError } = await supabase
+            .from('referral_codes')
+            .insert({
+              user_id: userId,
+              code: referralCode,
+              total_referrals: 0,
+              total_earnings: 0.00
+            });
+
+          if (referralError) {
+            console.error('Error creating referral code:', referralError);
+            // Don't fail the entire process if referral code creation fails
+          } else {
+            console.log('Referral code created for new user:', referralCode);
+          }
         } else {
-          console.log('Referral code created for new user:', referralCode);
+          console.log('Referral code already exists for user');
         }
       } catch (referralError) {
         console.error('Error in referral code creation:', referralError);
