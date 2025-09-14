@@ -1,5 +1,6 @@
 // Professional Membership Service with Database Integration
 import { supabase } from '@/integrations/supabase/client';
+import { MembershipCommissionService } from './membershipCommissionService';
 
 export interface MembershipPlan {
   id: string;
@@ -97,44 +98,6 @@ class MembershipService {
     }
   }
 
-  // Process membership purchase
-  async processMembershipPurchase(
-    userId: string,
-    planId: string,
-    amount: number,
-    paymentId: string,
-    referralCode?: string
-  ): Promise<{ success: boolean; error?: string; membershipId?: string }> {
-    try {
-      const { data, error } = await supabase.rpc('process_membership_purchase', {
-        user_uuid: userId,
-        plan_id_param: planId,
-        amount_param: amount,
-        payment_id_param: paymentId,
-        referral_code_used: referralCode || null
-      });
-
-      if (error) {
-        console.error('Error processing membership purchase:', error);
-        return { success: false, error: error.message };
-      }
-
-      if (data && typeof data === 'object' && 'success' in data && (data as any).success) {
-        return { 
-          success: true, 
-          membershipId: (data as any).membership_id 
-        };
-      }
-
-      return { 
-        success: false, 
-        error: typeof data === 'object' && data && 'error' in data ? (data as any).error : 'Unknown error occurred' 
-      };
-    } catch (error: any) {
-      console.error('Error in processMembershipPurchase:', error);
-      return { success: false, error: error.message };
-    }
-  }
 
   // Get user's payment history
   async getPaymentHistory(userId: string): Promise<any[]> {
@@ -229,6 +192,149 @@ class MembershipService {
         daysRemaining: 0,
         testsAvailable: 0,
         isActive: false
+      };
+    }
+  }
+
+  // Process membership purchase with commission tracking
+  async processMembershipPurchase(
+    userId: string,
+    planId: string,
+    paymentId: string,
+    amount: number,
+    referralCode?: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    membershipId?: string;
+    commissionProcessed?: boolean;
+    commissionAmount?: number;
+  }> {
+    try {
+      // First, create the membership
+      const { data: membershipData, error: membershipError } = await supabase
+        .from('user_memberships')
+        .insert({
+          user_id: userId,
+          plan_id: planId,
+          status: 'active',
+          start_date: new Date().toISOString(),
+          end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+          payment_id: paymentId
+        })
+        .select()
+        .single();
+
+      if (membershipError) {
+        console.error('Error creating membership:', membershipError);
+        return {
+          success: false,
+          message: 'Failed to create membership'
+        };
+      }
+
+      // Create membership transaction
+      const { data: transactionData, error: transactionError } = await supabase
+        .from('membership_transactions')
+        .insert({
+          user_id: userId,
+          membership_id: membershipData.id,
+          transaction_id: paymentId,
+          amount: amount,
+          status: 'completed'
+        })
+        .select()
+        .single();
+
+      if (transactionError) {
+        console.error('Error creating membership transaction:', transactionError);
+        return {
+          success: false,
+          message: 'Failed to create membership transaction'
+        };
+      }
+
+      // Process commission for referral
+      const commissionResult = await MembershipCommissionService.processMembershipCommission(
+        userId,
+        transactionData.id,
+        planId,
+        amount
+      );
+
+      return {
+        success: true,
+        message: 'Membership created successfully',
+        membershipId: membershipData.id,
+        commissionProcessed: commissionResult.success,
+        commissionAmount: commissionResult.commission_amount
+      };
+    } catch (error: any) {
+      console.error('Error processing membership purchase:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to process membership purchase'
+      };
+    }
+  }
+
+  // Handle membership cancellation with commission refund
+  async cancelMembership(
+    membershipId: string,
+    reason?: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    commissionRevoked?: number;
+  }> {
+    try {
+      // Get the membership transaction
+      const { data: transactionData, error: transactionError } = await supabase
+        .from('membership_transactions')
+        .select('*')
+        .eq('membership_id', membershipId)
+        .single();
+
+      if (transactionError) {
+        console.error('Error getting membership transaction:', transactionError);
+        return {
+          success: false,
+          message: 'Failed to get membership transaction'
+        };
+      }
+
+      // Handle commission refund
+      const refundResult = await MembershipCommissionService.handleMembershipRefund(
+        transactionData.id
+      );
+
+      // Update membership status
+      const { error: updateError } = await supabase
+        .from('user_memberships')
+        .update({
+          status: 'cancelled',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', membershipId);
+
+      if (updateError) {
+        console.error('Error updating membership status:', updateError);
+        return {
+          success: false,
+          message: 'Failed to update membership status'
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Membership cancelled successfully',
+        commissionRevoked: refundResult.commission_revoked
+      };
+    } catch (error: any) {
+      console.error('Error cancelling membership:', error);
+      return {
+        success: false,
+        message: error.message || 'Failed to cancel membership'
       };
     }
   }

@@ -20,11 +20,14 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { referralService, ReferralStats } from '@/lib/referralService';
+import { supabase } from '@/integrations/supabase/client';
 
 const ReferralPage = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const [referralStats, setReferralStats] = useState<ReferralStats | null>(null);
+  const [referralNetwork, setReferralNetwork] = useState<any[]>([]);
+  const [comprehensiveStats, setComprehensiveStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
@@ -41,8 +44,36 @@ const ReferralPage = () => {
     
     try {
       setLoading(true);
-      const stats = await referralService.getReferralStats();
-      setReferralStats(stats);
+      
+      // Load comprehensive stats using the new database function
+      const { data: statsData, error: statsError } = await supabase.rpc('get_comprehensive_referral_stats' as any, {
+        user_uuid: user.id
+      });
+      
+      if (statsError) {
+        console.error('Error loading comprehensive stats:', statsError);
+      } else if (statsData && Array.isArray(statsData) && statsData.length > 0) {
+        setComprehensiveStats(statsData[0]);
+      }
+      
+      // Load detailed referral network
+      const { data: networkData, error: networkError } = await supabase.rpc('get_referral_network_detailed' as any, {
+        user_uuid: user.id
+      });
+      
+      if (networkError) {
+        console.error('Error loading referral network:', networkError);
+      } else {
+        setReferralNetwork(Array.isArray(networkData) ? networkData : []);
+      }
+      
+      // Fallback to old service if needed
+      try {
+        const stats = await referralService.getReferralStats();
+        setReferralStats(stats);
+      } catch (error) {
+        console.error('Error loading fallback stats:', error);
+      }
     } catch (error) {
       console.error('Error loading referral stats:', error);
     } finally {
@@ -61,15 +92,16 @@ const ReferralPage = () => {
   };
 
   const shareReferralLink = async () => {
-    if (!referralStats?.referral_code) return;
+    const referralCode = comprehensiveStats?.referral_code || referralStats?.referral_code;
+    if (!referralCode) return;
     
-    const referralLink = `${window.location.origin}/signup?ref=${referralStats.referral_code}`;
+    const referralLink = `${window.location.origin}/auth?ref=${referralCode}`;
     
     if (navigator.share) {
       try {
         await navigator.share({
           title: 'Join ExamAce - Exam Preparation Platform',
-          text: `Use my referral code ${referralStats.referral_code} to get started with ExamAce!`,
+          text: `Use my referral code ${referralCode} to get started with ExamAce!`,
           url: referralLink
         });
       } catch (error) {
@@ -148,14 +180,16 @@ const ReferralPage = () => {
           </p>
         </div>
 
-        {referralStats ? (
+        {(comprehensiveStats || referralStats) ? (
           <div className="space-y-8">
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
                 <CardContent className="p-6 text-center">
                   <Users className="w-8 h-8 text-blue-600 mx-auto mb-3" />
-                  <div className="text-2xl font-bold text-blue-900">{referralStats.total_referrals}</div>
+                  <div className="text-2xl font-bold text-blue-900">
+                    {comprehensiveStats?.total_referrals || referralStats?.total_referrals || 0}
+                  </div>
                   <div className="text-sm text-blue-700">Total Referrals</div>
                 </CardContent>
               </Card>
@@ -163,24 +197,30 @@ const ReferralPage = () => {
               <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
                 <CardContent className="p-6 text-center">
                   <DollarSign className="w-8 h-8 text-green-600 mx-auto mb-3" />
-                  <div className="text-2xl font-bold text-green-900">₹{referralStats.total_earnings}</div>
-                  <div className="text-sm text-green-700">Total Earnings</div>
+                  <div className="text-2xl font-bold text-green-900">
+                    ₹{comprehensiveStats?.total_commissions_earned || referralStats?.total_earnings || 0}
+                  </div>
+                  <div className="text-sm text-green-700">Total Commissions</div>
                 </CardContent>
               </Card>
 
               <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
                 <CardContent className="p-6 text-center">
                   <TrendingUp className="w-8 h-8 text-orange-600 mx-auto mb-3" />
-                  <div className="text-2xl font-bold text-orange-900">₹{referralStats.pending_rewards}</div>
-                  <div className="text-sm text-orange-700">Pending Earnings</div>
+                  <div className="text-2xl font-bold text-orange-900">
+                    ₹{comprehensiveStats?.pending_commissions || referralStats?.pending_rewards || 0}
+                  </div>
+                  <div className="text-sm text-orange-700">Pending Commissions</div>
                 </CardContent>
               </Card>
 
               <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
                 <CardContent className="p-6 text-center">
                   <Award className="w-8 h-8 text-purple-600 mx-auto mb-3" />
-                  <div className="text-2xl font-bold text-purple-900">₹{referralStats.rewarded_referrals}</div>
-                  <div className="text-sm text-purple-700">Paid Earnings</div>
+                  <div className="text-2xl font-bold text-purple-900">
+                    ₹{comprehensiveStats?.paid_commissions || referralStats?.rewarded_referrals || 0}
+                  </div>
+                  <div className="text-sm text-purple-700">Paid Commissions</div>
                 </CardContent>
               </Card>
             </div>
@@ -191,12 +231,14 @@ const ReferralPage = () => {
                 <div className="text-center">
                   <h3 className="text-2xl font-bold mb-4">Your Referral Code</h3>
                   <div className="bg-white/20 rounded-lg p-4 mb-6">
-                    <div className="text-3xl font-mono font-bold">{referralStats.referral_code}</div>
+                    <div className="text-3xl font-mono font-bold">
+                      {comprehensiveStats?.referral_code || referralStats?.referral_code || 'N/A'}
+                    </div>
                   </div>
                   
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <Button
-                      onClick={() => copyToClipboard(`${window.location.origin}/signup?ref=${referralStats.referral_code}`)}
+                      onClick={() => copyToClipboard(`${window.location.origin}/auth?ref=${comprehensiveStats?.referral_code || referralStats?.referral_code}`)}
                       className="bg-white text-green-600 hover:bg-gray-100"
                     >
                       {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
@@ -214,6 +256,59 @@ const ReferralPage = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Detailed Referral Network */}
+            {referralNetwork.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Users className="w-6 h-6 text-blue-600" />
+                    <span>Your Referral Network</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {referralNetwork.map((referral, index) => (
+                      <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-blue-600 font-semibold">
+                              {referral.referred_phone_masked?.slice(-2) || 'XX'}
+                            </span>
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {referral.referred_phone_masked}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              Joined: {new Date(referral.signup_date).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="flex items-center space-x-2">
+                            <Badge 
+                              variant={referral.commission_status === 'paid' ? 'default' : 
+                                      referral.commission_status === 'pending' ? 'secondary' : 'destructive'}
+                            >
+                              {referral.commission_status}
+                            </Badge>
+                            {referral.commission_amount > 0 && (
+                              <span className="font-semibold text-green-600">
+                                ₹{referral.commission_amount}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {referral.membership_plan !== 'none' ? referral.membership_plan : 'No membership'}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* How It Works */}
             <Card>
