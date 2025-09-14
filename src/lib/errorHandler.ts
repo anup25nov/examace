@@ -27,7 +27,7 @@ export const validateTestResult = (result: any): boolean => {
     typeof result.score === 'number' &&
     typeof result.totalQuestions === 'number' &&
     typeof result.correctAnswers === 'number' &&
-    result.score >= 0 && result.score <= 100 &&
+    result.score >= -100 && result.score <= 100 && // Allow negative scores due to negative marking
     result.totalQuestions > 0 &&
     result.correctAnswers >= 0 &&
     result.correctAnswers <= result.totalQuestions

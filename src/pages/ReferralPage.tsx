@@ -21,6 +21,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { referralService, ReferralStats } from '@/lib/referralService';
 import { supabase } from '@/integrations/supabase/client';
+import WithdrawalRequestModal from '@/components/WithdrawalRequestModal';
 
 const ReferralPage = () => {
   const navigate = useNavigate();
@@ -256,6 +257,39 @@ const ReferralPage = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Withdrawal Request Section */}
+            {comprehensiveStats && comprehensiveStats.paid_commissions > 0 && (
+              <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <DollarSign className="w-6 h-6 text-green-600" />
+                      <span>Withdraw Earnings</span>
+                    </div>
+                    <Badge className="bg-green-100 text-green-800">
+                      ₹{comprehensiveStats.paid_commissions.toFixed(2)} Available
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 mb-2">
+                        You have earned ₹{comprehensiveStats.paid_commissions.toFixed(2)} from referrals
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Withdrawal requests are processed within 2-3 business days
+                      </p>
+                    </div>
+                    <WithdrawalRequestModal 
+                      availableAmount={comprehensiveStats.paid_commissions}
+                      onRequestSubmitted={loadReferralStats}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Detailed Referral Network */}
             {referralNetwork.length > 0 && (

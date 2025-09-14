@@ -16,12 +16,13 @@ import {
   Home
 } from 'lucide-react';
 import ImageDisplay from '@/components/ImageDisplay';
+import { QuestionReportModal } from './QuestionReportModal';
 
 interface Question {
   id: string;
   questionEn: string;
   questionHi: string;
-  options: string[];
+  options: string[] | Array<{text: string; image?: string}>;
   correct: number;
   difficulty: string;
   subject?: string;
@@ -47,6 +48,9 @@ interface SolutionsDisplayProps {
   highestMarks?: number;
   onUpdateRank?: () => void;
   onBackToDashboard?: () => void;
+  examId?: string;
+  testType?: string;
+  testId?: string;
 }
 
 const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
@@ -61,8 +65,15 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
   totalParticipants,
   highestMarks,
   onUpdateRank,
-  onBackToDashboard
+  onBackToDashboard,
+  examId = 'ssc-cgl',
+  testType = 'pyq',
+  testId = 'test-id'
 }) => {
+  // Helper function to get option text
+  const getOptionText = (option: string | {text: string; image?: string}): string => {
+    return typeof option === 'string' ? option : option.text;
+  };
   const [showExplanations, setShowExplanations] = useState<{ [key: number]: boolean }>(() => {
     // Show explanations by default for all questions
     const defaultState: { [key: number]: boolean } = {};
@@ -271,25 +282,34 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                   {/* Question Header */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <Badge variant="outline" className="text-sm font-medium">
-                          Q{index + 1}
-                        </Badge>
-                        <Badge className={`text-xs ${getDifficultyColor(question.difficulty)}`}>
-                          {question.difficulty}
-                        </Badge>
-                        <Badge className={`text-xs ${getSubjectColor(question.subject)}`}>
-                          {question.subject}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {question.topic}
-                        </Badge>
-                        <Badge className="text-xs bg-green-100 text-green-800">
-                          +{question.marks} marks
-                        </Badge>
-                        <Badge className="text-xs bg-red-100 text-red-800">
-                          -{question.negativeMarks} marks
-                        </Badge>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <Badge variant="outline" className="text-sm font-medium">
+                            Q{index + 1}
+                          </Badge>
+                          <Badge className={`text-xs ${getDifficultyColor(question.difficulty)}`}>
+                            {question.difficulty}
+                          </Badge>
+                          <Badge className={`text-xs ${getSubjectColor(question.subject)}`}>
+                            {question.subject}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {question.topic}
+                          </Badge>
+                          <Badge className="text-xs bg-green-100 text-green-800">
+                            +{question.marks} marks
+                          </Badge>
+                          <Badge className="text-xs bg-red-100 text-red-800">
+                            -{question.negativeMarks} marks
+                          </Badge>
+                        </div>
+                        <QuestionReportModal
+                          examId={examId}
+                          testType={testType}
+                          testId={testId}
+                          questionId={question.id}
+                          questionText={question.questionEn}
+                        />
                       </div>
                       <h3 className="text-lg font-semibold text-foreground mb-2">
                         {question.questionEn}
@@ -328,6 +348,10 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                       const isUserAnswer = userAnswer === optionIndex;
                       const isCorrectAnswer = question.correct === optionIndex;
                       
+                      // Handle both string and object formats
+                      const optionText = typeof option === 'string' ? option : option.text;
+                      const optionImage = typeof option === 'object' ? option.image : undefined;
+                      
                       let optionClass = "p-3 rounded-lg border transition-colors";
                       
                       if (isCorrectAnswer) {
@@ -340,16 +364,31 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
 
                       return (
                         <div key={optionIndex} className={optionClass}>
-                          <div className="flex items-center space-x-3">
+                          <div className="flex items-start space-x-3">
                             <span className="font-medium text-sm">
                               {String.fromCharCode(65 + optionIndex)}.
                             </span>
-                            <span className="flex-1">{option}</span>
+                            <div className="flex-1">
+                              <span className="block">{optionText}</span>
+                              {optionImage && (
+                                <div className="mt-2">
+                                  <img 
+                                    src={`/logos/${optionImage}`} 
+                                    alt={`Option ${String.fromCharCode(65 + optionIndex)} image`}
+                                    className="max-w-full h-auto rounded border"
+                                    style={{ maxHeight: '200px' }}
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                    }}
+                                  />
+                                </div>
+                              )}
+                            </div>
                             {isCorrectAnswer && (
-                              <CheckCircle className="w-4 h-4 text-green-500" />
+                              <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
                             )}
                             {isUserAnswer && !isCorrect && (
-                              <XCircle className="w-4 h-4 text-red-500" />
+                              <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
                             )}
                           </div>
                         </div>
@@ -437,7 +476,7 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                         )}
                         <div className="bg-green-50 border border-green-200 rounded p-3">
                           <p className="text-green-800 text-sm font-medium">
-                            <strong>Final Answer:</strong> Option {String.fromCharCode(65 + question.correct)} - {question.options[question.correct]}
+                            <strong>Final Answer:</strong> Option {String.fromCharCode(65 + question.correct)} - {getOptionText(question.options[question.correct])}
                           </p>
                         </div>
                       </div>

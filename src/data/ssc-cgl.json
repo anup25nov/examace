@@ -143,11 +143,31 @@
             "id": "q1",
             "questionEn": "What is 25% of 200?",
             "questionHi": "200 का 25% क्या है?",
-            "options": ["40", "50", "60", "75"],
+            "questionImage": "math-problem.png",
+            "options": [
+              {
+                "text": "40",
+                "image": "math-addition.svg"
+              },
+              {
+                "text": "50",
+                "image": "math-addition.svg"
+              },
+              {
+                "text": "60",
+                "image": "math-addition.svg"
+              },
+              {
+                "text": "75",
+                "image": "math-addition.svg"
+              }
+            ],
             "correct": 1,
             "difficulty": "easy",
             "subject": "maths",
-            "topic": "percentage"
+            "topic": "percentage",
+            "explanation": "To find 25% of 200, we can use the formula: Percentage × Number ÷ 100. So, 25 × 200 ÷ 100 = 50. Therefore, 25% of 200 is 50.",
+            "explanationImage": "math-problem.png"
           }
         ]
       },

@@ -3,7 +3,7 @@ export interface QuestionConfig {
   id: string;
   questionEn: string;
   questionHi: string;
-  options: string[];
+  options: string[] | Array<{text: string; image?: string}>;
   correct: number;
   difficulty: "easy" | "medium" | "hard";
   subject?: string;

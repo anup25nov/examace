@@ -11,6 +11,7 @@ import { useUserStreak } from "@/hooks/useUserStreak";
 import { analytics } from "@/lib/analytics";
 import { optimizeRouteTransition } from "@/lib/navigationOptimizer";
 import { ProfileDropdown } from "@/components/ProfileDropdown";
+import UserMessages from '@/components/UserMessages';
 import { MembershipPlans } from "@/components/MembershipPlans";
 import { PaymentModal } from "@/components/PaymentModal";
 import { PhoneUpdateModal } from "@/components/PhoneUpdateModal";
@@ -171,11 +172,14 @@ const Index = () => {
             </div>
             
             {isAuthenticated ? (
-              <ProfileDropdown
-                onLogout={handleLogout}
-                onMembershipClick={handleMembershipClick}
-                onReferralClick={handleReferralClick}
-              />
+              <div className="flex items-center space-x-2">
+                <UserMessages />
+                <ProfileDropdown
+                  onLogout={handleLogout}
+                  onMembershipClick={handleMembershipClick}
+                  onReferralClick={handleReferralClick}
+                />
+              </div>
             ) : (
               <Button 
                 onClick={() => navigate('/auth')} 

@@ -30,6 +30,8 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ProfileUpdateModal } from './ProfileUpdateModal';
 import { referralService } from '@/lib/referralService';
+import UserMessages from './UserMessages';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ProfileDropdownProps {
   onLogout: () => void;
@@ -48,6 +50,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
   const [showProfileUpdate, setShowProfileUpdate] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [referralStats, setReferralStats] = useState({
     total_referrals: 0,
     total_earnings: 0,
@@ -59,19 +62,33 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     rewarded_referrals: 0
   });
 
-  // Fetch referral stats - ALWAYS call hooks before any early returns
+  // Fetch referral stats and admin status - ALWAYS call hooks before any early returns
   useEffect(() => {
-    const fetchReferralStats = async () => {
+    const fetchData = async () => {
       try {
         const stats = await referralService.getReferralStats();
         setReferralStats(stats);
       } catch (error) {
         console.error('Error fetching referral stats:', error);
       }
+
+      // Check admin status
+      if (user) {
+        try {
+          const { data, error } = await supabase.rpc('is_admin' as any, {
+            user_uuid: user.id
+          });
+          if (!error) {
+            setIsAdmin(data);
+          }
+        } catch (error) {
+          console.error('Error checking admin status:', error);
+        }
+      }
     };
 
     if (isAuthenticated && user) {
-      fetchReferralStats();
+      fetchData();
     }
   }, [isAuthenticated, user]);
 
@@ -115,23 +132,37 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
       <DropdownMenuTrigger asChild>
         <Button 
           variant="ghost" 
-          className={`flex items-center space-x-2 p-2 ${isMobile ? 'w-full justify-start' : ''}`}
+          className={`flex items-center space-x-3 p-2 hover:bg-gray-50 transition-colors ${isMobile ? 'w-full justify-start' : ''}`}
         >
-          <div className="flex items-center space-x-2">
-            {getMembershipIcon()}
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg flex items-center justify-center">
+                <span className="text-white font-semibold text-sm">
+                  {(userName || userEmail).charAt(0).toUpperCase()}
+                </span>
+              </div>
+              {isAdmin && (
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
+              )}
+            </div>
             <div className={`text-left ${isMobile ? 'flex-1' : ''}`}>
-              <p className="text-sm font-medium text-foreground">
+              <p className="text-sm font-semibold text-gray-900">
                 {isMobile ? 'Profile' : (userName || userEmail.split('@')[0])}
               </p>
+              {!isMobile && (
+                <p className="text-xs text-gray-500">
+                  {getMembershipBadge().props.children}
+                </p>
+              )}
             </div>
-            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            <ChevronDown className="w-4 h-4 text-gray-500" />
           </div>
         </Button>
       </DropdownMenuTrigger>
       
       <DropdownMenuContent 
         align="end" 
-        className={`w-80 ${isMobile ? 'w-72 mr-2' : ''}`}
+        className={`w-96 ${isMobile ? 'w-80 mr-2' : ''} shadow-xl border border-gray-200`}
       >
         <DropdownMenuLabel className="flex items-center space-x-2">
           <User className="w-4 h-4" />
@@ -140,22 +171,36 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
         
         <DropdownMenuSeparator />
         
-        {/* User Info Section */}
-        <div className="px-3 py-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg mx-2 mb-2">
-          <div className="flex items-center space-x-3 mb-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-lg">
-                {(userName || userEmail).charAt(0).toUpperCase()}
-              </span>
+        {/* Professional User Info Section */}
+        <div className="px-4 py-4 bg-gradient-to-br from-slate-50 to-blue-50 border border-gray-200 rounded-xl mx-2 mb-3">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="relative">
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold text-xl">
+                  {(userName || userEmail).charAt(0).toUpperCase()}
+                </span>
+              </div>
+              {isAdmin && (
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                  <Shield className="w-3 h-3 text-white" />
+                </div>
+              )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">
-                {userName || userEmail.split('@')[0]}
-              </p>
-              <p className="text-xs text-gray-600 truncate">
+              <div className="flex items-center space-x-2 mb-1">
+                <p className="text-base font-semibold text-gray-900 truncate">
+                  {userName || userEmail.split('@')[0]}
+                </p>
+                {isAdmin && (
+                  <Badge className="bg-red-100 text-red-800 text-xs px-2 py-0.5">
+                    Admin
+                  </Badge>
+                )}
+              </div>
+              <p className="text-sm text-gray-600 truncate mb-2">
                 {userEmail}
               </p>
-              <div className="flex items-center space-x-2 mt-1">
+              <div className="flex items-center space-x-2">
                 {getMembershipBadge()}
                 {(profile as any)?.phone_verified && (
                   <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
@@ -167,18 +212,24 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
             </div>
           </div>
           
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 gap-2 text-center">
-            <div className="bg-white/50 rounded-lg p-2">
-              <p className="text-xs text-gray-600">Referrals</p>
-              <p className="text-sm font-bold text-gray-900">
+          {/* Enhanced Stats Grid */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-white/70 rounded-lg p-3 text-center border border-gray-100">
+              <p className="text-xs text-gray-600 font-medium">Referrals</p>
+              <p className="text-lg font-bold text-gray-900">
                 {referralStats.total_referrals || 0}
               </p>
             </div>
-            <div className="bg-white/50 rounded-lg p-2">
-              <p className="text-xs text-gray-600">Earnings</p>
-              <p className="text-sm font-bold text-green-600">
+            <div className="bg-white/70 rounded-lg p-3 text-center border border-gray-100">
+              <p className="text-xs text-gray-600 font-medium">Earnings</p>
+              <p className="text-lg font-bold text-green-600">
                 ₹{referralStats.total_earnings || 0}
+              </p>
+            </div>
+            <div className="bg-white/70 rounded-lg p-3 text-center border border-gray-100">
+              <p className="text-xs text-gray-600 font-medium">Code</p>
+              <p className="text-sm font-mono text-blue-600">
+                {referralStats.referral_code?.slice(0, 6) || 'N/A'}
               </p>
             </div>
           </div>
@@ -202,6 +253,26 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
             </p> */}
           </div>
         </DropdownMenuItem>
+        
+        {/* Admin Access Section */}
+        {isAdmin && (
+          <DropdownMenuItem 
+            onClick={() => {
+              navigate('/admin');
+              setIsOpen(false);
+            }}
+            className="flex items-center space-x-2 cursor-pointer bg-red-50 hover:bg-red-100"
+          >
+            <Shield className="w-4 h-4 text-red-600" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-800">Admin Panel</p>
+              <p className="text-xs text-red-600">Manage reports & withdrawals</p>
+            </div>
+            <Badge className="bg-red-100 text-red-800 text-xs">
+              Admin
+            </Badge>
+          </DropdownMenuItem>
+        )}
         
         {/* Membership Section */}
         <DropdownMenuItem 

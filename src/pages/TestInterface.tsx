@@ -507,6 +507,9 @@ const TestInterface = () => {
         correctAnswers={testResults.correct}
         timeTaken={testResults.timeTaken}
         onClose={() => navigate(`/exam/${examId}`)}
+        examId={examId}
+        testType={sectionId}
+        testId={testType}
         // Don't show highest marks in test completion, only in solutions view
       />
     );
@@ -676,26 +679,47 @@ const TestInterface = () => {
                 
                 <div className="space-y-3">
                   {question.options && question.options.length > 0 ? (
-                    question.options.map((option, index) => (
-                      <label
-                        key={index}
-                        className={`flex items-center space-x-3 p-4 rounded-lg border cursor-pointer transition-all ${
-                          answers[questions.findIndex(q => q.id === filteredQuestions[currentQuestion].id)] === index
-                            ? 'border-primary bg-primary/10'
-                            : 'border-border hover:border-primary/50 hover:bg-muted/50'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="answer"
-                          value={index}
-                          checked={answers[questions.findIndex(q => q.id === filteredQuestions[currentQuestion].id)] === index}
-                          onChange={() => handleAnswerSelect(index)}
-                          className="w-4 h-4 text-primary"
-                        />
-                        <span className="text-foreground">{option}</span>
-                      </label>
-                    ))
+                    question.options.map((option, index) => {
+                      // Handle both string and object formats
+                      const optionText = typeof option === 'string' ? option : option.text;
+                      const optionImage = typeof option === 'object' ? option.image : undefined;
+                      
+                      return (
+                        <label
+                          key={index}
+                          className={`flex items-start space-x-3 p-4 rounded-lg border cursor-pointer transition-all ${
+                            answers[questions.findIndex(q => q.id === filteredQuestions[currentQuestion].id)] === index
+                              ? 'border-primary bg-primary/10'
+                              : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="answer"
+                            value={index}
+                            checked={answers[questions.findIndex(q => q.id === filteredQuestions[currentQuestion].id)] === index}
+                            onChange={() => handleAnswerSelect(index)}
+                            className="w-4 h-4 text-primary mt-1"
+                          />
+                          <div className="flex-1">
+                            <span className="text-foreground block">{optionText}</span>
+                            {optionImage && (
+                              <div className="mt-2">
+                                <img 
+                                  src={`/logos/${optionImage}`} 
+                                  alt={`Option ${String.fromCharCode(65 + index)} image`}
+                                  className="max-w-full h-auto rounded border"
+                                  style={{ maxHeight: '150px' }}
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </label>
+                      );
+                    })
                   ) : (
                     <div className="text-center py-8 text-muted-foreground">
                       <AlertCircle className="w-8 h-8 mx-auto mb-2" />

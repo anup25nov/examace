@@ -235,6 +235,9 @@ const SolutionsViewer = () => {
         totalParticipants={totalParticipants}
         highestMarks={highestMarks}
         onUpdateRank={handleUpdateRank}
+        examId={examId}
+        testType={actualTestType}
+        testId={actualTestId}
       />
     </div>
   );
