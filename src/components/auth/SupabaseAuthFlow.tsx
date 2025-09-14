@@ -10,6 +10,7 @@ import {
   verifyOTPCode
 } from '@/lib/supabaseAuth';
 import { referralService } from '@/lib/referralService';
+import OTPInput from './OTPInput';
 
 interface SupabaseAuthFlowProps {
   onAuthSuccess: () => void;
@@ -240,16 +241,13 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
       <CardContent>
         <form onSubmit={handleOTPSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="otp">Verification Code</Label>
-            <Input
-              id="otp"
-              type="text"
-              placeholder="Enter 6-digit code"
+            <Label>Verification Code</Label>
+            <OTPInput
               value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              maxLength={6}
-              className="text-center text-lg tracking-widest"
-              required
+              onChange={setOtp}
+              length={6}
+              disabled={loading}
+              className="my-4"
             />
           </div>
           
