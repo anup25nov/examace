@@ -29,6 +29,9 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
   const [canResend, setCanResend] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
   const [showReferralInput, setShowReferralInput] = useState(false);
+  const [refFromLink, setRefFromLink] = useState<string | null>(null);
+  const [referralInvalid, setReferralInvalid] = useState<string | null>(null);
+  const [showReferralDecision, setShowReferralDecision] = useState(false);
 
   // Timer effect for OTP resend
   useEffect(() => {
@@ -52,8 +55,25 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     if (step === 'otp') {
       setResendTimer(60);
       setCanResend(false);
+      // Keep OTP screen minimal; handle referral post-OTP
+      setShowReferralInput(false);
     }
   }, [step]);
+
+  // Capture referral code from URL (?ref=CODE) and prefill
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref');
+      if (ref) {
+        const cleaned = ref.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20);
+        setRefFromLink(cleaned);
+        setReferralCode(cleaned);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,14 +118,42 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     try {
       const result = await verifyOTPCode(phone, otp);
       if (result.success && result.data) {
-        // Check if this is a new user (first time signup)
-        if (result.isNewUser) {
-          setIsNewUser(true);
-          setShowReferralInput(true);
-        } else {
-          // Existing user - proceed directly
-          onAuthSuccess();
+        setIsNewUser(!!result.isNewUser);
+        // If user entered/prefilled a referral code, validate it now
+        if (referralCode.trim()) {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+              setError('User not authenticated');
+              setLoading(false);
+              return;
+            }
+            const { data: refData, error: refErr } = await supabase.rpc('validate_and_apply_referral_code' as any, {
+              p_user_id: user.id,
+              p_referral_code: referralCode.trim().toUpperCase()
+            });
+            if (refErr) {
+              setReferralInvalid('Invalid referral code');
+              setShowReferralDecision(true);
+              setShowReferralInput(true);
+              return;
+            }
+            const res = Array.isArray(refData) && refData.length > 0 ? refData[0] : null;
+            if (!res || !res.success) {
+              setReferralInvalid(res?.message || 'Invalid referral code');
+              setShowReferralDecision(true);
+              setShowReferralInput(true);
+              return;
+            }
+          } catch {
+            setReferralInvalid('Invalid referral code');
+            setShowReferralDecision(true);
+            setShowReferralInput(true);
+            return;
+          }
         }
+        // Referral valid or not provided → proceed
+        onAuthSuccess();
       } else {
         setError(result.error || 'Invalid OTP');
       }
@@ -207,6 +255,18 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     onAuthSuccess();
   };
 
+  const continueWithoutReferral = () => {
+    setShowReferralDecision(false);
+    setReferralInvalid(null);
+    onAuthSuccess();
+  };
+
+  const reenterReferral = () => {
+    setShowReferralDecision(false);
+    setReferralInvalid(null);
+    setShowReferralInput(true);
+  };
+
   const renderPhoneStep = () => (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="space-y-1">
@@ -235,6 +295,21 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
             <p className="text-xs text-muted-foreground">
               We'll send you an OTP to verify your number
             </p>
+          </div>
+
+          {/* Referral input on signup (optional, with auto-fill support) */}
+          <div className="space-y-2 border rounded-md p-3 bg-muted/20">
+            <Label htmlFor="referralCode">Referral Code (Optional)</Label>
+            <Input
+              id="referralCode"
+              type="text"
+              placeholder="Have a referral code? Enter it here"
+              value={referralCode}
+              onChange={(e) => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20))}
+              className="text-center font-mono tracking-wider"
+              maxLength={20}
+            />
+            <p className="text-xs text-muted-foreground text-center">Optional. Links like ?ref=CODE will auto-fill.</p>
           </div>
 
           
@@ -280,22 +355,25 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
             />
           </div>
 
-          {/* Referral Code Input - Show only for new users after OTP verification */}
-          {showReferralInput && isNewUser && (
+          {/* If referral invalid, allow re-entry on the OTP screen */}
+          {showReferralInput && (
             <div className="space-y-2">
-              <Label htmlFor="referralCode">Referral Code (Optional)</Label>
+              <Label htmlFor="referralCode">Referral Code</Label>
               <Input
                 id="referralCode"
                 type="text"
-                placeholder="Enter referral code if you have one"
+                placeholder="Re-enter referral code"
                 value={referralCode}
                 onChange={(e) => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20))}
                 className="text-center font-mono tracking-wider"
                 maxLength={20}
               />
-              <p className="text-xs text-muted-foreground">
-                Get rewards when someone uses your referral code
-              </p>
+              <div className="flex space-x-2">
+                <Button type="button" variant="outline" className="flex-1" onClick={skipReferral} disabled={loading}>Skip</Button>
+                <Button type="button" className="flex-1" onClick={handleReferralSubmit} disabled={loading}>
+                  {loading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Applying...</>) : 'Apply & Continue'}
+                </Button>
+              </div>
             </div>
           )}
           
@@ -327,33 +405,21 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
             </Button>
           </div>
 
-          {/* Show referral actions after OTP verification for new users */}
-          {showReferralInput && isNewUser && (
-            <div className="flex space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={skipReferral}
-                className="flex-1"
-                disabled={loading}
-              >
-                Skip
-              </Button>
-              <Button
-                type="button"
-                onClick={handleReferralSubmit}
-                className="flex-1"
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Applying...
-                  </>
-                ) : (
-                  'Continue'
-                )}
-              </Button>
+          {/* Decision dialog for invalid referral after OTP */}
+          {showReferralDecision && (
+            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+              <Card className="w-full max-w-md">
+                <CardHeader>
+                  <CardTitle className="text-center">Invalid Referral Code</CardTitle>
+                  <CardDescription className="text-center">{referralInvalid || 'The referral code you entered is invalid.'}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex space-x-2">
+                    <Button variant="outline" className="flex-1" onClick={reenterReferral}>Re-enter</Button>
+                    <Button className="flex-1" onClick={continueWithoutReferral}>Continue without referral</Button>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           )}
           
