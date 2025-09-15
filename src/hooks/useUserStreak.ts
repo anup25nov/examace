@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { getCurrentISTDate, isTodayIST, isYesterdayIST } from '@/lib/timeUtils';
 
 export const useUserStreak = () => {
   const [streak, setStreak] = useState({ current_streak: 0, longest_streak: 0 });
@@ -16,17 +17,16 @@ export const useUserStreak = () => {
       }
 
       try {
-        // For now, use a simplified streak system
-        // In production, you would call the database functions
-        const today = new Date().toISOString().split('T')[0];
+        // Use IST timezone for streak calculations
+        const todayIST = getCurrentISTDate();
         const lastVisitKey = `lastVisit_${user.id}`;
         const lastVisit = localStorage.getItem(lastVisitKey);
         
         let currentStreak = 0;
         let longestStreak = 0;
         
-        if (lastVisit === today) {
-          // Already visited today, get existing streak
+        if (isTodayIST(lastVisit || '')) {
+          // Already visited today in IST, get existing streak
           const streakData = localStorage.getItem(`streak_${user.id}`);
           if (streakData) {
             const { current_streak, longest_streak } = JSON.parse(streakData);
@@ -34,17 +34,16 @@ export const useUserStreak = () => {
             longestStreak = longest_streak || 0;
           }
         } else {
-          // First visit today, update streak
+          // First visit today in IST, update streak
           const streakData = localStorage.getItem(`streak_${user.id}`);
           if (streakData) {
             const { current_streak, longest_streak } = JSON.parse(streakData);
-            const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
             
-            if (lastVisit === yesterday) {
-              // Consecutive day
+            if (lastVisit && isYesterdayIST(lastVisit)) {
+              // Consecutive day in IST
               currentStreak = (current_streak || 0) + 1;
             } else {
-              // Streak broken
+              // Streak broken (not consecutive days in IST)
               currentStreak = 1;
             }
             
@@ -61,8 +60,8 @@ export const useUserStreak = () => {
             longest_streak: longestStreak
           }));
           
-          // Record today's visit
-          localStorage.setItem(lastVisitKey, today);
+          // Record today's visit in IST
+          localStorage.setItem(lastVisitKey, todayIST);
         }
         
         setStreak({

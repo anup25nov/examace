@@ -3,17 +3,12 @@ import {
   getCurrentAuthUser, 
   getCurrentUserId, 
   isUserAuthenticated, 
-  signOutUser 
+  signOutUser,
+  AuthUser
 } from '@/lib/supabaseAuth';
 import { supabaseStatsService } from '@/lib/supabaseStats';
 import { supabase } from '@/integrations/supabase/client';
-
-export interface AuthUser {
-  id: string;
-  email: string;
-  createdAt: any;
-  updatedAt: any;
-}
+import { getCurrentISTDate, isTodayIST, isYesterdayIST } from '@/lib/timeUtils';
 
 export const useAuth = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -51,21 +46,28 @@ export const useAuth = () => {
             setUser(authUser);
             setIsAuthenticated(true);
             
-            // Update daily visit streak (only once per day)
+            // Update daily visit streak (only once per day in IST)
             try {
-              // Use UTC date for consistency with database
-              const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+              // Use IST date for streak calculations
+              const todayIST = getCurrentISTDate();
               const lastVisitDate = localStorage.getItem('lastVisitDate');
               
-              console.log('Streak check - Today:', today, 'Last visit:', lastVisitDate);
+              console.log('Streak check - Today IST:', todayIST, 'Last visit:', lastVisitDate);
               
-              if (lastVisitDate !== today) {
+              if (!isTodayIST(lastVisitDate || '')) {
+                // Check if streak should be reset (if last visit was not yesterday in IST)
+                if (lastVisitDate && !isYesterdayIST(lastVisitDate)) {
+                  console.log('Streak broken - last visit was not yesterday in IST');
+                  // Reset streak in localStorage
+                  localStorage.removeItem(`streak_${authUser.id}`);
+                }
+                
                 const result = await supabaseStatsService.updateDailyVisit();
                 console.log('Daily visit update result:', result);
-                localStorage.setItem('lastVisitDate', today);
-                console.log('Daily visit updated for:', today);
+                localStorage.setItem('lastVisitDate', todayIST);
+                console.log('Daily visit updated for IST:', todayIST);
               } else {
-                console.log('Daily visit already updated today');
+                console.log('Daily visit already updated today in IST');
               }
             } catch (error) {
               console.error('Error updating daily visit:', error);
