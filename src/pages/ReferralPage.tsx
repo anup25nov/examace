@@ -54,7 +54,10 @@ const ReferralPage = () => {
       if (statsError) {
         console.error('Error loading comprehensive stats:', statsError);
       } else if (statsData && Array.isArray(statsData) && statsData.length > 0) {
+        console.log('Comprehensive stats data:', statsData[0]);
         setComprehensiveStats(statsData[0]);
+      } else {
+        console.log('No comprehensive stats data found:', statsData);
       }
       
       // Load detailed referral network
@@ -259,7 +262,17 @@ const ReferralPage = () => {
             </Card>
 
             {/* Withdrawal Request Section */}
-            {comprehensiveStats && (Number(comprehensiveStats.pending_commissions || 0) > 70) && (
+            {(() => {
+              const pendingAmount = Number(comprehensiveStats?.pending_commissions || 0);
+              const shouldShow = comprehensiveStats && pendingAmount > 70;
+              console.log('Withdrawal check:', { 
+                comprehensiveStats: !!comprehensiveStats, 
+                pendingAmount, 
+                shouldShow,
+                pending_commissions: comprehensiveStats?.pending_commissions 
+              });
+              return shouldShow;
+            })() && (
               <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
@@ -287,6 +300,19 @@ const ReferralPage = () => {
                       onRequestSubmitted={loadReferralStats}
                     />
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Debug Section - Remove this after testing */}
+            {comprehensiveStats && (
+              <Card className="border-red-200 bg-red-50">
+                <CardContent className="p-4 text-sm text-red-800">
+                  <strong>Debug Info:</strong><br/>
+                  Pending Commissions: {comprehensiveStats.pending_commissions}<br/>
+                  Paid Commissions: {comprehensiveStats.paid_commissions}<br/>
+                  Total Referrals: {comprehensiveStats.total_referrals}<br/>
+                  Should Show Withdrawal: {Number(comprehensiveStats.pending_commissions || 0) > 70 ? 'YES' : 'NO'}
                 </CardContent>
               </Card>
             )}
