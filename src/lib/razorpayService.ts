@@ -458,7 +458,9 @@ export class RazorpayService {
     if (isServer) {
       return process.env.RAZORPAY_KEY_ID || 'rzp_test_RFxIToeCLybhiA';
     } else {
-      return import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_RFxIToeCLybhiA';
+      const viteKey = (import.meta as any).env?.VITE_RAZORPAY_KEY_ID;
+      const nextPublicKey = (import.meta as any).env?.NEXT_PUBLIC_RAZORPAY_KEY_ID || (window as any)?.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+      return viteKey || nextPublicKey || 'rzp_test_RFxIToeCLybhiA';
     }
   }
 

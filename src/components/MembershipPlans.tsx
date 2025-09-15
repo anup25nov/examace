@@ -13,8 +13,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { membershipPlansService, MembershipPlan as BackendPlan } from '@/lib/membershipPlansService';
-import { RazorpayPaymentModal } from './RazorpayPaymentModal';
+import { RazorpayCheckout } from './RazorpayCheckout';
 
 interface MembershipPlan {
   id: string;
@@ -88,45 +87,36 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
 
   // Load plans from backend
   useEffect(() => {
-    const loadPlans = async () => {
-      try {
-        setLoading(true);
-        const response = await membershipPlansService.getMembershipPlans();
-        
-        if (response.success && response.plans) {
-          // Convert backend plans to frontend format
-          const convertedPlans: MembershipPlan[] = response.plans
-            .filter(plan => plan.id !== 'free') // Exclude free plan from payment options
-            .map(plan => {
-              const styling = getPlanStyling(plan.id);
-              return {
-                id: plan.id,
-                name: plan.name,
-                description: plan.description,
-                price: plan.price,
-                features: plan.features,
-                popular: plan.id === 'yearly', // Mark yearly as popular
-                icon: styling.icon,
-                color: styling.color,
-                bgColor: styling.bgColor,
-                duration_months: plan.duration_months,
-                currency: plan.currency
-              };
-            });
-          
-          setPlans(convertedPlans);
-        } else {
-          setError(response.error || 'Failed to load plans');
-        }
-      } catch (err) {
-        setError('Failed to load membership plans');
-        console.error('Error loading plans:', err);
-      } finally {
-        setLoading(false);
-      }
+    // Use latest Pro and Pro+ definitions (1 year validity, env pricing handled server-side)
+    setLoading(true);
+    const pro: MembershipPlan = {
+      id: 'pro',
+      name: 'Pro',
+      description: 'Annual access with mock limit 3',
+      price: 1,
+      features: ['Annual validity', 'Mock limit: 3', 'Premium PYQs', 'Detailed Solutions'],
+      popular: false,
+      icon: <Crown className="w-6 h-6" />,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50 border-blue-200',
+      duration_months: 12,
+      currency: 'INR'
     };
-
-    loadPlans();
+    const proPlus: MembershipPlan = {
+      id: 'pro_plus',
+      name: 'Pro+',
+      description: 'Annual access with mock limit 5 and priority',
+      price: 2,
+      features: ['Annual validity', 'Mock limit: 5', 'Premium PYQs', 'Detailed Solutions', 'Priority Support'],
+      popular: true,
+      icon: <Crown className="w-6 h-6" />,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50 border-purple-200',
+      duration_months: 12,
+      currency: 'INR'
+    };
+    setPlans([pro, proPlus]);
+    setLoading(false);
   }, []);
 
   const handleSelectPlan = (plan: MembershipPlan) => {
@@ -230,23 +220,11 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
                 
                 <div className="mt-4">
                   <div className="flex items-center justify-center space-x-2">
-                    <span className="text-3xl font-bold text-gray-900">
-                      {membershipPlansService.formatPrice(plan.price, plan.currency)}
-                    </span>
-                    {plan.originalPrice && (
-                      <span className="text-lg text-gray-500 line-through">
-                        {membershipPlansService.formatPrice(plan.originalPrice, plan.currency)}
-                      </span>
-                    )}
+                    <span className="text-3xl font-bold text-gray-900">₹{plan.price}</span>
                   </div>
                   <p className="text-sm text-gray-600 mt-1">
-                    {membershipPlansService.getDurationDisplay(plan.duration_months)}
+                    {plan.duration_months} months
                   </p>
-                  {plan.originalPrice && (
-                    <Badge variant="secondary" className="mt-2 bg-green-100 text-green-800">
-                      {Math.round(((plan.originalPrice - plan.price) / plan.originalPrice) * 100)}% OFF
-                    </Badge>
-                  )}
                 </div>
               </CardHeader>
 
@@ -301,13 +279,14 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
 
       {/* Razorpay Payment Modal */}
       {showPaymentModal && selectedPlanForPayment && (
-        <RazorpayPaymentModal
+        <RazorpayCheckout
           plan={{
             id: selectedPlanForPayment.id,
             name: selectedPlanForPayment.name,
+            description: selectedPlanForPayment.description,
             price: selectedPlanForPayment.price,
-            mockTests: 50, // You can adjust this based on your plan
-            description: selectedPlanForPayment.description
+            currency: selectedPlanForPayment.currency,
+            features: selectedPlanForPayment.features
           }}
           onClose={() => setShowPaymentModal(false)}
           onPaymentSuccess={handlePaymentSuccess}

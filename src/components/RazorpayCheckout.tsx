@@ -64,6 +64,8 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
       setError(null);
       setPaymentStep('processing');
 
+      console.log('Creating payment for plan:', plan);
+      
       // Create Razorpay payment
       const paymentRequest: RazorpayPaymentRequest = {
         planId: plan.id,
@@ -71,17 +73,19 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
         amount: plan.price,
         currency: plan.currency,
         userId: user.id,
-        userEmail: user.email || '',
+        userEmail: '',
         userName: (profile as any)?.name || '',
       };
 
+      console.log('Payment request:', paymentRequest);
       const paymentResult = await razorpayPaymentService.createRazorpayPayment(paymentRequest);
+      console.log('Payment result:', paymentResult);
 
       if (!paymentResult.success) {
         throw new Error(paymentResult.error || 'Failed to create payment');
       }
 
-      // Configure Razorpay options
+      // Configure Razorpay options for UPI and QR only
       const options = {
         key: razorpayPaymentService.getKeyId(),
         amount: plan.price * 100, // Convert to paise
@@ -90,9 +94,36 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
         description: plan.name,
         order_id: paymentResult.orderId,
         prefill: {
-          name: (profile as any)?.name || user.email?.split('@')[0] || '',
-          email: user.email || '',
-          contact: (profile as any)?.phone || '',
+          name: (profile as any)?.name || user.phone || '',
+          email: '',
+          contact: (profile as any)?.phone || user.phone || '',
+        },
+        // Force UPI and QR only
+        method: 'upi',
+        config: {
+          checkout: {
+            method: {
+              netbanking: '0',
+              card: '0', 
+              wallet: '0',
+              upi: '1',
+              emi: '0',
+              paylater: '0'
+            }
+          },
+          display: {
+            hide: [
+              { method: 'card' },
+              { method: 'netbanking' },
+              { method: 'wallet' },
+              { method: 'emi' },
+              { method: 'paylater' }
+            ]
+          },
+        },
+        // Enable UPI QR code
+        upi: {
+          flow: 'qr'
         },
         theme: {
           color: '#3B82F6',
@@ -106,7 +137,8 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
-              }
+              },
+              plan.id === 'pro_plus' ? 'pro_plus' : 'pro'
             );
 
             if (verificationResult.success) {
@@ -132,6 +164,9 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
         },
       };
 
+      console.log('Razorpay options:', options);
+      console.log('Opening Razorpay checkout...');
+
       // Open Razorpay checkout
       const razorpay = new window.Razorpay(options);
       razorpay.open();
@@ -153,18 +188,11 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
       color: 'text-blue-600',
     },
     {
-      id: 'cards',
-      name: 'Cards',
-      description: 'Credit & Debit Cards',
-      icon: <CreditCard className="w-6 h-6" />,
-      color: 'text-green-600',
-    },
-    {
-      id: 'netbanking',
-      name: 'Net Banking',
-      description: 'All major banks',
+      id: 'qr',
+      name: 'QR Code',
+      description: 'Scan QR with any UPI app',
       icon: <Globe className="w-6 h-6" />,
-      color: 'text-purple-600',
+      color: 'text-green-600',
     },
   ];
 
@@ -257,7 +285,7 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
           {/* Payment Methods */}
           <div>
             <h4 className="font-medium mb-3">Payment Methods</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {getPaymentMethods().map((method) => (
                 <div
                   key={method.id}

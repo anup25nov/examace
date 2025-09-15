@@ -13,7 +13,6 @@ import { optimizeRouteTransition } from "@/lib/navigationOptimizer";
 import { ProfileDropdown } from "@/components/ProfileDropdown";
 import UserMessages from '@/components/UserMessages';
 import { MembershipPlans } from "@/components/MembershipPlans";
-import { PaymentModal } from "@/components/PaymentModal";
 import { PhoneUpdateModal } from "@/components/PhoneUpdateModal";
 import { ReferralSystem } from "@/components/ReferralSystem";
 import { ReferralCodeInput } from "@/components/ReferralCodeInput";
@@ -43,11 +42,9 @@ const Index = () => {
   
   // New modal states
   const [showMembershipPlans, setShowMembershipPlans] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [showReferralSystem, setShowReferralSystem] = useState(false);
   const [showReferralCodeInput, setShowReferralCodeInput] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [appliedReferralCode, setAppliedReferralCode] = useState<string | null>(null);
   const [showDailyAccolades, setShowDailyAccolades] = useState(false);
   const [isFirstDailyVisit, setIsFirstDailyVisit] = useState(false);
@@ -80,17 +77,13 @@ const Index = () => {
   };
 
 
-  const handlePlanSelect = (plan: any) => {
-    setSelectedPlan(plan);
+  const handlePlanSelect = (_plan: any) => {
+    // MembershipPlans will handle opening RazorpayCheckout internally
     setShowMembershipPlans(false);
-    setShowPaymentModal(true);
   };
 
-  const handlePaymentSuccess = (paymentId: string) => {
-    console.log('Payment successful:', paymentId);
-    setShowPaymentModal(false);
-    setSelectedPlan(null);
-    // TODO: Update user membership in database
+  const handlePaymentSuccess = (_paymentId: string) => {
+    // Handled inside MembershipPlans/RazorpayCheckout
   };
 
   const handlePhoneUpdateSuccess = (phone: string) => {
@@ -475,16 +468,7 @@ const Index = () => {
         />
       )}
 
-      {showPaymentModal && selectedPlan && (
-        <PaymentModal
-          plan={selectedPlan}
-          onClose={() => {
-            setShowPaymentModal(false);
-            setSelectedPlan(null);
-          }}
-          onPaymentSuccess={handlePaymentSuccess}
-        />
-      )}
+      {/* Payment handled within MembershipPlans via RazorpayCheckout */}
 
       {showPhoneModal && (
         <PhoneUpdateModal

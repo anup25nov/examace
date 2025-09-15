@@ -1,4 +1,4 @@
-import { razorpayService, RazorpayOrderData, RazorpayPaymentData, RazorpayPaymentResponse } from './razorpayService';
+import { RazorpayPaymentResponse, razorpayService } from './razorpayService';
 import { paymentService } from './paymentService';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -37,64 +37,30 @@ export class RazorpayPaymentService {
    */
   async createRazorpayPayment(paymentRequest: RazorpayPaymentRequest): Promise<RazorpayPaymentResult> {
     try {
-      // Generate unique payment ID
-      const paymentId = `PAY_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      // Create Razorpay order
-      const orderData: RazorpayOrderData = {
-        amount: paymentRequest.amount,
-        currency: paymentRequest.currency || 'INR',
-        receipt: paymentId,
-        notes: {
-          plan_id: paymentRequest.planId,
-          plan_name: paymentRequest.planName,
-          user_id: paymentRequest.userId,
-          user_email: paymentRequest.userEmail,
-          user_name: paymentRequest.userName || '',
-        },
-      };
-
-      const razorpayOrder = await razorpayService.createOrder(orderData);
-
-      // Create payment record in database
-      const paymentData = {
-        paymentId,
-        planId: paymentRequest.planId,
-        planName: paymentRequest.planName,
-        amount: paymentRequest.amount,
-        paymentMethod: 'upi' as const, // Use 'upi' type since we're focusing on UPI payments
-        upiId: undefined,
-      };
-
-      const dbResult = await paymentService.createPayment({
-        userId: paymentRequest.userId,
-        plan: {
-          id: paymentRequest.planId,
-          name: paymentRequest.planName,
-          price: paymentRequest.amount,
-          mockTests: 50 // Default value
-        }
-      });
-
-      if (!dbResult.success) {
-        throw new Error(dbResult.error || 'Failed to create payment record');
+      // Create order via Supabase Edge Function
+      const { data, error } = await supabase.functions.invoke('create_razorpay_order' as any, {
+        body: { user_id: paymentRequest.userId, plan: paymentRequest.planId === 'pro_plus' ? 'pro_plus' : 'pro' }
+      } as any);
+      if (error || !data?.success) {
+        throw new Error(error?.message || data?.error || 'Failed to create order');
       }
 
-      // Update payment record with Razorpay order ID
-      await this.updatePaymentWithRazorpayData(paymentId, {
-        razorpay_order_id: razorpayOrder.id,
-        razorpay_payment_id: '',
-        razorpay_signature: '',
-      });
+      // Insert pending payment record (new payments schema)
+      try {
+        await supabase.from('payments' as any).insert({
+          user_id: paymentRequest.userId,
+          plan: paymentRequest.planId === 'pro_plus' ? 'pro_plus' : 'pro',
+          amount: paymentRequest.amount,
+          currency: paymentRequest.currency || 'INR',
+          razorpay_order_id: data.order_id,
+          status: 'pending'
+        } as any);
+      } catch (e) {
+        console.warn('Failed to insert pending payment (non-fatal):', e);
+      }
 
-      return {
-        success: true,
-        orderId: razorpayOrder.id,
-        paymentId: dbResult.paymentId!,
-        amount: paymentRequest.amount,
-        currency: paymentRequest.currency || 'INR',
-        message: 'Razorpay order created successfully',
-      };
+      // Return order id as the tracking id for client
+      return { success: true, orderId: data.order_id, paymentId: data.order_id, amount: paymentRequest.amount, currency: data.currency || 'INR' };
     } catch (error) {
       console.error('Error creating Razorpay payment:', error);
       return {
@@ -113,65 +79,25 @@ export class RazorpayPaymentService {
       razorpay_order_id: string;
       razorpay_payment_id: string;
       razorpay_signature: string;
-    }
+    },
+    planId: 'pro' | 'pro_plus'
   ): Promise<RazorpayPaymentResponse> {
     try {
-      // Verify payment signature
-      const isSignatureValid = await razorpayService.verifyPayment(
-        razorpayPaymentData.razorpay_payment_id,
-        razorpayPaymentData.razorpay_order_id,
-        razorpayPaymentData.razorpay_signature
-      );
-      
-      if (!isSignatureValid) {
-        return {
-          success: false,
-          error: 'Invalid payment signature',
-        };
+      // Verify via Supabase Edge Function, which also activates membership
+      const { data, error } = await supabase.functions.invoke('verify_razorpay_payment' as any, {
+        body: {
+          user_id: (await supabase.auth.getUser()).data.user?.id,
+          plan: planId,
+          order_id: razorpayPaymentData.razorpay_order_id,
+          payment_id: razorpayPaymentData.razorpay_payment_id,
+          signature: razorpayPaymentData.razorpay_signature,
+        }
+      } as any);
+      if (error || !data?.success) {
+        return { success: false, error: error?.message || data?.error || 'Verification failed' } as any;
       }
 
-      // Fetch payment details from Razorpay
-      const razorpayPayment = await razorpayService.getPaymentDetails(razorpayPaymentData.razorpay_payment_id);
-      
-      if (razorpayPayment.status !== 'captured') {
-        return {
-          success: false,
-          error: `Payment not captured. Status: ${razorpayPayment.status}`,
-        };
-      }
-
-      // Update payment record with Razorpay data
-      await this.updatePaymentWithRazorpayData(paymentId, {
-        razorpay_order_id: razorpayPaymentData.razorpay_order_id,
-        razorpay_payment_id: razorpayPaymentData.razorpay_payment_id,
-        razorpay_signature: razorpayPaymentData.razorpay_signature
-      });
-
-      // Mark payment as verified in database
-      const verificationResult = await this.markPaymentAsVerified(paymentId, {
-        razorpay_payment_id: razorpayPaymentData.razorpay_payment_id,
-        razorpay_order_id: razorpayPaymentData.razorpay_order_id,
-        amount: razorpayService.paiseToRupees(razorpayPayment.amount),
-        currency: razorpayPayment.currency,
-        payment_method: razorpayPayment.method,
-        status: razorpayPayment.status,
-      });
-
-      if (!verificationResult.success) {
-        return {
-          success: false,
-          error: verificationResult.error || 'Failed to verify payment in database',
-        };
-      }
-
-      return {
-        success: true,
-        message: 'Payment verified successfully',
-        payment_id: paymentId,
-        order_id: razorpayPaymentData.razorpay_order_id,
-        amount: razorpayService.paiseToRupees(razorpayPayment.amount),
-        currency: razorpayPayment.currency,
-      };
+      return { success: true, message: 'Payment verified successfully', payment_id: paymentId, order_id: razorpayPaymentData.razorpay_order_id } as any;
     } catch (error) {
       console.error('Error verifying Razorpay payment:', error);
       return {

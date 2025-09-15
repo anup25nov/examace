@@ -301,15 +301,28 @@ class MembershipServiceSimple {
   // Check if user can access a specific test
   async canAccessTest(userId: string, testId: string, testType: string): Promise<boolean> {
     try {
-      // Free tests are always accessible
-      if (testType === 'mock' || testType === 'pyq') {
-        return true;
+      // For mocks, enforce DB RPC attempt_use_mock if available
+      if (testType === 'mock') {
+        try {
+          // Dynamically call via supabase RPC when available; fallback to local
+          const { supabase } = await import('@/integrations/supabase/client');
+          const { data, error } = await supabase.rpc('attempt_use_mock' as any, { p_user: userId } as any);
+          if (!error && Array.isArray(data) && data.length > 0) {
+            const row = data[0] as any;
+            if (row.allowed) return true;
+            throw new Error(row.message || 'Access denied');
+          }
+        } catch (e) {
+          console.warn('attempt_use_mock RPC not available or failed, falling back:', e);
+          return await this.hasAccessToMockTests(userId, 1);
+        }
+        return false;
       }
       
-      // Practice tests require membership
-      if (testType === 'practice') {
-        return await this.hasAccessToMockTests(userId, 1);
-      }
+      // PYQs can be treated similar to mocks if needed; leaving as accessible
+      if (testType === 'pyq') return true;
+      // Practice may require membership in some flows
+      if (testType === 'practice') return await this.hasAccessToMockTests(userId, 1);
       
       return false;
     } catch (error) {
