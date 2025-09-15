@@ -259,7 +259,7 @@ const ReferralPage = () => {
             </Card>
 
             {/* Withdrawal Request Section */}
-            {comprehensiveStats && comprehensiveStats.paid_commissions > 0 && (
+            {comprehensiveStats && (Number(comprehensiveStats.pending_commissions || 0) > 70) && (
               <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
@@ -268,7 +268,7 @@ const ReferralPage = () => {
                       <span>Withdraw Earnings</span>
                     </div>
                     <Badge className="bg-green-100 text-green-800">
-                      ₹{comprehensiveStats.paid_commissions.toFixed(2)} Available
+                      Pending ₹{Number(comprehensiveStats.pending_commissions).toFixed(2)}
                     </Badge>
                   </CardTitle>
                 </CardHeader>
@@ -276,20 +276,27 @@ const ReferralPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-600 mb-2">
-                        You have earned ₹{comprehensiveStats.paid_commissions.toFixed(2)} from referrals
+                        You have ₹{Number(comprehensiveStats.pending_commissions).toFixed(2)} pending commissions eligible for withdrawal (threshold: ₹70)
                       </p>
                       <p className="text-xs text-gray-500">
-                        Withdrawal requests are processed within 2-3 business days
+                        Withdrawal requests are processed within 2-3 business days. Minimum pending amount required: ₹70.
                       </p>
                     </div>
                     <WithdrawalRequestModal 
-                      availableAmount={comprehensiveStats.paid_commissions}
+                      availableAmount={Number(comprehensiveStats.pending_commissions)}
                       onRequestSubmitted={loadReferralStats}
                     />
                   </div>
                 </CardContent>
               </Card>
             )}
+
+            {/* Disclaimer */}
+            <Card className="border-amber-200 bg-amber-50">
+              <CardContent className="p-4 text-sm text-amber-800">
+                Note: Withdrawals are enabled when your pending commissions exceed ₹70. Commissions move from pending to paid after admin review and payout.
+              </CardContent>
+            </Card>
 
             {/* Detailed Referral Network */}
             {referralNetwork.length > 0 && (
