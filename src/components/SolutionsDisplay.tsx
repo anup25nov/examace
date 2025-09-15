@@ -175,10 +175,10 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
             
             {/* YouTube Solutions Section */}
             {youtubeSolutions.length > 0 && (
-              <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-lg p-6 mt-6">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-red-200 rounded-lg p-6 mt-6">
                 <h3 className="text-lg font-semibold text-red-900 mb-4 flex items-center">
                   <Youtube className="w-5 h-5 mr-2" />
-                  Watch Solutions on YouTube
+                  Watch Complete Solutions on YouTube
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {youtubeSolutions.map((solution, index) => (

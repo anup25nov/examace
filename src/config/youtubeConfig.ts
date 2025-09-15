@@ -13,44 +13,44 @@ export const youtubeSolutions: YouTubeSolution[] = [
   {
     subject: 'maths',
     testId: 'ssc-cgl-mock-1',
-    youtubeUrl: 'https://www.youtube.com/watch?v=example1',
-    title: 'SSC CGL Mock Test 1 - Mathematics Solutions',
-    description: 'Complete solution video for Mathematics section'
+    youtubeUrl: 'https://www.youtube.com/watch?v=KWjTbQ_N6vE',
+    title: 'Mathematics',
+    description: ''
   },
   {
     subject: 'english',
     testId: 'ssc-cgl-mock-1',
-    youtubeUrl: 'https://www.youtube.com/watch?v=example2',
-    title: 'SSC CGL Mock Test 1 - English Solutions',
-    description: 'Complete solution video for English section'
+    youtubeUrl: 'https://www.youtube.com/watch?v=KWjTbQ_N6vE',
+    title: 'English',
+    description: ''
   },
   {
     subject: 'gk',
     testId: 'ssc-cgl-mock-1',
-    youtubeUrl: 'https://www.youtube.com/watch?v=example3',
-    title: 'SSC CGL Mock Test 1 - General Knowledge Solutions',
-    description: 'Complete solution video for General Knowledge section'
+    youtubeUrl: 'https://www.youtube.com/watch?v=KWjTbQ_N6vE',
+    title: 'General Knowledge',
+    description: ''
   },
   {
     subject: 'reasoning',
     testId: 'ssc-cgl-mock-1',
-    youtubeUrl: 'https://www.youtube.com/watch?v=example4',
-    title: 'SSC CGL Mock Test 1 - Reasoning Solutions',
-    description: 'Complete solution video for Reasoning section'
+    youtubeUrl: 'https://www.youtube.com/watch?v=KWjTbQ_N6vE',
+    title: 'Reasoning',
+    description: ''
   },
   
   // SSC CGL Mock Test 2
   {
     subject: 'maths',
     testId: 'ssc-cgl-mock-2',
-    youtubeUrl: 'https://www.youtube.com/watch?v=example5',
+    youtubeUrl: 'https://www.youtube.com/watch?v=KWjTbQ_N6vE',
     title: 'SSC CGL Mock Test 2 - Mathematics Solutions',
     description: 'Complete solution video for Mathematics section'
   },
   {
     subject: 'english',
     testId: 'ssc-cgl-mock-2',
-    youtubeUrl: 'https://www.youtube.com/watch?v=example6',
+    youtubeUrl: 'https://www.youtube.com/watch?v=KWjTbQ_N6vE',
     title: 'SSC CGL Mock Test 2 - English Solutions',
     description: 'Complete solution video for English section'
   },
@@ -59,14 +59,28 @@ export const youtubeSolutions: YouTubeSolution[] = [
   {
     subject: 'maths',
     testId: 'ssc-cgl-2024-set-1',
-    youtubeUrl: 'https://www.youtube.com/watch?v=example7',
+    youtubeUrl: 'https://www.youtube.com/watch?v=KWjTbQ_N6vE',
     title: 'SSC CGL 2024 Set 1 - Mathematics Solutions',
     description: 'Complete solution video for Mathematics section'
   },
   {
     subject: 'english',
     testId: 'ssc-cgl-2024-set-1',
-    youtubeUrl: 'https://www.youtube.com/watch?v=example8',
+    youtubeUrl: 'https://www.youtube.com/watch?v=KWjTbQ_N6vE',
+    title: 'English',
+    description: 'Complete solution video for English section'
+  },
+  {
+    subject: 'maths',
+    testId: 'ssc-cgl-2024-set-1',
+    youtubeUrl: 'https://www.youtube.com/watch?v=KWjTbQ_N6vE',
+    title: 'SSC CGL 2024 Set 1 - Mathematics Solutions',
+    description: 'Complete solution video for Mathematics section'
+  },
+  {
+    subject: 'english',
+    testId: 'ssc-cgl-2024-set-1',
+    youtubeUrl: 'https://www.youtube.com/watch?v=KWjTbQ_N6vE',
     title: 'SSC CGL 2024 Set 1 - English Solutions',
     description: 'Complete solution video for English section'
   },
@@ -75,14 +89,14 @@ export const youtubeSolutions: YouTubeSolution[] = [
   {
     subject: 'maths',
     testId: 'railway-mock-test-1',
-    youtubeUrl: 'https://www.youtube.com/watch?v=example9',
+    youtubeUrl: 'https://www.youtube.com/watch?v=KWjTbQ_N6vE',
     title: 'Railway Mock Test 1 - Mathematics Solutions',
     description: 'Complete solution video for Mathematics section'
   },
   {
     subject: 'gk',
     testId: 'railway-mock-test-1',
-    youtubeUrl: 'https://www.youtube.com/watch?v=example10',
+    youtubeUrl: 'https://www.youtube.com/watch?v=KWjTbQ_N6vE0',
     title: 'Railway Mock Test 1 - General Knowledge Solutions',
     description: 'Complete solution video for General Knowledge section'
   },
@@ -91,14 +105,14 @@ export const youtubeSolutions: YouTubeSolution[] = [
   {
     subject: 'maths',
     testId: 'bank-po-mock-test-1',
-    youtubeUrl: 'https://www.youtube.com/watch?v=example11',
+    youtubeUrl: 'https://www.youtube.com/watch?v=KWjTbQ_N6vE1',
     title: 'Bank PO Mock Test 1 - Mathematics Solutions',
     description: 'Complete solution video for Mathematics section'
   },
   {
     subject: 'english',
     testId: 'bank-po-mock-test-1',
-    youtubeUrl: 'https://www.youtube.com/watch?v=example12',
+    youtubeUrl: 'https://www.youtube.com/watch?v=KWjTbQ_N6vE2',
     title: 'Bank PO Mock Test 1 - English Solutions',
     description: 'Complete solution video for English section'
   },
@@ -107,14 +121,14 @@ export const youtubeSolutions: YouTubeSolution[] = [
   {
     subject: 'maths',
     testId: 'airforce-mock-test-1',
-    youtubeUrl: 'https://www.youtube.com/watch?v=example13',
+    youtubeUrl: 'https://www.youtube.com/watch?v=KWjTbQ_N6vE3',
     title: 'Air Force Mock Test 1 - Mathematics Solutions',
     description: 'Complete solution video for Mathematics section'
   },
   {
     subject: 'gk',
     testId: 'airforce-mock-test-1',
-    youtubeUrl: 'https://www.youtube.com/watch?v=example14',
+    youtubeUrl: 'https://www.youtube.com/watch?v=KWjTbQ_N6vE4',
     title: 'Air Force Mock Test 1 - General Knowledge Solutions',
     description: 'Complete solution video for General Knowledge section'
   }
