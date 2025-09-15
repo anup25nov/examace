@@ -248,45 +248,39 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string) =
       return { success: false, error: error.message };
     }
 
-    // If this is a new user, try to create referral code
-    if (isNewUser) {
-      try {
-        // Check if referral code already exists
-        const { data: existingReferral, error: checkReferralError } = await supabase
+    // Ensure referral code exists for this user (create if missing)
+    try {
+      const { data: existingReferral, error: checkReferralError } = await supabase
+        .from('referral_codes')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (checkReferralError) {
+        console.error('Error checking existing referral code:', checkReferralError);
+      } else if (!existingReferral) {
+        const referralCode = userId.substring(0, 8).toUpperCase();
+        const { error: referralError } = await supabase
           .from('referral_codes')
-          .select('id')
-          .eq('user_id', userId)
-          .maybeSingle();
+          .insert({
+            user_id: userId,
+            code: referralCode,
+            total_referrals: 0,
+            total_earnings: 0.00
+          });
 
-        if (checkReferralError) {
-          console.error('Error checking existing referral code:', checkReferralError);
-        } else if (!existingReferral) {
-          // Create referral code only if it doesn't exist
-          const referralCode = userId.substring(0, 8).toUpperCase();
-          const { error: referralError } = await supabase
-            .from('referral_codes')
-            .insert({
-              user_id: userId,
-              code: referralCode,
-              total_referrals: 0,
-              total_earnings: 0.00
-            });
-
-          if (referralError) {
-            console.error('Error creating referral code:', referralError);
-            // Don't fail the entire process if referral code creation fails
-          } else {
-            console.log('Referral code created for new user:', referralCode);
-          }
+        if (referralError) {
+          console.error('Error creating referral code:', referralError);
         } else {
-          console.log('Referral code already exists for user');
+          console.log('Referral code ensured for user:', referralCode);
         }
-      } catch (referralError) {
-        console.error('Error in referral code creation:', referralError);
-        // Don't fail the entire process if referral code creation fails
       }
+    } catch (referralError) {
+      console.error('Error ensuring referral code:', referralError);
+    }
 
-      // Try to create default exam stats
+    // Try to create default exam stats (only for brand new users)
+    if (isNewUser) {
       try {
         const { error: statsError } = await supabase
           .rpc('create_all_default_exam_stats', { p_user_id: userId });
