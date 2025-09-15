@@ -79,59 +79,18 @@ serve(async (req) => {
         ? Number(((globalThis as any).Deno?.env.get('PLAN_PRO_PLUS_PRICE')) || 2)
         : Number(((globalThis as any).Deno?.env.get('PLAN_PRO_PRICE')) || 1);
 
-      // Try to read referral commission config
-      let commissionAmount = 0;
-      try {
-        const { data: cfg } = await supabase
-          .from('referral_config' as any)
-          .select('commission_percentage, commission_amount')
-          .eq('plan_id', body.plan)
-          .eq('is_active', true)
-          .maybeSingle();
-        const pct = (cfg as any)?.commission_percentage as number | null | undefined;
-        const fixed = (cfg as any)?.commission_amount as number | null | undefined;
-        commissionAmount = typeof fixed === 'number' ? fixed : Math.round((planAmount * ((pct ?? 10) / 100)) * 100) / 100;
-      } catch {
-        commissionAmount = Math.round((planAmount * 0.1) * 100) / 100; // default 10%
-      }
+      // Process referral commission using the proper function
+      const { data: commissionResult, error: commissionError } = await supabase.rpc('process_membership_commission' as any, {
+        p_user_id: body.user_id,
+        p_payment_id: paymentId,
+        p_membership_plan: body.plan,
+        p_membership_amount: planAmount
+      });
 
-      // Update referral transaction and fetch referrer
-      const { data: tx } = await supabase
-        .from('referral_transactions' as any)
-        .update({
-          membership_purchased: true,
-          status: 'completed',
-          commission_amount: commissionAmount,
-          commission_status: 'pending',
-          updated_at: upgradeAt
-        } as any)
-        .eq('referred_id', body.user_id)
-        .eq('status', 'pending')
-        .select('referrer_id')
-        .maybeSingle();
-
-      const referrerId = (tx as any)?.referrer_id as string | undefined;
-      if (referrerId) {
-        // Increment referrer's total earnings tally
-        await supabase
-          .from('referral_codes' as any)
-          .update({
-            total_earnings: (null as any), // placeholder to use RPC style update
-          } as any)
-          .eq('user_id', referrerId);
-        // Fallback: run raw SQL via RPC if available is limited; otherwise, do a separate select+update
-        try {
-          const { data: rc } = await supabase
-            .from('referral_codes' as any)
-            .select('total_earnings')
-            .eq('user_id', referrerId)
-            .maybeSingle();
-          const current = (rc as any)?.total_earnings ?? 0;
-          await supabase
-            .from('referral_codes' as any)
-            .update({ total_earnings: Number(current) + Number(commissionAmount), updated_at: upgradeAt } as any)
-            .eq('user_id', referrerId);
-        } catch { /* ignore */ }
+      if (commissionError) {
+        console.error('Commission processing error:', commissionError);
+      } else if (commissionResult && commissionResult.length > 0) {
+        console.log('Commission processed:', commissionResult[0]);
       }
     } catch (_) {}
 
