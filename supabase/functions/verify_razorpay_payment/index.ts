@@ -49,20 +49,26 @@ serve(async (req) => {
       return new Response(JSON.stringify({ success: false, error: 'Invalid signature' }), { status: 400, headers: corsHeaders });
     }
 
-    // mark payment verified (upsert minimal row)
+    // mark payment completed (upsert minimal row)
     const paidAt = new Date().toISOString();
     console.log('=== PAYMENT VERIFICATION START ===');
     console.log('Payment data:', { user_id: body.user_id, plan: body.plan, order_id: body.order_id, payment_id: body.payment_id });
+    
+    // Determine plan amount
+    const planAmount = body.plan === 'pro_plus'
+      ? Number(((globalThis as any).Deno?.env.get('PLAN_PRO_PLUS_PRICE')) || 2)
+      : Number(((globalThis as any).Deno?.env.get('PLAN_PRO_PRICE')) || 1);
     
     const { data: paymentUpsert, error: paymentUpsertError } = await supabase
       .from('payments')
       .upsert({ 
         user_id: body.user_id, 
         plan: body.plan, 
+        amount: planAmount,
         razorpay_order_id: body.order_id, 
         razorpay_payment_id: body.payment_id, 
         razorpay_signature: body.signature, 
-        status: 'verified', 
+        status: 'completed', 
         paid_at: paidAt 
       } as any, { 
         onConflict: 'razorpay_payment_id' 
@@ -94,85 +100,11 @@ serve(async (req) => {
       }
     } catch (_) {}
 
-    // mark referral transaction as completed if present (best-effort) and compute commission
-    try {
-      // Determine plan amount
-      const planAmount = body.plan === 'pro_plus'
-        ? Number(((globalThis as any).Deno?.env.get('PLAN_PRO_PLUS_PRICE')) || 2)
-        : Number(((globalThis as any).Deno?.env.get('PLAN_PRO_PRICE')) || 1);
-
-      console.log('=== COMMISSION PROCESSING START ===');
-      console.log('User ID:', body.user_id);
-      console.log('Plan:', body.plan);
-      console.log('Plan Amount:', planAmount);
-
-      // Use the payment ID from the upsert if available
-      let paymentId = null;
-      if (paymentUpsert && paymentUpsert.length > 0) {
-        paymentId = paymentUpsert[0].id;
-        console.log('Using payment ID from upsert:', paymentId);
-      } else {
-        console.log('Payment upsert data:', paymentUpsert);
-        console.log('Payment upsert error:', paymentUpsertError);
-        
-        // Fallback: try to get payment record by razorpay_payment_id
-        const { data: paymentRecord, error: paymentError } = await supabase
-          .from('payments')
-          .select('id')
-          .eq('razorpay_payment_id', body.payment_id)
-          .single();
-        
-        console.log('Fallback payment lookup:', { paymentRecord, paymentError });
-        
-        if (paymentRecord && !paymentError) {
-          paymentId = paymentRecord.id;
-          console.log('Using payment ID from fallback:', paymentId);
-        } else {
-          // Last resort: try to get any payment for this user
-          const { data: anyPayment, error: anyPaymentError } = await supabase
-            .from('payments')
-            .select('id')
-            .eq('user_id', body.user_id)
-            .eq('razorpay_payment_id', body.payment_id)
-            .order('created_at', { ascending: false })
-            .limit(1);
-          
-          console.log('Last resort payment lookup:', { anyPayment, anyPaymentError });
-          
-          if (anyPayment && anyPayment.length > 0) {
-            paymentId = anyPayment[0].id;
-            console.log('Using payment ID from last resort:', paymentId);
-          }
-        }
-      }
-
-      if (paymentId) {
-        console.log('Processing commission for user:', body.user_id, 'payment ID:', paymentId, 'plan:', body.plan, 'amount:', planAmount);
-        
-        // Process referral commission using the proper function
-        const { data: commissionResult, error: commissionError } = await supabase.rpc('process_membership_commission' as any, {
-          p_payment_id: paymentId
-        });
-
-        console.log('Commission processing result:', { commissionResult, commissionError });
-
-        if (commissionError) {
-          console.error('Commission processing error:', commissionError);
-        } else if (commissionResult && commissionResult.length > 0) {
-          console.log('Commission processed successfully:', commissionResult[0]);
-        } else {
-          console.log('No commission result returned');
-        }
-      } else {
-        console.error('Payment ID not found for commission processing');
-        console.log('Payment upsert result:', paymentUpsert);
-        console.log('Payment upsert error:', paymentUpsertError);
-      }
-      
-      console.log('=== COMMISSION PROCESSING END ===');
-    } catch (error) {
-      console.error('Commission processing error:', error);
-    }
+    // Commission processing is now handled automatically by database trigger
+    // when payment status is set to 'completed'
+    console.log('=== COMMISSION PROCESSING ===');
+    console.log('Commission will be processed automatically by database trigger');
+    console.log('Payment status set to completed, trigger will handle commission processing');
 
     return new Response(JSON.stringify({ success: true, membership: activated }), { status: 200, headers: corsHeaders });
   } catch (e) {
