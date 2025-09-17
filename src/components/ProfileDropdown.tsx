@@ -110,6 +110,8 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
         return <Badge variant="secondary" className="bg-purple-100 text-purple-800">Premium Plan</Badge>;
       case 'pro':
         return <Badge variant="secondary" className="bg-gold-100 text-gold-800">Pro Plan</Badge>;
+      case 'pro_plus':
+        return <Badge variant="secondary" className="bg-purple-100 text-purple-800">Pro+ Plan</Badge>;
       default:
         return <Badge variant="outline" className="text-muted-foreground">Free Plan</Badge>;
     }
@@ -120,6 +122,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
       case 'basic':
       case 'premium':
       case 'pro':
+      case 'pro_plus':
         return <Crown className="w-4 h-4 text-yellow-500" />;
       default:
         return <User className="w-4 h-4" />;
