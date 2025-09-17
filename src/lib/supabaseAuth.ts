@@ -46,6 +46,32 @@ export const sendOTPCode = async (phone: string) => {
   }
 };
 
+// Check if phone number exists in database
+export const checkPhoneExists = async (phone: string) => {
+  try {
+    const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
+    
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('id, phone, created_at')
+      .eq('phone', formattedPhone)
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error checking phone existence:', error);
+      return { exists: false, error: error.message };
+    }
+    
+    const exists = !!data;
+    console.log('Phone existence check:', { phone: formattedPhone, exists });
+    
+    return { exists, data };
+  } catch (error: any) {
+    console.error('Error checking phone existence:', error);
+    return { exists: false, error: error.message };
+  }
+};
+
 // Verify OTP code using Supabase
 export const verifyOTPCode = async (phone: string, otp: string) => {
   try {
@@ -68,65 +94,18 @@ export const verifyOTPCode = async (phone: string, otp: string) => {
     if (data.user) {
       console.log('OTP verified successfully');
       
-      // Create or update user profile in Supabase
-      const profileResult = await createOrUpdateUserProfile(data.user.id, formattedPhone);
-      console.log('Profile creation result:', profileResult);
+      // Check if phone number already exists in database
+      const phoneCheck = await checkPhoneExists(phone);
+      const isNewUser = !phoneCheck.exists;
       
-      // If profile creation failed, try direct database operations
-      if (!profileResult.success) {
-        console.log('Profile creation failed, trying direct database operations...');
-        try {
-          // Try to create user profile directly
-          const { error: profileError } = await supabase
-            .from('user_profiles')
-            .insert({
-              id: data.user.id,
-              phone: formattedPhone,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            });
-          
-          if (profileError) {
-            console.error('Direct profile creation failed:', profileError);
-          } else {
-            console.log('Direct profile creation successful');
-            
-            // Create referral code for new user
-            try {
-              // Check if referral code already exists
-              const { data: existingReferral, error: checkError } = await supabase
-                .from('referral_codes')
-                .select('id')
-                .eq('user_id', data.user.id)
-                .maybeSingle();
-              
-              if (!checkError && !existingReferral) {
-                const referralCode = data.user.id.substring(0, 8).toUpperCase();
-                const { error: referralError } = await supabase
-                  .from('referral_codes')
-                  .insert({
-                    user_id: data.user.id,
-                    code: referralCode,
-                    total_referrals: 0,
-                    total_earnings: 0.00
-                  });
-                
-                if (referralError) {
-                  console.error('Referral code creation failed:', referralError);
-                } else {
-                  console.log('Referral code created successfully:', referralCode);
-                }
-              } else {
-                console.log('Referral code already exists or check failed');
-              }
-            } catch (referralError) {
-              console.error('Error creating referral code:', referralError);
-            }
-          }
-        } catch (fallbackError) {
-          console.error('Error in fallback operations:', fallbackError);
-        }
-      }
+      console.log('Phone existence check result:', {
+        phone: formattedPhone,
+        exists: phoneCheck.exists,
+        isNewUser
+      });
+      
+      // Create or update user profile
+      const profileResult = await createOrUpdateUserProfile(data.user.id, formattedPhone);
       
       // Store authentication data for persistence
       localStorage.setItem('userId', data.user.id);
@@ -136,13 +115,14 @@ export const verifyOTPCode = async (phone: string, otp: string) => {
       console.log('Authentication data stored:', {
         userId: data.user.id,
         phone: formattedPhone,
-        isAuthenticated: 'true'
+        isAuthenticated: 'true',
+        isNewUser
       });
       
       return { 
         success: true, 
         data: data.user, 
-        isNewUser: profileResult.isNewUser || false 
+        isNewUser 
       };
     }
     
@@ -163,7 +143,7 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string) =
     try {
       const { data: existingProfile, error: checkError } = await supabase
         .from('user_profiles')
-        .select('id, phone')
+        .select('id, phone, created_at')
         .eq('id', userId)
         .maybeSingle(); // Use maybeSingle() to handle missing profiles gracefully
 
@@ -174,8 +154,65 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string) =
 
       // If no data returned, this is a new user
       if (!existingProfile) {
+        console.log('No existing profile found - this is a NEW user');
         isNewUser = true;
       } else {
+        console.log('Existing profile found - this is an EXISTING user:', existingProfile);
+        
+        // Additional check: if profile was created very recently (within last 30 seconds), 
+        // it might be a new user that was created by a database trigger
+        const profileCreatedAt = new Date(existingProfile.created_at);
+        const now = new Date();
+        const timeDiff = now.getTime() - profileCreatedAt.getTime();
+        const isVeryRecent = timeDiff < 30000; // 30 seconds
+        
+        console.log('Profile creation time check:', {
+          profileCreatedAt: profileCreatedAt.toISOString(),
+          now: now.toISOString(),
+          timeDiffMs: timeDiff,
+          isVeryRecent
+        });
+        
+        if (isVeryRecent) {
+          console.log('Profile was created very recently - checking if truly new user...');
+          
+          // Additional check: see if user has any activity (exam stats, referrals, etc.)
+          try {
+            const { data: examStats, error: examError } = await supabase
+              .from('exam_stats')
+              .select('id')
+              .eq('user_id', userId)
+              .limit(1);
+            
+            const { data: referralTransactions, error: transactionError } = await supabase
+              .from('referral_transactions')
+              .select('id')
+              .eq('referrer_id', userId)
+              .limit(1);
+            
+            const hasActivity = (examStats && examStats.length > 0) || 
+                              (referralTransactions && referralTransactions.length > 0);
+            
+            console.log('User activity check:', {
+              hasActivity,
+              examStats: examStats?.length || 0,
+              referralTransactions: referralTransactions?.length || 0
+            });
+            
+            if (!hasActivity) {
+              console.log('No user activity found - confirming as NEW user');
+              isNewUser = true;
+            } else {
+              console.log('User activity found - treating as EXISTING user');
+              isNewUser = false;
+            }
+          } catch (activityError) {
+            console.error('Error checking user activity:', activityError);
+            // If we can't check, assume it's a new user
+            isNewUser = true;
+          }
+        }
+        
         // Check if phone has changed (this shouldn't happen in normal flow)
         if (existingProfile.phone !== phone) {
           console.warn('Phone mismatch detected:', { 
@@ -248,35 +285,37 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string) =
       return { success: false, error: error.message };
     }
 
-    // Ensure referral code exists for this user (create if missing)
-    try {
-      const { data: existingReferral, error: checkReferralError } = await supabase
-        .from('referral_codes')
-        .select('id')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (checkReferralError) {
-        console.error('Error checking existing referral code:', checkReferralError);
-      } else if (!existingReferral) {
-        const referralCode = userId.substring(0, 8).toUpperCase();
-        const { error: referralError } = await supabase
+    // Only create referral code for new users (not on every login)
+    if (isNewUser) {
+      try {
+        const { data: existingReferral, error: checkReferralError } = await supabase
           .from('referral_codes')
-          .insert({
-            user_id: userId,
-            code: referralCode,
-            total_referrals: 0,
-            total_earnings: 0.00
-          });
+          .select('id')
+          .eq('user_id', userId)
+          .maybeSingle();
 
-        if (referralError) {
-          console.error('Error creating referral code:', referralError);
-        } else {
-          console.log('Referral code ensured for user:', referralCode);
+        if (checkReferralError) {
+          console.error('Error checking existing referral code:', checkReferralError);
+        } else if (!existingReferral) {
+          const referralCode = userId.substring(0, 8).toUpperCase();
+          const { error: referralError } = await supabase
+            .from('referral_codes')
+            .insert({
+              user_id: userId,
+              code: referralCode,
+              total_referrals: 0,
+              total_earnings: 0.00
+            });
+
+          if (referralError) {
+            console.error('Error creating referral code:', referralError);
+          } else {
+            console.log('Referral code created for new user:', referralCode);
+          }
         }
+      } catch (referralError) {
+        console.error('Error creating referral code for new user:', referralError);
       }
-    } catch (referralError) {
-      console.error('Error ensuring referral code:', referralError);
     }
 
     // Try to create default exam stats (only for brand new users)
@@ -296,6 +335,13 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string) =
       }
     }
 
+    console.log('Final profile creation result:', {
+      success: true,
+      userId,
+      phone,
+      isNewUser
+    });
+    
     return { 
       success: true, 
       data: { id: userId, phone }, 

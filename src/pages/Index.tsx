@@ -17,6 +17,7 @@ import { PhoneUpdateModal } from "@/components/PhoneUpdateModal";
 import { ReferralSystem } from "@/components/ReferralSystem";
 import { ReferralCodeInput } from "@/components/ReferralCodeInput";
 import { DailyAccolades } from "@/components/DailyAccolades";
+// Removed referral code modal from login flow - now handled during OTP verification
 import Footer from "@/components/Footer";
 
 // Icon mapping for dynamic loading
@@ -39,6 +40,8 @@ const Index = () => {
   const { profile } = useUserProfile();
   const { streak, refreshStreak } = useUserStreak();
   const [isNavigating, setIsNavigating] = useState(false);
+  
+  // Referral code collection removed - now handled during OTP verification for new users only
   
   // New modal states
   const [showMembershipPlans, setShowMembershipPlans] = useState(false);
@@ -499,6 +502,8 @@ const Index = () => {
           setIsFirstDailyVisit(false);
         }}
       />
+
+      {/* Referral Code Collection removed - now handled during OTP verification for new users only */}
 
       <Footer />
     </div>

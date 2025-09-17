@@ -241,38 +241,44 @@ class ReferralService {
       };
       }
 
-      // Use database function to get referral stats
-      const { data: stats, error } = await supabase
-        .rpc('get_user_referral_stats', { user_uuid: user.id });
+      // Get referral code first
+      const { data: referralCodeData, error: referralCodeError } = await supabase
+        .from('referral_codes')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
 
-      if (error || !stats || stats.length === 0) {
-        console.error('Error fetching referral stats:', error);
-      return {
-        total_referrals: 0,
-        total_earnings: 0,
-        referral_code: '',
-        max_referrals: 20,
-        commission_rate: 50.00,
-        pending_earnings: 0,
-        paid_earnings: 0,
-        pending_rewards: 0,
-        verified_referrals: 0,
-        rewarded_referrals: 0
-      };
+      // Get earnings info using the new function
+      const { data: earningsData, error: earningsError } = await supabase
+        .rpc('get_user_referral_earnings' as any, { user_uuid: user.id });
+
+      if (earningsError) {
+        console.error('Error fetching referral earnings:', earningsError);
       }
 
-      const stat = stats[0];
+      // Get referral count
+      const { count: referralCount, error: countError } = await supabase
+        .from('referral_transactions')
+        .select('*', { count: 'exact', head: true })
+        .eq('referrer_id', user.id);
+
+      if (countError) {
+        console.error('Error fetching referral count:', countError);
+      }
+
+      const earnings = earningsData?.[0] || {};
+
       return {
-        total_referrals: stat.total_referrals || 0,
-        total_earnings: stat.total_earnings || 0,
-        referral_code: stat.referral_code || '',
+        total_referrals: referralCount || 0,
+        total_earnings: earnings.total_earnings || 0,
+        referral_code: referralCodeData?.code || '',
         max_referrals: 20,
         commission_rate: 50.00,
-        pending_earnings: stat.pending_earnings || 0,
-        paid_earnings: stat.paid_earnings || 0,
-        pending_rewards: stat.pending_earnings || 0,
-        verified_referrals: 0,
-        rewarded_referrals: stat.paid_earnings || 0
+        pending_earnings: earnings.pending_earnings || 0,
+        paid_earnings: earnings.paid_earnings || 0,
+        pending_rewards: earnings.available_for_withdrawal || 0,
+        verified_referrals: referralCount || 0,
+        rewarded_referrals: earnings.paid_earnings || 0
       };
     } catch (error) {
       console.error('Error in getReferralStats:', error);
@@ -318,6 +324,60 @@ class ReferralService {
     } catch (error) {
       console.error('Error in getReferralTracking:', error);
       return [];
+    }
+  }
+
+  // Get detailed referral network
+  async getReferralNetwork(): Promise<any[]> {
+    try {
+      const user = await this.getCurrentUser();
+      if (!user) return [];
+
+      const { data, error } = await supabase
+        .rpc('get_referral_network_detailed' as any, { user_uuid: user.id });
+
+      if (error) {
+        console.error('Error fetching referral network:', error);
+        return [];
+      }
+
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Error in getReferralNetwork:', error);
+      return [];
+    }
+  }
+
+  // Request withdrawal
+  async requestWithdrawal(amount: number, method: string, accountDetails: string): Promise<{ success: boolean; message: string; withdrawalId?: string }> {
+    try {
+      const user = await this.getCurrentUser();
+      if (!user) {
+        return { success: false, message: 'User not authenticated' };
+      }
+
+      const { data, error } = await supabase
+        .rpc('request_withdrawal' as any, {
+          p_user_id: user.id,
+          p_amount: amount,
+          p_withdrawal_method: method,
+          p_account_details: accountDetails
+        });
+
+      if (error) {
+        console.error('Error requesting withdrawal:', error);
+        return { success: false, message: error.message };
+      }
+
+      const result = data?.[0];
+      return {
+        success: result?.success || false,
+        message: result?.message || 'Withdrawal request failed',
+        withdrawalId: result?.withdrawal_id
+      };
+    } catch (error) {
+      console.error('Error in requestWithdrawal:', error);
+      return { success: false, message: 'Withdrawal request failed' };
     }
   }
 
@@ -455,9 +515,55 @@ class ReferralService {
     };
   }
 
-  // Apply referral code (alias for createReferralTracking)
-  async applyReferralCode(referralCode: string) {
-    return this.createReferralTracking(referralCode);
+  // Apply referral code using the database function
+  async applyReferralCode(referralCode: string): Promise<{
+    success: boolean;
+    message: string;
+    referrerId?: string;
+  }> {
+    try {
+      const user = await this.getCurrentUser();
+      if (!user) {
+        return {
+          success: false,
+          message: 'User not authenticated'
+        };
+      }
+
+      const { data, error } = await supabase
+        .rpc('validate_and_apply_referral_code' as any, {
+          p_user_id: user.id,
+          p_referral_code: referralCode.toUpperCase()
+        });
+
+      if (error) {
+        console.error('Error applying referral code:', error);
+        return {
+          success: false,
+          message: error.message
+        };
+      }
+
+      const result = Array.isArray(data) && data.length > 0 ? data[0] : null;
+      if (!result) {
+        return {
+          success: false,
+          message: 'Invalid response from server'
+        };
+      }
+
+      return {
+        success: result.success,
+        message: result.message,
+        referrerId: result.referrer_id
+      };
+    } catch (error) {
+      console.error('Error in applyReferralCode:', error);
+      return {
+        success: false,
+        message: 'Failed to apply referral code'
+      };
+    }
   }
 
   // Generate referral link (alias for createReferralLink)

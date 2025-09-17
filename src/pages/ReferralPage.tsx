@@ -259,7 +259,7 @@ const ReferralPage = () => {
             </Card>
 
             {/* Withdrawal Request Section */}
-            {comprehensiveStats && (Number(comprehensiveStats.pending_commissions || 0) > 70) && (
+            {referralStats && (Number(referralStats.pending_earnings || 0) >= 10) && (
               <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
@@ -268,7 +268,7 @@ const ReferralPage = () => {
                       <span>Withdraw Earnings</span>
                     </div>
                     <Badge className="bg-green-100 text-green-800">
-                      Pending ₹{Number(comprehensiveStats.pending_commissions).toFixed(2)}
+                      Available ₹{Number(referralStats.pending_earnings).toFixed(2)}
                     </Badge>
                   </CardTitle>
                 </CardHeader>
@@ -276,14 +276,14 @@ const ReferralPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-600 mb-2">
-                        You have ₹{Number(comprehensiveStats.pending_commissions).toFixed(2)} pending commissions eligible for withdrawal (threshold: ₹70)
+                        You have ₹{Number(referralStats.pending_earnings).toFixed(2)} available for withdrawal (minimum: ₹10)
                       </p>
                       <p className="text-xs text-gray-500">
-                        Withdrawal requests are processed within 2-3 business days. Minimum pending amount required: ₹70.
+                        Withdrawal requests are processed within 2-3 business days. Minimum withdrawal amount: ₹10.
                       </p>
                     </div>
                     <WithdrawalRequestModal 
-                      availableAmount={Number(comprehensiveStats.pending_commissions)}
+                      availableAmount={Number(referralStats.pending_earnings)}
                       onRequestSubmitted={loadReferralStats}
                     />
                   </div>

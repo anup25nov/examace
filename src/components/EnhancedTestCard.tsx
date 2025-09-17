@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,8 +15,10 @@ import {
   Star
 } from 'lucide-react';
 import { PremiumTest } from '@/lib/premiumService';
-import { PremiumPaymentModal } from './PremiumPaymentModal';
+import { UnifiedPaymentModal } from './UnifiedPaymentModal';
 import { TestStartModal } from './TestStartModal';
+import { unifiedPaymentService } from '@/lib/unifiedPaymentService';
+import { useAuth } from '@/hooks/useAuth';
 
 interface TestScore {
   score: number;
@@ -45,14 +47,35 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
   testType = 'mock',
   className = ''
 }) => {
+  const { user } = useAuth();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showTestStartModal, setShowTestStartModal] = useState(false);
   const [hasAccess, setHasAccess] = useState(!test.isPremium);
+  const [userMembership, setUserMembership] = useState<any>(null);
+
+  // Check user membership status
+  useEffect(() => {
+    if (user && test.isPremium) {
+      checkMembershipStatus();
+    }
+  }, [user, test.isPremium]);
+
+  const checkMembershipStatus = async () => {
+    if (!user) return;
+    
+    try {
+      const membership = await unifiedPaymentService.getUserMembership(user.id);
+      setUserMembership(membership);
+      setHasAccess(!!membership || !test.isPremium);
+    } catch (error) {
+      console.error('Error checking membership:', error);
+      setHasAccess(!test.isPremium);
+    }
+  };
 
   const handleStartTest = () => {
     if (test.isPremium && !hasAccess) {
-      // Redirect to membership portal instead of showing payment modal
-      window.location.href = '/membership';
+      setShowPaymentModal(true);
     } else {
       setShowTestStartModal(true);
     }
@@ -62,9 +85,11 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
     onStartTest(language);
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = (planId: string) => {
     setHasAccess(true);
     setShowPaymentModal(false);
+    // Refresh membership status
+    checkMembershipStatus();
   };
 
   return (
@@ -222,11 +247,14 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
       </Card>
 
       {/* Payment Modal */}
-      <PremiumPaymentModal
+      <UnifiedPaymentModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
-        test={test}
-        onPurchaseSuccess={handlePaymentSuccess}
+        onPaymentSuccess={handlePaymentSuccess}
+        testId={test.id}
+        testName={test.name}
+        testPrice={test.price}
+        testDescription={test.description}
       />
 
       {/* Test Start Modal */}

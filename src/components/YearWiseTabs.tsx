@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,8 +18,10 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { PremiumTest, premiumService } from '@/lib/premiumService';
-import { PremiumPaymentModal } from './PremiumPaymentModal';
+import { UnifiedPaymentModal } from './UnifiedPaymentModal';
 import { TestStartModal } from './TestStartModal';
+import { unifiedPaymentService } from '@/lib/unifiedPaymentService';
+import { useAuth } from '@/hooks/useAuth';
 
 interface YearData {
   year: string;
@@ -57,13 +59,33 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
   sectionMessage,
   onMessageAction
 }) => {
+  const { user } = useAuth();
   const [selectedYear, setSelectedYear] = useState(years[0]?.year || '');
   const [currentPage, setCurrentPage] = useState(0);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showTestStartModal, setShowTestStartModal] = useState(false);
   const [selectedPremiumTest, setSelectedPremiumTest] = useState<PremiumTest | null>(null);
   const [selectedTestForStart, setSelectedTestForStart] = useState<PremiumTest | null>(null);
+  const [userMembership, setUserMembership] = useState<any>(null);
   const papersPerPage = 6;
+
+  // Check user membership status
+  useEffect(() => {
+    if (user) {
+      checkMembershipStatus();
+    }
+  }, [user]);
+
+  const checkMembershipStatus = async () => {
+    if (!user) return;
+    
+    try {
+      const membership = await unifiedPaymentService.getUserMembership(user.id);
+      setUserMembership(membership);
+    } catch (error) {
+      console.error('Error checking membership:', error);
+    }
+  };
 
   const selectedYearData = years.find(year => year.year === selectedYear);
   
@@ -94,10 +116,9 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
 
   const handleStartTest = (paper: PremiumTest) => {
     // Check if paper is premium and user doesn't have access
-    if (paper.isPremium) {
-      // For now, redirect to membership page instead of showing payment modal
-      // This ensures consistent behavior across the app
-      window.location.href = '/membership';
+    if (paper.isPremium && !userMembership) {
+      setSelectedPremiumTest(paper);
+      setShowPaymentModal(true);
       return;
     } else {
       setSelectedTestForStart(paper);
@@ -111,9 +132,11 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
     }
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = (planId: string) => {
     setShowPaymentModal(false);
     setSelectedPremiumTest(null);
+    // Refresh membership status
+    checkMembershipStatus();
   };
 
   const getYearStats = (year: string) => {
@@ -350,9 +373,9 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                             variant="default"
                             className="w-full h-8 text-xs bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105 hover:shadow-md"
                             onClick={() => handleStartTest(paper)}
-                            disabled={paper.isPremium && !premiumService.hasAccess(paper.id)}
+                            disabled={paper.isPremium && !userMembership}
                           >
-                            {paper.isPremium && !premiumService.hasAccess(paper.id) ? (
+                            {paper.isPremium && !userMembership ? (
                               <>
                                 <Lock className="w-3 h-3 mr-1" />
                                 Unlock Premium
@@ -368,7 +391,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                       </div>
 
                       {/* Premium Overlay */}
-                      {paper.isPremium && !premiumService.hasAccess(paper.id) && (
+                      {paper.isPremium && !userMembership && (
                         <div className="absolute inset-0 bg-black/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
                           <div className="text-center text-white">
                             <Crown className="w-6 h-6 mx-auto mb-1 text-yellow-400" />
@@ -429,11 +452,14 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
 
       {/* Payment Modal */}
       {selectedPremiumTest && (
-        <PremiumPaymentModal
+        <UnifiedPaymentModal
           isOpen={showPaymentModal}
           onClose={() => setShowPaymentModal(false)}
-          test={selectedPremiumTest}
-          onPurchaseSuccess={handlePaymentSuccess}
+          onPaymentSuccess={handlePaymentSuccess}
+          testId={selectedPremiumTest.id}
+          testName={selectedPremiumTest.name}
+          testPrice={selectedPremiumTest.price}
+          testDescription={selectedPremiumTest.description}
         />
       )}
 
