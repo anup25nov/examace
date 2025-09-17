@@ -151,10 +151,7 @@ serve(async (req) => {
         
         // Process referral commission using the proper function
         const { data: commissionResult, error: commissionError } = await supabase.rpc('process_membership_commission' as any, {
-          p_user_id: body.user_id,
-          p_payment_id: paymentId,
-          p_membership_plan: body.plan,
-          p_membership_amount: planAmount
+          p_payment_id: paymentId
         });
 
         console.log('Commission processing result:', { commissionResult, commissionError });
