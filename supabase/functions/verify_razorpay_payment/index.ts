@@ -51,7 +51,25 @@ serve(async (req) => {
 
     // mark payment verified (upsert minimal row)
     const paidAt = new Date().toISOString();
-    const { data: paymentUpsert, error: paymentUpsertError } = await supabase.from('payments').upsert({ user_id: body.user_id, plan: body.plan, razorpay_order_id: body.order_id, razorpay_payment_id: body.payment_id, razorpay_signature: body.signature, status: 'verified', paid_at: paidAt } as any, { onConflict: 'razorpay_payment_id' } as any).select('id');
+    console.log('=== PAYMENT VERIFICATION START ===');
+    console.log('Payment data:', { user_id: body.user_id, plan: body.plan, order_id: body.order_id, payment_id: body.payment_id });
+    
+    const { data: paymentUpsert, error: paymentUpsertError } = await supabase
+      .from('payments')
+      .upsert({ 
+        user_id: body.user_id, 
+        plan: body.plan, 
+        razorpay_order_id: body.order_id, 
+        razorpay_payment_id: body.payment_id, 
+        razorpay_signature: body.signature, 
+        status: 'verified', 
+        paid_at: paidAt 
+      } as any, { 
+        onConflict: 'razorpay_payment_id' 
+      } as any)
+      .select('id');
+    
+    console.log('Payment upsert result:', { paymentUpsert, paymentUpsertError });
     
     if (paymentUpsertError) {
       console.error('Error upserting payment:', paymentUpsertError);
@@ -95,6 +113,8 @@ serve(async (req) => {
         console.log('Using payment ID from upsert:', paymentId);
       } else {
         console.log('Payment upsert data:', paymentUpsert);
+        console.log('Payment upsert error:', paymentUpsertError);
+        
         // Fallback: try to get payment record by razorpay_payment_id
         const { data: paymentRecord, error: paymentError } = await supabase
           .from('payments')
@@ -107,6 +127,22 @@ serve(async (req) => {
         if (paymentRecord && !paymentError) {
           paymentId = paymentRecord.id;
           console.log('Using payment ID from fallback:', paymentId);
+        } else {
+          // Last resort: try to get any payment for this user
+          const { data: anyPayment, error: anyPaymentError } = await supabase
+            .from('payments')
+            .select('id')
+            .eq('user_id', body.user_id)
+            .eq('razorpay_payment_id', body.payment_id)
+            .order('created_at', { ascending: false })
+            .limit(1);
+          
+          console.log('Last resort payment lookup:', { anyPayment, anyPaymentError });
+          
+          if (anyPayment && anyPayment.length > 0) {
+            paymentId = anyPayment[0].id;
+            console.log('Using payment ID from last resort:', paymentId);
+          }
         }
       }
 
