@@ -82,6 +82,12 @@ serve(async (req) => {
       console.error('Error upserting payment:', paymentUpsertError);
     }
 
+    // Get the payment ID for commission processing
+    const paymentId = paymentUpsert?.[0]?.id;
+    if (!paymentId) {
+      console.error('No payment ID found for commission processing');
+    }
+
     // activate or upgrade membership
     const upgradeAt = new Date().toISOString();
     const { data: act, error: actErr } = await supabase.rpc('activate_or_upgrade_membership', { p_user: body.user_id, p_plan: body.plan, p_upgrade_at: upgradeAt } as any);
@@ -106,7 +112,7 @@ serve(async (req) => {
     if (body.referral_code) {
       console.log('Processing referral commission for code:', body.referral_code);
       
-      // First, create the referral relationship if it doesn't exist
+      // First, try to create the referral relationship if it doesn't exist
       const { data: referralResult, error: referralError } = await supabase
         .rpc('apply_referral_code', {
           p_user_id: body.user_id,
@@ -119,13 +125,14 @@ serve(async (req) => {
         console.log('Referral code applied:', referralResult);
       }
 
-      // Process commission for the membership purchase
+      // Process commission for the membership purchase (regardless of referral code application result)
+      console.log('Processing commission for user:', body.user_id);
       const { data: commissionResult, error: commissionError } = await supabase
         .rpc('process_referral_commission', {
-          p_user_id: body.user_id,
-          p_payment_id: body.payment_id,
+          p_membership_amount: planAmount,
           p_membership_plan: body.plan,
-          p_membership_amount: planAmount
+          p_payment_id: paymentId,
+          p_user_id: body.user_id
         });
 
       if (commissionError) {

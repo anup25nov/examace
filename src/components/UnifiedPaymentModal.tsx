@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { unifiedPaymentService, PaymentPlan } from '@/lib/unifiedPaymentService';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 // Declare Razorpay types
 declare global {
@@ -190,7 +191,26 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
         },
         handler: async (response: any) => {
           try {
-            // Verify payment
+            // Get referral code from localStorage if available
+            const referralCode = localStorage.getItem('referralCode');
+            
+            // Verify payment via Edge Function (includes referral processing)
+            const { data, error } = await supabase.functions.invoke('verify_razorpay_payment', {
+              body: {
+                user_id: user.id,
+                plan: planToPurchase.id,
+                order_id: response.razorpay_order_id,
+                payment_id: response.razorpay_payment_id,
+                signature: response.razorpay_signature,
+                referral_code: referralCode
+              }
+            });
+
+            if (error || !data?.success) {
+              throw new Error(error?.message || data?.error || 'Payment verification failed');
+            }
+
+            // Also update via unified service for consistency
             const verificationResult = await unifiedPaymentService.verifyPayment(
               paymentResult.paymentId!,
               {
