@@ -80,7 +80,8 @@ export class RazorpayPaymentService {
       razorpay_payment_id: string;
       razorpay_signature: string;
     },
-    planId: 'pro' | 'pro_plus'
+    planId: 'pro' | 'pro_plus',
+    referralCode?: string
   ): Promise<RazorpayPaymentResponse> {
     try {
       // Verify via Supabase Edge Function, which also activates membership
@@ -91,6 +92,7 @@ export class RazorpayPaymentService {
           order_id: razorpayPaymentData.razorpay_order_id,
           payment_id: razorpayPaymentData.razorpay_payment_id,
           signature: razorpayPaymentData.razorpay_signature,
+          referral_code: referralCode
         }
       } as any);
       if (error || !data?.success) {

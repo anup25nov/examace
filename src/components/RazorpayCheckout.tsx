@@ -130,6 +130,9 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
         },
         handler: async (response: any) => {
           try {
+            // Get referral code from localStorage if available
+            const referralCode = localStorage.getItem('referralCode');
+            
             // Verify payment
             const verificationResult = await razorpayPaymentService.verifyRazorpayPayment(
               paymentResult.paymentId!,
@@ -138,7 +141,8 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
               },
-              plan.id === 'pro_plus' ? 'pro_plus' : 'pro'
+              plan.id === 'pro_plus' ? 'pro_plus' : 'pro',
+              referralCode || undefined
             );
 
             if (verificationResult.success) {

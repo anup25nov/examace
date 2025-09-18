@@ -178,6 +178,8 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
           
           if (result.success) {
             console.log('Referral code applied successfully:', result.message);
+            // Store referral code in localStorage for payment processing
+            localStorage.setItem('referralCode', referralCode.trim().toUpperCase());
             // Proceed to dashboard
             onAuthSuccess();
           } else {

@@ -15,6 +15,7 @@ interface VerifyBody {
   order_id: string;
   payment_id: string;
   signature: string;
+  referral_code?: string;
 }
 
 async function hmacSha256Hex(message: string, secret: string): Promise<string> {
@@ -100,11 +101,41 @@ serve(async (req) => {
       }
     } catch (_) {}
 
-    // Commission processing is now handled automatically by database trigger
-    // when payment status is set to 'completed'
+    // Process referral commission if referral code was provided
     console.log('=== COMMISSION PROCESSING ===');
-    console.log('Commission will be processed automatically by database trigger');
-    console.log('Payment status set to completed, trigger will handle commission processing');
+    if (body.referral_code) {
+      console.log('Processing referral commission for code:', body.referral_code);
+      
+      // First, create the referral relationship if it doesn't exist
+      const { data: referralResult, error: referralError } = await supabase
+        .rpc('apply_referral_code', {
+          p_user_id: body.user_id,
+          p_referral_code: body.referral_code
+        });
+
+      if (referralError) {
+        console.error('Error applying referral code:', referralError);
+      } else {
+        console.log('Referral code applied:', referralResult);
+      }
+
+      // Process commission for the membership purchase
+      const { data: commissionResult, error: commissionError } = await supabase
+        .rpc('process_referral_commission', {
+          p_user_id: body.user_id,
+          p_payment_id: body.payment_id,
+          p_membership_plan: body.plan,
+          p_membership_amount: planAmount
+        });
+
+      if (commissionError) {
+        console.error('Error processing commission:', commissionError);
+      } else {
+        console.log('Commission processed:', commissionResult);
+      }
+    } else {
+      console.log('No referral code provided, skipping commission processing');
+    }
 
     return new Response(JSON.stringify({ success: true, membership: activated }), { status: 200, headers: corsHeaders });
   } catch (e) {

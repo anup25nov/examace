@@ -1,42 +1,6 @@
-  -- Final fixes for admin user and referral system
+-- Final fixes for referral system
 
--- 1. Create admin user for the specified user ID
-INSERT INTO admin_users (user_id, role, is_active, created_at, updated_at)
-VALUES (
-  '2a17bb69-62ab-4efc-a421-009282b1ed21'::UUID,
-  'super_admin',
-  true,
-  NOW(),
-  NOW()
-)
-ON CONFLICT (user_id) DO UPDATE SET
-  role = 'super_admin',
-  is_active = true,
-  updated_at = NOW();
-
--- 2. Ensure the user exists in user_profiles table
-INSERT INTO user_profiles (id, phone, created_at, updated_at)
-VALUES (
-  '2a17bb69-62ab-4efc-a421-009282b1ed21'::UUID,
-  '+919999999999', -- Placeholder phone number
-  NOW(),
-  NOW()
-)
-ON CONFLICT (id) DO UPDATE SET
-  updated_at = NOW();
-
--- 3. Create a referral code for the admin user if it doesn't exist
-INSERT INTO referral_codes (user_id, code, total_referrals, total_earnings, is_active)
-VALUES (
-  '2a17bb69-62ab-4efc-a421-009282b1ed21'::UUID,
-  'ADMIN001',
-  0,
-  0.00,
-  true
-)
-ON CONFLICT (code) DO NOTHING;
-
--- 4. Fix the validate_and_apply_referral_code function completely
+-- 1. Fix the validate_and_apply_referral_code function completely
 DROP FUNCTION IF EXISTS validate_and_apply_referral_code(UUID, VARCHAR);
 
 CREATE OR REPLACE FUNCTION validate_and_apply_referral_code(
@@ -134,5 +98,5 @@ BEGIN
   RETURN QUERY SELECT true, 'Referral code applied successfully', referrer_record.user_id, referrer_record.phone;
 END;$$;
 
--- 5. Grant permissions
+-- 2. Grant permissions
 GRANT EXECUTE ON FUNCTION validate_and_apply_referral_code(UUID, VARCHAR) TO authenticated;
