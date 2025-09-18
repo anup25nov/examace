@@ -72,7 +72,7 @@ export const ReferralDashboard: React.FC = () => {
 
       // Load referral stats
       const { data: statsData, error: statsError } = await supabase
-        .rpc('get_user_referral_stats', { user_uuid: user.id });
+        .rpc('get_user_referral_earnings' as any, { user_uuid: user.id });
 
       if (statsError) {
         console.error('Error loading referral stats:', statsError);
@@ -88,35 +88,15 @@ export const ReferralDashboard: React.FC = () => {
         });
       }
 
-      // Load commission history - using referral_codes table for now
+      // Load commission history using the RPC function
       const { data: historyData, error: historyError } = await supabase
-        .from('referral_codes')
-        .select(`
-          id,
-          user_id,
-          total_earnings,
-          created_at
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .rpc('get_user_commission_history' as any, { user_uuid: user.id });
 
       if (historyError) {
         console.error('Error loading commission history:', historyError);
         toast.error('Failed to load commission history');
       } else {
-        // Transform the data to match our interface
-        const transformedData = (historyData || []).map(item => ({
-          commission_id: item.id,
-          referred_user_id: item.user_id,
-          referred_phone: 'N/A',
-          membership_plan: 'N/A',
-          membership_amount: 0,
-          commission_amount: item.total_earnings || 0,
-          commission_percentage: 50,
-          status: 'pending',
-          created_at: item.created_at
-        }));
-        setCommissionHistory(transformedData);
+        setCommissionHistory(Array.isArray(historyData) ? historyData as unknown as CommissionHistory[] : []);
       }
     } catch (error) {
       console.error('Error loading referral data:', error);
@@ -138,23 +118,26 @@ export const ReferralDashboard: React.FC = () => {
     try {
       setWithdrawLoading(true);
 
-      // For now, just simulate withdrawal - update referral_codes table
+      // Use the RPC function for withdrawal
       const { data, error } = await supabase
-        .from('referral_codes')
-        .update({
-          total_earnings: stats.total_earnings - amount,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id)
-        .select();
+        .rpc('request_commission_withdrawal' as any, {
+          p_user_id: user.id,
+          p_amount: amount,
+          p_payment_method: withdrawMethod
+        });
 
       if (error) {
         console.error('Error requesting withdrawal:', error);
         toast.error('Failed to request withdrawal');
       } else if (data && Array.isArray(data) && data.length > 0) {
-        toast.success('Withdrawal request submitted successfully');
-        setWithdrawAmount('');
-        loadReferralData(); // Refresh data
+        const result = data[0] as any;
+        if (result.success) {
+          toast.success('Withdrawal request submitted successfully');
+          setWithdrawAmount('');
+          loadReferralData(); // Refresh data
+        } else {
+          toast.error(result.message || 'Failed to request withdrawal');
+        }
       }
     } catch (error) {
       console.error('Error requesting withdrawal:', error);
