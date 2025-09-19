@@ -98,19 +98,8 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
           email: '',
           contact: (profile as any)?.phone || user.phone || '',
         },
-        // Force UPI and QR only
-        method: 'upi',
+        // Enable UPI and QR code
         config: {
-          checkout: {
-            method: {
-              netbanking: '0',
-              card: '0', 
-              wallet: '0',
-              upi: '1',
-              emi: '0',
-              paylater: '0'
-            }
-          },
           display: {
             hide: [
               { method: 'card' },
