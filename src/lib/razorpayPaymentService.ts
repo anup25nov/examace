@@ -48,12 +48,14 @@ export class RazorpayPaymentService {
 
       // Insert pending payment record (new payments schema)
       try {
+        const planId = paymentRequest.planId === 'pro_plus' ? 'pro_plus' : 'pro';
         await supabase.from('payments' as any).insert({
+          payment_id: `PAY_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           user_id: paymentRequest.userId,
-          plan: paymentRequest.planId === 'pro_plus' ? 'pro_plus' : 'pro',
+          plan_id: planId,
           amount: paymentRequest.amount,
-          currency: paymentRequest.currency || 'INR',
           razorpay_order_id: data.order_id,
+          payment_method: 'razorpay',
           status: 'pending'
         } as any);
       } catch (e) {
@@ -122,14 +124,28 @@ export class RazorpayPaymentService {
     }
   ): Promise<void> {
     try {
-      // Skip updating payment data if the table structure doesn't support it
-      // This is a fallback for when the payments table doesn't have all required columns
-      console.log('Razorpay data received:', razorpayData);
-      console.log('Payment ID:', paymentId);
-      // The payment verification will still work without this update
+      console.log('Updating payment with Razorpay data:', paymentId, razorpayData);
+      
+      // Update payment record with Razorpay details
+      const { error } = await supabase
+        .from('payments')
+        .update({
+          razorpay_payment_id: razorpayData.razorpay_payment_id,
+          razorpay_order_id: razorpayData.razorpay_order_id,
+          razorpay_signature: razorpayData.razorpay_signature,
+          updated_at: new Date().toISOString()
+        })
+        .eq('payment_id', paymentId);
+
+      if (error) {
+        console.error('Error updating payment with Razorpay data:', error);
+        throw error;
+      }
+
+      console.log('✅ Payment updated with Razorpay data successfully');
     } catch (error) {
       console.error('Error updating payment with Razorpay data:', error);
-      // Don't throw error, just log it
+      // Don't throw error, just log it to avoid breaking the payment flow
     }
   }
 
@@ -239,7 +255,14 @@ export class RazorpayPaymentService {
   async handleWebhook(webhookData: any, signature: string): Promise<{ success: boolean; error?: string }> {
     try {
       // Verify webhook signature
-      const webhookSecret = 'your_webhook_secret'; // Set this in your Razorpay dashboard
+      const webhookSecret = process.env.VITE_RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_WEBHOOK_SECRET;
+      if (!webhookSecret) {
+        console.error('Webhook secret not configured');
+        return {
+          success: false,
+          error: 'Webhook secret not configured',
+        };
+      }
       const body = JSON.stringify(webhookData);
       
       const isSignatureValid = razorpayService.verifyWebhookSignature(body, signature, webhookSecret);
@@ -280,25 +303,140 @@ export class RazorpayPaymentService {
    * Handle payment captured webhook
    */
   private async handlePaymentCaptured(payment: any): Promise<void> {
-    console.log('Payment captured:', payment.id);
-    // Update payment status in database
-    // This is handled by the verification process
+    try {
+      console.log('Payment captured:', payment.id);
+      
+      // Find payment record by order ID
+      const { data: paymentData, error: fetchError } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('razorpay_order_id', payment.order_id)
+        .single();
+
+      if (fetchError || !paymentData) {
+        console.error('Payment record not found for captured payment:', payment.order_id);
+        return;
+      }
+
+      // Update payment status to verified
+      const { error: updateError } = await supabase
+        .from('payments')
+        .update({
+          status: 'verified',
+          razorpay_payment_id: payment.id,
+          verification_status: 'verified',
+          verified_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', paymentData.id);
+
+      if (updateError) {
+        console.error('Failed to update payment status for captured payment:', updateError);
+        return;
+      }
+
+      // Activate membership if not already active
+      const planId = paymentData.plan_id || 'pro';
+      const { error: membershipError } = await supabase
+        .from('user_profiles')
+        .update({
+          membership_plan: planId,
+          membership_expiry: this.calculateMembershipExpiry(planId),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', paymentData.user_id);
+
+      if (membershipError) {
+        console.error('Failed to activate membership for captured payment:', membershipError);
+      } else {
+        console.log('✅ Membership activated for captured payment:', payment.id);
+      }
+
+      console.log('✅ Payment captured webhook processed successfully');
+    } catch (error) {
+      console.error('Error handling payment captured webhook:', error);
+    }
   }
 
   /**
    * Handle payment failed webhook
    */
   private async handlePaymentFailed(payment: any): Promise<void> {
-    console.log('Payment failed:', payment.id);
-    // Update payment status to failed in database
+    try {
+      console.log('Payment failed:', payment.id);
+      
+      // Find payment record by order ID
+      const { data: paymentData, error: fetchError } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('razorpay_order_id', payment.order_id)
+        .single();
+
+      if (fetchError || !paymentData) {
+        console.error('Payment record not found for failed payment:', payment.order_id);
+        return;
+      }
+
+      // Update payment status to failed
+      const { error: updateError } = await supabase
+        .from('payments')
+        .update({
+          status: 'failed',
+          failed_reason: payment.error_description || payment.error_reason || 'Payment failed',
+          failed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', paymentData.id);
+
+      if (updateError) {
+        console.error('Failed to update payment status for failed payment:', updateError);
+        return;
+      }
+
+      console.log('✅ Payment failed webhook processed successfully');
+    } catch (error) {
+      console.error('Error handling payment failed webhook:', error);
+    }
   }
 
   /**
    * Handle order paid webhook
    */
   private async handleOrderPaid(order: any): Promise<void> {
-    console.log('Order paid:', order.id);
-    // Handle order completion
+    try {
+      console.log('Order paid:', order.id);
+      
+      // Find payment record by order ID
+      const { data: paymentData, error: fetchError } = await supabase
+        .from('payments')
+        .select('*')
+        .eq('razorpay_order_id', order.id)
+        .single();
+
+      if (fetchError || !paymentData) {
+        console.error('Payment record not found for paid order:', order.id);
+        return;
+      }
+
+      // Update payment status to paid (will be verified separately)
+      const { error: updateError } = await supabase
+        .from('payments')
+        .update({
+          status: 'paid',
+          paid_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', paymentData.id);
+
+      if (updateError) {
+        console.error('Failed to update payment status for paid order:', updateError);
+        return;
+      }
+
+      console.log('✅ Order paid webhook processed successfully');
+    } catch (error) {
+      console.error('Error handling order paid webhook:', error);
+    }
   }
 
   /**

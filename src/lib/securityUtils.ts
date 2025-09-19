@@ -49,7 +49,8 @@ export const sanitizeForLogging = (data: any): any => {
  * Safe console.log that sanitizes sensitive data
  */
 export const safeLog = (message: string, data?: any) => {
-  if (process.env.NODE_ENV === 'development') {
+  // Only log in development mode and when explicitly enabled
+  if (process.env.NODE_ENV === 'development' && process.env.VITE_DEBUG_LOGGING === 'true') {
     if (data) {
       console.log(message, sanitizeForLogging(data));
     } else {

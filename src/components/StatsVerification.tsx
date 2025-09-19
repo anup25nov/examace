@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useComprehensiveStats } from '@/hooks/useComprehensiveStats';
 import { testSubmissionService } from '@/lib/testSubmissionService';
 import { BarChart3, Trophy, Target, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface StatsVerificationProps {
   examId: string;
@@ -61,8 +62,49 @@ export const StatsVerification: React.FC<StatsVerificationProps> = ({ examId }) 
   };
 
   const clearTestData = async () => {
-    // This would need to be implemented based on your requirements
-    console.log('Clear test data functionality would be implemented here');
+    try {
+      const confirmClear = window.confirm(
+        'Are you sure you want to clear all test data? This action cannot be undone.'
+      );
+      
+      if (!confirmClear) return;
+
+      setIsSubmitting(true);
+      
+      // Clear test completions for this exam
+      const { error: completionsError } = await supabase
+        .from('test_completions')
+        .delete()
+        .eq('exam_id', examId);
+
+      if (completionsError) {
+        console.error('Error clearing test completions:', completionsError);
+      }
+
+      // Clear exam stats for this exam
+      const { error: statsError } = await supabase
+        .from('exam_stats')
+        .delete()
+        .eq('exam_id', examId);
+
+      if (statsError) {
+        console.error('Error clearing exam stats:', statsError);
+      }
+
+      // Clear local test results
+      setTestResults([]);
+      
+      // Refresh stats to reflect changes
+      await refreshStats();
+      
+      console.log('✅ Test data cleared successfully');
+      alert('Test data cleared successfully!');
+    } catch (error) {
+      console.error('Error clearing test data:', error);
+      alert('Error clearing test data. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (loading) {

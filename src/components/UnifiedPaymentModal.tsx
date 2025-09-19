@@ -191,6 +191,19 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
         },
         handler: async (response: any) => {
           try {
+            setLoading(true);
+            setError('');
+            
+            // Validate response data
+            if (!response?.razorpay_payment_id || !response?.razorpay_order_id || !response?.razorpay_signature) {
+              throw new Error('Invalid payment response data received');
+            }
+
+            console.log('Processing payment verification...', {
+              orderId: response.razorpay_order_id,
+              paymentId: response.razorpay_payment_id
+            });
+
             // Get referral code from localStorage if available
             const referralCode = localStorage.getItem('referralCode');
             
@@ -206,35 +219,70 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
               }
             });
 
-            if (error || !data?.success) {
-              throw new Error(error?.message || data?.error || 'Payment verification failed');
+            if (error) {
+              console.error('Edge function error:', error);
+              throw new Error(error.message || 'Payment verification service error');
+            }
+
+            if (!data?.success) {
+              console.error('Payment verification failed:', data);
+              throw new Error(data?.error || 'Payment verification failed');
             }
 
             // Also update via unified service for consistency
-            const verificationResult = await unifiedPaymentService.verifyPayment(
-              paymentResult.paymentId!,
-              {
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-              },
-              planToPurchase.id
-            );
+            try {
+              const verificationResult = await unifiedPaymentService.verifyPayment(
+                paymentResult.paymentId!,
+                {
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                },
+                planToPurchase.id
+              );
 
-            if (verificationResult.success) {
-              setPaymentStep('success');
-              setTimeout(() => {
-                onPaymentSuccess(planToPurchase.id);
-                onClose();
-              }, 2000);
-            } else {
-              setPaymentStep('failed');
-              setError(verificationResult.error || 'Payment verification failed');
+              if (!verificationResult.success) {
+                console.warn('Unified service verification failed:', verificationResult.error);
+                // Don't fail the entire process if edge function succeeded
+              }
+            } catch (unifiedError) {
+              console.warn('Unified service error (non-fatal):', unifiedError);
+              // Continue with the process since edge function succeeded
             }
+
+            console.log('✅ Payment verification successful');
+            setPaymentStep('success');
+            
+            // Clear any referral code after successful payment
+            localStorage.removeItem('referralCode');
+            
+            setTimeout(() => {
+              onPaymentSuccess(planToPurchase.id);
+              onClose();
+            }, 2000);
+
           } catch (error) {
             console.error('Payment verification error:', error);
             setPaymentStep('failed');
-            setError('Payment verification failed. Please contact support.');
+            
+            // Provide specific error messages based on error type
+            let errorMessage = 'Payment verification failed. Please contact support.';
+            
+            if (error instanceof Error) {
+              if (error.message.includes('network') || error.message.includes('timeout')) {
+                errorMessage = 'Network error during verification. Your payment may still be processing. Please check your account or contact support.';
+              } else if (error.message.includes('Invalid')) {
+                errorMessage = 'Invalid payment data received. Please try again or contact support.';
+              } else if (error.message.includes('service')) {
+                errorMessage = 'Payment verification service is temporarily unavailable. Please try again in a few minutes.';
+              } else {
+                errorMessage = `Payment verification failed: ${error.message}`;
+              }
+            }
+            
+            setError(errorMessage);
+          } finally {
+            setLoading(false);
           }
         },
         modal: {

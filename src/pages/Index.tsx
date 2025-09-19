@@ -408,10 +408,10 @@ const Index = () => {
               </div>
               
               <div className="space-y-4">
-                <div className="flex items-center space-x-3 text-lg">
+                {/* <div className="flex items-center space-x-3 text-lg">
                   <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
                   <span>Offline test access</span>
-                </div>
+                </div> */}
                 <div className="flex items-center space-x-3 text-lg">
                   <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
                   <span>Push notifications for reminders</span>
