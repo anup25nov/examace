@@ -21,8 +21,8 @@ export const StatsVerification: React.FC<StatsVerificationProps> = ({ examId }) 
     const results = [];
 
     try {
-      // Simulate 5 test attempts with varying scores (reduced for testing)
-      const testScores = [85, 92, 78, 88, 95];
+      // Generate random test scores between 60-95 for realistic testing
+      const testScores = Array.from({ length: 5 }, () => Math.floor(Math.random() * 36) + 60);
       
       for (let i = 0; i < testScores.length; i++) {
         const score = testScores[i];

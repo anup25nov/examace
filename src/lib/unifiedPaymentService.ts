@@ -347,15 +347,15 @@ export class UnifiedPaymentService {
         .eq('status', 'active')
         .gt('end_date', new Date().toISOString())
         .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+        .limit(1);
 
       if (error) {
         console.warn('Error fetching membership (assuming no membership):', error.message);
         return null;
       }
 
-      return data;
+      // Return the first result or null if no results
+      return data && data.length > 0 ? data[0] : null;
     } catch (error) {
       console.warn('Error fetching membership (assuming no membership):', error);
       return null;
