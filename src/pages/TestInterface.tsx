@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 // Removed unused imports: getQuestionsForTest, getTestDuration
 import { useExamStats } from "@/hooks/useExamStats";
+import { testSubmissionService } from "@/lib/testSubmissionService";
 import { useAuth } from "@/hooks/useAuth";
 import { QuestionLoader, TestData, QuestionWithProps } from "@/lib/questionLoader";
 import SolutionsDisplay from "@/components/SolutionsDisplay";
@@ -371,16 +372,19 @@ const TestInterface = () => {
       const score = totalMarks > 0 ? Math.round((obtainedMarks / totalMarks) * 100) : 0;
       
       
-      // Submit test attempt using the new system
+      // Submit test attempt using the comprehensive stats service
       if (examId) {
         try {
-          await submitTestAttempt(
+          // Use the comprehensive test submission service
+          const submissionResult = await testSubmissionService.submitTestAttempt({
             examId,
+            testType: actualTestType as 'pyq' | 'mock' | 'practice',
+            testId: actualTestId,
             score,
-            questions.length,
-            correct,
-            cleanTimeTaken,
-            {
+            totalQuestions: questions.length,
+            correctAnswers: correct,
+            timeTaken: cleanTimeTaken,
+            answers: {
               details: questions.map((question, index) => ({
                 questionId: question.id,
                 selectedOption: answers[index] ?? -1,
@@ -388,15 +392,42 @@ const TestInterface = () => {
               })),
               skipped: questions.length - Object.keys(answers).length
             },
-            actualTestType,  // actualTestType is the test type (mock/pyq/practice)
-            actualTestId,    // actualTestId is the actual test ID (mock-test-3, etc.)
-            topic            // topic for practice tests
-          );
+            topicId: topic // topic for practice tests
+          });
 
-          // Submit individual test score for Mock and PYQ tests only
-          if (actualTestType === 'mock' || actualTestType === 'pyq') {
-            // actualTestType is the test type (mock/pyq), actualTestId is the actual test ID
-            await submitIndividualTestScore(examId, actualTestType, actualTestId, score);
+          if (submissionResult.success) {
+            console.log('Test submitted successfully with comprehensive stats:', submissionResult.stats);
+          } else {
+            console.error('Test submission failed:', submissionResult.error);
+          }
+
+          // Also submit to legacy system for backward compatibility
+          try {
+            await submitTestAttempt(
+              examId,
+              score,
+              questions.length,
+              correct,
+              cleanTimeTaken,
+              {
+                details: questions.map((question, index) => ({
+                  questionId: question.id,
+                  selectedOption: answers[index] ?? -1,
+                  isCorrect: answers[index] === question.correct
+                })),
+                skipped: questions.length - Object.keys(answers).length
+              },
+              actualTestType,
+              actualTestId,
+              topic
+            );
+
+            // Submit individual test score for Mock and PYQ tests only
+            if (actualTestType === 'mock' || actualTestType === 'pyq') {
+              await submitIndividualTestScore(examId, actualTestType, actualTestId, score);
+            }
+          } catch (legacyError) {
+            console.error('Legacy submission failed:', legacyError);
           }
 
         } catch (error) {

@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { examConfigs } from "@/config/examConfig";
 import { useExamStats } from "@/hooks/useExamStats";
+import { useComprehensiveStats } from "@/hooks/useComprehensiveStats";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -55,6 +56,19 @@ const EnhancedExamDashboard = () => {
   const { user, isAuthenticated, loading } = useAuth();
   const { profile } = useUserProfile();
   const { allStats, loadAllStats, getExamStatById, isTestCompleted, getIndividualTestScore } = useExamStats();
+  const { stats: comprehensiveStats, loading: statsLoading, error: statsError, refreshStats } = useComprehensiveStats(examId);
+  
+  // Refresh stats when returning to dashboard
+  useEffect(() => {
+    const handleFocus = () => {
+      if (examId) {
+        refreshStats();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [examId, refreshStats]);
   const { isAdmin, loading: adminLoading } = useAdmin();
   
   const [userStats, setUserStats] = useState({
@@ -230,7 +244,25 @@ const EnhancedExamDashboard = () => {
 
   // Update user stats
   useEffect(() => {
-    if (examId && allStats.length > 0) {
+    if (comprehensiveStats) {
+      // Use comprehensive stats (includes last 10 average)
+      let bestRank = 0;
+      testScores.forEach((scoreData) => {
+        if (scoreData.rank > 0 && (bestRank === 0 || scoreData.rank < bestRank)) {
+          bestRank = scoreData.rank;
+        }
+      });
+
+      setUserStats({
+        totalTests: comprehensiveStats.totalTests,
+        avgScore: comprehensiveStats.last10Average, // Use last 10 average
+        bestScore: comprehensiveStats.bestScore,
+        bestRank: bestRank,
+        lastActive: comprehensiveStats.lastTestDate ? new Date(comprehensiveStats.lastTestDate) : null,
+        avgScoreLast10: comprehensiveStats.last10Average
+      });
+    } else if (examId && allStats.length > 0) {
+      // Fallback to legacy stats
       const currentExamStats = allStats.find(stat => stat.examId === examId);
       if (currentExamStats) {
         let bestRank = 0;
@@ -256,9 +288,9 @@ const EnhancedExamDashboard = () => {
         });
       }
     }
-  }, [examId, allStats, testScores]);
+  }, [examId, comprehensiveStats, allStats, testScores]);
 
-  if (loading) {
+  if (loading || statsLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">

@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { examConfigs } from "@/config/examConfig";
 import { useExamStats } from "@/hooks/useExamStats";
+import { useComprehensiveStats } from "@/hooks/useComprehensiveStats";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { QuestionLoader } from "@/lib/questionLoader";
@@ -42,6 +43,19 @@ const ProfessionalExamDashboard = () => {
   const { user, isAuthenticated, loading } = useAuth();
   const { profile } = useUserProfile();
   const { allStats, loadAllStats, getExamStatById, isTestCompleted, getIndividualTestScore } = useExamStats();
+  const { stats: comprehensiveStats, loading: statsLoading, error: statsError, refreshStats } = useComprehensiveStats(examId);
+  
+  // Refresh stats when returning to dashboard
+  useEffect(() => {
+    const handleFocus = () => {
+      if (examId) {
+        refreshStats();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [examId, refreshStats]);
   
   const [userStats, setUserStats] = useState({
     totalTests: 0,
@@ -140,16 +154,43 @@ const ProfessionalExamDashboard = () => {
           setTestScores(scoresMap);
         }
 
-        // Load exam-specific stats
-        const examStats = getExamStatById(examId);
-        if (examStats) {
-          setUserStats({
-            totalTests: examStats.totalTests || 0,
-            avgScore: examStats.averageScore || 0,
-            bestScore: examStats.bestScore || 0,
-            bestRank: (examStats as any).bestRank || 0,
-            lastActive: (examStats as any).lastActive ? new Date((examStats as any).lastActive) : null
+        // Load exam-specific stats - use comprehensive stats if available
+        if (comprehensiveStats) {
+          // Calculate best rank from individual test scores
+          let bestRank = 0;
+          testScores.forEach((scoreData) => {
+            if (scoreData.rank > 0 && (bestRank === 0 || scoreData.rank < bestRank)) {
+              bestRank = scoreData.rank;
+            }
           });
+
+          setUserStats({
+            totalTests: comprehensiveStats.totalTests,
+            avgScore: comprehensiveStats.last10Average, // Use last 10 average
+            bestScore: comprehensiveStats.bestScore,
+            bestRank: bestRank,
+            lastActive: comprehensiveStats.lastTestDate ? new Date(comprehensiveStats.lastTestDate) : null
+          });
+        } else {
+          // Fallback to legacy stats
+          const examStats = getExamStatById(examId);
+          if (examStats) {
+            // Calculate best rank from individual test scores
+            let bestRank = 0;
+            testScores.forEach((scoreData) => {
+              if (scoreData.rank > 0 && (bestRank === 0 || scoreData.rank < bestRank)) {
+                bestRank = scoreData.rank;
+              }
+            });
+
+            setUserStats({
+              totalTests: examStats.totalTests || 0,
+              avgScore: examStats.averageScore || 0,
+              bestScore: examStats.bestScore || 0,
+              bestRank: bestRank,
+              lastActive: (examStats as any).lastActive ? new Date((examStats as any).lastActive) : null
+            });
+          }
         }
       } catch (error) {
         console.error('Error loading user data:', error);
@@ -157,7 +198,7 @@ const ProfessionalExamDashboard = () => {
     };
 
     loadUserData();
-  }, [isAuthenticated, user, examId]);
+  }, [isAuthenticated, user, examId, comprehensiveStats]);
 
   // Track page view
   useEffect(() => {
@@ -280,7 +321,7 @@ const ProfessionalExamDashboard = () => {
     setSelectedPYQYear(year);
   };
 
-  if (loading) {
+  if (loading || statsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
         <div className="text-center">
