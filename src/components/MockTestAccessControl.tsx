@@ -218,7 +218,7 @@ export const MockTestAccessControl: React.FC<MockTestAccessControlProps> = ({
 
         {/* Trust Indicators */}
         <div className="text-center text-xs text-gray-500 space-y-1">
-          <p>✓ 7-day money-back guarantee</p>
+          {/* <p>✓ 7-day money-back guarantee</p> */}
           <p>✓ Secure payment with Razorpay</p>
           <p>✓ Instant access after payment</p>
         </div>

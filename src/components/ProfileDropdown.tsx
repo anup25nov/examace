@@ -104,7 +104,11 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   
   // Format display name - prioritize phone, then name, then fallback
   const getDisplayName = () => {
-    if (userPhone) return `Hi, ${userPhone}`;
+    if (userPhone) {
+      // Remove +91 if it exists
+      const cleanPhone = userPhone.replace(/^\+91/, "");
+      return `Hi, ${cleanPhone}`;
+    }
     if (userName) return userName;
     return "User";
   };
@@ -174,173 +178,112 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
       
       <DropdownMenuContent 
         align="end" 
-        className={`w-96 ${isMobile ? 'w-80 mr-2' : ''} shadow-xl border border-gray-200`}
+        className={`w-72 ${isMobile ? 'w-64 mr-2' : ''} shadow-lg border border-gray-200 rounded-xl`}
       >
-        <DropdownMenuLabel className="flex items-center space-x-2">
-          <User className="w-4 h-4" />
-          <span>Profile</span>
-        </DropdownMenuLabel>
-        
-        <DropdownMenuSeparator />
-        
-        {/* Professional User Info Section */}
-        <div className="px-4 py-4 bg-gradient-to-br from-slate-50 to-blue-50 border border-gray-200 rounded-xl mx-2 mb-3">
-          <div className="flex items-center space-x-3 mb-4">
+        {/* Compact Header */}
+        <div className="p-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-t-xl">
+          <div className="flex items-center space-x-2">
             <div className="relative">
-              <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-xl">
+              <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">
                   {displayName.charAt(0).toUpperCase()}
                 </span>
               </div>
               {isAdmin && (
-                <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-                  <Shield className="w-3 h-3 text-white" />
-                </div>
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center space-x-2 mb-1">
-                <p className="text-base font-semibold text-gray-900 truncate">
-                  {displayName}
-                </p>
-                {isAdmin && (
-                  <Badge className="bg-red-100 text-red-800 text-xs px-2 py-0.5">
-                    Admin
-                  </Badge>
-                )}
-              </div>
-              {userPhone && (
-                <p className="text-sm text-gray-600 truncate mb-2">
-                  📱 {userPhone}
-                </p>
-              )}
-              <div className="flex items-center space-x-2">
+              <p className="text-sm font-semibold text-white truncate">{displayName}</p>
+              <div className="flex items-center space-x-1 mt-1">
                 {getMembershipBadge()}
                 {(profile as any)?.phone_verified && (
-                  <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    Verified
+                  <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs px-1 py-0">
+                    ✓
                   </Badge>
                 )}
               </div>
-            </div>
-          </div>
-          
-          {/* Enhanced Stats Grid */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-white/70 rounded-lg p-3 text-center border border-gray-100">
-              <p className="text-xs text-gray-600 font-medium">Referrals</p>
-              <p className="text-lg font-bold text-gray-900">
-                {referralStats.total_referrals || 0}
-              </p>
-            </div>
-            <div className="bg-white/70 rounded-lg p-3 text-center border border-gray-100">
-              <p className="text-xs text-gray-600 font-medium">Earnings</p>
-              <p className="text-lg font-bold text-green-600">
-                ₹{referralStats.total_earnings || 0}
-              </p>
-            </div>
-            <div className="bg-white/70 rounded-lg p-3 text-center border border-gray-100">
-              <p className="text-xs text-gray-600 font-medium">Code</p>
-              <p className="text-sm font-mono text-blue-600">
-                {referralStats.referral_code?.slice(0, 6) || 'N/A'}
-              </p>
             </div>
           </div>
         </div>
         
-        <DropdownMenuSeparator />
+        {/* Compact Stats */}
+        <div className="p-3 bg-gray-50">
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div>
+              <div className="text-sm font-bold text-gray-900">{referralStats.total_referrals || 0}</div>
+              <div className="text-xs text-gray-600">Referrals</div>
+            </div>
+            <div>
+              <div className="text-sm font-bold text-green-600">₹{referralStats.total_earnings || 0}</div>
+              <div className="text-xs text-gray-600">Earnings</div>
+            </div>
+            <div>
+              <div className="text-xs font-mono text-blue-600">{referralStats.referral_code?.slice(0, 6) || 'N/A'}</div>
+              <div className="text-xs text-gray-600">Code</div>
+            </div>
+          </div>
+        </div>
         
-        {/* Profile Update Section */}
-        {/* <DropdownMenuItem 
-          onClick={() => {
-            setShowProfileUpdate(true);
-            setIsOpen(false);
-          }}
-          className="flex items-center space-x-2 cursor-pointer"
-        >
-          <Edit3 className="w-4 h-4 text-blue-600" />
-          <div className="flex-1">
-            <p className="text-sm font-medium">Update Profile</p> */}
-            {/* <p className="text-xs text-muted-foreground">
-              Complete your profile information
-            </p> */}
-          {/* </div>
-        </DropdownMenuItem> */}
-        
-        {/* Admin Access Section */}
-        {isAdmin && (
+        {/* Menu Items */}
+        <div className="p-2 space-y-1">
+          {isAdmin && (
+            <DropdownMenuItem 
+              onClick={() => {
+                navigate('/admin');
+                setIsOpen(false);
+              }}
+              className="flex items-center space-x-2 cursor-pointer hover:bg-red-50 p-2 rounded-lg"
+            >
+              <div className="p-1 bg-red-100 rounded">
+                <Shield className="w-3 h-3 text-red-600" />
+              </div>
+              <span className="text-sm text-red-800">Admin Panel</span>
+            </DropdownMenuItem>
+          )}
+          
           <DropdownMenuItem 
             onClick={() => {
-              navigate('/admin');
+              onMembershipClick();
               setIsOpen(false);
             }}
-            className="flex items-center space-x-2 cursor-pointer bg-red-50 hover:bg-red-100"
+            className="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg"
           >
-            <Shield className="w-4 h-4 text-red-600" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-red-800">Admin Panel</p>
-              <p className="text-xs text-red-600">Manage reports & withdrawals</p>
+            <div className="p-1 bg-yellow-100 rounded">
+              <Crown className="w-3 h-3 text-yellow-600" />
             </div>
-            <Badge className="bg-red-100 text-red-800 text-xs">
-              Admin
-            </Badge>
+            <span className="text-sm">Membership</span>
+            {membershipPlan !== 'free' && (
+              <Shield className="w-3 h-3 text-green-500 ml-auto" />
+            )}
           </DropdownMenuItem>
-        )}
-        
-        {/* Membership Section */}
-        <DropdownMenuItem 
-          onClick={() => {
-            onMembershipClick();
-            setIsOpen(false);
-          }}
-          className="flex items-center space-x-2 cursor-pointer"
-        >
-          <Crown className="w-4 h-4 text-yellow-500" />
-          <div className="flex-1">
-            <p className="text-sm font-medium">Membership</p>
-            {/* <p className="text-xs text-muted-foreground">
-              {membershipPlan === 'free' ? 'Upgrade to unlock premium features' : 'Manage your plan'}
-            </p> */}
-          </div>
-          {membershipPlan !== 'free' && (
-            <Shield className="w-4 h-4 text-green-500" />
-          )}
-        </DropdownMenuItem>
-        
-        {/* Referral Section */}
-           <DropdownMenuItem 
-             onClick={() => {
-               navigate('/referral');
-               setIsOpen(false);
-             }}
-             className="flex items-center space-x-2 cursor-pointer"
-           >
-          <Gift className="w-4 h-4 text-green-600" />
-          <div className="flex-1">
-            <p className="text-sm font-medium">Referral Program</p>
-            {/* <p className="text-xs text-muted-foreground">
-              {referralStats.total_referrals} referrals • ₹{referralStats.total_earnings.toFixed(0)} earned
-            </p> */}
-          </div>
-          {/* <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
-            {referralStats.referral_code || 'Get Code'}
-          </Badge> */}
-        </DropdownMenuItem>
-        
-        <DropdownMenuSeparator />
-        
-        {/* Logout Section */}
-        <DropdownMenuItem 
-          onClick={() => {
-            onLogout();
-            setIsOpen(false);
-          }}
-          className="flex items-center space-x-2 cursor-pointer text-red-600 focus:text-red-600"
-        >
-          <LogOut className="w-4 h-4" />
-          <span className="text-sm">Logout</span>
-        </DropdownMenuItem>
+          
+          <DropdownMenuItem 
+            onClick={() => {
+              navigate('/referral');
+              setIsOpen(false);
+            }}
+            className="flex items-center space-x-2 cursor-pointer hover:bg-green-50 p-2 rounded-lg"
+          >
+            <div className="p-1 bg-green-100 rounded">
+              <Gift className="w-3 h-3 text-green-600" />
+            </div>
+            <span className="text-sm">Referral Program</span>
+          </DropdownMenuItem>
+          
+          <DropdownMenuItem 
+            onClick={() => {
+              onLogout();
+              setIsOpen(false);
+            }}
+            className="flex items-center space-x-2 cursor-pointer hover:bg-red-50 text-red-600 p-2 rounded-lg mt-2 border-t border-gray-200"
+          >
+            <div className="p-1 bg-red-100 rounded">
+              <LogOut className="w-3 h-3 text-red-600" />
+            </div>
+            <span className="text-sm font-medium">Logout</span>
+          </DropdownMenuItem>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
     

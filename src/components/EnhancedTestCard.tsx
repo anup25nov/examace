@@ -15,7 +15,7 @@ import {
   Star
 } from 'lucide-react';
 import { PremiumTest } from '@/lib/premiumService';
-import { UnifiedPaymentModal } from './UnifiedPaymentModal';
+import { MembershipPlans } from './MembershipPlans';
 import { TestStartModal } from './TestStartModal';
 import { unifiedPaymentService } from '@/lib/unifiedPaymentService';
 import { useAuth } from '@/hooks/useAuth';
@@ -85,6 +85,10 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
     onStartTest(language);
   };
 
+  const handlePlanSelect = (plan: any) => {
+    // Plan selected logic can go here if needed
+  };
+
   const handlePaymentSuccess = (planId: string) => {
     setHasAccess(true);
     setShowPaymentModal(false);
@@ -98,7 +102,7 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
       className={`relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.03] hover:border-primary/40 h-80 group ${
         isCompleted ? 'border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg' : 'border-border bg-gradient-to-br from-white to-slate-50'
       } ${test.isPremium && !hasAccess ? 'cursor-pointer' : ''} ${className}`}
-      onClick={test.isPremium && !hasAccess ? () => window.location.href = '/membership' : undefined}
+      onClick={test.isPremium && !hasAccess ? () => setShowPaymentModal(true) : undefined}
     >
         <CardContent className="p-4 h-full flex flex-col">
           {/* Header */}
@@ -247,15 +251,13 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
       </Card>
 
       {/* Payment Modal */}
-      <UnifiedPaymentModal
-        isOpen={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        onPaymentSuccess={handlePaymentSuccess}
-        testId={test.id}
-        testName={test.name}
-        testPrice={test.price}
-        testDescription={test.description}
-      />
+      {showPaymentModal && (
+        <MembershipPlans
+          onSelectPlan={handlePlanSelect}
+          onClose={() => setShowPaymentModal(false)}
+          currentPlan={userMembership?.planType}
+        />
+      )}
 
       {/* Test Start Modal */}
       <TestStartModal

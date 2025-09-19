@@ -533,10 +533,10 @@ const EnhancedExamDashboard = () => {
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-right">
-                <p className="text-sm font-medium text-foreground">Welcome, {displayName}!</p>
-                {userPhone && (
+                <p className="text-sm font-medium text-foreground">{displayName}!</p>
+                {/* {userPhone && (
                   <p className="text-xs text-muted-foreground">📱 {userPhone}</p>
-                )}
+                )} */}
               </div>
               {isAdmin && (
                 <Button
