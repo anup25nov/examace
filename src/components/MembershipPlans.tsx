@@ -161,10 +161,10 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
               </div>
             </div>
             <h2 className="text-2xl font-bold mb-2">
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Choose Your
+             <span className="text-gray-900 ml-2">
+                Choose
               </span>
-              <span className="text-gray-900 ml-2">Plan</span>
+              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"> Your Plan</span>
             </h2>
             {/* <p className="text-sm text-gray-600">Compare plans and unlock premium features</p> */}
           </div>

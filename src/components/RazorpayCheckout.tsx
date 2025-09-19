@@ -64,7 +64,7 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
       setError(null);
       setPaymentStep('processing');
 
-      console.log('Creating payment for plan:', plan);
+      // Creating payment for plan
       
       // Create Razorpay payment
       const paymentRequest: RazorpayPaymentRequest = {
@@ -77,9 +77,7 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
         userName: (profile as any)?.name || '',
       };
 
-      console.log('Payment request:', paymentRequest);
       const paymentResult = await razorpayPaymentService.createRazorpayPayment(paymentRequest);
-      console.log('Payment result:', paymentResult);
 
       if (!paymentResult.success) {
         throw new Error(paymentResult.error || 'Failed to create payment');
@@ -161,8 +159,7 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
         },
       };
 
-      console.log('Razorpay options:', options);
-      console.log('Opening Razorpay checkout...');
+      // Opening Razorpay checkout
 
       // Open Razorpay checkout
       const razorpay = new window.Razorpay(options);
