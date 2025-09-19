@@ -7,8 +7,8 @@ const isServer = typeof window === 'undefined';
 
 // Initialize Razorpay instance (server-side only)
 const razorpay = isServer ? new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_RFxIToeCLybhiA',
-  key_secret: process.env.RAZORPAY_KEY_SECRET || 'MHHKyti0XnceA6iQ4ufzvNtR',
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
 }) : null;
 
 export interface RazorpayOrderData {
@@ -92,7 +92,7 @@ export class RazorpayService {
 
     try {
       const expectedSignature = crypto
-        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || 'MHHKyti0XnceA6iQ4ufzvNtR')
+        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
         .update(`${orderId}|${paymentId}`)
         .digest('hex');
 
@@ -456,11 +456,11 @@ export class RazorpayService {
    */
   getKeyId(): string {
     if (isServer) {
-      return process.env.RAZORPAY_KEY_ID || 'rzp_test_RFxIToeCLybhiA';
+      return process.env.RAZORPAY_KEY_ID;
     } else {
       const viteKey = (import.meta as any).env?.VITE_RAZORPAY_KEY_ID;
       const nextPublicKey = (import.meta as any).env?.NEXT_PUBLIC_RAZORPAY_KEY_ID || (window as any)?.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-      return viteKey || nextPublicKey || 'rzp_test_RFxIToeCLybhiA';
+      return viteKey || nextPublicKey;
     }
   }
 
