@@ -18,6 +18,7 @@ export interface RazorpayPaymentResult {
   paymentId?: string;
   amount?: number;
   currency?: string;
+  keyId?: string;
   message?: string;
   error?: string;
 }
@@ -60,7 +61,7 @@ export class RazorpayPaymentService {
       }
 
       // Return order id as the tracking id for client
-      return { success: true, orderId: data.order_id, paymentId: data.order_id, amount: paymentRequest.amount, currency: data.currency || 'INR' };
+      return { success: true, orderId: data.order_id, paymentId: data.order_id, amount: paymentRequest.amount, currency: data.currency || 'INR', keyId: data.key_id };
     } catch (error) {
       console.error('Error creating Razorpay payment:', error);
       return {

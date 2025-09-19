@@ -85,9 +85,13 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
         throw new Error(paymentResult.error || 'Failed to create payment');
       }
 
+      if (!paymentResult.keyId) {
+        throw new Error('Razorpay key not available. Please try again.');
+      }
+
       // Configure Razorpay options for UPI and QR only
       const options = {
-        key: razorpayPaymentService.getKeyId(),
+        key: paymentResult.keyId,
         amount: plan.price * 100, // Convert to paise
         currency: plan.currency,
         name: 'ExamAce',
