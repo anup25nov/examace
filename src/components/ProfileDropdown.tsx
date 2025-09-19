@@ -97,10 +97,19 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     return null;
   }
 
-  const userEmail = profile?.email || localStorage.getItem("userEmail") || "User";
+  const userPhone = (profile as any)?.phone || localStorage.getItem("userPhone") || null;
   const userName = (profile as any)?.name || localStorage.getItem("userName") || null;
   const membershipPlan = (profile as any)?.membership_plan || "free";
   const membershipExpiry = (profile as any)?.membership_expiry || null;
+  
+  // Format display name - prioritize phone, then name, then fallback
+  const getDisplayName = () => {
+    if (userPhone) return `Hi, ${userPhone}`;
+    if (userName) return userName;
+    return "User";
+  };
+  
+  const displayName = getDisplayName();
 
   const getMembershipBadge = () => {
     switch (membershipPlan) {
@@ -137,29 +146,29 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
           variant="ghost" 
           className={`flex items-center space-x-3 p-2 hover:bg-gray-50 transition-colors ${isMobile ? 'w-full justify-start' : ''}`}
         >
-          <div className="flex items-center space-x-3">
-            <div className="relative">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">
-                  {(userName || userEmail).charAt(0).toUpperCase()}
-                </span>
+            <div className="flex items-center space-x-3">
+              <div className="relative">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-semibold text-sm">
+                    {displayName.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                {isAdmin && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
+                )}
               </div>
-              {isAdmin && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
-              )}
-            </div>
-            <div className={`text-left ${isMobile ? 'flex-1' : ''}`}>
-              <p className="text-sm font-semibold text-gray-900">
-                {isMobile ? 'Profile' : (userName || userEmail.split('@')[0])}
-              </p>
-              {!isMobile && (
-                <p className="text-xs text-gray-500">
-                  {getMembershipBadge().props.children}
+              <div className={`text-left ${isMobile ? 'flex-1' : ''}`}>
+                <p className="text-sm font-semibold text-gray-900">
+                  {isMobile ? 'Profile' : displayName}
                 </p>
-              )}
+                {!isMobile && (
+                  <p className="text-xs text-gray-500">
+                    {getMembershipBadge().props.children}
+                  </p>
+                )}
+              </div>
+              <ChevronDown className="w-4 h-4 text-gray-500" />
             </div>
-            <ChevronDown className="w-4 h-4 text-gray-500" />
-          </div>
         </Button>
       </DropdownMenuTrigger>
       
@@ -180,7 +189,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
             <div className="relative">
               <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg">
                 <span className="text-white font-bold text-xl">
-                  {(userName || userEmail).charAt(0).toUpperCase()}
+                  {displayName.charAt(0).toUpperCase()}
                 </span>
               </div>
               {isAdmin && (
@@ -192,7 +201,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
             <div className="flex-1 min-w-0">
               <div className="flex items-center space-x-2 mb-1">
                 <p className="text-base font-semibold text-gray-900 truncate">
-                  {userName || userEmail.split('@')[0]}
+                  {displayName}
                 </p>
                 {isAdmin && (
                   <Badge className="bg-red-100 text-red-800 text-xs px-2 py-0.5">
@@ -200,9 +209,11 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
                   </Badge>
                 )}
               </div>
-              <p className="text-sm text-gray-600 truncate mb-2">
-                {userEmail}
-              </p>
+              {userPhone && (
+                <p className="text-sm text-gray-600 truncate mb-2">
+                  📱 {userPhone}
+                </p>
+              )}
               <div className="flex items-center space-x-2">
                 {getMembershipBadge()}
                 {(profile as any)?.phone_verified && (
@@ -241,7 +252,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
         <DropdownMenuSeparator />
         
         {/* Profile Update Section */}
-        <DropdownMenuItem 
+        {/* <DropdownMenuItem 
           onClick={() => {
             setShowProfileUpdate(true);
             setIsOpen(false);
@@ -250,12 +261,12 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
         >
           <Edit3 className="w-4 h-4 text-blue-600" />
           <div className="flex-1">
-            <p className="text-sm font-medium">Update Profile</p>
+            <p className="text-sm font-medium">Update Profile</p> */}
             {/* <p className="text-xs text-muted-foreground">
               Complete your profile information
             </p> */}
-          </div>
-        </DropdownMenuItem>
+          {/* </div>
+        </DropdownMenuItem> */}
         
         {/* Admin Access Section */}
         {isAdmin && (

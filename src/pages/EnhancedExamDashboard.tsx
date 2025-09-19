@@ -112,9 +112,9 @@ const EnhancedExamDashboard = () => {
 
   const exam = examConfigs[examId as string];
   const examConfig = examConfigService.getExamConfig(examId as string);
-  const userEmail = profile?.email || localStorage.getItem("userEmail");
+  const userPhone = (profile as any)?.phone || localStorage.getItem("userPhone");
   const userName = (profile as any)?.name || localStorage.getItem("userName");
-  const displayName = userName || userEmail?.split('@')[0] || "User";
+  const displayName = userName || (userPhone ? `Hi, ${userPhone}` : "User");
 
   // Load test data from JSON
   useEffect(() => {
@@ -534,7 +534,9 @@ const EnhancedExamDashboard = () => {
             <div className="flex items-center space-x-4">
               <div className="text-right">
                 <p className="text-sm font-medium text-foreground">Welcome, {displayName}!</p>
-                <p className="text-xs text-muted-foreground">{userEmail}</p>
+                {userPhone && (
+                  <p className="text-xs text-muted-foreground">📱 {userPhone}</p>
+                )}
               </div>
               {isAdmin && (
                 <Button

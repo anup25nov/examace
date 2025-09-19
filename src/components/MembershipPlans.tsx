@@ -93,7 +93,8 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
       id: 'pro',
       name: 'Pro',
       description: 'Annual access with mock limit 3',
-      price: 1,
+      price: 49,
+      originalPrice: 299,
       features: ['Annual validity', 'Mock limit: 3', 'Premium PYQs', 'Detailed Solutions'],
       popular: false,
       icon: <Crown className="w-6 h-6" />,
@@ -106,7 +107,8 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
       id: 'pro_plus',
       name: 'Pro+',
       description: 'Annual access with mock limit 5 and priority',
-      price: 2,
+      price: 99,
+      originalPrice: 499,
       features: ['Annual validity', 'Mock limit: 5', 'Premium PYQs', 'Detailed Solutions', 'Priority Support'],
       popular: true,
       icon: <Crown className="w-6 h-6" />,
@@ -176,7 +178,7 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
               {plans.map((plan) => (
             <Card 
               key={plan.id}
@@ -220,9 +222,19 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
                 
                 <div className="mt-4">
                   <div className="flex items-center justify-center space-x-2">
+                    {plan.originalPrice && (
+                      <span className="text-lg text-gray-500 line-through">₹{plan.originalPrice}</span>
+                    )}
                     <span className="text-3xl font-bold text-gray-900">₹{plan.price}</span>
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">
+                  {plan.originalPrice && (
+                    <div className="flex items-center justify-center mt-1">
+                      <Badge className="bg-green-100 text-green-800 text-xs">
+                        {Math.round((1 - plan.price / plan.originalPrice) * 100)}% OFF
+                      </Badge>
+                    </div>
+                  )}
+                  <p className="text-sm text-gray-600 mt-2">
                     {plan.duration_months} months
                   </p>
                 </div>
@@ -267,9 +279,9 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
         {/* Footer */}
         <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 p-6 rounded-b-lg">
           <div className="text-center">
-            <p className="text-sm text-gray-600">
+            {/* <p className="text-sm text-gray-600">
               All plans include 7-day money-back guarantee
-            </p>
+            </p> */}
             <p className="text-xs text-gray-500 mt-1">
               Secure payment powered by Razorpay • All major cards & UPI accepted
             </p>
