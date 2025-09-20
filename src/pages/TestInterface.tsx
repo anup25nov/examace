@@ -18,6 +18,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { QuestionLoader, TestData, QuestionWithProps } from "@/lib/questionLoader";
 import SolutionsDisplay from "@/components/SolutionsDisplay";
 import ImageDisplay from "@/components/ImageDisplay";
+import { planLimitsService, PlanLimits } from "@/lib/planLimitsService";
+import { UpgradeModal } from "@/components/UpgradeModal";
+import { messagingService } from "@/lib/messagingService";
 
 // Fallback function for calculating total duration
 const calculateTotalDurationFallback = (questions: QuestionWithProps[]): number => {
@@ -96,6 +99,9 @@ const TestInterface = () => {
   const [filteredQuestions, setFilteredQuestions] = useState<QuestionWithProps[]>([]);
   const questionGridRef = useRef<HTMLDivElement>(null);
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
+  const [planLimits, setPlanLimits] = useState<PlanLimits | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [canTakeTest, setCanTakeTest] = useState(true);
 
   // Helper function to get original question number
   const getOriginalQuestionNumber = () => {
@@ -143,6 +149,25 @@ const TestInterface = () => {
       setSelectedLanguage(languageFromStorage);
     }
   }, []);
+
+  // Check plan limits when component loads
+  useEffect(() => {
+    const checkPlanLimits = async () => {
+      const userId = getUserId();
+      if (userId) {
+        try {
+          const limits = await planLimitsService.getUserPlanLimits(userId);
+          setPlanLimits(limits);
+          setCanTakeTest(limits.canTakeTest);
+        } catch (error) {
+          console.error('Error checking plan limits:', error);
+          setCanTakeTest(true); // Allow test if check fails
+        }
+      }
+    };
+
+    checkPlanLimits();
+  }, [getUserId]);
 
   // Load questions and set timer
   useEffect(() => {
@@ -232,8 +257,20 @@ const TestInterface = () => {
   }, [examId, sectionId, testType, topic]);
 
   // Handle language selection and start test
-  const handleLanguageSelect = (language: string) => {
+  const handleLanguageSelect = async (language: string) => {
     setSelectedLanguage(language);
+    
+    // Check plan limits before starting test
+    const userId = getUserId();
+    if (userId) {
+      const { canTake, reason, limits } = await planLimitsService.canUserTakeTest(userId);
+      if (!canTake) {
+        setPlanLimits(limits);
+        setShowUpgradeModal(true);
+        return;
+      }
+    }
+    
     setTestStarted(true);
   };
 
@@ -444,6 +481,9 @@ const TestInterface = () => {
       });
       setShowSolutions(true);
       setIsCompleted(true);
+      
+      // Show success message
+      messagingService.testCompleted(correct, questions.length);
     } catch (error) {
       console.error('Error in handleSubmit:', error);
     } finally {
@@ -503,7 +543,19 @@ const TestInterface = () => {
               <p><strong>Language:</strong> {selectedLanguage === 'english' ? 'English' : selectedLanguage === 'hindi' ? 'Hindi' : 'Both'}</p>
             </div>
             <Button 
-              onClick={() => setTestStarted(true)}
+              onClick={async () => {
+                // Check plan limits before starting test
+                const userId = getUserId();
+                if (userId) {
+                  const { canTake, reason, limits } = await planLimitsService.canUserTakeTest(userId);
+                  if (!canTake) {
+                    setPlanLimits(limits);
+                    setShowUpgradeModal(true);
+                    return;
+                  }
+                }
+                setTestStarted(true);
+              }}
               className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:opacity-90 text-white font-semibold"
             >
               Start Test Now
@@ -913,6 +965,21 @@ const TestInterface = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Upgrade Modal */}
+      {planLimits && (
+        <UpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          onUpgrade={(planId) => {
+            setShowUpgradeModal(false);
+            // Navigate to membership page or handle upgrade
+            window.location.href = '/profile';
+          }}
+          limits={planLimits}
+          message={planLimitsService.getUpgradeMessage(planLimits)}
+        />
+      )}
     </div>
   );
 };

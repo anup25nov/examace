@@ -64,7 +64,7 @@ export const DailyAccolades: React.FC<DailyAccoladesProps> = ({ isFirstVisit, on
                 : 'Great to see you again! Keep up the momentum and achieve your goals.'
               }
             </p>
-            
+{/*             
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-4 mb-6">
               <div className="flex items-center justify-center space-x-2 mb-2">
                 <Sparkles className="w-5 h-5 text-blue-600" />
@@ -73,7 +73,7 @@ export const DailyAccolades: React.FC<DailyAccoladesProps> = ({ isFirstVisit, on
               <p className="text-sm text-blue-700">
                 You're building a great study habit! Every day counts towards your success.
               </p>
-            </div>
+            </div> */}
 
             <button
               onClick={() => {

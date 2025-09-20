@@ -248,7 +248,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
   const renderPhoneStep = () => (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Welcome to ExamAce</CardTitle>
+        <CardTitle className="text-2xl font-bold text-center">Welcome to Step2Sarkari</CardTitle>
         <CardDescription className="text-center">
           Enter your phone number to get started
         </CardDescription>
@@ -256,7 +256,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
       <CardContent>
         <form onSubmit={handlePhoneSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number</Label>
+            {/* <Label htmlFor="phone">Phone Number</Label> */}
             <div className="relative">
               <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input

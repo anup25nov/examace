@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { RazorpayCheckout } from './RazorpayCheckout';
+import { messagingService } from '@/lib/messagingService';
 
 interface MembershipPlan {
   id: string;
@@ -95,7 +96,7 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
       description: 'Complete access to all mocks and features',
       price: 299,
       originalPrice: 599,
-      features: ['12 months validity', 'Unlimited mock tests', 'Premium PYQs', 'Detailed Solutions', 'Priority Support', 'Advanced Analytics'],
+      features: ['12 months validity', '21 mock tests', 'Premium PYQs', 'Detailed Solutions', 'Priority Support', 'Advanced Analytics'],
       popular: true,
       icon: <Crown className="w-6 h-6" />,
       color: 'text-purple-600',
@@ -134,7 +135,11 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
   const handlePaymentSuccess = (paymentId: string) => {
     setShowPaymentModal(false);
     setSelectedPlanForPayment(null);
-    console.log('Payment successful:', paymentId);
+    
+    // Show success message
+    if (selectedPlanForPayment) {
+      messagingService.membershipPurchased(selectedPlanForPayment.name);
+    }
     
     // Auto-refresh to show updated plan in profile
     setTimeout(() => {

@@ -24,6 +24,7 @@ import {
 } from "@/components/LazyWrapper";
 import { EnhancedExamDashboardWrapper } from "@/components/EnhancedExamDashboardWrapper";
 import AdminPage from "./pages/AdminPage";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,11 @@ const App = () => {
             <Route path="/admin" element={
               <ProtectedRoute>
                 <AdminPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
               </ProtectedRoute>
             } />
             <Route path="/test/:examId/:sectionId/:testType" element={

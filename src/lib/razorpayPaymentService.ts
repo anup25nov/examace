@@ -40,7 +40,7 @@ export class RazorpayPaymentService {
     try {
       // Create order via Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('create_razorpay_order' as any, {
-        body: { user_id: paymentRequest.userId, plan: paymentRequest.planId === 'pro_plus' ? 'pro_plus' : 'pro' }
+        body: { user_id: paymentRequest.userId, plan: paymentRequest.planId }
       } as any);
       if (error || !data?.success) {
         throw new Error(error?.message || data?.error || 'Failed to create order');
@@ -48,12 +48,11 @@ export class RazorpayPaymentService {
 
       // Insert pending payment record (new payments schema)
       try {
-        const planId = paymentRequest.planId === 'pro_plus' ? 'pro_plus' : 'pro';
         await supabase.from('payments' as any).insert({
           payment_id: `PAY_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           user_id: paymentRequest.userId,
-          plan_id: planId,
-          amount: paymentRequest.amount,
+          plan_id: paymentRequest.planId,
+          amount: data.amount, // Use amount from Edge Function
           razorpay_order_id: data.order_id,
           payment_method: 'razorpay',
           status: 'pending'
@@ -63,7 +62,7 @@ export class RazorpayPaymentService {
       }
 
       // Return order id as the tracking id for client
-      return { success: true, orderId: data.order_id, paymentId: data.order_id, amount: paymentRequest.amount, currency: data.currency || 'INR', keyId: data.key_id };
+      return { success: true, orderId: data.order_id, paymentId: data.order_id, amount: data.amount, currency: data.currency || 'INR', keyId: data.key_id };
     } catch (error) {
       console.error('Error creating Razorpay payment:', error);
       return {

@@ -6,6 +6,7 @@ import { Loader2, Check, X, CreditCard, Smartphone, Globe } from 'lucide-react';
 import { razorpayPaymentService, RazorpayPaymentRequest } from '@/lib/razorpayPaymentService';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { messagingService } from '@/lib/messagingService';
 
 // Declare Razorpay types
 declare global {
@@ -55,12 +56,12 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
 
   const handlePayment = async () => {
     if (!user) {
-      setError('Please log in to make a payment.');
+      messagingService.error('Please log in to make a payment.');
       return;
     }
     
     if (!window.Razorpay) {
-      setError('Payment system is loading. Please wait a moment and try again.');
+      messagingService.warning('Payment system is loading. Please wait a moment and try again.');
       return;
     }
 
@@ -85,10 +86,12 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
       const paymentResult = await razorpayPaymentService.createRazorpayPayment(paymentRequest);
 
       if (!paymentResult.success) {
+        messagingService.paymentFailed(paymentResult.error || 'Failed to create payment');
         throw new Error(paymentResult.error || 'Failed to create payment');
       }
 
       if (!paymentResult.keyId) {
+        messagingService.error('Razorpay key not available. Please try again.');
         throw new Error('Razorpay key not available. Please try again.');
       }
 
@@ -148,11 +151,13 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
               }, 2000);
             } else {
               setPaymentStep('failed');
+              messagingService.paymentFailed(verificationResult.error || 'Payment verification failed');
               setError(verificationResult.error || 'Payment verification failed');
             }
           } catch (error) {
             console.error('Payment verification error:', error);
             setPaymentStep('failed');
+            messagingService.paymentFailed('Payment verification failed. Please contact support.');
             setError('Payment verification failed. Please contact support.');
           }
         },
@@ -160,6 +165,7 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
           ondismiss: () => {
             setLoading(false);
             setPaymentStep('init');
+            messagingService.warning('Payment cancelled by user');
           },
         },
       };
@@ -171,6 +177,7 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
       razorpay.open();
     } catch (error) {
       console.error('Payment error:', error);
+      messagingService.paymentFailed(error instanceof Error ? error.message : 'Payment failed');
       setError(error instanceof Error ? error.message : 'Payment failed');
       setPaymentStep('failed');
     } finally {

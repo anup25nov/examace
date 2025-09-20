@@ -244,7 +244,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
           
           <DropdownMenuItem 
             onClick={() => {
-              onMembershipClick();
+              navigate('/profile');
               setIsOpen(false);
             }}
             className="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg"
@@ -252,7 +252,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
             <div className="p-1 bg-yellow-100 rounded">
               <Crown className="w-3 h-3 text-yellow-600" />
             </div>
-            <span className="text-sm">Membership</span>
+            <span className="text-sm">Profile & Membership</span>
             {membershipPlan !== 'free' && (
               <Shield className="w-3 h-3 text-green-500 ml-auto" />
             )}
