@@ -22,7 +22,7 @@ import {
   Gift,
   Users,
   Edit3,
-  DollarSign,
+  IndianRupee,
   CheckCircle
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';

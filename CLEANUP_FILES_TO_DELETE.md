@@ -1,0 +1,184 @@
+# Files to Delete - Cleanup List
+
+## SQL Files (Old/Unused)
+These are old SQL files that are no longer needed:
+
+### Commission/Database Fix Files
+- aggressive_cleanup.sql
+- apply_commission_functions_fixed.sql
+- apply_commission_functions.sql
+- apply_commission_system.sql
+- BULLETPROOF_USER_MESSAGES_FIX.sql
+- check_all_functions.sql
+- check_and_create_withdrawal.sql
+- check_commission_created.sql
+- check_commission_status.sql
+- check_commissions_table.sql
+- check_current_function.sql
+- check_function_signature.sql
+- check_functions_dropped.sql
+- check_memberships_table_structure.sql
+- check_missing_referrals.sql
+- check_referral_codes_table.sql
+- check_referral_commissions_structure.sql
+- check_referral_relationships.sql
+- check_referral_stats_directly.sql
+- check_table_structure.sql
+- check_withdrawal_requests.sql
+- cleanup_duplicate_functions.sql
+- complete_end_to_end_test.sql
+- COMPLETE_MISSING_FUNCTIONS_FIX.sql
+- COMPLETE_SYSTEM_FIX.sql
+- comprehensive_diagnosis.sql
+- COMPREHENSIVE_USER_MESSAGES_FIX.sql
+- create_missing_commission_function.sql
+- create_missing_functions.sql
+- create_missing_withdrawal_function.sql
+- create_new_commission_function.sql
+- create_referral_commissions_table.sql
+- create_referral_payouts_simple.sql
+- create_referral_payouts_table.sql
+- create_request_withdrawal_function.sql
+- create_sample_referral_codes.sql
+- create_simple_commission_function.sql
+- create_test_scenario.sql
+- create_validate_referral_function_fixed.sql
+- create_validate_referral_function.sql
+- debug_commission_issue.sql
+- debug_current_state.sql
+- debug_function_signatures.sql
+- debug_new_user_flow.sql
+- debug_payment_flow.sql
+- debug_referral_mismatch.sql
+- debug_referral_stats_function.sql
+- debug_referral_stats_issue.sql
+- debug_referral_status.sql
+- debug_withdrawal_request.sql
+- direct_commission_fix.sql
+- drop_by_signature.sql
+- final_data_check.sql
+- final_diagnosis.sql
+- final_function_fix.sql
+- find_mismatch.sql
+- fix_activate_membership_final.sql
+- fix_activate_membership_function.sql
+- fix_activate_membership_simple.sql
+- fix_activate_membership_with_plan_id.sql
+- fix_all_commissions.sql
+- fix_all_missing_functions_fixed.sql
+- fix_all_missing_functions.sql
+- fix_all_tables_comprehensive.sql
+- fix_ambiguous_column.sql
+- fix_ambiguous_columns.sql
+- fix_commission_referrer_id.sql
+- fix_commissions_table.sql
+- fix_earnings_calculation.sql
+- fix_existing_commissions.sql
+- fix_function_conflicts.sql
+- fix_function_signature_final.sql
+- fix_missing_connections.sql
+- fix_null_referrer_commission.sql
+- fix_payment_verification_flow.sql
+- fix_payments_payment_id.sql
+- fix_payments_table.sql
+- fix_plan_id_constraint_final.sql
+- fix_plan_id_simple.sql
+- fix_referral_codes_table.sql
+- fix_referral_function_amount.sql
+- fix_referral_function_complete.sql
+- fix_referral_network_column_error.sql
+- fix_referral_network_comprehensive.sql
+- fix_referral_network_data_corrected.sql
+- fix_referral_network_data.sql
+- fix_referral_payouts_table.sql
+- fix_referral_relationship.sql
+- fix_referral_status.sql
+- fix_specific_user_commission.sql
+- fix_specific_user.sql
+- fix_u3_referral.sql
+- fix_user_memberships_plan_id.sql
+- fix_user_memberships_table.sql
+- FIX_USER_MESSAGES_FUNCTION.sql
+- fix_withdrawal_function_minimal.sql
+- fix_withdrawal_functions.sql
+- FIXED_DATABASE_FUNCTIONS.sql
+- force_clean_function.sql
+- force_cleanup_functions.sql
+- investigate_payment_flow.sql
+- manual_commission_fix.sql
+- manual_fix_all.sql
+- manual_fix_commissions.sql
+- monitor_referral_flow.sql
+- simple_commission_fix.sql
+- simple_debug.sql
+- simple_diagnosis.sql
+- simple_drop_and_create.sql
+- SIMPLE_USER_MESSAGES_FIX.sql
+- step_by_step_test_fixed.sql
+- step_by_step_test.sql
+- test_all_functions.sql
+- test_commission_function_direct.sql
+- test_commission_function.sql
+- test_commission_functions.sql
+- test_commission_processing.sql
+- test_commission_system.sql
+- test_complete_flow.sql
+- test_complete_referral_flow.sql
+- test_complete_system.sql
+- test_edge_function_manual.sql
+- test_edge_function.sql
+- test_final_flow.sql
+- test_fix.sql
+- test_function_direct.sql
+- test_functions.sql
+- test_handle_commission_direct.sql
+- test_referral_creation.sql
+- test_referral_flow_complete.sql
+- test_referral_function.sql
+- test_referral_functions.sql
+- test_referral_network_function.sql
+- test_referral_system.sql
+- test_validate_referral_function.sql
+- test_withdrawal_flow.sql
+- update_referral_codes_earnings.sql
+- update_referral_stats.sql
+- verify_complete_referral_flow.sql
+- verify_final_stats.sql
+- verify_function_signature.sql
+- verify_referral_commission.sql
+
+### Old Documentation Files
+- IMPLEMENTATION_STATUS_REPORT.md (contains old ExamAce references)
+- REFERRAL_SYSTEM_IMPLEMENTATION_GUIDE.md (contains old ExamAce references)
+- REFERRAL_SYSTEM_LIFECYCLE.md
+- IMAGE_FUNCTIONALITY_IMPLEMENTATION.md
+- INTEGRATION_GUIDE.md
+- PHONE_AUTH_SETUP.md
+- QUESTION_REPORTS_SCHEMA_FIX.md
+- QUESTION_REPORTS_SCHEMA_FIXED.sql
+- QUESTION_REPORTS_SCHEMA.sql
+- SMS_CONFIGURATION_GUIDE.md
+- fix-supabase-connection.md
+- test_functions.md
+
+### Test Files
+- test_payment_flow.js
+- test_referral_flow.html
+- test-order-creation.js
+- check-razorpay-config.js
+- debug-razorpay.js
+
+## Keep These Files
+- supabase/migrations/ (keep all migration files)
+- src/ (keep all source code)
+- public/ (keep all public assets)
+- package.json, package-lock.json
+- tsconfig.json, tsconfig.app.json, tsconfig.node.json
+- vite.config.ts, tailwind.config.ts, postcss.config.js
+- components.json, eslint.config.js
+- capacitor.config.ts
+- index.html
+- README.md
+- vercel.json
+- build-apk.sh
+- bun.lockb

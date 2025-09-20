@@ -220,7 +220,7 @@ const Index = () => {
           {/* Brand Name - Glorified */}
           <div className="mb-8 animate-fade-in">
             <h1 className="text-6xl md:text-7xl lg:text-8xl font-black text-white drop-shadow-2xl mb-4 tracking-tight">
-              S2S
+              Step 2 Sarkari
             </h1>
             <div className="text-center">
               <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white/95 drop-shadow-lg mb-2 tracking-wide">
@@ -365,11 +365,11 @@ const Index = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
             <div className="text-center group">
-              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-110">
-                <BookOpen className="w-10 h-10 text-white" />
+              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-110">
+                <Trophy className="w-10 h-10 text-white" />
               </div>
-              <h4 className="text-2xl font-bold text-gray-900 mb-4">Topic-wise Practice</h4>
-              <p className="text-gray-600 text-lg leading-relaxed">Master concepts with focused practice sets designed by experts</p>
+              <h4 className="text-2xl font-bold text-gray-900 mb-4">Full Mock Tests</h4>
+              <p className="text-gray-600 text-lg leading-relaxed">Simulate real exam experience with comprehensive mock tests</p>
             </div>
             
             <div className="text-center group">
@@ -381,11 +381,11 @@ const Index = () => {
             </div>
             
             <div className="text-center group">
-              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-110">
-                <Trophy className="w-10 h-10 text-white" />
+              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-xl group-hover:shadow-2xl transition-all duration-300 group-hover:scale-110">
+                <BookOpen className="w-10 h-10 text-white" />
               </div>
-              <h4 className="text-2xl font-bold text-gray-900 mb-4">Full Mock Tests</h4>
-              <p className="text-gray-600 text-lg leading-relaxed">Simulate real exam experience with comprehensive mock tests</p>
+              <h4 className="text-2xl font-bold text-gray-900 mb-4">Topic-wise Practice</h4>
+              <p className="text-gray-600 text-lg leading-relaxed">Master concepts with focused practice sets designed by experts</p>
             </div>
           </div>
         </div>

@@ -152,7 +152,7 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
         key: process.env.VITE_RAZORPAY_KEY_ID,
         amount: planToPurchase.price * 100, // Convert to paise
         currency: planToPurchase.currency,
-        name: 'ExamAce',
+        name: 'Step2Sarkari',
         description: planToPurchase.name,
         order_id: paymentResult.orderId,
         prefill: {
@@ -578,7 +578,7 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
           <div className="flex justify-center">
             <Button
               onClick={handlePayment}
-              disabled={loading || !selectedPlan || !window.Razorpay}
+              disabled={loading || !selectedPlan || !window.Razorpay || !selectedPlanDetails}
               className="w-full max-w-md h-12 text-lg bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
@@ -594,6 +594,15 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
               )}
             </Button>
           </div>
+          
+          {/* Debug Info for Payment Button */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="text-xs text-gray-500 mt-2 text-center">
+              Debug: selectedPlan={selectedPlan ? 'true' : 'false'}, 
+              Razorpay={window.Razorpay ? 'loaded' : 'not loaded'}, 
+              selectedPlanDetails={selectedPlanDetails ? 'true' : 'false'}
+            </div>
+          )}
 
           {/* Security Note */}
           <div className="text-center text-sm text-muted-foreground">

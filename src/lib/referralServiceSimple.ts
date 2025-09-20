@@ -1,7 +1,7 @@
 // Simplified Referral Service - Works without database tables
 // This is a temporary implementation until the referral database schema is set up
 
-import { getReferralConfig } from '@/config/appConfig';
+import { defaultConfig } from '@/config/appConfig';
 
 export interface ReferralStats {
   totalReferrals: number;
@@ -14,15 +14,14 @@ export interface ReferralStats {
 
 class ReferralServiceSimple {
   private getCommissionPercentage(): number {
-    return getReferralConfig().commissionPercentage;
+    return defaultConfig.commission?.percentage || 50;
   }
 
   // Generate unique referral code for user
   async generateReferralCode(userId: string): Promise<{ success: boolean; code?: string; error?: string }> {
     try {
       // Generate a simple referral code based on user ID
-      const config = getReferralConfig();
-      const code = `${config.referralCodePrefix}${userId.substring(0, 6).toUpperCase()}`;
+      const code = `${defaultConfig.commission?.referralCodePrefix || 'S2S'}${userId.substring(0, 6).toUpperCase()}`;
       
       // Store in localStorage for now
       localStorage.setItem(`referral_code_${userId}`, code);
@@ -107,8 +106,7 @@ class ReferralServiceSimple {
   async validateReferralCode(code: string): Promise<{ valid: boolean; error?: string }> {
     try {
       // Simple validation - check if it starts with correct prefix and has proper length
-      const config = getReferralConfig();
-      if (!code || !code.startsWith(config.referralCodePrefix) || code.length < config.referralCodeLength) {
+      if (!code || !code.startsWith(defaultConfig.commission?.referralCodePrefix || 'S2S') || code.length < (defaultConfig.commission?.referralCodeLength || 8)) {
         return { valid: false, error: 'Invalid referral code format' };
       }
       

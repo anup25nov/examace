@@ -89,27 +89,13 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
   useEffect(() => {
     // Use latest Pro and Pro+ definitions (1 year validity, env pricing handled server-side)
     setLoading(true);
-    const pro: MembershipPlan = {
-      id: 'pro',
-      name: 'Pro',
-      description: 'Annual access with mock limit 3',
-      price: 49,
-      originalPrice: 299,
-      features: ['Annual validity', 'Mock limit: 3', 'Premium PYQs', 'Detailed Solutions'],
-      popular: false,
-      icon: <Crown className="w-6 h-6" />,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50 border-blue-200',
-      duration_months: 12,
-      currency: 'INR'
-    };
     const proPlus: MembershipPlan = {
       id: 'pro_plus',
       name: 'Pro+',
-      description: 'Annual access with mock limit 5 and priority',
-      price: 99,
-      originalPrice: 499,
-      features: ['Annual validity', 'Mock limit: 5', 'Premium PYQs', 'Detailed Solutions', 'Priority Support'],
+      description: 'Complete access to all mocks and features',
+      price: 299,
+      originalPrice: 599,
+      features: ['12 months validity', 'Unlimited mock tests', 'Premium PYQs', 'Detailed Solutions', 'Priority Support', 'Advanced Analytics'],
       popular: true,
       icon: <Crown className="w-6 h-6" />,
       color: 'text-purple-600',
@@ -117,7 +103,21 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
       duration_months: 12,
       currency: 'INR'
     };
-    setPlans([pro, proPlus]);
+    const pro: MembershipPlan = {
+      id: 'pro',
+      name: 'Pro',
+      description: 'Access to 11 mock tests',
+      price: 99,
+      originalPrice: 199,
+      features: ['3 months validity', '11 mock tests', 'Premium PYQs', 'Detailed Solutions', 'Performance Analytics'],
+      popular: false,
+      icon: <Crown className="w-6 h-6" />,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50 border-blue-200',
+      duration_months: 3,
+      currency: 'INR'
+    };
+    setPlans([proPlus, pro]);
     setLoading(false);
   }, []);
 
@@ -134,8 +134,12 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
   const handlePaymentSuccess = (paymentId: string) => {
     setShowPaymentModal(false);
     setSelectedPlanForPayment(null);
-    // You can add success handling here
     console.log('Payment successful:', paymentId);
+    
+    // Auto-refresh to show updated plan in profile
+    setTimeout(() => {
+      window.location.reload();
+    }, 2000); // Wait 2 seconds to show success message, then refresh
   };
 
   return (

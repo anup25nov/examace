@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Gift, 
   Users, 
-  DollarSign, 
+  IndianRupee, 
   TrendingUp,
   X,
   Copy,

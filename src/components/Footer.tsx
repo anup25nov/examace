@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Phone, MapPin, Facebook, Instagram, Linkedin } from 'lucide-react';
+import { Mail, Phone, MapPin, Facebook, Instagram, Youtube } from 'lucide-react';
 
 const Footer = () => {
   const navigate = useNavigate();
@@ -27,8 +27,8 @@ const Footer = () => {
               <a href="https://www.instagram.com/mr_ankit011?igsh=MTI5dmd1djlhdXhvMw==" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
                 <Instagram className="w-5 h-5" />
               </a>
-              <a href="https://www.linkedin.com/in/theankitmishra" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
-                <Linkedin className="w-5 h-5" />
+              <a href="https://www.youtube.com/@step2sarkari" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
+                <Youtube className="w-7 h-5" />
               </a>
             </div>
           </div>
@@ -51,14 +51,14 @@ const Footer = () => {
             <ul className="space-y-2">
               <li><button onClick={() => handleNavigation("/faq")} className="text-gray-300 hover:text-white transition-colors">FAQ</button></li>
               <li><button onClick={() => handleNavigation("/privacy")} className="text-gray-300 hover:text-white transition-colors">Privacy Policy</button></li>
-              <li><button onClick={() => handleNavigation("/terms")} className="text-gray-300 hover:text-white transition-colors">Terms of Service</button></li>
-              <li><button onClick={() => handleNavigation("/faq")} className="text-gray-300 hover:text-white transition-colors">Help Center</button></li>
+              {/* <li><button onClick={() => handleNavigation("/terms")} className="text-gray-300 hover:text-white transition-colors">Terms of Service</button></li> */}
+              {/* <li><button onClick={() => handleNavigation("/faq")} className="text-gray-300 hover:text-white transition-colors">Help Center</button></li> */}
               <li><button onClick={() => handleNavigation("/contact")} className="text-gray-300 hover:text-white transition-colors">Contact Us</button></li>
             </ul>
           </div>
 
           {/* Contact Info */}
-          <div>
+          {/* <div>
             <h3 className="text-xl font-bold mb-4">Contact Info</h3>
             <div className="space-y-3">
               <div className="flex items-center justify-center space-x-2">
@@ -78,7 +78,7 @@ const Footer = () => {
                 <span className="text-gray-300">New Delhi, India</span>
               </div>
             </div>
-          </div>
+          </div> */}
 
         </div>
 

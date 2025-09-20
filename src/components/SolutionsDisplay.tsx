@@ -321,9 +321,9 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                   {/* Question Header */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="outline" className="text-sm font-medium">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 space-y-2 sm:space-y-0">
+                        <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                          <Badge variant="outline" className="text-xs sm:text-sm font-medium">
                             Q{index + 1}
                           </Badge>
                           <Badge className={`text-xs ${getDifficultyColor(question.difficulty)}`}>
@@ -335,25 +335,27 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                           <Badge variant="outline" className="text-xs">
                             {question.topic}
                           </Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
                           <Badge className="text-xs bg-green-100 text-green-800">
-                            +{question.marks} marks
+                            +{question.marks}
                           </Badge>
                           <Badge className="text-xs bg-red-100 text-red-800">
-                            -{question.negativeMarks} marks
+                            -{question.negativeMarks}
                           </Badge>
+                          <QuestionReportModal
+                            examId={examId}
+                            testType={testType}
+                            testId={testId}
+                            questionId={question.id}
+                            questionText={question.questionEn}
+                          />
                         </div>
-                        <QuestionReportModal
-                          examId={examId}
-                          testType={testType}
-                          testId={testId}
-                          questionId={question.id}
-                          questionText={question.questionEn}
-                        />
                       </div>
-                      <h3 className="text-lg font-semibold text-foreground mb-2">
+                      <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2 break-words">
                         {question.questionEn}
                       </h3>
-                      <p className="text-muted-foreground text-sm">
+                      <p className="text-muted-foreground text-xs sm:text-sm break-words">
                         {question.questionHi}
                       </p>
                       
@@ -363,7 +365,7 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                           <ImageDisplay
                             imagePath={question.questionImage}
                             alt="Question image"
-                            maxHeight="300px"
+                            maxHeight="250px"
                             showZoom={true}
                             showDownload={true}
                           />
@@ -382,7 +384,7 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                   <Separator className="my-4" />
 
                   {/* Options */}
-                  <div className="space-y-3 mb-4">
+                  <div className="space-y-2 sm:space-y-3 mb-4">
                     {question.options.map((option, optionIndex) => {
                       const isUserAnswer = userAnswer === optionIndex;
                       const isCorrectAnswer = question.correct === optionIndex;
@@ -391,7 +393,7 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                       const optionText = typeof option === 'string' ? option : option.text;
                       const optionImage = typeof option === 'object' ? option.image : undefined;
                       
-                      let optionClass = "p-3 rounded-lg border transition-colors";
+                      let optionClass = "p-2 sm:p-3 rounded-lg border transition-colors";
                       
                       if (isCorrectAnswer) {
                         optionClass += " bg-green-50 border-green-200 text-green-800";
@@ -403,19 +405,19 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
 
                       return (
                         <div key={optionIndex} className={optionClass}>
-                          <div className="flex items-start space-x-3">
-                            <span className="font-medium text-sm">
+                          <div className="flex items-start space-x-2 sm:space-x-3">
+                            <span className="font-medium text-xs sm:text-sm flex-shrink-0 mt-0.5">
                               {String.fromCharCode(65 + optionIndex)}.
                             </span>
-                            <div className="flex-1">
-                              <span className="block">{optionText}</span>
+                            <div className="flex-1 min-w-0">
+                              <span className="block text-xs sm:text-sm break-words">{optionText}</span>
                               {optionImage && (
                                 <div className="mt-2">
                                   <img 
                                     src={`/logos/${optionImage}`} 
                                     alt={`Option ${String.fromCharCode(65 + optionIndex)} image`}
                                     className="max-w-full h-auto rounded border"
-                                    style={{ maxHeight: '200px' }}
+                                    style={{ maxHeight: '150px' }}
                                     onError={(e) => {
                                       e.currentTarget.style.display = 'none';
                                     }}
@@ -423,12 +425,14 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                                 </div>
                               )}
                             </div>
-                            {isCorrectAnswer && (
-                              <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                            )}
-                            {isUserAnswer && !isCorrect && (
-                              <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                            )}
+                            <div className="flex-shrink-0">
+                              {isCorrectAnswer && (
+                                <CheckCircle className="w-4 h-4 text-green-500" />
+                              )}
+                              {isUserAnswer && !isCorrect && (
+                                <XCircle className="w-4 h-4 text-red-500" />
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
@@ -436,32 +440,32 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                   </div>
 
                   {/* Answer Summary */}
-                  <div className="bg-muted/30 rounded-lg p-4 mb-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-foreground">
+                  <div className="bg-muted/30 rounded-lg p-3 sm:p-4 mb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+                      <div className="flex-1">
+                        <p className="text-xs sm:text-sm font-medium text-foreground">
                           Your Answer: {userAnswer !== undefined ? String.fromCharCode(65 + userAnswer) : 'Not Attempted'}
                         </p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-xs sm:text-sm text-muted-foreground">
                           Correct Answer: {String.fromCharCode(65 + question.correct)}
                         </p>
                         {userAnswer !== undefined && (
-                          <p className={`text-sm font-medium ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
+                          <p className={`text-xs sm:text-sm font-medium ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
                             {isCorrect ? `+${question.marks} marks earned` : `-${question.negativeMarks} marks deducted`}
                           </p>
                         )}
                       </div>
-                      <div className="flex flex-col items-end space-y-2">
+                      <div className="flex flex-col sm:items-end space-y-1 sm:space-y-2">
                         <Badge 
                           variant={isCorrect ? "default" : "destructive"}
-                          className={isCorrect ? "bg-green-100 text-green-800" : ""}
+                          className={`text-xs ${isCorrect ? "bg-green-100 text-green-800" : ""}`}
                         >
                           {isCorrect ? 'Correct' : 'Incorrect'}
                         </Badge>
                         {userAnswer !== undefined && (
                           <Badge 
                             variant="outline"
-                            className={isCorrect ? "border-green-200 text-green-700" : "border-red-200 text-red-700"}
+                            className={`text-xs ${isCorrect ? "border-green-200 text-green-700" : "border-red-200 text-red-700"}`}
                           >
                             {isCorrect ? `+${question.marks}` : `-${question.negativeMarks}`}
                           </Badge>
@@ -471,22 +475,23 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                   </div>
 
                   {/* Explanation */}
-                  <div className="space-y-3">
+                  <div className="space-y-2 sm:space-y-3">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-medium text-foreground">Solution & Explanation</h4>
+                      <h4 className="font-medium text-sm sm:text-base text-foreground">Solution & Explanation</h4>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => toggleExplanation(index)}
+                        className="text-xs h-7 px-2"
                       >
                         {showExplanations[index] ? (
                           <>
-                            <EyeOff className="w-4 h-4 mr-2" />
+                            <EyeOff className="w-3 h-3 mr-1" />
                             Hide
                           </>
                         ) : (
                           <>
-                            <Eye className="w-4 h-4 mr-2" />
+                            <Eye className="w-3 h-3 mr-1" />
                             Show
                           </>
                         )}
@@ -494,9 +499,9 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                     </div>
                     
                     {showExplanations[index] && (
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <h5 className="font-medium text-blue-900 mb-2">Step-by-step Solution:</h5>
-                        <p className="text-blue-800 text-sm leading-relaxed mb-3">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+                        <h5 className="font-medium text-blue-900 mb-2 text-sm sm:text-base">Step-by-step Solution:</h5>
+                        <p className="text-blue-800 text-xs sm:text-sm leading-relaxed mb-3 break-words">
                           {question.explanation || `This ${question.difficulty} level ${question.subject} question tests your knowledge of ${question.topic}. The correct answer is option ${String.fromCharCode(65 + question.correct)} based on the given options.`}
                         </p>
                         

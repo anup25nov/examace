@@ -1,5 +1,5 @@
 // Application Configuration
-// This file contains all configurable settings for the ExamAce platform
+// This file contains all configurable settings for the Step2Sarkari platform
 
 export interface AppConfig {
   // Platform Settings
@@ -24,12 +24,18 @@ export interface AppConfig {
     }[];
   };
 
-  // Referral System
-  referral: {
-    commissionPercentage: number;
-    minimumPayout: number;
-    referralCodePrefix: string;
+  // Commission Configuration
+  commission: {
+    percentage: number;
+    minimumWithdrawal: number;
+    maximumWithdrawal: number;
+    processingFee: number;
+    taxDeduction: number;
+    firstTimeBonus: number;
+    maxDailyWithdrawals: number;
+    withdrawalProcessingDays: number;
     referralCodeLength: number;
+    referralCodePrefix: string;
   };
 
   // Test Configuration
@@ -77,10 +83,10 @@ export interface AppConfig {
 // Default Configuration
 export const defaultConfig: AppConfig = {
   platform: {
-    name: 'ExamAce',
+    name: 'Step2Sarkari',
     version: '1.0.0',
-    description: 'Master your competitive exams with ExamAce',
-    supportEmail: 'support@examace.com',
+    description: 'Master your competitive exams with Step2Sarkari',
+    supportEmail: 'support@step2sarkari.com',
     supportPhone: '+91-9876543210'
   },
 
@@ -132,11 +138,19 @@ export const defaultConfig: AppConfig = {
     ]
   },
 
-  referral: {
-    commissionPercentage: 50,
-    minimumPayout: 100,
-    referralCodePrefix: 'EXAM',
-    referralCodeLength: 8
+  // Centralized commission configuration
+  commission: {
+    percentage: 50, // 50% commission rate
+    minimumWithdrawal: 100, // Minimum withdrawal amount
+    maximumWithdrawal: 10000, // Maximum withdrawal amount
+    processingFee: 0, // Processing fee percentage
+    taxDeduction: 0, // Tax deduction percentage
+    // Additional commission settings
+    firstTimeBonus: 0, // Bonus for first-time referrals
+    maxDailyWithdrawals: 5, // Maximum withdrawals per day
+    withdrawalProcessingDays: 3, // Days to process withdrawal
+    referralCodeLength: 8, // Length of referral codes
+    referralCodePrefix: 'S2S' // Prefix for referral codes
   },
 
   tests: {
@@ -211,7 +225,7 @@ class ConfigManager {
   // Load configuration from localStorage
   private loadFromStorage(): void {
     try {
-      const stored = localStorage.getItem('examace_config');
+      const stored = localStorage.getItem('step2sarkari_config');
       if (stored) {
         const parsedConfig = JSON.parse(stored);
         this.config = { ...defaultConfig, ...parsedConfig };
@@ -224,7 +238,7 @@ class ConfigManager {
   // Save configuration to localStorage
   private saveToStorage(): void {
     try {
-      localStorage.setItem('examace_config', JSON.stringify(this.config));
+      localStorage.setItem('step2sarkari_config', JSON.stringify(this.config));
     } catch (error) {
       console.error('Error saving config to storage:', error);
     }
@@ -262,7 +276,7 @@ export const isFeatureEnabled = (feature: keyof AppConfig['features']) =>
 export const getMembershipPlans = () => configManager.getSection('membership').plans;
 
 // Export referral config helpers
-export const getReferralConfig = () => configManager.getSection('referral');
+export const getReferralConfig = () => configManager.getSection('commission');
 
 // Export UI config helpers
 export const getUIConfig = () => configManager.getSection('ui');

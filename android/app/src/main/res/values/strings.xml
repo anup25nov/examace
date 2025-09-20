@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">ExamAce</string>
-    <string name="title_activity_main">ExamAce - Exam Preparation</string>
-    <string name="package_name">com.examace.app</string>
-    <string name="custom_url_scheme">com.examace.app</string>
-    <string name="app_description">Master your exams with ExamAce - Practice tests, mock exams, and comprehensive study materials for competitive exams.</string>
+    <string name="app_name">Step2Sarkari</string>
+    <string name="title_activity_main">Step2Sarkari - Exam Preparation</string>
+    <string name="package_name">com.step2sarkari.app</string>
+    <string name="custom_url_scheme">com.step2sarkari.app</string>
+    <string name="app_description">Master your exams with Step2Sarkari - Practice tests, mock exams, and comprehensive study materials for competitive exams.</string>
 </resources>

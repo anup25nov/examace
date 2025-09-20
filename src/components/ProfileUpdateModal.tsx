@@ -13,7 +13,7 @@ import {
   AlertCircle, 
   Loader2,
   Shield,
-  DollarSign,
+  IndianRupee,
   QrCode
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -275,7 +275,7 @@ export const ProfileUpdateModal: React.FC<ProfileUpdateModalProps> = ({
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center space-x-3 mb-4">
-                  <DollarSign className="w-6 h-6 text-green-600" />
+                  <IndianRupee className="w-6 h-6 text-green-600" />
                   <h3 className="text-lg font-semibold">Referral Earnings</h3>
                 </div>
                 

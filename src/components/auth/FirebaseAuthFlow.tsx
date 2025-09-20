@@ -9,10 +9,12 @@ import { Loader2, Phone, Key, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { 
   sendOTPCode, 
   verifyOTPCode, 
-  setUserPIN, 
-  verifyPIN, 
   checkUserStatus
 } from '@/lib/supabaseAuth';
+import { 
+  setUserPIN, 
+  verifyUserPIN
+} from '@/lib/firebaseAuth';
 
 interface SupabaseAuthFlowProps {
   onAuthSuccess: () => void;
@@ -31,6 +33,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
   const [showPin, setShowPin] = useState(false);
   const [showConfirmPin, setShowConfirmPin] = useState(false);
   const [userStatus, setUserStatus] = useState<{ exists: boolean; hasPin: boolean } | null>(null);
+  const [referralCode, setReferralCode] = useState('');
 
   // Check user status when phone is entered
   useEffect(() => {
@@ -59,6 +62,21 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     return () => clearTimeout(timeoutId);
   }, [phone]);
 
+  // Capture referral code from URL (?ref=CODE) and prefill
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref');
+      if (ref) {
+        const cleaned = ref.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20);
+        setReferralCode(cleaned);
+        // Store in localStorage for later use
+        localStorage.setItem('pendingReferralCode', cleaned);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,7 +149,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
 
     try {
       const userId = localStorage.getItem('userId');
-      const result = await setUserPIN(userId!, pin);
+      const result = await setUserPIN(pin);
       if (result.success) {
         onAuthSuccess();
       } else {
@@ -156,7 +174,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     setError('');
 
     try {
-      const result = await verifyPIN(phone, pin);
+      const result = await verifyUserPIN(phone, pin);
       if (result.success) {
         onAuthSuccess();
       } else {
@@ -195,7 +213,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
       <Card className="border-0 shadow-lg">
         <CardHeader className="text-center pb-4">
           <CardTitle className="text-2xl font-bold text-foreground">
-            {step === 'phone' && 'Welcome to ExamAce'}
+            {step === 'phone' && 'Welcome to Step2Sarkari'}
             {step === 'otp' && 'Verify Phone Number'}
             {step === 'pin-setup' && 'Set Your PIN'}
             {step === 'pin-login' && 'Enter Your PIN'}

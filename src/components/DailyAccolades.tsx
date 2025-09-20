@@ -56,7 +56,7 @@ export const DailyAccolades: React.FC<DailyAccoladesProps> = ({ isFirstVisit, on
           {/* Content */}
           <div className="animate-in slide-in-from-bottom-4 fade-in-0 duration-500 delay-300">
             <h3 className="text-2xl font-bold text-gray-900 mb-2">
-              {isFirstVisit ? 'Welcome to ExamAce! 🎉' : 'Welcome Back! 🎉'}
+              {isFirstVisit ? 'Welcome to Step2Sarkari! 🎉' : 'Welcome Back! 🎉'}
             </h3>
             <p className="text-gray-600 mb-6">
               {isFirstVisit 

@@ -90,7 +90,7 @@ export const TrustIndicators: React.FC<TrustIndicatorsProps> = ({ className = ''
               ))}
             </div>
             <p className="text-sm text-gray-700 mb-2">
-              "ExamAce helped me score 95% in SSC CGL. The mock tests are exactly like real exams!"
+              "Step2Sarkari helped me score 95% in SSC CGL. The mock tests are exactly like real exams!"
             </p>
             <p className="text-xs text-gray-600 font-medium">- Priya Sharma, SSC CGL Topper</p>
           </div>

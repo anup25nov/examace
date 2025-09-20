@@ -112,6 +112,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- 2. Create function to get user's referral statistics
+DROP FUNCTION IF EXISTS get_user_referral_stats(UUID);
 CREATE OR REPLACE FUNCTION get_user_referral_stats(user_uuid UUID)
 RETURNS TABLE (
   total_referrals INTEGER,

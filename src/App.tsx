@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import MobileBackButtonHandler from "@/components/MobileBackButtonHandler";
+import MobileAppStateManager from "@/components/MobileAppStateManager";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import DebugInfo from "./components/DebugInfo";
@@ -37,6 +39,8 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <MobileBackButtonHandler />
+          <MobileAppStateManager />
           <Routes>
             <Route path="/auth" element={<AuthWrapper />} />
             <Route path="/" element={

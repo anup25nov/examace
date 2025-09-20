@@ -14,7 +14,7 @@ import {
   Bell, 
   CheckCircle, 
   XCircle, 
-  DollarSign, 
+  IndianRupee, 
   Info,
   Loader2,
   MessageSquare
@@ -111,7 +111,7 @@ export const UserMessages: React.FC = () => {
       case 'withdrawal_rejected':
         return <XCircle className="w-5 h-5 text-red-500" />;
       case 'withdrawal_processed':
-        return <DollarSign className="w-5 h-5 text-blue-500" />;
+        return <IndianRupee className="w-5 h-5 text-blue-500" />;
       case 'question_report_resolved':
         return <CheckCircle className="w-5 h-5 text-green-500" />;
       case 'question_report_rejected':

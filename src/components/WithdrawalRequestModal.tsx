@@ -14,7 +14,7 @@ import {
   DialogTrigger 
 } from '@/components/ui/dialog';
 import { 
-  DollarSign, 
+  IndianRupee, 
   CreditCard, 
   Smartphone, 
   Building2,
@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { defaultConfig } from '@/config/appConfig';
 
 interface WithdrawalRequestModalProps {
   availableAmount: number;
@@ -129,8 +130,14 @@ export const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
       return;
     }
 
-    if (parseFloat(amount) > availableAmount) {
-      setError('Amount cannot exceed available balance');
+    const amountValue = parseFloat(amount);
+    if (amountValue < defaultConfig.commission.minimumWithdrawal) {
+      setError(`Minimum withdrawal amount is ₹${defaultConfig.commission.minimumWithdrawal}`);
+      return;
+    }
+
+    if (amountValue > Math.min(availableAmount, defaultConfig.commission.maximumWithdrawal)) {
+      setError(`Amount cannot exceed ₹${Math.min(availableAmount, defaultConfig.commission.maximumWithdrawal)}`);
       return;
     }
 
@@ -223,7 +230,7 @@ export const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
       <DialogTrigger asChild>
         {children || (
           <Button className="bg-green-600 hover:bg-green-700">
-            <DollarSign className="w-4 h-4 mr-2" />
+            <IndianRupee className="w-4 h-4 mr-2" />
             Request Withdrawal
           </Button>
         )}
@@ -231,7 +238,7 @@ export const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
-            <DollarSign className="w-5 h-5 text-green-500" />
+            <IndianRupee className="w-5 h-5 text-green-500" />
             <span>Request Withdrawal</span>
           </DialogTitle>
           <DialogDescription>
@@ -255,7 +262,7 @@ export const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
                     <p className="text-sm text-green-600 font-medium">Available Balance</p>
                     <p className="text-2xl font-bold text-green-700">₹{availableAmount.toFixed(2)}</p>
                   </div>
-                  <DollarSign className="w-8 h-8 text-green-500" />
+                  <IndianRupee className="w-8 h-8 text-green-500" />
                 </div>
               </CardContent>
             </Card>
@@ -269,13 +276,13 @@ export const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
                 placeholder="Enter amount to withdraw"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                min="1"
-                max={availableAmount}
+                min={defaultConfig.commission.minimumWithdrawal}
+                max={Math.min(availableAmount, defaultConfig.commission.maximumWithdrawal)}
                 step="0.01"
                 required
               />
               <p className="text-xs text-gray-500">
-                Minimum withdrawal: ₹100 | Maximum: ₹{availableAmount.toFixed(2)}
+                Minimum withdrawal: ₹{defaultConfig.commission.minimumWithdrawal} | Maximum: ₹{Math.min(availableAmount, defaultConfig.commission.maximumWithdrawal).toFixed(2)}
               </p>
             </div>
 
@@ -417,7 +424,7 @@ export const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
                   </>
                 ) : (
                   <>
-                    <DollarSign className="w-4 h-4 mr-2" />
+                    <IndianRupee className="w-4 h-4 mr-2" />
                     Submit Request
                   </>
                 )}

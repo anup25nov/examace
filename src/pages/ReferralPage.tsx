@@ -7,7 +7,7 @@ import {
   ArrowLeft,
   Gift,
   Users,
-  DollarSign,
+  IndianRupee,
   TrendingUp,
   Copy,
   Check,
@@ -197,7 +197,7 @@ const ReferralPage = () => {
 
               <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
                 <CardContent className="p-6 text-center">
-                  <DollarSign className="w-8 h-8 text-green-600 mx-auto mb-3" />
+                  <IndianRupee className="w-8 h-8 text-green-600 mx-auto mb-3" />
                   <div className="text-2xl font-bold text-green-900">
                     ₹{comprehensiveStats?.total_commissions_earned || referralStats?.total_earnings || 0}
                   </div>
@@ -264,7 +264,7 @@ const ReferralPage = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <DollarSign className="w-6 h-6 text-green-600" />
+                      <IndianRupee className="w-6 h-6 text-green-600" />
                       <span>Withdraw Earnings</span>
                     </div>
                     <Badge className="bg-green-100 text-green-800">

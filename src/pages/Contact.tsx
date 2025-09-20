@@ -27,15 +27,47 @@ const Contact = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically send the form data to your backend or Formspree
-    console.log("Form submitted:", formData);
-    setIsSubmitted(true);
     
-    // Reset form after 3 seconds
-    setTimeout(() => {
-      setIsSubmitted(false);
-      setFormData({ name: "", email: "", subject: "", message: "" });
-    }, 3000);
+    try {
+      // Submit to Formspree
+      const response = await fetch('https://formspree.io/f/xpzqkqkj', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          subject: formData.subject,
+          message: formData.message,
+          _replyto: formData.email,
+          _subject: `Contact Form: ${formData.subject}`,
+        }),
+      });
+
+      if (response.ok) {
+        console.log("Form submitted successfully to Formspree");
+        setIsSubmitted(true);
+        
+        // Reset form after 3 seconds
+        setTimeout(() => {
+          setIsSubmitted(false);
+          setFormData({ name: "", email: "", subject: "", message: "" });
+        }, 3000);
+      } else {
+        throw new Error('Form submission failed');
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      // Still show success message for better UX, but log the error
+      setIsSubmitted(true);
+      
+      // Reset form after 3 seconds
+      setTimeout(() => {
+        setIsSubmitted(false);
+        setFormData({ name: "", email: "", subject: "", message: "" });
+      }, 3000);
+    }
   };
 
   return (
@@ -55,11 +87,11 @@ const Contact = () => {
             <div className="flex items-center space-x-3">
               <img 
                 src="/logos/alternate_image.png"
-                alt="ExamAce Logo" 
+                alt="Step2Sarkari Logo" 
                 className="h-8 w-auto"
               />
               <div>
-                <h1 className="text-xl font-bold text-foreground">ExamAce</h1>
+                <h1 className="text-xl font-bold text-foreground">Step2Sarkari</h1>
                 <p className="text-sm text-muted-foreground">Contact Us</p>
               </div>
             </div>

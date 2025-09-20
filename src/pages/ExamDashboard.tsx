@@ -633,42 +633,42 @@ const ExamDashboard = () => {
 
       <div className="container mx-auto px-4 py-8">
         {/* Stats Overview */}
-        <div className="mb-8 text-center">
-          <div className="flex items-center justify-center space-x-2 mb-3">
-            <Trophy className="w-6 h-6 text-primary animate-pulse" />
-            <h3 className="text-xl font-bold text-foreground">Performance Statistics</h3>
+        <div className="mb-6 text-center">
+          <div className="flex items-center justify-center space-x-2 mb-2">
+            <Trophy className="w-5 h-5 text-primary animate-pulse" />
+            <h3 className="text-lg font-bold text-foreground">Performance</h3>
           </div>
         </div>
         
-        {/* Main Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 max-w-4xl mx-auto">
+        {/* Main Stats Grid - Optimized for mobile */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-6 max-w-4xl mx-auto">
           <Card className="text-center gradient-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-            <CardContent className="p-6">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
-                <BarChart3 className="w-8 h-8 text-white" />
+            <CardContent className="p-3 md:p-6">
+              <div className="w-10 h-10 md:w-16 md:h-16 mx-auto mb-2 md:mb-4 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+                <BarChart3 className="w-5 h-5 md:w-8 md:h-8 text-white" />
               </div>
-              <p className="text-3xl font-bold text-foreground mb-2">{userStats.totalTests}</p>
-              <p className="text-sm text-muted-foreground font-medium">Tests Taken</p>
+              <p className="text-xl md:text-3xl font-bold text-foreground mb-1 md:mb-2">{userStats.totalTests}</p>
+              <p className="text-xs md:text-sm text-muted-foreground font-medium">Tests</p>
             </CardContent>
           </Card>
           
           <Card className="text-center gradient-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-            <CardContent className="p-6">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center shadow-lg">
-                <Target className="w-8 h-8 text-white" />
+            <CardContent className="p-3 md:p-6">
+              <div className="w-10 h-10 md:w-16 md:h-16 mx-auto mb-2 md:mb-4 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center shadow-lg">
+                <Target className="w-5 h-5 md:w-8 md:h-8 text-white" />
               </div>
-              <p className="text-3xl font-bold text-foreground mb-2">{userStats.avgScore}%</p>
-              <p className="text-sm text-muted-foreground font-medium">Average Score</p>
+              <p className="text-xl md:text-3xl font-bold text-foreground mb-1 md:mb-2">{userStats.avgScore}%</p>
+              <p className="text-xs md:text-sm text-muted-foreground font-medium">Average</p>
             </CardContent>
           </Card>
           
           <Card className="text-center gradient-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-            <CardContent className="p-6">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">
-                <Trophy className="w-8 h-8 text-white" />
+            <CardContent className="p-3 md:p-6">
+              <div className="w-10 h-10 md:w-16 md:h-16 mx-auto mb-2 md:mb-4 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">
+                <Trophy className="w-5 h-5 md:w-8 md:h-8 text-white" />
               </div>
-              <p className="text-3xl font-bold text-foreground mb-2">{userStats.bestScore}%</p>
-              <p className="text-sm text-muted-foreground font-medium">Best Score</p>
+              <p className="text-xl md:text-3xl font-bold text-foreground mb-1 md:mb-2">{userStats.bestScore}%</p>
+              <p className="text-xs md:text-sm text-muted-foreground font-medium">Best</p>
             </CardContent>
           </Card>
         </div>

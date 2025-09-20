@@ -14,7 +14,7 @@ import {
   Star,
   X,
   ExternalLink,
-  DollarSign
+  IndianRupee
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { referralService, ReferralStats } from '@/lib/referralServiceSimple';
@@ -137,7 +137,7 @@ export const ReferralSystem: React.FC<ReferralSystemProps> = ({ onClose }) => {
 
                 <Card className="text-center">
                   <CardContent className="p-4">
-                    <DollarSign className="w-6 h-6 text-green-600 mx-auto mb-2" />
+                    <IndianRupee className="w-6 h-6 text-green-600 mx-auto mb-2" />
                     <p className="text-2xl font-bold text-gray-900">₹{referralStats.totalEarnings}</p>
                     <p className="text-sm text-gray-600">Total Earnings</p>
                   </CardContent>

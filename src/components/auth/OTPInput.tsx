@@ -26,12 +26,47 @@ const OTPInput: React.FC<OTPInputProps> = ({
     setOtp(paddedOtp);
   }, [value, length]);
 
+  // Handle SMS autofill
+  useEffect(() => {
+    const handleSMSAutofill = () => {
+      // Check if there's any SMS autofill data
+      if (inputRefs.current[0]) {
+        const firstInput = inputRefs.current[0];
+        if (firstInput.value && firstInput.value.length > 1) {
+          // Handle SMS autofill
+          const autofillValue = firstInput.value.replace(/\D/g, '');
+          if (autofillValue.length >= length) {
+            const autofillDigits = autofillValue.split('').slice(0, length);
+            setOtp(autofillDigits);
+            onChange(autofillDigits.join(''));
+          }
+        }
+      }
+    };
+
+    // Listen for input events that might be from SMS autofill
+    const inputs = inputRefs.current;
+    inputs.forEach((input) => {
+      if (input) {
+        input.addEventListener('input', handleSMSAutofill);
+      }
+    });
+
+    return () => {
+      inputs.forEach((input) => {
+        if (input) {
+          input.removeEventListener('input', handleSMSAutofill);
+        }
+      });
+    };
+  }, [length, onChange]);
+
   const handleChange = (index: number, inputValue: string) => {
     // Only allow digits
     const digit = inputValue.replace(/\D/g, '');
     
     if (digit.length > 1) {
-      // Handle paste operation
+      // Handle paste operation or SMS autofill
       const pastedDigits = digit.split('').slice(0, length);
       const newOtp = [...otp];
       
@@ -118,7 +153,8 @@ const OTPInput: React.FC<OTPInputProps> = ({
           onPaste={handlePaste}
           disabled={disabled}
           className="w-12 h-12 text-center text-lg font-semibold border-2 focus:border-primary focus:ring-2 focus:ring-primary/20"
-          autoComplete="one-time-code"
+          autoComplete={index === 0 ? "one-time-code" : "off"}
+          autoFocus={index === 0}
         />
       ))}
     </div>

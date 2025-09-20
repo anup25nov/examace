@@ -54,8 +54,13 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
   }, []);
 
   const handlePayment = async () => {
-    if (!user || !window.Razorpay) {
-      setError('Payment system not ready. Please try again.');
+    if (!user) {
+      setError('Please log in to make a payment.');
+      return;
+    }
+    
+    if (!window.Razorpay) {
+      setError('Payment system is loading. Please wait a moment and try again.');
       return;
     }
 
@@ -92,7 +97,7 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
         key: paymentResult.keyId,
         amount: plan.price * 100, // Convert to paise
         currency: plan.currency,
-        name: 'ExamAce',
+        name: 'Step2Sarkari',
         description: plan.name,
         order_id: paymentResult.orderId,
         prefill: {

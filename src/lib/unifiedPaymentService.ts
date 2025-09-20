@@ -378,32 +378,22 @@ export class UnifiedPaymentService {
         isActive: true
       },
       {
-        id: 'basic',
-        name: 'Basic Plan',
-        description: 'Access to PYQ sets and mock tests',
+        id: 'pro_plus',
+        name: 'Pro+ Plan',
+        description: 'Complete access to all mocks and features',
         price: 299,
         currency: 'INR',
-        features: ['500+ PYQ Sets', '100+ Mock Tests', 'Detailed Solutions', 'Performance Analytics'],
-        duration: 30,
-        isActive: true
-      },
-      {
-        id: 'premium',
-        name: 'Premium Plan',
-        description: 'Full access to all features',
-        price: 599,
-        currency: 'INR',
-        features: ['1000+ PYQ Sets', '200+ Mock Tests', 'Detailed Solutions', 'Performance Analytics', 'Priority Support'],
-        duration: 60,
+        features: ['12 months validity', 'Unlimited mock tests', 'Premium PYQs', 'Detailed Solutions', 'Priority Support', 'Advanced Analytics'],
+        duration: 365,
         isActive: true
       },
       {
         id: 'pro',
         name: 'Pro Plan',
-        description: 'Complete exam preparation package',
-        price: 999,
+        description: 'Access to 11 mock tests',
+        price: 99,
         currency: 'INR',
-        features: ['2000+ PYQ Sets', '500+ Mock Tests', 'Detailed Solutions', 'Performance Analytics', '24/7 Support', 'Personal Mentor'],
+        features: ['3 months validity', '11 mock tests', 'Premium PYQs', 'Detailed Solutions', 'Performance Analytics'],
         duration: 90,
         isActive: true
       }

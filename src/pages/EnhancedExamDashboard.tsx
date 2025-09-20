@@ -556,42 +556,42 @@ const EnhancedExamDashboard = () => {
       <div className="container mx-auto px-4 py-8">
 
         {/* Stats Overview */}
-        <div className="mb-8 text-center">
-          <div className="flex items-center justify-center space-x-2 mb-3">
-            <Trophy className="w-6 h-6 text-primary animate-pulse" />
-            <h3 className="text-xl font-bold text-foreground">Performance Statistics</h3>
+        <div className="mb-6 text-center">
+          <div className="flex items-center justify-center space-x-2 mb-2">
+            <Trophy className="w-5 h-5 text-primary animate-pulse" />
+            <h3 className="text-lg font-bold text-foreground">Performance</h3>
           </div>
         </div>
         
-        {/* Main Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 max-w-5xl mx-auto">
-          <Card className="text-center border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 text-white">
-            <CardContent className="p-6">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                <BarChart3 className="w-8 h-8 text-white" />
+        {/* Main Stats Grid - Optimized for mobile */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 mb-6 max-w-5xl mx-auto">
+          <Card className="text-center border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 text-white">
+            <CardContent className="p-3 md:p-6">
+              <div className="w-10 h-10 md:w-16 md:h-16 mx-auto mb-2 md:mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                <BarChart3 className="w-5 h-5 md:w-8 md:h-8 text-white" />
               </div>
-              <p className="text-3xl font-bold mb-2">{userStats.totalTests}</p>
-              <p className="text-sm text-blue-100 font-medium">Tests Taken</p>
+              <p className="text-xl md:text-3xl font-bold mb-1 md:mb-2">{userStats.totalTests}</p>
+              <p className="text-xs md:text-sm text-blue-100 font-medium">Tests</p>
             </CardContent>
           </Card>
           
-          <Card className="text-center border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-purple-500 via-violet-600 to-fuchsia-600 text-white">
-            <CardContent className="p-6">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                <Trophy className="w-8 h-8 text-white" />
+          <Card className="text-center border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-purple-500 via-violet-600 to-fuchsia-600 text-white">
+            <CardContent className="p-3 md:p-6">
+              <div className="w-10 h-10 md:w-16 md:h-16 mx-auto mb-2 md:mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                <Trophy className="w-5 h-5 md:w-8 md:h-8 text-white" />
               </div>
-              <p className="text-3xl font-bold mb-2">{userStats.bestScore}</p>
-              <p className="text-sm text-purple-100 font-medium">Best Score</p>
+              <p className="text-xl md:text-3xl font-bold mb-1 md:mb-2">{userStats.bestScore}</p>
+              <p className="text-xs md:text-sm text-purple-100 font-medium">Best</p>
             </CardContent>
           </Card>
           
-          <Card className="text-center border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-orange-500 via-red-600 to-pink-600 text-white">
-            <CardContent className="p-6">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                <Star className="w-8 h-8 text-white" />
+          <Card className="text-center border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-orange-500 via-red-600 to-pink-600 text-white">
+            <CardContent className="p-3 md:p-6">
+              <div className="w-10 h-10 md:w-16 md:h-16 mx-auto mb-2 md:mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                <Star className="w-5 h-5 md:w-8 md:h-8 text-white" />
               </div>
-              <p className="text-3xl font-bold mb-2">{userStats.avgScoreLast10}</p>
-              <p className="text-sm text-orange-100 font-medium">Avg Score</p>
+              <p className="text-xl md:text-3xl font-bold mb-1 md:mb-2">{userStats.avgScoreLast10}</p>
+              <p className="text-xs md:text-sm text-orange-100 font-medium">Avg</p>
             </CardContent>
           </Card>
         </div>

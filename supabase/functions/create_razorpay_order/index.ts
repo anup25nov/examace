@@ -11,8 +11,8 @@ const RZP_KEY_ID = (globalThis as any).Deno?.env.get('RAZORPAY_KEY_ID') || '';
 const RZP_KEY_SECRET = (globalThis as any).Deno?.env.get('RAZORPAY_KEY_SECRET') || '';
 
 const PLAN_PRICES_INR: Record<string, number> = {
-  pro: Number((globalThis as any).Deno?.env.get('PLAN_PRO_PRICE') || 1),
-  pro_plus: Number((globalThis as any).Deno?.env.get('PLAN_PRO_PLUS_PRICE') || 2),
+  pro: 99, // Pro plan: 99 INR
+  pro_plus: 299, // Pro+ plan: 299 INR
 };
 
 const corsHeaders: HeadersInit = {

@@ -18,7 +18,7 @@ import {
 import { 
   Shield, 
   Flag, 
-  DollarSign, 
+  IndianRupee, 
   Users, 
   CheckCircle, 
   XCircle, 
@@ -240,7 +240,7 @@ export const AdminPanel: React.FC = () => {
               <span>Question Reports ({questionReports.length})</span>
             </TabsTrigger>
             <TabsTrigger value="withdrawals" className="flex items-center space-x-2">
-              <DollarSign className="w-4 h-4" />
+              <IndianRupee className="w-4 h-4" />
               <span>Withdrawal Requests ({withdrawalRequests.length})</span>
             </TabsTrigger>
           </TabsList>
@@ -304,7 +304,7 @@ export const AdminPanel: React.FC = () => {
             {withdrawalRequests.length === 0 ? (
               <Card>
                 <CardContent className="p-8 text-center">
-                  <DollarSign className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <IndianRupee className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">No Pending Withdrawals</h3>
                   <p className="text-gray-600">All withdrawal requests have been processed.</p>
                 </CardContent>

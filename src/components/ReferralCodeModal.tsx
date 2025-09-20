@@ -10,7 +10,7 @@ import {
   CheckCircle, 
   AlertCircle, 
   Users, 
-  DollarSign,
+  IndianRupee,
   Crown,
   Sparkles
 } from 'lucide-react';
@@ -181,7 +181,7 @@ export const ReferralCodeModal: React.FC<ReferralCodeModalProps> = ({
                   <span className="text-sm text-gray-700">Refer friends and earn from their purchases</span>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <DollarSign className="w-5 h-5 text-green-600" />
+                  <IndianRupee className="w-5 h-5 text-green-600" />
                   <span className="text-sm text-gray-700">Withdraw earnings anytime (min ₹10)</span>
                 </div>
               </div>

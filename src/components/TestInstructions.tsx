@@ -70,7 +70,7 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
             <div className="flex items-center space-x-3">
               <img 
                 src="/logos/alternate_image.png"
-                alt="ExamAce Logo" 
+                alt="Step2Sarkari Logo" 
                 className="h-8 w-auto"
               />
               <h1 className="text-xl font-bold text-foreground uppercase">{examId}</h1>

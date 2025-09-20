@@ -113,7 +113,7 @@ const Membership = () => {
               </div>
             </div>
             <div className="text-right">
-              <p className="text-sm font-medium text-foreground">Welcome, {user?.email?.split('@')[0]}!</p>
+              <p className="text-sm font-medium text-foreground">Welcome, {user?.phone || 'User'}!</p>
             </div>
           </div>
         </div>
@@ -182,7 +182,7 @@ const Membership = () => {
 
         {/* Features Section */}
         <div className="mt-16 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-8">Why Choose S2S?</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-8">Why Choose Us?</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
             <div className="text-center">
               <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">

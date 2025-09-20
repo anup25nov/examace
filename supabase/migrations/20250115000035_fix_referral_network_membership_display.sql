@@ -32,14 +32,13 @@ BEGIN
     COALESCE(rc.commission_amount, 0.00) as commission_amount,
     -- Check multiple sources for membership plan
     CASE 
-      WHEN m.plan IS NOT NULL AND m.end_date > NOW() THEN m.plan::TEXT
       WHEN up.membership_plan IS NOT NULL AND up.membership_status = 'active' THEN up.membership_plan::TEXT
       WHEN um.plan_id IS NOT NULL AND um.status = 'active' AND um.end_date > NOW() THEN um.plan_id::TEXT
       ELSE 'none'::TEXT
     END as membership_plan,
     COALESCE(rc.membership_amount, 0.00) as membership_amount,
     CASE 
-      WHEN m.start_date IS NOT NULL THEN m.start_date
+      WHEN um.start_date IS NOT NULL THEN um.start_date
       WHEN rc.created_at IS NOT NULL THEN rc.created_at
       WHEN up.created_at IS NOT NULL THEN up.created_at
       ELSE NOW()
@@ -48,7 +47,6 @@ BEGIN
   FROM referral_transactions rt
   LEFT JOIN user_profiles up ON rt.referred_id = up.id
   LEFT JOIN referral_commissions rc ON rt.referred_id = rc.referred_id
-  LEFT JOIN memberships m ON m.user_id = rt.referred_id AND m.end_date > NOW()
   LEFT JOIN user_memberships um ON um.user_id = rt.referred_id AND um.status = 'active' AND um.end_date > NOW()
   WHERE rt.referrer_id = user_uuid
   ORDER BY up.created_at DESC;
@@ -63,7 +61,7 @@ DECLARE
 BEGIN
   -- Get the latest active membership
   SELECT * INTO membership_record
-  FROM memberships
+  FROM user_memberships
   WHERE user_id = p_user_id AND end_date > NOW()
   ORDER BY start_date DESC
   LIMIT 1;
@@ -78,10 +76,10 @@ BEGIN
   END IF;
   
   -- Update profile with membership info
-  IF membership_record.plan IS NOT NULL THEN
+  IF membership_record.plan_id IS NOT NULL THEN
     UPDATE user_profiles
     SET 
-      membership_plan = membership_record.plan,
+      membership_plan = membership_record.plan_id,
       membership_status = 'active',
       membership_expiry = membership_record.end_date,
       updated_at = NOW()
@@ -108,9 +106,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- Create trigger on memberships table
-DROP TRIGGER IF EXISTS sync_membership_to_profile_trigger ON memberships;
+-- Create trigger on user_memberships table
+DROP TRIGGER IF EXISTS sync_membership_to_profile_trigger ON user_memberships;
 CREATE TRIGGER sync_membership_to_profile_trigger
-  AFTER INSERT OR UPDATE ON memberships
+  AFTER INSERT OR UPDATE ON user_memberships
   FOR EACH ROW
   EXECUTE FUNCTION trigger_sync_membership_to_profile();

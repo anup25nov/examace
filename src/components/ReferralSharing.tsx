@@ -8,7 +8,7 @@ import {
   Copy, 
   Check, 
   Users, 
-  DollarSign, 
+  IndianRupee, 
   TrendingUp,
   Link,
   QrCode,
@@ -124,7 +124,7 @@ export const ReferralSharing: React.FC<ReferralSharingProps> = ({ onClose }) => 
 
         <Card>
           <CardContent className="p-4 text-center">
-            <DollarSign className="w-8 h-8 text-green-600 mx-auto mb-2" />
+            <IndianRupee className="w-8 h-8 text-green-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-gray-900">₹{referralStats.total_earnings}</p>
             <p className="text-sm text-gray-600">Total Earnings</p>
             <p className="text-xs text-gray-500">{referralStats.commission_rate}% commission</p>
@@ -274,7 +274,7 @@ export const ReferralSharing: React.FC<ReferralSharingProps> = ({ onClose }) => 
             </div>
             <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
               <div className="flex items-center space-x-3">
-                <DollarSign className="w-5 h-5 text-blue-600" />
+                <IndianRupee className="w-5 h-5 text-blue-600" />
                 <div>
                   <p className="font-medium">First Purchase</p>
                   <p className="text-sm text-gray-600">{referralStats.commission_rate}% of purchase amount</p>

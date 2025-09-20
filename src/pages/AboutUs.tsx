@@ -83,7 +83,7 @@ const AboutUs = () => {
         {/* Features */}
         <div className="mb-12">
           <h3 className="text-3xl font-bold text-center text-foreground mb-8">
-            Why Choose ExamAce?
+            Why Choose Step2Sarkari?
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="gradient-card border-0">
