@@ -19,6 +19,7 @@ import { TestStartModal } from './TestStartModal';
 import { UnifiedPaymentModal } from './UnifiedPaymentModal';
 import { unifiedPaymentService } from '@/lib/unifiedPaymentService';
 import { useAuth } from '@/hooks/useAuth';
+import { useMembership } from '@/contexts/MembershipContext';
 
 interface TestScore {
   score: number;
@@ -48,33 +49,12 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
   className = ''
 }) => {
   const { user } = useAuth();
+  const { hasAccess: checkAccess, membership } = useMembership();
   const [showTestStartModal, setShowTestStartModal] = useState(false);
-  const [hasAccess, setHasAccess] = useState(!test.isPremium);
-  const [userMembership, setUserMembership] = useState<any>(null);
   const [showMembershipModal, setShowMembershipModal] = useState(false);
 
-  // Check user membership status
-  useEffect(() => {
-    if (user && test.isPremium) {
-      checkMembershipStatus();
-    }
-  }, [user, test.isPremium]);
-
-  const checkMembershipStatus = async () => {
-    if (!user) return;
-    
-    try {
-      const membership = await unifiedPaymentService.getUserMembership(user.id);
-      console.log('Membership status:', { membership, isPremium: test.isPremium });
-      setUserMembership(membership);
-      const hasAccessValue = !!membership || !test.isPremium;
-      console.log('Setting hasAccess to:', hasAccessValue);
-      setHasAccess(hasAccessValue);
-    } catch (error) {
-      console.error('Error checking membership:', error);
-      setHasAccess(!test.isPremium);
-    }
-  };
+  // Use centralized membership check
+  const hasAccess = checkAccess(test.id, test.isPremium);
 
   const handleStartTest = () => {
     if (test.isPremium && !hasAccess) {
@@ -97,9 +77,8 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
   };
 
   const handlePaymentSuccess = (planId: string) => {
-    setHasAccess(true);
-    // Refresh membership status
-    checkMembershipStatus();
+    // Membership will be refreshed automatically by the context
+    console.log('Payment successful, membership will be refreshed');
   };
 
   return (

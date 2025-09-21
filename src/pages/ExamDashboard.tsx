@@ -52,17 +52,8 @@ const ExamDashboard = () => {
   const { allStats, loadAllStats, getExamStatById, isTestCompleted, getIndividualTestScore } = useExamStats();
   const { stats: comprehensiveStats, loading: statsLoading, error: statsError, refreshStats } = useComprehensiveStats(examId);
   
-  // Refresh stats when returning to dashboard
-  useEffect(() => {
-    const handleFocus = () => {
-      if (examId) {
-        refreshStats();
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [examId, refreshStats]);
+  // Remove focus event listener to prevent unnecessary API calls
+  // Stats will be refreshed only when needed (e.g., after test completion)
   const [userStats, setUserStats] = useState({
     totalTests: 0,
     avgScore: 0,

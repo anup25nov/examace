@@ -301,14 +301,10 @@ const TestInterface = () => {
   // Fetch rank data for the test
   const fetchRankData = async (testId: string, testType: string, score: number) => {
     try {
-      console.log('🏆 [TestInterface] Fetching rank data for:', { testId, testType, score });
-      
       // Get real rank data from the database
       const { data: rankData } = await supabaseStatsService.getIndividualTestScore(examId!, testType, testId);
       
       if (rankData && rankData.score !== null) {
-        console.log('🏆 [TestInterface] Real rank data:', rankData);
-        
         // Get highest score for this test
         let highestMarks = score; // Default to current user's score
         try {
@@ -327,10 +323,8 @@ const TestInterface = () => {
           highestMarks: highestMarks
         };
         
-        console.log('🏆 [TestInterface] Final rank data:', realRankData);
         setRankData(realRankData);
       } else {
-        console.log('🏆 [TestInterface] No rank data available, using fallback');
         // Fallback to basic data if no rank info is available
         const fallbackData = {
           rank: 0,
@@ -340,7 +334,7 @@ const TestInterface = () => {
         setRankData(fallbackData);
       }
     } catch (error) {
-      console.error('❌ [TestInterface] Error fetching rank data:', error);
+      console.error('Error fetching rank data:', error);
       // Fallback to basic data on error
       const fallbackData = {
         rank: 0,
@@ -353,12 +347,10 @@ const TestInterface = () => {
 
   // Handle language selection and start test
   const handleLanguageSelect = async (language: string) => {
-    console.log('🎯 handleLanguageSelect called with language:', language);
     setSelectedLanguage(language);
     
     // Check plan limits before starting test
     const userId = getUserId();
-    console.log('👤 User ID:', userId);
     if (userId) {
       // Determine test type for plan limits check
       let testTypeForCheck = 'mock'; // default
@@ -369,7 +361,6 @@ const TestInterface = () => {
       } else if (sectionId === 'practice') {
         testTypeForCheck = 'practice';
       }
-      console.log('📝 Test type for check:', testTypeForCheck);
 
       // Determine the test ID based on the route parameters
       let currentTestId = '';
@@ -382,7 +373,6 @@ const TestInterface = () => {
       } else {
         currentTestId = testType || 'mock-test-1';
       }
-      console.log('🆔 Current test ID:', currentTestId);
 
       // Create a test object to determine if it's premium and for retry checking
       // Check actual test data to determine if it's premium (both MOCK and PYQ)
@@ -390,25 +380,16 @@ const TestInterface = () => {
         id: currentTestId, // Use the actual test ID for retry checking
         isPremium: isTestPremium(currentTestId, testTypeForCheck)
       };
-      console.log('🧪 Test object:', testObject);
-
-      console.log('🔍 Checking plan limits...');
       const { canTake, reason, limits, isRetry } = await planLimitsService.canUserTakeTest(userId, testTypeForCheck, testObject);
-      console.log('✅ Plan check result:', { canTake, reason, isRetry, limits });
       
       if (!canTake) {
-        console.log('❌ User cannot take test, showing upgrade modal');
         setPlanLimits(limits);
         setShowUpgradeModal(true);
         return;
       }
       
-      console.log('📊 Recording test attempt...');
-      const recordResult = await planLimitsService.recordTestAttempt(userId, testType || 'mock', examId || 'ssc-cgl', testTypeForCheck, questions.length, isRetry);
-      console.log('📝 Record attempt result:', recordResult);
+      await planLimitsService.recordTestAttempt(userId, testType || 'mock', examId || 'ssc-cgl', testTypeForCheck, questions.length, isRetry);
     }
-    
-    console.log('🚀 Starting test...');
     setTestStarted(true);
   };
 
@@ -766,10 +747,8 @@ const TestInterface = () => {
                 onClick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log('🔥 Start Test Now button clicked!');
                   // Check plan limits before starting test
                   const userId = getUserId();
-                  console.log('👤 User ID from button:', userId);
                   
                   if (userId) {
                     // Determine test type for plan limits check
@@ -781,8 +760,6 @@ const TestInterface = () => {
                     } else if (sectionId === 'practice') {
                       testTypeForCheck = 'practice';
                     }
-                    console.log('📝 Button - Test type for check:', testTypeForCheck);
-
                     // Determine the test ID based on the route parameters
                     let currentTestId = '';
                     if (sectionId === 'mock') {
@@ -794,35 +771,23 @@ const TestInterface = () => {
                     } else {
                       currentTestId = testType || 'mock-test-1';
                     }
-                    console.log('🆔 Button - Current test ID:', currentTestId);
 
                     // Create a test object to determine if it's premium and for retry checking
-                    // Check actual test data to determine if it's premium (both MOCK and PYQ)
                     const testObject = {
-                      id: currentTestId, // Use the actual test ID for retry checking
+                      id: currentTestId,
                       isPremium: isTestPremium(currentTestId, testTypeForCheck)
                     };
-                    console.log('🧪 Button - Test object:', testObject);
 
-                    console.log('🔍 Button - Checking plan limits...');
                     const { canTake, reason, limits, isRetry } = await planLimitsService.canUserTakeTest(userId, testTypeForCheck, testObject);
-                    console.log('✅ Button - Plan check result:', { canTake, reason, isRetry, limits });
                     
                     if (!canTake) {
-                      console.log('❌ Button - User cannot take test, showing upgrade modal');
                       setPlanLimits(limits);
                       setShowUpgradeModal(true);
                       return;
                     }
                     
-                    console.log('📊 Button - Recording test attempt...');
-                    const recordResult = await planLimitsService.recordTestAttempt(userId, testType || 'mock', examId || 'ssc-cgl', testTypeForCheck, questions.length, isRetry);
-                    console.log('📝 Button - Record attempt result:', recordResult);
-                  } else {
-                    console.log('❌ No user ID found!');
+                    await planLimitsService.recordTestAttempt(userId, testType || 'mock', examId || 'ssc-cgl', testTypeForCheck, questions.length, isRetry);
                   }
-                  
-                  console.log('🚀 Button - Starting test...');
                   setTestStarted(true);
                 }}
                 className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:opacity-90 text-white font-semibold"

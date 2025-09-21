@@ -59,17 +59,8 @@ const EnhancedExamDashboard = () => {
   const { allStats, loadAllStats, getExamStatById, isTestCompleted, getIndividualTestScore } = useExamStats();
   const { stats: comprehensiveStats, loading: statsLoading, error: statsError, refreshStats } = useComprehensiveStats(examId);
   
-  // Refresh stats when returning to dashboard
-  useEffect(() => {
-    const handleFocus = () => {
-      if (examId) {
-        refreshStats();
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [examId, refreshStats]);
+  // Remove focus event listener to prevent unnecessary API calls
+  // Stats will be refreshed only when needed (e.g., after test completion)
   const { isAdmin, loading: adminLoading } = useAdmin();
   
   const [userStats, setUserStats] = useState({
@@ -158,19 +149,8 @@ const EnhancedExamDashboard = () => {
       // Process completions into maps
       const { completedTests, testScores } = bulkTestService.processBulkCompletionsWithType(allCompletions);
       
-      // Debug logging
-      console.log('🔍 [EnhancedExamDashboard] Bulk completions data:', allCompletions);
-      console.log('✅ [EnhancedExamDashboard] Processed completedTests:', Array.from(completedTests));
-      console.log('📊 [EnhancedExamDashboard] Processed testScores:', Array.from(testScores.entries()));
-      
-      // Check specifically for ssc-cgl-2024-set-3
-      const targetTestId = 'ssc-cgl-2024-set-3';
-      const pyqKey = `pyq-${targetTestId}`;
-      console.log(`🎯 [EnhancedExamDashboard] Looking for ${pyqKey}:`, {
-        inCompletedTests: completedTests.has(pyqKey),
-        inTestScores: testScores.has(pyqKey),
-        testScoreValue: testScores.get(pyqKey)
-      });
+      // Minimal logging for debugging
+      console.log('✅ [EnhancedExamDashboard] Loaded test completions:', completedTests.size, 'completed tests');
       
       setCompletedTests(completedTests);
       setTestScores(testScores);

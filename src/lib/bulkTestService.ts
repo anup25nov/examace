@@ -156,15 +156,10 @@ export class BulkTestService {
     const testScores = new Map<string, { score: number; rank: number; totalParticipants: number }>();
 
     completions.forEach(completion => {
-      // Debug logging for each completion
-      console.log(`🔍 [bulkTestService] Processing completion:`, {
-        test_type: completion.test_type,
-        test_id: completion.test_id,
-        topic_id: completion.topic_id,
-        is_completed: completion.is_completed,
-        score: completion.score,
-        rank: completion.rank
-      });
+      // Minimal logging for performance
+      if (completion.score > 0) {
+        console.log(`📊 [bulkTestService] Processing score for ${completion.test_id}: ${completion.score}`);
+      }
       
       // Generate multiple key formats for compatibility
       const keys = [
@@ -193,10 +188,6 @@ export class BulkTestService {
           totalParticipants: 0 // Default value since total_participants is not available
         };
         keys.forEach(key => testScores.set(key, scoreData));
-        
-        // Debug logging
-        console.log(`🔍 [bulkTestService] Generated keys for ${completion.test_id}:`, keys);
-        console.log(`📊 [bulkTestService] Score data:`, scoreData);
       }
     });
 
