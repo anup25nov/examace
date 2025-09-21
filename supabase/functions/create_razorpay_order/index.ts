@@ -22,7 +22,7 @@ const FALLBACK_PRICES: Record<string, number> = {
   pro_plus: 299, // Pro+ plan: 299 INR
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }

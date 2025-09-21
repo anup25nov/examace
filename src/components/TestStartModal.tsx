@@ -83,7 +83,7 @@ export const TestStartModal: React.FC<TestStartModalProps> = ({
     if (!userId) return;
 
     // Check plan limits before starting
-    const { canTake, limits } = await planLimitsService.canUserTakeTest(userId, testType, test);
+    const { canTake, limits, isRetry } = await planLimitsService.canUserTakeTest(userId, testType, test);
     
     if (!canTake) {
       setPlanLimits(limits);
@@ -92,7 +92,7 @@ export const TestStartModal: React.FC<TestStartModalProps> = ({
     }
 
     // Record test attempt when user actually starts the test
-    await planLimitsService.recordTestAttempt(userId, test.name, 'ssc-cgl');
+    await planLimitsService.recordTestAttempt(userId, test.name, 'ssc-cgl', testType, test.questions, isRetry);
     
     onStart(selectedLanguage);
     onClose();

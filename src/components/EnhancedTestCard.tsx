@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { PremiumTest } from '@/lib/premiumService';
 import { TestStartModal } from './TestStartModal';
+import { UnifiedPaymentModal } from './UnifiedPaymentModal';
 import { unifiedPaymentService } from '@/lib/unifiedPaymentService';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -64,8 +65,11 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
     
     try {
       const membership = await unifiedPaymentService.getUserMembership(user.id);
+      console.log('Membership status:', { membership, isPremium: test.isPremium });
       setUserMembership(membership);
-      setHasAccess(!!membership || !test.isPremium);
+      const hasAccessValue = !!membership || !test.isPremium;
+      console.log('Setting hasAccess to:', hasAccessValue);
+      setHasAccess(hasAccessValue);
     } catch (error) {
       console.error('Error checking membership:', error);
       setHasAccess(!test.isPremium);
@@ -81,7 +85,9 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
   };
 
   const handleCardClick = () => {
+    console.log('Card clicked:', { isPremium: test.isPremium, hasAccess, showMembershipModal });
     if (test.isPremium && !hasAccess) {
+      console.log('Showing membership modal');
       setShowMembershipModal(true);
     }
   };
@@ -199,7 +205,11 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
                   size="sm"
                   variant="outline"
                   className="flex-1 h-10 text-sm hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 hover:scale-105 hover:shadow-md"
-                  onClick={onViewSolutions}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onViewSolutions();
+                  }}
                 >
                   <Eye className="w-4 h-4 mr-1" />
                   View Solutions
@@ -208,7 +218,11 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
                   size="sm"
                   variant="default"
                   className="flex-1 h-10 text-sm bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105 hover:shadow-md"
-                  onClick={onRetry}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onRetry();
+                  }}
                 >
                   <RotateCcw className="w-4 h-4 mr-1" />
                   Retry
@@ -219,7 +233,11 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
                 size="sm"
                 variant="default"
                 className="w-full h-10 text-sm bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105 hover:shadow-md"
-                onClick={handleStartTest}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation(); // Prevent card click from firing
+                  handleStartTest();
+                }}
                 disabled={test.isPremium && !hasAccess}
               >
                 {test.isPremium && !hasAccess ? (
@@ -266,64 +284,16 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
         testType={testType}
       />
 
-      {/* Membership Modal */}
-      {showMembershipModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-                  <Crown className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Premium Content</h3>
-                <p className="text-gray-600">This test requires a Pro or Pro+ membership to access.</p>
-              </div>
-              
-              <div className="space-y-4 mb-6">
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
-                  <h4 className="font-semibold text-blue-900 mb-2">Pro Plan - ₹99</h4>
-                  <ul className="text-sm text-blue-800 space-y-1">
-                    <li>• 11 Mock Tests</li>
-                    <li>• 3 Months Access</li>
-                    <li>• Detailed Solutions</li>
-                    <li>• Performance Analytics</li>
-                  </ul>
-                </div>
-                
-                <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border border-purple-200">
-                  <h4 className="font-semibold text-purple-900 mb-2">Pro+ Plan - ₹299</h4>
-                  <ul className="text-sm text-purple-800 space-y-1">
-                    <li>• Unlimited Mock Tests</li>
-                    <li>• 12 Months Access</li>
-                    <li>• Detailed Solutions</li>
-                    <li>• Performance Analytics</li>
-                    <li>• Priority Support</li>
-                  </ul>
-                </div>
-              </div>
-              
-              <div className="flex space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowMembershipModal(false)}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => {
-                    setShowMembershipModal(false);
-                    window.location.href = '/profile';
-                  }}
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
-                >
-                  View Plans
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Unified Payment Modal */}
+      <UnifiedPaymentModal
+        isOpen={showMembershipModal}
+        onClose={() => setShowMembershipModal(false)}
+        onPaymentSuccess={handlePaymentSuccess}
+        testId={test.id}
+        testName={test.name}
+        testPrice={0} // No individual test price, only membership
+        testDescription={`Access to ${test.name} and all premium content`}
+      />
     </>
   );
 };

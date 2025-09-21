@@ -15,11 +15,12 @@ import {
   Play,
   Crown,
   Lock,
-  CheckCircle
+  CheckCircle,
+  Star
 } from 'lucide-react';
 import { PremiumTest, premiumService } from '@/lib/premiumService';
-import { UnifiedPaymentModal } from './UnifiedPaymentModal';
 import { TestStartModal } from './TestStartModal';
+import { UnifiedPaymentModal } from './UnifiedPaymentModal';
 import { unifiedPaymentService } from '@/lib/unifiedPaymentService';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -62,11 +63,11 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
   const { user } = useAuth();
   const [selectedYear, setSelectedYear] = useState(years[0]?.year || '');
   const [currentPage, setCurrentPage] = useState(0);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showMembershipModal, setShowMembershipModal] = useState(false);
   const [showTestStartModal, setShowTestStartModal] = useState(false);
-  const [selectedPremiumTest, setSelectedPremiumTest] = useState<PremiumTest | null>(null);
   const [selectedTestForStart, setSelectedTestForStart] = useState<PremiumTest | null>(null);
   const [userMembership, setUserMembership] = useState<any>(null);
+  const [hasAccess, setHasAccess] = useState<Map<string, boolean>>(new Map());
   const papersPerPage = 6;
 
   // Check user membership status
@@ -82,6 +83,15 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
     try {
       const membership = await unifiedPaymentService.getUserMembership(user.id);
       setUserMembership(membership);
+      
+      // Check access for each paper
+      const accessMap = new Map<string, boolean>();
+      years.forEach(yearData => {
+        yearData.papers.forEach(paper => {
+          accessMap.set(paper.id, !!membership || !paper.isPremium);
+        });
+      });
+      setHasAccess(accessMap);
     } catch (error) {
       console.error('Error checking membership:', error);
     }
@@ -116,13 +126,18 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
 
   const handleStartTest = (paper: PremiumTest) => {
     // Check if paper is premium and user doesn't have access
-    if (paper.isPremium && !userMembership) {
-      setSelectedPremiumTest(paper);
-      setShowPaymentModal(true);
+    if (paper.isPremium && !hasAccess.get(paper.id)) {
+      setShowMembershipModal(true);
       return;
     } else {
       setSelectedTestForStart(paper);
       setShowTestStartModal(true);
+    }
+  };
+
+  const handleCardClick = (paper: PremiumTest) => {
+    if (paper.isPremium && !hasAccess.get(paper.id)) {
+      setShowMembershipModal(true);
     }
   };
 
@@ -133,11 +148,21 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
   };
 
   const handlePaymentSuccess = (planId: string) => {
-    setShowPaymentModal(false);
-    setSelectedPremiumTest(null);
+    // Update access for all premium papers
+    const newHasAccess = new Map(hasAccess);
+    years.forEach(year => {
+      year.papers.forEach(paper => {
+        if (paper.isPremium) {
+          newHasAccess.set(paper.id, true);
+        }
+      });
+    });
+    setHasAccess(newHasAccess);
+    
     // Refresh membership status
     checkMembershipStatus();
   };
+
 
   const getYearStats = (year: string) => {
     const yearData = years.find(y => y.year === year);
@@ -259,13 +284,19 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
               {currentPapers.map((paper) => {
                 const isCompleted = completedTests.has(`pyq-${paper.id}`);
                 const testScore = testScores.get(`pyq-${paper.id}`);
+                
+                // Debug logging (simplified)
+                if (isCompleted && !testScore) {
+                  console.log(`⚠️ [YearWiseTabs] Paper ${paper.id} is completed but no score found`);
+                }
 
                 return (
         <Card
           key={paper.id}
           className={`relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.03] hover:border-primary/40 h-72 group ${
             isCompleted ? 'border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg' : 'border-border bg-gradient-to-br from-white to-slate-50'
-          }`}
+          } ${paper.isPremium && !hasAccess.get(paper.id) ? 'cursor-pointer' : ''}`}
+          onClick={() => handleCardClick(paper)}
         >
                     <CardContent className="p-4 h-full flex flex-col">
                       {/* Header */}
@@ -284,6 +315,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                                 <div className="flex items-center space-x-1">
                                   <Crown className="w-3 h-3" />
                                   <span>PREMIUM</span>
+                                  {!hasAccess.get(paper.id) && <span className="text-xs ml-1">👆</span>}
                                 </div>
                               ) : (
                                 <span className="animate-pulse">FREE</span>
@@ -316,6 +348,11 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                             <span className="text-xs text-muted-foreground">{paper.questions} questions</span>
                           </div>
                           
+                          {paper.isPremium && !hasAccess.get(paper.id) && (
+                            <div className="text-xs text-orange-600 font-medium text-center bg-gradient-to-r from-orange-50 to-yellow-50 p-2 rounded border border-orange-200 animate-pulse">
+                              👆 Click to unlock Premium content
+                            </div>
+                          )}
                         </div>
                       </div>
                       
@@ -352,7 +389,10 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                               size="sm"
                               variant="outline"
                               className="flex-1 h-8 text-xs hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 hover:scale-105 hover:shadow-md"
-                              onClick={() => onViewSolutions(paper.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onViewSolutions(paper.id);
+                              }}
                             >
                               <Eye className="w-3 h-3 mr-1" />
                               Solutions
@@ -361,7 +401,10 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                               size="sm"
                               variant="default"
                               className="flex-1 h-8 text-xs bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105 hover:shadow-md"
-                              onClick={() => onRetry(paper.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onRetry(paper.id);
+                              }}
                             >
                               <RotateCcw className="w-3 h-3 mr-1" />
                               Retry
@@ -372,10 +415,13 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                             size="sm"
                             variant="default"
                             className="w-full h-8 text-xs bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105 hover:shadow-md"
-                            onClick={() => handleStartTest(paper)}
-                            disabled={paper.isPremium && !userMembership}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartTest(paper);
+                            }}
+                            disabled={paper.isPremium && !hasAccess.get(paper.id)}
                           >
-                            {paper.isPremium && !userMembership ? (
+                            {paper.isPremium && !hasAccess.get(paper.id) ? (
                               <>
                                 <Lock className="w-3 h-3 mr-1" />
                                 Unlock Premium
@@ -391,12 +437,19 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                       </div>
 
                       {/* Premium Overlay */}
-                      {paper.isPremium && !userMembership && (
-                        <div className="absolute inset-0 bg-black/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                      {paper.isPremium && !hasAccess.get(paper.id) && (
+                        <div className="absolute inset-0 bg-gradient-to-br from-black/30 via-yellow-500/20 to-orange-500/30 backdrop-blur-sm rounded-lg flex items-center justify-center">
                           <div className="text-center text-white">
-                            <Crown className="w-6 h-6 mx-auto mb-1 text-yellow-400" />
-                            <p className="text-xs font-medium">Premium Content</p>
-                            {/* <p className="text-xs opacity-90">₹{paper.price}</p> */}
+                            <div className="w-12 h-12 mx-auto mb-2 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center animate-pulse">
+                              <Crown className="w-6 h-6 text-white" />
+                            </div>
+                            <p className="text-sm font-bold mb-1">Premium Content</p>
+                            <p className="text-xs opacity-90">Click to unlock</p>
+                            <div className="mt-1 flex items-center justify-center space-x-1">
+                              <Star className="w-2 h-2 text-yellow-400" />
+                              <Star className="w-2 h-2 text-yellow-400" />
+                              <Star className="w-2 h-2 text-yellow-400" />
+                            </div>
                           </div>
                         </div>
                       )}
@@ -450,18 +503,16 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
         </Card>
       )}
 
-      {/* Payment Modal */}
-      {selectedPremiumTest && (
-        <UnifiedPaymentModal
-          isOpen={showPaymentModal}
-          onClose={() => setShowPaymentModal(false)}
-          onPaymentSuccess={handlePaymentSuccess}
-          testId={selectedPremiumTest.id}
-          testName={selectedPremiumTest.name}
-          testPrice={selectedPremiumTest.price}
-          testDescription={selectedPremiumTest.description}
-        />
-      )}
+      {/* Unified Payment Modal */}
+      <UnifiedPaymentModal
+        isOpen={showMembershipModal}
+        onClose={() => setShowMembershipModal(false)}
+        onPaymentSuccess={handlePaymentSuccess}
+        testId="pyq-premium"
+        testName="PYQ Premium Access"
+        testPrice={0} // No individual test price, only membership
+        testDescription="Access to all PYQ tests and premium content"
+      />
 
       {/* Test Start Modal */}
       {selectedTestForStart && (

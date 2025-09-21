@@ -71,26 +71,28 @@ const Profile = () => {
       setLoading(true);
       
       // Load membership data
-      console.log('Loading membership for user:', user!.id);
       const membershipData = await unifiedPaymentService.getUserMembership(user!.id);
-      console.log('Membership data received:', membershipData);
       setMembership(membershipData);
 
-      // Load referral stats
-      try {
-        const { data, error } = await supabase.rpc('get_user_referral_earnings' as any, {
-          user_uuid: user!.id
-        });
-        if (!error && data && Array.isArray(data) && data.length > 0) {
-          setReferralStats({
-            total_referrals: 0, // This would need to be fetched separately
-            total_earnings: (data[0] as any).total_earnings || 0,
-            referral_code: '', // This would need to be fetched separately
-            pending_earnings: (data[0] as any).pending_earnings || 0
+      // Only load referral stats if user is on referral page or has referral data
+      // This reduces unnecessary API calls for users who don't use referrals
+      const hasReferralData = localStorage.getItem('hasReferralData') === 'true';
+      if (hasReferralData) {
+        try {
+          const { data, error } = await supabase.rpc('get_user_referral_earnings' as any, {
+            user_uuid: user!.id
           });
+          if (!error && data && Array.isArray(data) && data.length > 0) {
+            setReferralStats({
+              total_referrals: 0, // This would need to be fetched separately
+              total_earnings: (data[0] as any).total_earnings || 0,
+              referral_code: '', // This would need to be fetched separately
+              pending_earnings: (data[0] as any).pending_earnings || 0
+            });
+          }
+        } catch (error) {
+          console.error('Error loading referral stats:', error);
         }
-      } catch (error) {
-        console.error('Error loading referral stats:', error);
       }
     } catch (error) {
       console.error('Error loading user data:', error);

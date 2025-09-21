@@ -156,6 +156,16 @@ export class BulkTestService {
     const testScores = new Map<string, { score: number; rank: number; totalParticipants: number }>();
 
     completions.forEach(completion => {
+      // Debug logging for each completion
+      console.log(`🔍 [bulkTestService] Processing completion:`, {
+        test_type: completion.test_type,
+        test_id: completion.test_id,
+        topic_id: completion.topic_id,
+        is_completed: completion.is_completed,
+        score: completion.score,
+        rank: completion.rank
+      });
+      
       // Generate multiple key formats for compatibility
       const keys = [
         completion.topic_id 
@@ -165,20 +175,28 @@ export class BulkTestService {
         `${completion.test_type}-${completion.test_id}`, // test_type-test_id
         completion.topic_id 
           ? `${completion.test_id}-${completion.topic_id}`
-          : completion.test_id // test_id-topic_id or just test_id
+          : completion.test_id, // test_id-topic_id or just test_id
+        // Add specific formats for YearWiseTabs component
+        `pyq-${completion.test_id}`, // For PYQ tests
+        `mock-${completion.test_id}`, // For Mock tests
+        `practice-${completion.test_id}` // For Practice tests
       ];
       
       if (completion.is_completed) {
         keys.forEach(key => completedTests.add(key));
       }
 
-      if (completion.score > 0) {
+      if (completion.score >= 0) {
         const scoreData = {
           score: completion.score,
           rank: completion.rank,
           totalParticipants: 0 // Default value since total_participants is not available
         };
         keys.forEach(key => testScores.set(key, scoreData));
+        
+        // Debug logging
+        console.log(`🔍 [bulkTestService] Generated keys for ${completion.test_id}:`, keys);
+        console.log(`📊 [bulkTestService] Score data:`, scoreData);
       }
     });
 

@@ -16,11 +16,13 @@ import { useExamStats } from "@/hooks/useExamStats";
 import { testSubmissionService } from "@/lib/testSubmissionService";
 import { useAuth } from "@/hooks/useAuth";
 import { QuestionLoader, TestData, QuestionWithProps } from "@/lib/questionLoader";
+import { testDataLoader } from "@/lib/testDataLoader";
 import SolutionsDisplay from "@/components/SolutionsDisplay";
 import ImageDisplay from "@/components/ImageDisplay";
 import { planLimitsService, PlanLimits } from "@/lib/planLimitsService";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { messagingService } from "@/lib/messagingService";
+import { supabaseStatsService } from "@/lib/supabaseStats";
 
 // Fallback function for calculating total duration
 const calculateTotalDurationFallback = (questions: QuestionWithProps[]): number => {
@@ -84,6 +86,12 @@ const TestInterface = () => {
     score: number;
     correct: number;
     timeTaken: number;
+  } | null>(null);
+  
+  const [rankData, setRankData] = useState<{
+    rank?: number;
+    totalParticipants?: number;
+    highestMarks?: number;
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [actualTestType, setActualTestType] = useState<string>('');
@@ -275,12 +283,82 @@ const TestInterface = () => {
     }
   }, [examId, sectionId, testType, topic]);
 
+  // Check if a specific test is premium by looking at the test data
+  const isTestPremium = (testId: string, testType: string): boolean => {
+    try {
+      // Load the test data to check if it's premium
+      const testData = testDataLoader.getTestById('ssc-cgl', testId);
+      const isPremium = testData?.isPremium || false;
+      console.log(`🔍 [isTestPremium] Test ${testId} (${testType}): isPremium = ${isPremium}`);
+      return isPremium;
+    } catch (error) {
+      console.error('Error checking test premium status:', error);
+      // Default to premium if we can't determine
+      return true;
+    }
+  };
+
+  // Fetch rank data for the test
+  const fetchRankData = async (testId: string, testType: string, score: number) => {
+    try {
+      console.log('🏆 [TestInterface] Fetching rank data for:', { testId, testType, score });
+      
+      // Get real rank data from the database
+      const { data: rankData } = await supabaseStatsService.getIndividualTestScore(examId!, testType, testId);
+      
+      if (rankData && rankData.score !== null) {
+        console.log('🏆 [TestInterface] Real rank data:', rankData);
+        
+        // Get highest score for this test
+        let highestMarks = score; // Default to current user's score
+        try {
+          const { data: highestScoreData } = await supabaseStatsService.getHighestScoreForTest(examId!, testType, testId);
+          if (highestScoreData && highestScoreData.length > 0) {
+            const maxScore = Math.max(...highestScoreData.map((item: any) => item.score || 0));
+            highestMarks = maxScore;
+          }
+        } catch (highestScoreError) {
+          console.error('Error fetching highest score:', highestScoreError);
+        }
+        
+        const realRankData = {
+          rank: rankData.rank || 0,
+          totalParticipants: rankData.total_participants || 0,
+          highestMarks: highestMarks
+        };
+        
+        console.log('🏆 [TestInterface] Final rank data:', realRankData);
+        setRankData(realRankData);
+      } else {
+        console.log('🏆 [TestInterface] No rank data available, using fallback');
+        // Fallback to basic data if no rank info is available
+        const fallbackData = {
+          rank: 0,
+          totalParticipants: 0,
+          highestMarks: score
+        };
+        setRankData(fallbackData);
+      }
+    } catch (error) {
+      console.error('❌ [TestInterface] Error fetching rank data:', error);
+      // Fallback to basic data on error
+      const fallbackData = {
+        rank: 0,
+        totalParticipants: 0,
+        highestMarks: score
+      };
+      setRankData(fallbackData);
+    }
+  };
+
   // Handle language selection and start test
   const handleLanguageSelect = async (language: string) => {
+    console.log('🎯 handleLanguageSelect called with language:', language);
     setSelectedLanguage(language);
     
     // Check plan limits before starting test
     const userId = getUserId();
+    console.log('👤 User ID:', userId);
     if (userId) {
       // Determine test type for plan limits check
       let testTypeForCheck = 'mock'; // default
@@ -291,24 +369,46 @@ const TestInterface = () => {
       } else if (sectionId === 'practice') {
         testTypeForCheck = 'practice';
       }
+      console.log('📝 Test type for check:', testTypeForCheck);
 
-      // Create a mock test object to determine if it's premium
-      // Practice tests are free, Mock and PYQ tests are premium
-      const mockTest = {
-        isPremium: sectionId !== 'practice'
+      // Determine the test ID based on the route parameters
+      let currentTestId = '';
+      if (sectionId === 'mock') {
+        currentTestId = testType || 'mock-test-1';
+      } else if (sectionId === 'pyq') {
+        currentTestId = testType || '2024-day1-shift1';
+      } else if (sectionId === 'practice') {
+        currentTestId = testType || 'maths-algebra';
+      } else {
+        currentTestId = testType || 'mock-test-1';
+      }
+      console.log('🆔 Current test ID:', currentTestId);
+
+      // Create a test object to determine if it's premium and for retry checking
+      // Check actual test data to determine if it's premium (both MOCK and PYQ)
+      const testObject = {
+        id: currentTestId, // Use the actual test ID for retry checking
+        isPremium: isTestPremium(currentTestId, testTypeForCheck)
       };
+      console.log('🧪 Test object:', testObject);
 
-      const { canTake, reason, limits } = await planLimitsService.canUserTakeTest(userId, testTypeForCheck, mockTest);
+      console.log('🔍 Checking plan limits...');
+      const { canTake, reason, limits, isRetry } = await planLimitsService.canUserTakeTest(userId, testTypeForCheck, testObject);
+      console.log('✅ Plan check result:', { canTake, reason, isRetry, limits });
+      
       if (!canTake) {
+        console.log('❌ User cannot take test, showing upgrade modal');
         setPlanLimits(limits);
         setShowUpgradeModal(true);
         return;
       }
       
-      // Record test attempt when user actually starts the test
-      await planLimitsService.recordTestAttempt(userId, testType || 'mock', examId || 'ssc-cgl');
+      console.log('📊 Recording test attempt...');
+      const recordResult = await planLimitsService.recordTestAttempt(userId, testType || 'mock', examId || 'ssc-cgl', testTypeForCheck, questions.length, isRetry);
+      console.log('📝 Record attempt result:', recordResult);
     }
     
+    console.log('🚀 Starting test...');
     setTestStarted(true);
   };
 
@@ -322,6 +422,74 @@ const TestInterface = () => {
       handleSubmit(true); // Skip confirmation for time up
     }
   }, [timeLeft, isCompleted, loading, testStarted]);
+
+  // Prevent fullscreen exit during test
+  useEffect(() => {
+    if (testStarted && !isCompleted) {
+      const handleFullscreenChange = () => {
+        if (!document.fullscreenElement && testStarted && !isCompleted) {
+          // User tried to exit fullscreen, prevent it
+          console.log('🚫 [TestInterface] Preventing fullscreen exit during test');
+          document.documentElement.requestFullscreen().catch(err => {
+            console.log('Fullscreen re-request failed:', err);
+          });
+        }
+      };
+
+      const handleKeyDown = (e: KeyboardEvent) => {
+        // Prevent F11 and Escape keys from exiting fullscreen
+        if ((e.key === 'F11' || e.key === 'Escape') && testStarted && !isCompleted) {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('🚫 [TestInterface] Prevented fullscreen exit key:', e.key);
+        }
+      };
+
+      // Add event listeners
+      document.addEventListener('fullscreenchange', handleFullscreenChange);
+      document.addEventListener('keydown', handleKeyDown);
+
+      // Cleanup
+      return () => {
+        document.removeEventListener('fullscreenchange', handleFullscreenChange);
+        document.removeEventListener('keydown', handleKeyDown);
+      };
+    }
+  }, [testStarted, isCompleted]);
+
+  // Auto-submit on page unload or visibility change
+  useEffect(() => {
+    if (testStarted && !isCompleted) {
+      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+        console.log('🚨 [TestInterface] Page is being unloaded, auto-submitting test');
+        // Auto-submit the test
+        handleSubmit(true); // Skip confirmation for auto-submit
+        
+        // Show warning message
+        e.preventDefault();
+        e.returnValue = 'Your test is being automatically submitted. Are you sure you want to leave?';
+        return 'Your test is being automatically submitted. Are you sure you want to leave?';
+      };
+
+      const handleVisibilityChange = () => {
+        if (document.hidden && testStarted && !isCompleted) {
+          console.log('🚨 [TestInterface] Page became hidden, auto-submitting test');
+          // Auto-submit the test when page becomes hidden
+          handleSubmit(true); // Skip confirmation for auto-submit
+        }
+      };
+
+      // Add event listeners
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+
+      // Cleanup
+      return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
+    }
+  }, [testStarted, isCompleted]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -520,6 +688,19 @@ const TestInterface = () => {
       setShowSolutions(true);
       setIsCompleted(true);
       
+      // Fetch rank data for the test
+      await fetchRankData(actualTestId, actualTestType, score);
+      
+      // Exit full screen mode when test is completed
+      if (document.fullscreenElement) {
+        try {
+          await document.exitFullscreen();
+          console.log('📱 [TestInterface] Exited full screen mode');
+        } catch (error) {
+          console.error('❌ [TestInterface] Error exiting full screen:', error);
+        }
+      }
+      
       // Show success message
       messagingService.testCompleted(correct, questions.length);
     } catch (error) {
@@ -582,9 +763,14 @@ const TestInterface = () => {
             </div>
             <div className="space-y-3">
               <Button 
-                onClick={async () => {
+                onClick={async (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('🔥 Start Test Now button clicked!');
                   // Check plan limits before starting test
                   const userId = getUserId();
+                  console.log('👤 User ID from button:', userId);
+                  
                   if (userId) {
                     // Determine test type for plan limits check
                     let testTypeForCheck = 'mock'; // default
@@ -595,23 +781,48 @@ const TestInterface = () => {
                     } else if (sectionId === 'practice') {
                       testTypeForCheck = 'practice';
                     }
+                    console.log('📝 Button - Test type for check:', testTypeForCheck);
 
-                    // Create a mock test object to determine if it's premium
-                    // Practice tests are free, Mock and PYQ tests are premium
-                    const mockTest = {
-                      isPremium: sectionId !== 'practice'
+                    // Determine the test ID based on the route parameters
+                    let currentTestId = '';
+                    if (sectionId === 'mock') {
+                      currentTestId = testType || 'mock-test-1';
+                    } else if (sectionId === 'pyq') {
+                      currentTestId = testType || '2024-day1-shift1';
+                    } else if (sectionId === 'practice') {
+                      currentTestId = testType || 'maths-algebra';
+                    } else {
+                      currentTestId = testType || 'mock-test-1';
+                    }
+                    console.log('🆔 Button - Current test ID:', currentTestId);
+
+                    // Create a test object to determine if it's premium and for retry checking
+                    // Check actual test data to determine if it's premium (both MOCK and PYQ)
+                    const testObject = {
+                      id: currentTestId, // Use the actual test ID for retry checking
+                      isPremium: isTestPremium(currentTestId, testTypeForCheck)
                     };
+                    console.log('🧪 Button - Test object:', testObject);
 
-                    const { canTake, reason, limits } = await planLimitsService.canUserTakeTest(userId, testTypeForCheck, mockTest);
+                    console.log('🔍 Button - Checking plan limits...');
+                    const { canTake, reason, limits, isRetry } = await planLimitsService.canUserTakeTest(userId, testTypeForCheck, testObject);
+                    console.log('✅ Button - Plan check result:', { canTake, reason, isRetry, limits });
+                    
                     if (!canTake) {
+                      console.log('❌ Button - User cannot take test, showing upgrade modal');
                       setPlanLimits(limits);
                       setShowUpgradeModal(true);
                       return;
                     }
                     
-                    // Record test attempt when user actually starts the test
-                    await planLimitsService.recordTestAttempt(userId, testType || 'mock', examId || 'ssc-cgl');
+                    console.log('📊 Button - Recording test attempt...');
+                    const recordResult = await planLimitsService.recordTestAttempt(userId, testType || 'mock', examId || 'ssc-cgl', testTypeForCheck, questions.length, isRetry);
+                    console.log('📝 Button - Record attempt result:', recordResult);
+                  } else {
+                    console.log('❌ No user ID found!');
                   }
+                  
+                  console.log('🚀 Button - Starting test...');
                   setTestStarted(true);
                 }}
                 className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:opacity-90 text-white font-semibold"
@@ -621,7 +832,11 @@ const TestInterface = () => {
               
               <Button 
                 variant="outline"
-                onClick={() => navigate(`/exam/${examId}`)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  navigate(`/exam/${examId}`);
+                }}
                 className="w-full h-10 text-muted-foreground hover:text-foreground"
               >
                 I Don't Want to Start Right Now
@@ -656,6 +871,9 @@ const TestInterface = () => {
         totalQuestions={questions.length}
         correctAnswers={testResults.correct}
         timeTaken={testResults.timeTaken}
+        rank={rankData?.rank}
+        totalParticipants={rankData?.totalParticipants}
+        highestMarks={rankData?.highestMarks}
         onClose={() => navigate(`/exam/${examId}`)}
         examId={examId}
         testType={sectionId}

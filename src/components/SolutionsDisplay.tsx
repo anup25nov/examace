@@ -276,15 +276,7 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
         WebkitTapHighlightColor: 'transparent'
       }}
     >
-      {/* Security Warning - Only show if security is enabled */}
-      {(isRightClickBlocked() || isDevToolsBlocked() || isTextSelectionBlocked() || isKeyboardShortcutsBlocked()) && (
-        <div className="mb-4 p-3 bg-yellow-100 border border-yellow-300 rounded-lg flex items-center space-x-2">
-          <Shield className="w-5 h-5 text-yellow-600" />
-          <span className="text-sm text-yellow-800 font-medium">
-            This content is protected. Right-click and developer tools are disabled.
-          </span>
-        </div>
-      )}
+      {/* Security Warning - Removed as requested */}
       
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}

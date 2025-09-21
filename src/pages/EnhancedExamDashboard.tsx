@@ -159,9 +159,18 @@ const EnhancedExamDashboard = () => {
       const { completedTests, testScores } = bulkTestService.processBulkCompletionsWithType(allCompletions);
       
       // Debug logging
-      console.log('Bulk completions data:', allCompletions);
-      console.log('Processed completedTests:', Array.from(completedTests));
-      console.log('Processed testScores:', Array.from(testScores.entries()));
+      console.log('🔍 [EnhancedExamDashboard] Bulk completions data:', allCompletions);
+      console.log('✅ [EnhancedExamDashboard] Processed completedTests:', Array.from(completedTests));
+      console.log('📊 [EnhancedExamDashboard] Processed testScores:', Array.from(testScores.entries()));
+      
+      // Check specifically for ssc-cgl-2024-set-3
+      const targetTestId = 'ssc-cgl-2024-set-3';
+      const pyqKey = `pyq-${targetTestId}`;
+      console.log(`🎯 [EnhancedExamDashboard] Looking for ${pyqKey}:`, {
+        inCompletedTests: completedTests.has(pyqKey),
+        inTestScores: testScores.has(pyqKey),
+        testScoreValue: testScores.get(pyqKey)
+      });
       
       setCompletedTests(completedTests);
       setTestScores(testScores);

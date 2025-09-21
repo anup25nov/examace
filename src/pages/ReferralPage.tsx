@@ -52,34 +52,37 @@ const ReferralPage = () => {
     try {
       setLoading(true);
       
-      // Load comprehensive stats using the new database function
+      // Single comprehensive API call that includes all referral data
       const { data: statsData, error: statsError } = await supabase.rpc('get_comprehensive_referral_stats' as any, {
         user_uuid: user.id
       });
       
       if (statsError) {
         console.error('Error loading comprehensive stats:', statsError);
+        // Fallback to old service only if comprehensive call fails
+        try {
+          const stats = await referralService.getReferralStats();
+          setReferralStats(stats);
+        } catch (fallbackError) {
+          console.error('Error loading fallback stats:', fallbackError);
+        }
       } else if (statsData && Array.isArray(statsData) && statsData.length > 0) {
-        setComprehensiveStats(statsData[0]);
-      }
-      
-      // Load detailed referral network
-      const { data: networkData, error: networkError } = await supabase.rpc('get_referral_network_detailed' as any, {
-        user_uuid: user.id
-      });
-      
-      if (networkError) {
-        console.error('Error loading referral network:', networkError);
-      } else {
-        setReferralNetwork(Array.isArray(networkData) ? networkData : []);
-      }
-      
-      // Fallback to old service if needed
-      try {
-        const stats = await referralService.getReferralStats();
-        setReferralStats(stats);
-      } catch (error) {
-        console.error('Error loading fallback stats:', error);
+        const stats = statsData[0];
+        setComprehensiveStats(stats);
+        
+        // Extract network data from comprehensive stats if available
+        if (stats.referral_network) {
+          setReferralNetwork(Array.isArray(stats.referral_network) ? stats.referral_network : []);
+        } else {
+          // Only make separate network call if not included in comprehensive stats
+          const { data: networkData, error: networkError } = await supabase.rpc('get_referral_network_detailed' as any, {
+            user_uuid: user.id
+          });
+          
+          if (!networkError) {
+            setReferralNetwork(Array.isArray(networkData) ? networkData : []);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading referral stats:', error);

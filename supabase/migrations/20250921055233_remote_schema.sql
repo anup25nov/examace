@@ -5693,11 +5693,11 @@ BEGIN
   -- Insert or update test completion
   INSERT INTO test_completions (
     user_id, exam_id, test_type, test_id, topic_id, 
-    score, total_questions, correct_answers, time_taken, answers
+    score, total_questions, correct_answers, time_taken, answers, completed_at
   )
   VALUES (
     p_user_id, p_exam_id, p_test_type, p_test_id, p_topic_id,
-    p_score, p_total_questions, p_correct_answers, p_time_taken, p_answers
+    p_score, p_total_questions, p_correct_answers, p_time_taken, p_answers, NOW()
   )
   ON CONFLICT (user_id, exam_id, test_type, test_id, topic_id)
   DO UPDATE SET
