@@ -33,6 +33,7 @@ import { ProfessionalExamCard } from "@/components/ProfessionalExamCard";
 import { ProfessionalSectionHeader } from "@/components/ProfessionalSectionHeader";
 import { ReferralBanner } from "@/components/ReferralBanner";
 import Footer from "@/components/Footer";
+import { bulkTestService } from "@/lib/bulkTestService";
 
 // Icon mapping for dynamic loading
 const iconMap: { [key: string]: any } = {
@@ -114,84 +115,30 @@ const ExamDashboard = () => {
     loadAvailableTests();
   }, [examId]);
 
-  // Check test completions
+  // Check test completions using bulk API
   const checkTestCompletions = async () => {
     if (!examId || !exam) return;
 
-    const completed = new Set<string>();
-
-    // Check mock tests
-    for (const test of availableTests.mock) {
-      const isCompleted = await isTestCompleted(examId, 'mock', test.id, null);
-      if (isCompleted) {
-        // For mock tests, topicId is null, so the key becomes mock-testId
-        completed.add(`mock-${test.id}`);
+    try {
+      // Get all test completions for the exam at once
+      const { data: allCompletions, error } = await bulkTestService.getAllTestCompletionsForExam(examId);
+      
+      if (error) {
+        console.error('Error getting bulk test completions:', error);
+        return;
       }
-    }
 
-    // Check PYQ tests
-    for (const yearData of availableTests.pyq) {
-      for (const paper of yearData.papers) {
-        const isCompleted = await isTestCompleted(examId, 'pyq', paper.id, null);
-        if (isCompleted) {
-          // For PYQ tests, topicId is null, so the key becomes pyq-testId
-          completed.add(`pyq-${paper.id}`);
-        }
-      }
+      // Process completions into maps
+      const { completedTests, testScores } = bulkTestService.processBulkCompletionsWithType(allCompletions);
+      
+      setCompletedTests(completedTests);
+      setTestScores(testScores);
+    } catch (error) {
+      console.error('Error in checkTestCompletions:', error);
     }
-
-    // Check practice tests
-    for (const test of availableTests.practice) {
-      const isCompleted = await isTestCompleted(examId, 'practice', test.id, test.id);
-      if (isCompleted) {
-        // For practice tests, we pass test.id as topicId, so the key becomes practice-testId-testId
-        completed.add(`practice-${test.id}-${test.id}`);
-      }
-    }
-
-    setCompletedTests(completed);
   };
 
-  // Load individual test scores for Mock and PYQ tests
-  const loadTestScores = async () => {
-    if (!examId || !exam) return;
-
-    const scores = new Map<string, { score: number; rank: number; totalParticipants: number }>();
-
-    // Load Mock test scores
-    for (const test of availableTests.mock) {
-      const scoreResult = await getIndividualTestScore(examId, 'mock', test.id);
-      // Handle both Supabase result format and fallback format
-      const scoreData = (scoreResult as any).data || scoreResult;
-      if (scoreData && scoreData.score !== null && scoreData.score !== undefined) {
-        // For mock tests, topicId is null, so the key becomes mock-testId
-        scores.set(`mock-${test.id}`, {
-          score: scoreData.score,
-          rank: scoreData.rank || 0,
-          totalParticipants: scoreData.totalParticipants || 0
-        });
-      }
-    }
-
-    // Load PYQ test scores
-    for (const yearData of availableTests.pyq) {
-      for (const paper of yearData.papers) {
-        const scoreResult = await getIndividualTestScore(examId, 'pyq', paper.id);
-        // Handle both Supabase result format and fallback format
-        const scoreData = (scoreResult as any).data || scoreResult;
-        if (scoreData && scoreData.score !== null && scoreData.score !== undefined) {
-          // For PYQ tests, topicId is null, so the key becomes pyq-testId
-          scores.set(`pyq-${paper.id}`, {
-            score: scoreData.score,
-            rank: scoreData.rank || 0,
-            totalParticipants: scoreData.totalParticipants || 0
-          });
-        }
-      }
-    }
-
-    setTestScores(scores);
-  };
+  // Test scores are now loaded with completions in the bulk API
 
   // Calculate accurate filter counts
   const getFilterCounts = () => {
@@ -261,11 +208,8 @@ const ExamDashboard = () => {
   // Separate useEffect for completion checking and score loading after tests are loaded
   useEffect(() => {
     if (examId && (availableTests.mock.length > 0 || availableTests.pyq.length > 0 || availableTests.practice.length > 0)) {
-      // Check test completions
+      // Check test completions and scores
       checkTestCompletions();
-      
-      // Load test scores
-      loadTestScores();
     }
   }, [examId, availableTests.mock.length, availableTests.pyq.length, availableTests.practice.length]);
 
@@ -274,8 +218,7 @@ const ExamDashboard = () => {
     const handleRouteChange = () => {
       if (examId && (availableTests.mock.length > 0 || availableTests.pyq.length > 0 || availableTests.practice.length > 0)) {
         // Refresh completions and scores when user returns to dashboard
-        checkTestCompletions();
-        loadTestScores();
+      checkTestCompletions();
       }
     };
 
@@ -288,8 +231,7 @@ const ExamDashboard = () => {
     // Also refresh when component becomes visible (user returns from test)
     const handleVisibilityChange = () => {
       if (!document.hidden && examId && (availableTests.mock.length > 0 || availableTests.pyq.length > 0 || availableTests.practice.length > 0)) {
-        checkTestCompletions();
-        loadTestScores();
+      checkTestCompletions();
       }
     };
 

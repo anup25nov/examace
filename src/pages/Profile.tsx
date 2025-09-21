@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { 
   ArrowLeft, 
   Crown, 
@@ -18,7 +19,14 @@ import {
   IndianRupee,
   AlertCircle,
   CheckCircle,
-  Clock
+  Clock,
+  Edit3,
+  Settings,
+  BarChart3,
+  Target,
+  Award,
+  TrendingUp,
+  Loader2
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
@@ -151,6 +159,10 @@ const Profile = () => {
     const today = new Date();
     const diffTime = endDate.getTime() - today.getTime();
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const getDaysRemainingNumber = () => {
+    return getDaysRemaining();
   };
 
   const shouldShowUpgrade = () => {
@@ -313,10 +325,10 @@ const Profile = () => {
                     <div className="text-2xl font-bold text-blue-600">₹{referralStats.pending_earnings}</div>
                     <div className="text-sm text-gray-600">Pending</div>
                   </div>
-                  <div className="text-center">
+                  {/* <div className="text-center">
                     <div className="text-sm font-mono text-purple-600">{referralStats.referral_code || 'N/A'}</div>
                     <div className="text-sm text-gray-600">Referral Code</div>
-                  </div>
+                  </div> */}
                 </div>
                 <div className="mt-4">
                   <Button 

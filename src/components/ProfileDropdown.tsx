@@ -249,10 +249,23 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
             }}
             className="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg"
           >
+            <div className="p-1 bg-blue-100 rounded">
+              <User className="w-3 h-3 text-blue-600" />
+            </div>
+            <span className="text-sm">Profile</span>
+          </DropdownMenuItem>
+          
+          <DropdownMenuItem 
+            onClick={() => {
+              navigate('/membership');
+              setIsOpen(false);
+            }}
+            className="flex items-center space-x-2 cursor-pointer hover:bg-yellow-50 p-2 rounded-lg"
+          >
             <div className="p-1 bg-yellow-100 rounded">
               <Crown className="w-3 h-3 text-yellow-600" />
             </div>
-            <span className="text-sm">Profile & Membership</span>
+            <span className="text-sm">Membership</span>
             {membershipPlan !== 'free' && (
               <Shield className="w-3 h-3 text-green-500 ml-auto" />
             )}

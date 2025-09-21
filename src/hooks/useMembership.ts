@@ -67,8 +67,8 @@ export function useMembership() {
     const result = await membershipService.processMembershipPurchase(
       user.id,
       planId,
-      amount,
       paymentId,
+      amount,
       referralCode
     );
 

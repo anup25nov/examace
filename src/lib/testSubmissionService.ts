@@ -96,7 +96,7 @@ class TestSubmissionService {
           exam_id: submission.examId,
           test_type: submission.testType,
           test_id: submission.testId,
-          topic_name: submission.topicId,
+          topic_id: submission.topicId,
           score: submission.score,
           total_questions: submission.totalQuestions,
           correct_answers: submission.correctAnswers,
@@ -104,7 +104,7 @@ class TestSubmissionService {
           completed_at: new Date().toISOString(),
           answers: submission.answers
         }, {
-          onConflict: 'user_id,exam_id,test_type,test_id,topic_name'
+          onConflict: 'user_id,exam_id,test_type,test_id,topic_id'
         });
 
       if (error) {

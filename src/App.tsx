@@ -25,6 +25,7 @@ import {
 import { EnhancedExamDashboardWrapper } from "@/components/EnhancedExamDashboardWrapper";
 import AdminPage from "./pages/AdminPage";
 import Profile from "./pages/Profile";
+import { MembershipPlans } from "./components/MembershipPlans";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,11 @@ const App = () => {
             <Route path="/profile" element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            } />
+            <Route path="/membership" element={
+              <ProtectedRoute>
+                <MembershipPlans onSelectPlan={() => {}} onClose={() => {}} />
               </ProtectedRoute>
             } />
             <Route path="/test/:examId/:sectionId/:testType" element={

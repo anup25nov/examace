@@ -40,6 +40,7 @@ import { examConfigService } from "@/lib/examConfigService";
 import { supabase } from "@/integrations/supabase/client";
 import Footer from "@/components/Footer";
 import { AdminAccess } from "@/components/admin/AdminAccess";
+import { bulkTestService } from "@/lib/bulkTestService";
 
 // Icon mapping for dynamic loading
 const iconMap: { [key: string]: any } = {
@@ -131,32 +132,32 @@ const EnhancedExamDashboard = () => {
     }
   }, [examId]);
 
-  // Check test completions
+  // Check test completions using bulk API
   const checkTestCompletions = async () => {
     if (!examId || !exam) return;
 
-    const completed = new Set<string>();
-
-    // Check mock tests
-    const allMockTests = [...mockTests.free, ...mockTests.premium];
-    for (const test of allMockTests) {
-      const isCompleted = await isTestCompleted(examId, 'mock', test.id, null);
-      if (isCompleted) {
-        completed.add(`mock-${test.id}`);
+    try {
+      // Get all test completions for the exam at once
+      const { data: allCompletions, error } = await bulkTestService.getAllTestCompletionsForExam(examId);
+      
+      if (error) {
+        console.error('Error getting bulk test completions:', error);
+        return;
       }
-    }
 
-    // Check PYQ tests
-    for (const yearData of pyqData) {
-      for (const paper of yearData.papers) {
-        const isCompleted = await isTestCompleted(examId, 'pyq', paper.id, null);
-        if (isCompleted) {
-          completed.add(`pyq-${paper.id}`);
-        }
-      }
+      // Process completions into maps
+      const { completedTests, testScores } = bulkTestService.processBulkCompletionsWithType(allCompletions);
+      
+      // Debug logging
+      console.log('Bulk completions data:', allCompletions);
+      console.log('Processed completedTests:', Array.from(completedTests));
+      console.log('Processed testScores:', Array.from(testScores.entries()));
+      
+      setCompletedTests(completedTests);
+      setTestScores(testScores);
+    } catch (error) {
+      console.error('Error in checkTestCompletions:', error);
     }
-
-    setCompletedTests(completed);
   };
 
   // Load performance stats (best score and average of last 10 tests)
@@ -183,43 +184,7 @@ const EnhancedExamDashboard = () => {
     }
   };
 
-  // Load individual test scores
-  const loadTestScores = async () => {
-    if (!examId || !exam) return;
-
-    const scores = new Map<string, { score: number; rank: number; totalParticipants: number }>();
-
-    // Load Mock test scores
-    const allMockTests = [...mockTests.free, ...mockTests.premium];
-    for (const test of allMockTests) {
-      const scoreResult = await getIndividualTestScore(examId, 'mock', test.id);
-      const scoreData = (scoreResult as any).data || scoreResult;
-      if (scoreData && scoreData.score !== null && scoreData.score !== undefined) {
-        scores.set(`mock-${test.id}`, {
-          score: scoreData.score,
-          rank: scoreData.rank || 0,
-          totalParticipants: scoreData.totalParticipants || 0
-        });
-      }
-    }
-
-    // Load PYQ test scores
-    for (const yearData of pyqData) {
-      for (const paper of yearData.papers) {
-        const scoreResult = await getIndividualTestScore(examId, 'pyq', paper.id);
-        const scoreData = (scoreResult as any).data || scoreResult;
-        if (scoreData && scoreData.score !== null && scoreData.score !== undefined) {
-          scores.set(`pyq-${paper.id}`, {
-            score: scoreData.score,
-            rank: scoreData.rank || 0,
-            totalParticipants: scoreData.totalParticipants || 0
-          });
-        }
-      }
-    }
-
-    setTestScores(scores);
-  };
+  // Test scores are now loaded with completions in the bulk API
 
   useEffect(() => {
     if (loading) return;
@@ -238,7 +203,6 @@ const EnhancedExamDashboard = () => {
   useEffect(() => {
     if (examId && (mockTests.free.length > 0 || mockTests.premium.length > 0 || pyqData.length > 0)) {
       checkTestCompletions();
-      loadTestScores();
     }
   }, [examId, mockTests, pyqData]);
 
@@ -416,6 +380,28 @@ const EnhancedExamDashboard = () => {
     }
   };
 
+  // Get membership badge
+  const getMembershipBadge = () => {
+    if (!userMembership) {
+      return <Badge variant="outline" className="text-xs">Free</Badge>;
+    }
+    
+    // Handle different UserMembership interfaces
+    const planId = (userMembership as any).plan_id || (userMembership as any).planType;
+    
+    switch (planId) {
+      case 'pro':
+        return <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">Pro</Badge>;
+      case 'pro_plus':
+        return <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-800">Pro+</Badge>;
+      case 'yearly':
+      case 'lifetime':
+        return <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-800">Pro+</Badge>;
+      default:
+        return <Badge variant="outline" className="text-xs">Free</Badge>;
+    }
+  };
+
   // Get section-specific messages for edge cases
   const getSectionMessage = (section: string) => {
     const { completedCount, notAttemptedCount } = getFilterCounts(section);
@@ -533,10 +519,13 @@ const EnhancedExamDashboard = () => {
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-right">
-                <p className="text-sm font-medium text-foreground">{displayName}!</p>
-                {/* {userPhone && (
-                  <p className="text-xs text-muted-foreground">📱 {userPhone}</p>
-                )} */}
+                <div className="flex items-center space-x-2 justify-end">
+                  <p className="text-sm font-medium text-foreground">{displayName}!</p>
+                  {getMembershipBadge()}
+                </div>
+                {isAdmin && (
+                  <Badge variant="destructive" className="text-xs mt-1">Admin</Badge>
+                )}
               </div>
               {isAdmin && (
                 <Button
@@ -545,7 +534,7 @@ const EnhancedExamDashboard = () => {
                   onClick={() => setShowAdminPanel(true)}
                   className="text-xs"
                 >
-                  Admin
+                  Admin Panel
                 </Button>
               )}
             </div>
@@ -725,14 +714,14 @@ const EnhancedExamDashboard = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {[...mockTests.free, ...mockTests.premium]
                     .filter(test => {
-                      const isCompleted = completedTests.has(`mock-${test.id}`);
+                      const isCompleted = completedTests.has(`mock-${test.id}`) || completedTests.has(test.id);
                       if (testFilter === 'attempted') return isCompleted;
                       if (testFilter === 'not-attempted') return !isCompleted;
                       return true;
                     })
                     .map((test) => {
-                    const isCompleted = completedTests.has(`mock-${test.id}`);
-                    const testScore = testScores.get(`mock-${test.id}`);
+                    const isCompleted = completedTests.has(`mock-${test.id}`) || completedTests.has(test.id);
+                    const testScore = testScores.get(`mock-${test.id}`) || testScores.get(test.id);
                     
                     return (
                       <EnhancedTestCard
