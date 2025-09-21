@@ -37,6 +37,26 @@ export interface AppConfig {
     referralCodeLength: number;
     referralCodePrefix: string;
   };
+  
+  // Membership Plans Configuration
+  membershipPlans: {
+    pro: {
+      id: string;
+      name: string;
+      price: number;
+      originalPrice: number;
+      mockTests: number;
+      duration: number;
+    };
+    proPlus: {
+      id: string;
+      name: string;
+      price: number;
+      originalPrice: number;
+      mockTests: number;
+      duration: number;
+    };
+  };
 
   // Test Configuration
   tests: {
@@ -151,6 +171,25 @@ export const defaultConfig: AppConfig = {
     withdrawalProcessingDays: 3, // Days to process withdrawal
     referralCodeLength: 8, // Length of referral codes
     referralCodePrefix: 'S2S' // Prefix for referral codes
+  },
+  
+  membershipPlans: {
+    pro: {
+      id: 'pro',
+      name: 'Pro Plan',
+      price: 99,
+      originalPrice: 199,
+      mockTests: 11,
+      duration: 90 // days
+    },
+    proPlus: {
+      id: 'pro_plus',
+      name: 'Pro Plus Plan',
+      price: 299,
+      originalPrice: 599,
+      mockTests: 9999, // unlimited
+      duration: 365 // days
+    }
   },
 
   tests: {

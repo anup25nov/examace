@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,11 +14,18 @@ import {
   Trophy,
   RefreshCw,
   Home,
-  Youtube
+  Youtube,
+  Shield,
+  AlertTriangle,
+  Gift,
+  Copy,
+  Check
 } from 'lucide-react';
 import ImageDisplay from '@/components/ImageDisplay';
 import { QuestionReportModal } from './QuestionReportModal';
 import { getYouTubeSolutionsForTest } from '@/config/youtubeConfig';
+import { useAuth } from '@/hooks/useAuth';
+import { referralService } from '@/lib/referralServiceSimple';
 
 interface Question {
   id: string;
@@ -72,6 +79,84 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
   testType = 'pyq',
   testId = 'test-id'
 }) => {
+  const { user } = useAuth();
+  const [referralCode, setReferralCode] = useState<string>('');
+  const [referralCopied, setReferralCopied] = useState(false);
+  // Load referral code
+  useEffect(() => {
+    if (user) {
+      loadReferralCode();
+    }
+  }, [user]);
+
+  const loadReferralCode = async () => {
+    try {
+      const result = await referralService.generateReferralCode(user!.id);
+      if (result.success && result.code) {
+        setReferralCode(result.code);
+      }
+    } catch (error) {
+      console.error('Error loading referral code:', error);
+    }
+  };
+
+  const handleDirectRefer = () => {
+    if (referralCode) {
+      const referralUrl = `${window.location.origin}/auth?ref=${referralCode}`;
+      navigator.clipboard.writeText(referralUrl).then(() => {
+        setReferralCopied(true);
+        setTimeout(() => setReferralCopied(false), 2000);
+      });
+    }
+  };
+
+  // Security measures to prevent data inspection
+  useEffect(() => {
+    // Disable right-click context menu
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+
+    // Disable F12, Ctrl+Shift+I, Ctrl+U, etc.
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+        (e.ctrlKey && e.key === 'u') ||
+        (e.ctrlKey && e.shiftKey && e.key === 'C') ||
+        (e.ctrlKey && e.key === 'a')
+      ) {
+        e.preventDefault();
+      }
+    };
+
+    // Disable text selection
+    const handleSelectStart = (e: Event) => {
+      e.preventDefault();
+    };
+
+    // Add event listeners
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('selectstart', handleSelectStart);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('selectstart', handleSelectStart);
+    };
+  }, []);
+
+  // Obfuscate sensitive data
+  const obfuscateData = (data: any) => {
+    if (typeof data === 'string') {
+      return data.split('').map((char, index) => 
+        index % 3 === 0 ? char : '*'
+      ).join('');
+    }
+    return data;
+  };
   // Helper function to get option text
   const getOptionText = (option: string | {text: string; image?: string}): string => {
     return typeof option === 'string' ? option : option.text;
@@ -163,7 +248,25 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
   const youtubeSolutions = getYouTubeSolutionsForTest(testId);
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div 
+      className="min-h-screen bg-background p-4"
+      style={{
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        MozUserSelect: 'none',
+        msUserSelect: 'none',
+        WebkitTouchCallout: 'none',
+        WebkitTapHighlightColor: 'transparent'
+      }}
+    >
+      {/* Security Warning */}
+      <div className="mb-4 p-3 bg-yellow-100 border border-yellow-300 rounded-lg flex items-center space-x-2">
+        <Shield className="w-5 h-5 text-yellow-600" />
+        <span className="text-sm text-yellow-800 font-medium">
+          This content is protected. Right-click and developer tools are disabled.
+        </span>
+      </div>
+      
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <Card className="border-0 shadow-lg">
@@ -203,6 +306,37 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                       </div>
                     </Button>
                   ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Direct Refer Button */}
+            {referralCode && (
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 mt-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Gift className="w-5 h-5 text-green-600" />
+                    <span className="text-sm font-medium text-green-800">
+                      Share with friends and earn rewards!
+                    </span>
+                  </div>
+                  <Button
+                    onClick={handleDirectRefer}
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    {referralCopied ? (
+                      <>
+                        <Check className="w-4 h-4 mr-1" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4 mr-1" />
+                        Refer Now
+                      </>
+                    )}
+                  </Button>
                 </div>
               </div>
             )}

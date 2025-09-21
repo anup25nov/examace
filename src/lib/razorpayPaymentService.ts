@@ -48,10 +48,16 @@ export class RazorpayPaymentService {
 
       // Insert pending payment record (new payments schema)
       try {
+        // Get plan name from plan_id
+        const planName = paymentRequest.planId === 'pro' ? 'Pro Plan' : 
+                        paymentRequest.planId === 'pro_plus' ? 'Pro Plus Plan' : 
+                        paymentRequest.planId;
+        
         await supabase.from('payments' as any).insert({
           payment_id: `PAY_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           user_id: paymentRequest.userId,
           plan_id: paymentRequest.planId,
+          plan_name: planName,
           amount: data.amount, // Use amount from Edge Function
           razorpay_order_id: data.order_id,
           payment_method: 'razorpay',

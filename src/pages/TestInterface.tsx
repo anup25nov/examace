@@ -269,6 +269,9 @@ const TestInterface = () => {
         setShowUpgradeModal(true);
         return;
       }
+      
+      // Record test attempt when user actually starts the test
+      await planLimitsService.recordTestAttempt(userId, testType || 'mock', examId || 'ssc-cgl');
     }
     
     setTestStarted(true);
@@ -542,24 +545,37 @@ const TestInterface = () => {
               <p><strong>Questions:</strong> {questions.length}</p>
               <p><strong>Language:</strong> {selectedLanguage === 'english' ? 'English' : selectedLanguage === 'hindi' ? 'Hindi' : 'Both'}</p>
             </div>
-            <Button 
-              onClick={async () => {
-                // Check plan limits before starting test
-                const userId = getUserId();
-                if (userId) {
-                  const { canTake, reason, limits } = await planLimitsService.canUserTakeTest(userId);
-                  if (!canTake) {
-                    setPlanLimits(limits);
-                    setShowUpgradeModal(true);
-                    return;
+            <div className="space-y-3">
+              <Button 
+                onClick={async () => {
+                  // Check plan limits before starting test
+                  const userId = getUserId();
+                  if (userId) {
+                    const { canTake, reason, limits } = await planLimitsService.canUserTakeTest(userId);
+                    if (!canTake) {
+                      setPlanLimits(limits);
+                      setShowUpgradeModal(true);
+                      return;
+                    }
+                    
+                    // Record test attempt when user actually starts the test
+                    await planLimitsService.recordTestAttempt(userId, testType || 'mock', examId || 'ssc-cgl');
                   }
-                }
-                setTestStarted(true);
-              }}
-              className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:opacity-90 text-white font-semibold"
-            >
-              Start Test Now
-            </Button>
+                  setTestStarted(true);
+                }}
+                className="w-full h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:opacity-90 text-white font-semibold"
+              >
+                Start Test Now
+              </Button>
+              
+              <Button 
+                variant="outline"
+                onClick={() => navigate(`/exam/${examId}`)}
+                className="w-full h-10 text-muted-foreground hover:text-foreground"
+              >
+                I Don't Want to Start Right Now
+              </Button>
+            </div>
           </div>
         </div>
       </div>

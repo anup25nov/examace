@@ -156,20 +156,29 @@ export class BulkTestService {
     const testScores = new Map<string, { score: number; rank: number; totalParticipants: number }>();
 
     completions.forEach(completion => {
-      const key = completion.topic_id 
-        ? `${completion.test_type}-${completion.test_id}-${completion.topic_id}`
-        : `${completion.test_type}-${completion.test_id}`;
+      // Generate multiple key formats for compatibility
+      const keys = [
+        completion.topic_id 
+          ? `${completion.test_type}-${completion.test_id}-${completion.topic_id}`
+          : `${completion.test_type}-${completion.test_id}`,
+        completion.test_id, // Direct test_id
+        `${completion.test_type}-${completion.test_id}`, // test_type-test_id
+        completion.topic_id 
+          ? `${completion.test_id}-${completion.topic_id}`
+          : completion.test_id // test_id-topic_id or just test_id
+      ];
       
       if (completion.is_completed) {
-        completedTests.add(key);
+        keys.forEach(key => completedTests.add(key));
       }
 
       if (completion.score > 0) {
-        testScores.set(key, {
+        const scoreData = {
           score: completion.score,
           rank: completion.rank,
           totalParticipants: 0 // Default value since total_participants is not available
-        });
+        };
+        keys.forEach(key => testScores.set(key, scoreData));
       }
     });
 

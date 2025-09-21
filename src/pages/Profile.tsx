@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +37,7 @@ import { messagingService } from '@/lib/messagingService';
 
 const Profile = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, isAuthenticated } = useAuth();
   const { profile } = useUserProfile();
   const [membership, setMembership] = useState<any>(null);
@@ -55,12 +56,24 @@ const Profile = () => {
     }
   }, [isAuthenticated, user]);
 
+  // Check if membership modal should be shown
+  useEffect(() => {
+    const showMembership = searchParams.get('show') === 'membership';
+    if (showMembership) {
+      setShowMembershipPlans(true);
+      // Clean up URL
+      navigate('/profile', { replace: true });
+    }
+  }, [searchParams, navigate]);
+
   const loadUserData = async () => {
     try {
       setLoading(true);
       
       // Load membership data
+      console.log('Loading membership for user:', user!.id);
       const membershipData = await unifiedPaymentService.getUserMembership(user!.id);
+      console.log('Membership data received:', membershipData);
       setMembership(membershipData);
 
       // Load referral stats

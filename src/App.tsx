@@ -26,6 +26,7 @@ import { EnhancedExamDashboardWrapper } from "@/components/EnhancedExamDashboard
 import AdminPage from "./pages/AdminPage";
 import Profile from "./pages/Profile";
 import { MembershipPlans } from "./components/MembershipPlans";
+import { GlobalMembershipModal } from "./components/GlobalMembershipModal";
 
 const queryClient = new QueryClient();
 
@@ -119,6 +120,7 @@ const App = () => {
           </Routes>
         </BrowserRouter>
         {/* <DebugInfo /> */}
+        <GlobalMembershipModal />
       </TooltipProvider>
     </QueryClientProvider>
   );
