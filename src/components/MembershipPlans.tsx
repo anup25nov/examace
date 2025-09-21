@@ -15,6 +15,7 @@ import {
 import { useIsMobile } from '@/hooks/use-mobile';
 import { RazorpayCheckout } from './RazorpayCheckout';
 import { messagingService } from '@/lib/messagingService';
+import { getActiveMembershipPlans, getMembershipPlan } from '@/config/appConfig';
 
 interface MembershipPlan {
   id: string;
@@ -86,40 +87,39 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPlanForPayment, setSelectedPlanForPayment] = useState<MembershipPlan | null>(null);
 
-  // Load plans from backend
+  // Load plans from centralized configuration
   useEffect(() => {
-    // Use latest Pro and Pro+ definitions (1 year validity, env pricing handled server-side)
     setLoading(true);
-    const proPlus: MembershipPlan = {
-      id: 'pro_plus',
-      name: 'Pro+',
-      description: 'Complete access to all mocks and features',
-      price: 299,
-      originalPrice: 599,
-      features: ['12 months validity', '21 mock tests', 'Premium PYQs', 'Detailed Solutions', 'Priority Support', 'Advanced Analytics'],
-      popular: true,
-      icon: <Crown className="w-6 h-6" />,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50 border-purple-200',
-      duration_months: 12,
-      currency: 'INR'
-    };
-    const pro: MembershipPlan = {
-      id: 'pro',
-      name: 'Pro',
-      description: 'Access to 11 mock tests',
-      price: 99,
-      originalPrice: 199,
-      features: ['3 months validity', '11 mock tests', 'Premium PYQs', 'Detailed Solutions', 'Performance Analytics'],
-      popular: false,
-      icon: <Crown className="w-6 h-6" />,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50 border-blue-200',
-      duration_months: 3,
-      currency: 'INR'
-    };
-    setPlans([proPlus, pro]);
-    setLoading(false);
+    try {
+      const configPlans = getActiveMembershipPlans();
+      
+      // Convert config plans to component format
+      const componentPlans: MembershipPlan[] = configPlans.map(plan => ({
+        id: plan.id,
+        name: plan.name,
+        description: plan.id === 'pro_plus' ? 'Complete access to all mocks and features' : 
+                     plan.id === 'pro' ? 'Access to 11 mock tests' : 
+                     'Limited access to practice tests',
+        price: plan.price,
+        originalPrice: plan.originalPrice,
+        features: plan.features,
+        popular: plan.popular || false,
+        icon: <Crown className="w-6 h-6" />,
+        color: plan.id === 'pro_plus' ? 'text-purple-600' : 
+               plan.id === 'pro' ? 'text-blue-600' : 'text-gray-600',
+        bgColor: plan.id === 'pro_plus' ? 'bg-purple-50 border-purple-200' : 
+                 plan.id === 'pro' ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-200',
+        duration_months: Math.round(plan.duration / 30), // Convert days to months
+        currency: 'INR'
+      }));
+      
+      setPlans(componentPlans);
+    } catch (error) {
+      console.error('Error loading membership plans:', error);
+      setError('Failed to load membership plans');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   const handleSelectPlan = (plan: MembershipPlan) => {

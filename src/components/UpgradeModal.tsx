@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MembershipPlans } from './MembershipPlans';
+import { getMembershipPlan } from '@/config/appConfig';
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -63,44 +64,57 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({
   };
 
   const getUpgradeOptions = () => {
+    const upgradeOptions = [];
+    
     if (limits.planType === 'free') {
-      return [
-        {
-          id: 'pro',
-          name: 'Pro Plan',
-          price: '₹99',
-          duration: '3 months',
-          tests: '11 mock tests',
-          features: ['3 months validity', '11 mock tests', 'Premium PYQs', 'Detailed Solutions'],
+      // Show Pro and Pro+ plans for free users
+      const proPlan = getMembershipPlan('pro');
+      const proPlusPlan = getMembershipPlan('pro_plus');
+      
+      if (proPlan) {
+        upgradeOptions.push({
+          id: proPlan.id,
+          name: proPlan.name,
+          price: `₹${proPlan.price}`,
+          duration: `${Math.round(proPlan.duration / 30)} months`,
+          tests: `${proPlan.mockTests} mock tests`,
+          features: proPlan.features,
           popular: false,
           color: 'from-blue-500 to-blue-600'
-        },
-        {
-          id: 'pro_plus',
-          name: 'Pro+ Plan',
-          price: '₹299',
-          duration: '12 months',
-          tests: 'Unlimited tests',
-          features: ['12 months validity', 'Unlimited mock tests', 'Premium PYQs', 'Priority Support'],
-          popular: true,
+        });
+      }
+      
+      if (proPlusPlan) {
+        upgradeOptions.push({
+          id: proPlusPlan.id,
+          name: proPlusPlan.name,
+          price: `₹${proPlusPlan.price}`,
+          duration: `${Math.round(proPlusPlan.duration / 30)} months`,
+          tests: proPlusPlan.mockTests === 9999 ? 'Unlimited tests' : `${proPlusPlan.mockTests} mock tests`,
+          features: proPlusPlan.features,
+          popular: proPlusPlan.popular || false,
           color: 'from-purple-500 to-purple-600'
-        }
-      ];
+        });
+      }
     } else if (limits.planType === 'pro') {
-      return [
-        {
-          id: 'pro_plus',
-          name: 'Pro+ Plan',
-          price: '₹299',
-          duration: '12 months',
-          tests: 'Unlimited tests',
-          features: ['12 months validity', 'Unlimited mock tests', 'Premium PYQs', 'Priority Support'],
-          popular: true,
+      // Show Pro+ plan for Pro users
+      const proPlusPlan = getMembershipPlan('pro_plus');
+      
+      if (proPlusPlan) {
+        upgradeOptions.push({
+          id: proPlusPlan.id,
+          name: proPlusPlan.name,
+          price: `₹${proPlusPlan.price}`,
+          duration: `${Math.round(proPlusPlan.duration / 30)} months`,
+          tests: proPlusPlan.mockTests === 9999 ? 'Unlimited tests' : `${proPlusPlan.mockTests} mock tests`,
+          features: proPlusPlan.features,
+          popular: proPlusPlan.popular || false,
           color: 'from-purple-500 to-purple-600'
-        }
-      ];
+        });
+      }
     }
-    return [];
+    
+    return upgradeOptions;
   };
 
   const upgradeOptions = getUpgradeOptions();

@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { razorpayPaymentService, RazorpayPaymentRequest } from './razorpayPaymentService';
+import { getActiveMembershipPlans, getMembershipPlan } from '@/config/appConfig';
 
 export interface PaymentPlan {
   id: string;
@@ -296,6 +297,16 @@ export class UnifiedPaymentService {
         } catch (referralError) {
           console.warn('Referral commission processing failed (non-fatal):', referralError);
         }
+
+        // Send user message for membership purchase
+        try {
+          await this.sendUserMessage(userId, 'membership_purchased', 
+            `Welcome to ${plan.name}!`, 
+            `Your ${plan.name} membership has been activated successfully. You can now access all premium features including ${plan.features.join(', ')}.`
+          );
+        } catch (messageError) {
+          console.warn('Failed to send membership message (non-fatal):', messageError);
+        }
       }
 
       return { success: true };
@@ -363,41 +374,60 @@ export class UnifiedPaymentService {
   }
 
   /**
-   * Get default plans if database is unavailable
+   * Get default plans from centralized configuration
    */
   private getDefaultPlans(): PaymentPlan[] {
-    return [
-      {
-        id: 'free',
-        name: 'Free Plan',
-        description: 'Basic access to practice tests',
-        price: 0,
+    try {
+      const configPlans = getActiveMembershipPlans();
+      
+      return configPlans.map(plan => ({
+        id: plan.id,
+        name: plan.name,
+        description: plan.id === 'pro_plus' ? 'Complete access to all mocks and features' : 
+                     plan.id === 'pro' ? 'Access to 11 mock tests' : 
+                     'Basic access to practice tests',
+        price: plan.price,
         currency: 'INR',
-        features: ['Basic Practice Tests', 'Limited Analytics'],
-        duration: 365,
-        isActive: true
-      },
-      {
-        id: 'pro_plus',
-        name: 'Pro+ Plan',
-        description: 'Complete access to all mocks and features',
-        price: 299,
-        currency: 'INR',
-        features: ['12 months validity', 'Unlimited mock tests', 'Premium PYQs', 'Detailed Solutions', 'Priority Support', 'Advanced Analytics'],
-        duration: 365,
-        isActive: true
-      },
-      {
-        id: 'pro',
-        name: 'Pro Plan',
-        description: 'Access to 11 mock tests',
-        price: 99,
-        currency: 'INR',
-        features: ['3 months validity', '11 mock tests', 'Premium PYQs', 'Detailed Solutions', 'Performance Analytics'],
-        duration: 90,
-        isActive: true
-      }
-    ];
+        features: plan.features,
+        duration: plan.duration,
+        isActive: plan.isActive
+      }));
+    } catch (error) {
+      console.error('Error loading default plans from config:', error);
+      // Fallback to hardcoded plans if config fails
+      return [
+        {
+          id: 'free',
+          name: 'Free Plan',
+          description: 'Basic access to practice tests',
+          price: 0,
+          currency: 'INR',
+          features: ['Basic Practice Tests', 'Limited Analytics'],
+          duration: 365,
+          isActive: true
+        },
+        {
+          id: 'pro_plus',
+          name: 'Pro+ Plan',
+          description: 'Complete access to all mocks and features',
+          price: 299,
+          currency: 'INR',
+          features: ['12 months validity', 'Unlimited mock tests', 'Premium PYQs', 'Detailed Solutions', 'Priority Support', 'Advanced Analytics'],
+          duration: 365,
+          isActive: true
+        },
+        {
+          id: 'pro',
+          name: 'Pro Plan',
+          description: 'Access to 11 mock tests',
+          price: 99,
+          currency: 'INR',
+          features: ['3 months validity', '11 mock tests', 'Premium PYQs', 'Detailed Solutions', 'Performance Analytics'],
+          duration: 90,
+          isActive: true
+        }
+      ];
+    }
   }
 
   /**
@@ -424,6 +454,31 @@ export class UnifiedPaymentService {
   async forceReconnect(): Promise<boolean> {
     this.lastConnectionCheck = 0; // Reset to force immediate check
     return await this.checkConnection();
+  }
+
+  /**
+   * Send user message
+   */
+  private async sendUserMessage(userId: string, messageType: string, title: string, message: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('user_messages' as any)
+        .insert({
+          user_id: userId,
+          title: title,
+          content: message,
+          is_read: false,
+          created_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Error sending user message:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error sending user message:', error);
+      throw error;
+    }
   }
 }
 

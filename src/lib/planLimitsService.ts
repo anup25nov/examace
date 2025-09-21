@@ -78,19 +78,31 @@ export class PlanLimitsService {
   }
 
   /**
-   * Check if user can take a test
+   * Check if user can take a test (works for both mock and PYQ tests)
    */
-  async canUserTakeTest(userId: string): Promise<{ canTake: boolean; reason?: string; limits?: PlanLimits }> {
+  async canUserTakeTest(userId: string, testType?: string, test?: any): Promise<{ canTake: boolean; reason?: string; limits?: PlanLimits }> {
     const limits = await this.getUserPlanLimits(userId);
+    
+    // If test is not premium, allow access for all users
+    if (test && !test.isPremium) {
+      return { canTake: true, limits };
+    }
+    
+    // For free users, they can't take any premium tests (mock or PYQ)
+    if (limits.planType === 'free') {
+      return { 
+        canTake: false, 
+        reason: 'You need a Pro or Pro+ membership to take premium tests (Mock tests and PYQ).', 
+        limits 
+      };
+    }
     
     if (limits.canTakeTest) {
       return { canTake: true, limits };
     }
 
     let reason = '';
-    if (limits.planType === 'free') {
-      reason = 'You need a Pro or Pro+ membership to take mock tests.';
-    } else if (limits.planType === 'pro' && limits.usedTests >= limits.maxTests) {
+    if (limits.planType === 'pro' && limits.usedTests >= limits.maxTests) {
       reason = `You've used all ${limits.maxTests} tests in your Pro plan. Upgrade to Pro+ for unlimited access.`;
     } else if (limits.planType === 'pro_plus') {
       reason = 'There seems to be an issue with your Pro+ membership. Please contact support.';

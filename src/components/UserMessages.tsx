@@ -106,6 +106,12 @@ export const UserMessages: React.FC = () => {
 
   const getMessageIcon = (messageType: string) => {
     switch (messageType) {
+      case 'membership_purchased':
+        return <CheckCircle className="w-5 h-5 text-green-500" />;
+      case 'membership_upgraded':
+        return <CheckCircle className="w-5 h-5 text-blue-500" />;
+      case 'membership_expired':
+        return <XCircle className="w-5 h-5 text-orange-500" />;
       case 'withdrawal_approved':
         return <CheckCircle className="w-5 h-5 text-green-500" />;
       case 'withdrawal_rejected':
@@ -123,6 +129,12 @@ export const UserMessages: React.FC = () => {
 
   const getMessageBadgeVariant = (messageType: string) => {
     switch (messageType) {
+      case 'membership_purchased':
+        return 'default';
+      case 'membership_upgraded':
+        return 'secondary';
+      case 'membership_expired':
+        return 'destructive';
       case 'withdrawal_approved':
         return 'default';
       case 'withdrawal_rejected':
@@ -170,7 +182,7 @@ export const UserMessages: React.FC = () => {
             )}
           </DialogTitle>
           <DialogDescription>
-            Your withdrawal status updates and notifications
+            Your membership, withdrawal, and question report status updates
           </DialogDescription>
         </DialogHeader>
 

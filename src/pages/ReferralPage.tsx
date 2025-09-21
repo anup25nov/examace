@@ -22,6 +22,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { referralService, ReferralStats } from '@/lib/referralService';
 import { supabase } from '@/integrations/supabase/client';
 import WithdrawalRequestModal from '@/components/WithdrawalRequestModal';
+import { 
+  getCommissionPercentage, 
+  getMinimumWithdrawal, 
+  getMaximumWithdrawal,
+  getWithdrawalProcessingDays 
+} from '@/config/appConfig';
 
 const ReferralPage = () => {
   const navigate = useNavigate();
@@ -176,7 +182,7 @@ const ReferralPage = () => {
           </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-4">Start Earning Today!</h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Share ExamAce with your friends and earn 50% commission on every purchase they make. 
+            Share ExamAce with your friends and earn {getCommissionPercentage()}% commission on every purchase they make. 
             The more you refer, the more you earn!
           </p>
         </div>
@@ -259,7 +265,7 @@ const ReferralPage = () => {
             </Card>
 
             {/* Withdrawal Request Section */}
-            {referralStats && (Number(referralStats.pending_earnings || 0) >= 10) && (
+            {referralStats && (Number(referralStats.pending_earnings || 0) >= getMinimumWithdrawal()) && (
               <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
@@ -276,10 +282,10 @@ const ReferralPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-600 mb-2">
-                        You have ₹{Number(referralStats.pending_earnings).toFixed(2)} available for withdrawal (minimum: ₹10)
+                        You have ₹{Number(referralStats.pending_earnings).toFixed(2)} available for withdrawal (minimum: ₹{getMinimumWithdrawal()})
                       </p>
                       <p className="text-xs text-gray-500">
-                        Withdrawal requests are processed within 2-3 business days. Minimum withdrawal amount: ₹10.
+                        Withdrawal requests are processed within {getWithdrawalProcessingDays()} business days. Minimum withdrawal amount: ₹{getMinimumWithdrawal()}.
                       </p>
                     </div>
                     <WithdrawalRequestModal 
@@ -383,7 +389,7 @@ const ReferralPage = () => {
                       <span className="text-xl font-bold text-purple-600">3</span>
                     </div>
                     <h4 className="font-semibold mb-2">You Earn</h4>
-                    <p className="text-sm text-gray-600">Earn 50% commission on their purchases</p>
+                    <p className="text-sm text-gray-600">Earn {getCommissionPercentage()}% commission on their purchases</p>
                   </div>
                 </div>
               </CardContent>
@@ -400,10 +406,10 @@ const ReferralPage = () => {
               <CardContent>
                 <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-6">
                   <div className="text-center">
-                    <div className="text-4xl font-bold text-yellow-600 mb-2">50%</div>
+                    <div className="text-4xl font-bold text-yellow-600 mb-2">{getCommissionPercentage()}%</div>
                     <div className="text-lg font-semibold text-gray-900 mb-4">Commission Rate</div>
                     <p className="text-gray-600">
-                      You earn 50% of every purchase made by your referrals. 
+                      You earn {getCommissionPercentage()}% of every purchase made by your referrals. 
                       The more people you refer, the more you earn!
                     </p>
                   </div>

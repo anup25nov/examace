@@ -156,9 +156,25 @@ const TestInterface = () => {
       const userId = getUserId();
       if (userId) {
         try {
-          const limits = await planLimitsService.getUserPlanLimits(userId);
+          // Determine test type for plan limits check
+          let testTypeForCheck = 'mock'; // default
+          if (sectionId === 'pyq') {
+            testTypeForCheck = 'pyq';
+          } else if (sectionId === 'mock') {
+            testTypeForCheck = 'mock';
+          } else if (sectionId === 'practice') {
+            testTypeForCheck = 'practice';
+          }
+
+          // Create a mock test object to determine if it's premium
+          // Practice tests are free, Mock and PYQ tests are premium
+          const mockTest = {
+            isPremium: sectionId !== 'practice'
+          };
+
+          const { canTake, limits } = await planLimitsService.canUserTakeTest(userId, testTypeForCheck, mockTest);
           setPlanLimits(limits);
-          setCanTakeTest(limits.canTakeTest);
+          setCanTakeTest(canTake);
         } catch (error) {
           console.error('Error checking plan limits:', error);
           setCanTakeTest(true); // Allow test if check fails
@@ -167,7 +183,7 @@ const TestInterface = () => {
     };
 
     checkPlanLimits();
-  }, [getUserId]);
+  }, [getUserId, sectionId]);
 
   // Load questions and set timer
   useEffect(() => {
@@ -206,13 +222,16 @@ const TestInterface = () => {
         
         
         // Load test data from JSON
+        console.log('Loading test data with:', { examId, testTypeValue, testId });
         const loadedTestData = await QuestionLoader.loadQuestions(examId!, testTypeValue as 'pyq' | 'practice' | 'mock', testId);
         
         if (!loadedTestData) {
-          console.error('Failed to load test data');
+          console.error('Failed to load test data for:', { examId, testTypeValue, testId });
           setLoading(false);
           return;
         }
+        
+        console.log('Successfully loaded test data:', loadedTestData);
         
         
         setTestData(loadedTestData);
@@ -263,7 +282,23 @@ const TestInterface = () => {
     // Check plan limits before starting test
     const userId = getUserId();
     if (userId) {
-      const { canTake, reason, limits } = await planLimitsService.canUserTakeTest(userId);
+      // Determine test type for plan limits check
+      let testTypeForCheck = 'mock'; // default
+      if (sectionId === 'pyq') {
+        testTypeForCheck = 'pyq';
+      } else if (sectionId === 'mock') {
+        testTypeForCheck = 'mock';
+      } else if (sectionId === 'practice') {
+        testTypeForCheck = 'practice';
+      }
+
+      // Create a mock test object to determine if it's premium
+      // Practice tests are free, Mock and PYQ tests are premium
+      const mockTest = {
+        isPremium: sectionId !== 'practice'
+      };
+
+      const { canTake, reason, limits } = await planLimitsService.canUserTakeTest(userId, testTypeForCheck, mockTest);
       if (!canTake) {
         setPlanLimits(limits);
         setShowUpgradeModal(true);
@@ -551,7 +586,23 @@ const TestInterface = () => {
                   // Check plan limits before starting test
                   const userId = getUserId();
                   if (userId) {
-                    const { canTake, reason, limits } = await planLimitsService.canUserTakeTest(userId);
+                    // Determine test type for plan limits check
+                    let testTypeForCheck = 'mock'; // default
+                    if (sectionId === 'pyq') {
+                      testTypeForCheck = 'pyq';
+                    } else if (sectionId === 'mock') {
+                      testTypeForCheck = 'mock';
+                    } else if (sectionId === 'practice') {
+                      testTypeForCheck = 'practice';
+                    }
+
+                    // Create a mock test object to determine if it's premium
+                    // Practice tests are free, Mock and PYQ tests are premium
+                    const mockTest = {
+                      isPremium: sectionId !== 'practice'
+                    };
+
+                    const { canTake, reason, limits } = await planLimitsService.canUserTakeTest(userId, testTypeForCheck, mockTest);
                     if (!canTake) {
                       setPlanLimits(limits);
                       setShowUpgradeModal(true);
@@ -624,7 +675,13 @@ const TestInterface = () => {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => navigate(`/exam/${examId}`)}
+                onClick={() => {
+                  // Store current section in localStorage for proper back navigation
+                  if (sectionId) {
+                    localStorage.setItem('lastVisitedSection', sectionId);
+                  }
+                  navigate(`/exam/${examId}`);
+                }}
                 className="p-2"
               >
                 <ArrowLeft className="w-5 h-5" />

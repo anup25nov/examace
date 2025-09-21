@@ -94,6 +94,16 @@ const EnhancedExamDashboard = () => {
   const [practiceData, setPracticeData] = useState<any[]>([]);
   const [userMembership, setUserMembership] = useState(premiumService.getUserMembership());
   
+  // Check for last visited section on component mount
+  useEffect(() => {
+    const lastVisitedSection = localStorage.getItem('lastVisitedSection');
+    if (lastVisitedSection && ['pyq', 'mock', 'practice'].includes(lastVisitedSection)) {
+      setActiveTab(lastVisitedSection);
+      // Clear the stored section after using it
+      localStorage.removeItem('lastVisitedSection');
+    }
+  }, []);
+  
   // Load user membership status
   useEffect(() => {
     const loadMembershipStatus = async () => {

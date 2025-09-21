@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,8 +14,13 @@ import {
   Globe,
   CheckCircle,
   AlertCircle,
-  Info
+  Info,
+  Crown,
+  Lock
 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { planLimitsService, PlanLimits } from '@/lib/planLimitsService';
+import { UpgradeModal } from './UpgradeModal';
 
 interface TestStartModalProps {
   isOpen: boolean;
@@ -40,14 +45,57 @@ export const TestStartModal: React.FC<TestStartModalProps> = ({
   test,
   testType
 }) => {
+  const { getUserId } = useAuth();
   const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [hasReadInstructions, setHasReadInstructions] = useState(false);
+  const [planLimits, setPlanLimits] = useState<PlanLimits | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [canTakeTest, setCanTakeTest] = useState(true);
 
-  const handleStart = () => {
-    if (hasReadInstructions) {
-      onStart(selectedLanguage);
-      onClose();
+  // Check plan limits when modal opens
+  useEffect(() => {
+    const checkPlanLimits = async () => {
+      const userId = getUserId();
+      if (userId) {
+        try {
+          const { canTake, limits } = await planLimitsService.canUserTakeTest(userId, testType, test);
+          setPlanLimits(limits);
+          setCanTakeTest(canTake);
+        } catch (error) {
+          console.error('Error checking plan limits:', error);
+          setCanTakeTest(true); // Allow test if check fails
+        }
+      }
+    };
+
+    if (isOpen) {
+      // Reset form state when modal opens
+      setHasReadInstructions(false);
+      setSelectedLanguage('en');
+      checkPlanLimits();
     }
+  }, [isOpen, getUserId, testType, test]);
+
+  const handleStart = async () => {
+    if (!hasReadInstructions) return;
+
+    const userId = getUserId();
+    if (!userId) return;
+
+    // Check plan limits before starting
+    const { canTake, limits } = await planLimitsService.canUserTakeTest(userId, testType, test);
+    
+    if (!canTake) {
+      setPlanLimits(limits);
+      setShowUpgradeModal(true);
+      return;
+    }
+
+    // Record test attempt when user actually starts the test
+    await planLimitsService.recordTestAttempt(userId, test.name, 'ssc-cgl');
+    
+    onStart(selectedLanguage);
+    onClose();
   };
 
   const getTestTypeInfo = () => {
@@ -74,16 +122,17 @@ export const TestStartModal: React.FC<TestStartModalProps> = ({
   const IconComponent = testInfo.icon;
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center space-x-3">
-            <div className={`p-2 bg-gradient-to-r ${testInfo.color} rounded-lg text-white`}>
-              <IconComponent className="w-6 h-6" />
-            </div>
-            <span>Test Instructions & Settings</span>
-          </DialogTitle>
-        </DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-3">
+              <div className={`p-2 bg-gradient-to-r ${testInfo.color} rounded-lg text-white`}>
+                <IconComponent className="w-6 h-6" />
+              </div>
+              <span>Test Instructions & Settings</span>
+            </DialogTitle>
+          </DialogHeader>
 
         <div className="space-y-6">
           {/* Test Overview */}
@@ -247,6 +296,44 @@ export const TestStartModal: React.FC<TestStartModalProps> = ({
             </CardContent>
           </Card>
 
+          {/* Membership Requirement Section */}
+          {!canTakeTest && planLimits && (
+            <Card className="border-0 shadow-lg bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="p-2 bg-yellow-100 rounded-lg">
+                    <Lock className="w-6 h-6 text-yellow-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-yellow-800">Membership Required</h3>
+                    <p className="text-sm text-yellow-700">
+                      {planLimits.planType === 'free' 
+                        ? 'You need a Pro or Pro+ membership to take premium tests (Mock tests and PYQ).'
+                        : `You've used all ${planLimits.maxTests} tests in your ${planLimits.planType} plan. Upgrade to Pro+ for unlimited access.`
+                      }
+                    </p>
+                  </div>
+                </div>
+                <div className="flex space-x-3">
+                  <Button
+                    onClick={() => setShowUpgradeModal(true)}
+                    className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white"
+                  >
+                    <Crown className="w-4 h-4 mr-2" />
+                    View Plans
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={onClose}
+                    className="border-yellow-300 text-yellow-700 hover:bg-yellow-50"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <Button
@@ -258,14 +345,38 @@ export const TestStartModal: React.FC<TestStartModalProps> = ({
             </Button>
             <Button
               onClick={handleStart}
-              disabled={!hasReadInstructions}
+              disabled={!hasReadInstructions || !canTakeTest}
               className={`flex-1 h-12 bg-gradient-to-r ${testInfo.color} hover:opacity-90 text-white font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
             >
-              {hasReadInstructions ? 'Start Test' : 'Please read instructions first'}
+              {!canTakeTest 
+                ? 'Membership Required' 
+                : !hasReadInstructions 
+                  ? 'Please read instructions first' 
+                  : 'Start Test'
+              }
             </Button>
           </div>
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* Upgrade Modal */}
+    {showUpgradeModal && planLimits && (
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        onUpgrade={(planId) => {
+          setShowUpgradeModal(false);
+          // Handle upgrade logic here
+          window.location.href = '/profile';
+        }}
+        limits={planLimits}
+        message={planLimits.planType === 'free' 
+          ? 'You need a Pro or Pro+ membership to take premium tests (Mock tests and PYQ).'
+          : `You've used all ${planLimits.maxTests} tests in your ${planLimits.planType} plan. Upgrade to Pro+ for unlimited access.`
+        }
+      />
+    )}
+    </>
   );
 };

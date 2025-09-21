@@ -11,20 +11,7 @@ export interface AppConfig {
     supportPhone: string;
   };
 
-  // Membership Plans
-  membership: {
-    plans: {
-      id: string;
-      name: string;
-      price: number;
-      mockTests: number;
-      duration: number;
-      features: string[];
-      popular?: boolean;
-    }[];
-  };
-
-  // Commission Configuration
+  // Commission Configuration - CENTRALIZED
   commission: {
     percentage: number;
     minimumWithdrawal: number;
@@ -37,24 +24,68 @@ export interface AppConfig {
     referralCodeLength: number;
     referralCodePrefix: string;
   };
+
+  // Database Configuration - CENTRALIZED
+  database: {
+    membershipPlansTable: string;
+    userMembershipsTable: string;
+    paymentsTable: string;
+    referralCodesTable: string;
+    referralCommissionsTable: string;
+    referralTransactionsTable: string;
+    userProfilesTable: string;
+    testCompletionsTable: string;
+    individualTestScoresTable: string;
+    testAttemptsTable: string;
+    examStatsTable: string;
+    userStreaksTable: string;
+    questionReportsTable: string;
+    withdrawalRequestsTable: string;
+  };
+
+  // API Configuration - CENTRALIZED
+  api: {
+    baseUrl: string;
+    timeout: number;
+    retryAttempts: number;
+    retryDelay: number;
+    bulkApiEnabled: boolean;
+    cacheTimeout: number;
+  };
+
+  // Security Configuration - CENTRALIZED
+  security: {
+    enableRightClickBlock: boolean;
+    enableDevToolsBlock: boolean;
+    enableTextSelectionBlock: boolean;
+    enableKeyboardShortcutsBlock: boolean;
+    maxLoginAttempts: number;
+    lockoutDuration: number;
+  };
+
+  // Notification Configuration - CENTRALIZED
+  notifications: {
+    successDuration: number;
+    errorDuration: number;
+    warningDuration: number;
+    infoDuration: number;
+    enableSound: boolean;
+    enableVibration: boolean;
+  };
   
-  // Membership Plans Configuration
+  // Centralized Membership Plans Configuration
   membershipPlans: {
-    pro: {
+    [key: string]: {
       id: string;
       name: string;
       price: number;
       originalPrice: number;
       mockTests: number;
-      duration: number;
-    };
-    proPlus: {
-      id: string;
-      name: string;
-      price: number;
-      originalPrice: number;
-      mockTests: number;
-      duration: number;
+      duration: number; // days
+      features: string[];
+      isActive: boolean;
+      displayOrder: number;
+      popular?: boolean;
     };
   };
 
@@ -110,55 +141,7 @@ export const defaultConfig: AppConfig = {
     supportPhone: '+91-9876543210'
   },
 
-  membership: {
-    plans: [
-      {
-        id: 'basic',
-        name: 'Basic Plan',
-        price: 30,
-        mockTests: 10,
-        duration: 30,
-        features: [
-          '10 Mock Tests',
-          'Detailed Solutions',
-          'Performance Analytics',
-          '30 Days Access'
-        ]
-      },
-      {
-        id: 'premium',
-        name: 'Premium Plan',
-        price: 49,
-        mockTests: 25,
-        duration: 60,
-        features: [
-          '25 Mock Tests',
-          'Detailed Solutions',
-          'Performance Analytics',
-          '60 Days Access',
-          'Priority Support'
-        ],
-        popular: true
-      },
-      {
-        id: 'pro',
-        name: 'Pro Plan',
-        price: 99,
-        mockTests: 50,
-        duration: 90,
-        features: [
-          '50 Mock Tests',
-          'Detailed Solutions',
-          'Performance Analytics',
-          '90 Days Access',
-          '24/7 Support',
-          'Study Materials'
-        ]
-      }
-    ]
-  },
-
-  // Centralized commission configuration
+  // Centralized commission configuration - SINGLE SOURCE OF TRUTH
   commission: {
     percentage: 50, // 50% commission rate
     minimumWithdrawal: 100, // Minimum withdrawal amount
@@ -172,7 +155,56 @@ export const defaultConfig: AppConfig = {
     referralCodeLength: 8, // Length of referral codes
     referralCodePrefix: 'S2S' // Prefix for referral codes
   },
+
+  // Database Configuration - SINGLE SOURCE OF TRUTH
+  database: {
+    membershipPlansTable: 'membership_plans',
+    userMembershipsTable: 'user_memberships',
+    paymentsTable: 'payments',
+    referralCodesTable: 'referral_codes',
+    referralCommissionsTable: 'referral_commissions',
+    referralTransactionsTable: 'referral_transactions',
+    userProfilesTable: 'user_profiles',
+    testCompletionsTable: 'test_completions',
+    individualTestScoresTable: 'individual_test_scores',
+    testAttemptsTable: 'test_attempts',
+    examStatsTable: 'exam_stats',
+    userStreaksTable: 'user_streaks',
+    questionReportsTable: 'question_reports',
+    withdrawalRequestsTable: 'withdrawal_requests'
+  },
+
+  // API Configuration - SINGLE SOURCE OF TRUTH
+  api: {
+    baseUrl: import.meta.env.VITE_SUPABASE_URL || '',
+    timeout: 30000, // 30 seconds
+    retryAttempts: 3,
+    retryDelay: 1000, // 1 second
+    bulkApiEnabled: true,
+    cacheTimeout: 300000 // 5 minutes
+  },
+
+  // Security Configuration - SINGLE SOURCE OF TRUTH
+  security: {
+    enableRightClickBlock: true,
+    enableDevToolsBlock: true,
+    enableTextSelectionBlock: true,
+    enableKeyboardShortcutsBlock: true,
+    maxLoginAttempts: 5,
+    lockoutDuration: 300000 // 5 minutes
+  },
+
+  // Notification Configuration - SINGLE SOURCE OF TRUTH
+  notifications: {
+    successDuration: 3000, // 3 seconds
+    errorDuration: 5000, // 5 seconds
+    warningDuration: 4000, // 4 seconds
+    infoDuration: 3000, // 3 seconds
+    enableSound: false,
+    enableVibration: false
+  },
   
+  // Centralized Membership Plans Configuration - SINGLE SOURCE OF TRUTH
   membershipPlans: {
     pro: {
       id: 'pro',
@@ -180,15 +212,33 @@ export const defaultConfig: AppConfig = {
       price: 99,
       originalPrice: 199,
       mockTests: 11,
-      duration: 90 // days
+      duration: 90, // days
+      features: [
+        '11 Mock Tests',
+        '3 Months Access',
+        'Detailed Solutions',
+        'Performance Analytics'
+      ],
+      isActive: true,
+      displayOrder: 2
     },
-    proPlus: {
+    pro_plus: {
       id: 'pro_plus',
       name: 'Pro Plus Plan',
       price: 299,
       originalPrice: 599,
       mockTests: 9999, // unlimited
-      duration: 365 // days
+      duration: 365, // days
+      features: [
+        'Unlimited Mock Tests',
+        '12 Months Access',
+        'Detailed Solutions',
+        'Performance Analytics',
+        'Priority Support'
+      ],
+      isActive: true,
+      displayOrder: 1,
+      popular: true
     }
   },
 
@@ -312,7 +362,22 @@ export const isFeatureEnabled = (feature: keyof AppConfig['features']) =>
   configManager.isFeatureEnabled(feature);
 
 // Export membership plan helpers
-export const getMembershipPlans = () => configManager.getSection('membership').plans;
+export const getMembershipPlans = () => {
+  const plans = configManager.getSection('membershipPlans');
+  return Object.values(plans).sort((a, b) => a.displayOrder - b.displayOrder);
+};
+
+export const getMembershipPlan = (planId: string) => {
+  const plans = configManager.getSection('membershipPlans');
+  return plans[planId];
+};
+
+export const getActiveMembershipPlans = () => {
+  const plans = configManager.getSection('membershipPlans');
+  return Object.values(plans)
+    .filter(plan => plan.isActive)
+    .sort((a, b) => a.displayOrder - b.displayOrder);
+};
 
 // Export referral config helpers
 export const getReferralConfig = () => configManager.getSection('commission');
@@ -322,3 +387,44 @@ export const getUIConfig = () => configManager.getSection('ui');
 
 // Export test config helpers
 export const getTestConfig = () => configManager.getSection('tests');
+
+// Export database config helpers
+export const getDatabaseConfig = () => configManager.getSection('database');
+
+// Export API config helpers
+export const getAPIConfig = () => configManager.getSection('api');
+
+// Export security config helpers
+export const getSecurityConfig = () => configManager.getSection('security');
+
+// Export notification config helpers
+export const getNotificationConfig = () => configManager.getSection('notifications');
+
+// Export payment config helpers
+export const getPaymentConfig = () => configManager.getSection('payment');
+
+// Export platform config helpers
+export const getPlatformConfig = () => configManager.getSection('platform');
+
+// Specific helper functions for commonly used values
+export const getCommissionPercentage = () => configManager.getSection('commission').percentage;
+export const getMinimumWithdrawal = () => configManager.getSection('commission').minimumWithdrawal;
+export const getMaximumWithdrawal = () => configManager.getSection('commission').maximumWithdrawal;
+export const getReferralCodeLength = () => configManager.getSection('commission').referralCodeLength;
+export const getReferralCodePrefix = () => configManager.getSection('commission').referralCodePrefix;
+export const getWithdrawalProcessingDays = () => configManager.getSection('commission').withdrawalProcessingDays;
+
+// Database table name helpers
+export const getTableName = (table: keyof AppConfig['database']) => configManager.getSection('database')[table];
+
+// Security helpers
+export const isRightClickBlocked = () => configManager.getSection('security').enableRightClickBlock;
+export const isDevToolsBlocked = () => configManager.getSection('security').enableDevToolsBlock;
+export const isTextSelectionBlocked = () => configManager.getSection('security').enableTextSelectionBlock;
+export const isKeyboardShortcutsBlocked = () => configManager.getSection('security').enableKeyboardShortcutsBlock;
+
+// Notification duration helpers
+export const getSuccessNotificationDuration = () => configManager.getSection('notifications').successDuration;
+export const getErrorNotificationDuration = () => configManager.getSection('notifications').errorDuration;
+export const getWarningNotificationDuration = () => configManager.getSection('notifications').warningDuration;
+export const getInfoNotificationDuration = () => configManager.getSection('notifications').infoDuration;

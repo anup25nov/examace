@@ -396,7 +396,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                           <div className="text-center text-white">
                             <Crown className="w-6 h-6 mx-auto mb-1 text-yellow-400" />
                             <p className="text-xs font-medium">Premium Content</p>
-                            <p className="text-xs opacity-90">₹{paper.price}</p>
+                            {/* <p className="text-xs opacity-90">₹{paper.price}</p> */}
                           </div>
                         </div>
                       )}

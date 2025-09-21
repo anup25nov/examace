@@ -26,6 +26,12 @@ import { QuestionReportModal } from './QuestionReportModal';
 import { getYouTubeSolutionsForTest } from '@/config/youtubeConfig';
 import { useAuth } from '@/hooks/useAuth';
 import { referralService } from '@/lib/referralServiceSimple';
+import { 
+  isRightClickBlocked, 
+  isDevToolsBlocked, 
+  isTextSelectionBlocked, 
+  isKeyboardShortcutsBlocked 
+} from '@/config/appConfig';
 
 interface Question {
   id: string;
@@ -110,29 +116,40 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
     }
   };
 
-  // Security measures to prevent data inspection
+  // Security measures to prevent data inspection - CENTRALIZED CONFIG
   useEffect(() => {
+    // Only apply security measures if enabled in config
+    if (!isRightClickBlocked() && !isDevToolsBlocked() && !isTextSelectionBlocked() && !isKeyboardShortcutsBlocked()) {
+      return;
+    }
+
     // Disable right-click context menu
     const handleContextMenu = (e: MouseEvent) => {
-      e.preventDefault();
+      if (isRightClickBlocked()) {
+        e.preventDefault();
+      }
     };
 
     // Disable F12, Ctrl+Shift+I, Ctrl+U, etc.
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        e.key === 'F12' ||
-        (e.ctrlKey && e.shiftKey && e.key === 'I') ||
-        (e.ctrlKey && e.key === 'u') ||
-        (e.ctrlKey && e.shiftKey && e.key === 'C') ||
-        (e.ctrlKey && e.key === 'a')
-      ) {
-        e.preventDefault();
+      if (isKeyboardShortcutsBlocked() || isDevToolsBlocked()) {
+        if (
+          e.key === 'F12' ||
+          (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+          (e.ctrlKey && e.key === 'u') ||
+          (e.ctrlKey && e.shiftKey && e.key === 'C') ||
+          (e.ctrlKey && e.key === 'a')
+        ) {
+          e.preventDefault();
+        }
       }
     };
 
     // Disable text selection
     const handleSelectStart = (e: Event) => {
-      e.preventDefault();
+      if (isTextSelectionBlocked()) {
+        e.preventDefault();
+      }
     };
 
     // Add event listeners
@@ -259,13 +276,15 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
         WebkitTapHighlightColor: 'transparent'
       }}
     >
-      {/* Security Warning */}
-      <div className="mb-4 p-3 bg-yellow-100 border border-yellow-300 rounded-lg flex items-center space-x-2">
-        <Shield className="w-5 h-5 text-yellow-600" />
-        <span className="text-sm text-yellow-800 font-medium">
-          This content is protected. Right-click and developer tools are disabled.
-        </span>
-      </div>
+      {/* Security Warning - Only show if security is enabled */}
+      {(isRightClickBlocked() || isDevToolsBlocked() || isTextSelectionBlocked() || isKeyboardShortcutsBlocked()) && (
+        <div className="mb-4 p-3 bg-yellow-100 border border-yellow-300 rounded-lg flex items-center space-x-2">
+          <Shield className="w-5 h-5 text-yellow-600" />
+          <span className="text-sm text-yellow-800 font-medium">
+            This content is protected. Right-click and developer tools are disabled.
+          </span>
+        </div>
+      )}
       
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}

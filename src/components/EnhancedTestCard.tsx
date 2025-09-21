@@ -15,7 +15,6 @@ import {
   Star
 } from 'lucide-react';
 import { PremiumTest } from '@/lib/premiumService';
-import { MembershipPlans } from './MembershipPlans';
 import { TestStartModal } from './TestStartModal';
 import { unifiedPaymentService } from '@/lib/unifiedPaymentService';
 import { useAuth } from '@/hooks/useAuth';
@@ -48,10 +47,10 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
   className = ''
 }) => {
   const { user } = useAuth();
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showTestStartModal, setShowTestStartModal] = useState(false);
   const [hasAccess, setHasAccess] = useState(!test.isPremium);
   const [userMembership, setUserMembership] = useState<any>(null);
+  const [showMembershipModal, setShowMembershipModal] = useState(false);
 
   // Check user membership status
   useEffect(() => {
@@ -75,9 +74,15 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
 
   const handleStartTest = () => {
     if (test.isPremium && !hasAccess) {
-      setShowPaymentModal(true);
+      setShowMembershipModal(true);
     } else {
       setShowTestStartModal(true);
+    }
+  };
+
+  const handleCardClick = () => {
+    if (test.isPremium && !hasAccess) {
+      setShowMembershipModal(true);
     }
   };
 
@@ -85,13 +90,8 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
     onStartTest(language);
   };
 
-  const handlePlanSelect = (plan: any) => {
-    // Plan selected logic can go here if needed
-  };
-
   const handlePaymentSuccess = (planId: string) => {
     setHasAccess(true);
-    setShowPaymentModal(false);
     // Refresh membership status
     checkMembershipStatus();
   };
@@ -102,7 +102,7 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
       className={`relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.03] hover:border-primary/40 h-80 group ${
         isCompleted ? 'border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg' : 'border-border bg-gradient-to-br from-white to-slate-50'
       } ${test.isPremium && !hasAccess ? 'cursor-pointer' : ''} ${className}`}
-      onClick={test.isPremium && !hasAccess ? () => setShowPaymentModal(true) : undefined}
+      onClick={handleCardClick}
     >
         <CardContent className="p-4 h-full flex flex-col">
           {/* Header */}
@@ -152,8 +152,8 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
                 </div>
               </div>
               {test.isPremium && !hasAccess && (
-                <div className="text-xs text-orange-600 font-medium text-center bg-orange-50 p-2 rounded">
-                  Click to upgrade to Premium
+                <div className="text-xs text-orange-600 font-medium text-center bg-gradient-to-r from-orange-50 to-yellow-50 p-2 rounded border border-orange-200 animate-pulse">
+                  👆 Click to unlock Premium content
                 </div>
               )}
             </div>
@@ -239,25 +239,23 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
 
           {/* Premium Overlay */}
           {test.isPremium && !hasAccess && (
-            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+            <div className="absolute inset-0 bg-gradient-to-br from-black/30 via-yellow-500/20 to-orange-500/30 backdrop-blur-sm rounded-lg flex items-center justify-center">
               <div className="text-center text-white">
-                <Crown className="w-8 h-8 mx-auto mb-2 text-yellow-400" />
-                <p className="text-sm font-medium">Premium Content</p>
-                <p className="text-xs opacity-90">₹{test.price}</p>
+                <div className="w-16 h-16 mx-auto mb-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center animate-pulse">
+                  <Crown className="w-8 h-8 text-white" />
+                </div>
+                <p className="text-lg font-bold mb-1">Premium Content</p>
+                <p className="text-xs opacity-90">Click to unlock</p>
+                <div className="mt-2 flex items-center justify-center space-x-1">
+                  <Star className="w-3 h-3 text-yellow-400" />
+                  <Star className="w-3 h-3 text-yellow-400" />
+                  <Star className="w-3 h-3 text-yellow-400" />
+                </div>
               </div>
             </div>
           )}
         </CardContent>
       </Card>
-
-      {/* Payment Modal */}
-      {showPaymentModal && (
-        <MembershipPlans
-          onSelectPlan={handlePlanSelect}
-          onClose={() => setShowPaymentModal(false)}
-          currentPlan={userMembership?.planType}
-        />
-      )}
 
       {/* Test Start Modal */}
       <TestStartModal
@@ -267,6 +265,65 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
         test={test}
         testType={testType}
       />
+
+      {/* Membership Modal */}
+      {showMembershipModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                  <Crown className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Premium Content</h3>
+                <p className="text-gray-600">This test requires a Pro or Pro+ membership to access.</p>
+              </div>
+              
+              <div className="space-y-4 mb-6">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
+                  <h4 className="font-semibold text-blue-900 mb-2">Pro Plan - ₹99</h4>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• 11 Mock Tests</li>
+                    <li>• 3 Months Access</li>
+                    <li>• Detailed Solutions</li>
+                    <li>• Performance Analytics</li>
+                  </ul>
+                </div>
+                
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border border-purple-200">
+                  <h4 className="font-semibold text-purple-900 mb-2">Pro+ Plan - ₹299</h4>
+                  <ul className="text-sm text-purple-800 space-y-1">
+                    <li>• Unlimited Mock Tests</li>
+                    <li>• 12 Months Access</li>
+                    <li>• Detailed Solutions</li>
+                    <li>• Performance Analytics</li>
+                    <li>• Priority Support</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <div className="flex space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowMembershipModal(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowMembershipModal(false);
+                    window.location.href = '/profile';
+                  }}
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                >
+                  View Plans
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

@@ -1,4 +1,10 @@
 import { toast } from 'sonner';
+import { 
+  getSuccessNotificationDuration, 
+  getErrorNotificationDuration, 
+  getWarningNotificationDuration, 
+  getInfoNotificationDuration 
+} from '@/config/appConfig';
 
 export interface MessageConfig {
   title?: string;
@@ -24,7 +30,7 @@ export class MessagingService {
   success(message: string, config?: MessageConfig) {
     toast.success(message, {
       description: config?.description,
-      duration: config?.duration || 4000,
+      duration: config?.duration || getSuccessNotificationDuration(),
       action: config?.action ? {
         label: config.action.label,
         onClick: config.action.onClick
@@ -36,7 +42,7 @@ export class MessagingService {
   error(message: string, config?: MessageConfig) {
     toast.error(message, {
       description: config?.description,
-      duration: config?.duration || 6000,
+      duration: config?.duration || getErrorNotificationDuration(),
       action: config?.action ? {
         label: config.action.label,
         onClick: config.action.onClick
@@ -48,7 +54,7 @@ export class MessagingService {
   warning(message: string, config?: MessageConfig) {
     toast.warning(message, {
       description: config?.description,
-      duration: config?.duration || 5000,
+      duration: config?.duration || getWarningNotificationDuration(),
       action: config?.action ? {
         label: config.action.label,
         onClick: config.action.onClick
@@ -60,7 +66,7 @@ export class MessagingService {
   info(message: string, config?: MessageConfig) {
     toast.info(message, {
       description: config?.description,
-      duration: config?.duration || 4000,
+      duration: config?.duration || getInfoNotificationDuration(),
       action: config?.action ? {
         label: config.action.label,
         onClick: config.action.onClick
