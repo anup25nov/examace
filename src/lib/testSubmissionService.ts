@@ -54,6 +54,9 @@ class TestSubmissionService {
       // Also update test_completions table for UI consistency
       await this.updateTestCompletions(submission);
 
+      // Calculate and update ranks for this test (for all test types)
+      await this.updateTestRanks(submission.examId, submission.testType, submission.testId);
+
       // Get updated stats
       const { data: updatedStats } = await comprehensiveStatsService.getComprehensiveStats(submission.examId);
       
@@ -112,6 +115,27 @@ class TestSubmissionService {
       }
     } catch (error) {
       console.error('Error in updateTestCompletions:', error);
+    }
+  }
+
+  /**
+   * Update test ranks for a specific test
+   */
+  private async updateTestRanks(examId: string, testType: string, testId: string): Promise<void> {
+    try {
+      const { error } = await supabase.rpc('update_all_test_ranks' as any, {
+        p_exam_id: examId,
+        p_test_type: testType,
+        p_test_id: testId
+      });
+
+      if (error) {
+        console.error('Error updating test ranks:', error);
+      } else {
+        console.log(`✅ Updated ranks for ${testType} test ${testId} in exam ${examId}`);
+      }
+    } catch (error) {
+      console.error('Error in updateTestRanks:', error);
     }
   }
 

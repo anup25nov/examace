@@ -25,6 +25,8 @@ export interface SupabaseTestAttempt {
   id: string;
   user_id: string;
   exam_id: string;
+  test_type: string;
+  test_id: string;
   score: number;
   total_questions: number;
   correct_answers: number;
@@ -708,9 +710,40 @@ class SupabaseStatsService {
     }
   }
 
+  // Get highest score for a test (without requiring user ID)
+  async getTestHighestScore(examId: string, testType: string, testId: string): Promise<{ data: any; error: any }> {
+    try {
+      const { data, error } = await supabase
+        .from('individual_test_scores')
+        .select('score')
+        .eq('exam_id', examId)
+        .eq('test_type', testType)
+        .eq('test_id', testId)
+        .order('score', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error('Error getting test highest score:', error);
+        return { data: null, error };
+      }
+
+      const highestScore = data && data.length > 0 ? data[0].score : null;
+      return { data: { highest_score: highestScore }, error: null };
+    } catch (error) {
+      console.error('Error in getTestHighestScore:', error);
+      return { data: null, error };
+    }
+  }
+
   // Get real-time rank and highest score for a test
   async getTestRankAndHighestScore(examId: string, testType: string, testId: string, userId: string): Promise<{ data: any; error: any }> {
     try {
+      // Validate that userId is not empty before making the RPC call
+      if (!userId || userId.trim() === '') {
+        console.warn('getTestRankAndHighestScore: userId is empty, returning null');
+        return { data: null, error: 'User ID is required' };
+      }
+
       const { data, error } = await supabase.rpc('get_test_rank_and_highest_score' as any, {
         p_exam_id: examId,
         p_test_type: testType,

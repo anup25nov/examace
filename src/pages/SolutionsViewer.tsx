@@ -32,10 +32,38 @@ const SolutionsViewer = () => {
     loadTestData();
   }, [examId, sectionId, testType, topic]);
 
+  // Separate useEffect to fetch rank info when user is ready
+  useEffect(() => {
+    console.log('🔄 useEffect triggered:', { 
+      userId: user?.id, 
+      actualTestType, 
+      actualTestId, 
+      examId 
+    });
+    
+    if (user?.id && actualTestType && actualTestId) {
+      console.log('🔄 User authenticated, fetching rank info...');
+      fetchRankInfo(examId!, actualTestType, actualTestId);
+    } else {
+      console.log('⚠️ Missing required data for rank fetch:', {
+        hasUser: !!user?.id,
+        hasTestType: !!actualTestType,
+        hasTestId: !!actualTestId,
+        hasExamId: !!examId
+      });
+    }
+  }, [user?.id, actualTestType, actualTestId, examId]);
+
   const fetchRankInfo = async (examId: string, testType: string, testId: string) => {
     try {
+      // Only fetch rank info if user is authenticated
+      if (!user?.id) {
+        console.warn('fetchRankInfo: User not authenticated, skipping rank fetch');
+        return;
+      }
+
       // Get real-time rank and highest score data
-      const { data: rankData, error: rankError } = await supabaseStatsService.getTestRankAndHighestScore(examId, testType, testId, user?.id || '');
+      const { data: rankData, error: rankError } = await supabaseStatsService.getTestRankAndHighestScore(examId, testType, testId, user.id);
       
       if (rankError) {
         console.error('Error fetching rank info:', rankError);
@@ -44,31 +72,54 @@ const SolutionsViewer = () => {
         if (fallbackData) {
           setRank(fallbackData.rank || 0);
           setTotalParticipants(fallbackData.total_participants || 0);
-          setHighestMarks(fallbackData.score || 0);
+          // For fallback, we don't have the highest score, so set it to null
+          setHighestMarks(null);
         }
         return;
       }
 
       if (rankData) {
-        setRank(rankData.user_rank || 0);
+        console.log('✅ Real-time rank data received:', rankData);
+        setRank(rankData.user_rank || null);
         setTotalParticipants(rankData.total_participants || 0);
-        setHighestMarks(rankData.highest_score || 0);
-        console.log('Real-time rank data:', rankData);
+        // highest_score from the API is the actual highest score achieved by anyone
+        setHighestMarks(rankData.highest_score || null);
+        console.log('✅ Set rank values:', { 
+          rank: rankData.user_rank || null, 
+          totalParticipants: rankData.total_participants || 0, 
+          highestMarks: rankData.highest_score || null 
+        });
       } else {
+        console.log('⚠️ No real-time rank data, trying fallback...');
         // Fallback to individual test score if no real-time data
         const { data: fallbackData } = await supabaseStatsService.getIndividualTestScore(examId, testType, testId);
         if (fallbackData) {
-          setRank(fallbackData.rank || 0);
+          console.log('✅ Fallback data received:', fallbackData);
+          setRank(fallbackData.rank || null);
           setTotalParticipants(fallbackData.total_participants || 0);
-          setHighestMarks(fallbackData.score || 0);
+          // For fallback, we don't have the highest score, so set it to null
+          setHighestMarks(null);
+          console.log('✅ Set fallback values:', { 
+            rank: fallbackData.rank || null, 
+            totalParticipants: fallbackData.total_participants || 0, 
+            highestMarks: null 
+          });
+        } else {
+          console.log('❌ No fallback data available, trying to get highest score only...');
+          // Last resort: try to get just the highest score
+          const { data: highestScoreData } = await (supabaseStatsService as any).getTestHighestScore(examId, testType, testId);
+          if (highestScoreData) {
+            setHighestMarks(highestScoreData.highest_score);
+            console.log('✅ Got highest score only:', highestScoreData.highest_score);
+          }
         }
       }
     } catch (error) {
       console.error('Error fetching rank info:', error);
       // Set default values if rank info is not available
-      setRank(0);
-      setTotalParticipants(0);
-      setHighestMarks(0);
+      setRank(null);
+      setTotalParticipants(null);
+      setHighestMarks(null);
     }
   };
 
@@ -125,24 +176,40 @@ const SolutionsViewer = () => {
       setTestData(data);
       setQuestions(data.questions);
 
-      // Load user's completion for this test
-      const { data: completions } = await supabaseStatsService.getTestCompletions(examId);
-      const testCompletion = completions?.find(completion => 
-        completion.test_type === testTypeValue && 
-        completion.test_id === testId
+      console.log('📚 Test questions:', data.questions.map((q, index) => ({ index, id: q.id })));
+
+      // Load user's test attempt for this test
+      const { data: attempts } = await supabaseStatsService.getTestAttempts(examId);
+      const testAttempt = attempts?.find(attempt => 
+        attempt.test_type === testTypeValue && 
+        attempt.test_id === testId
       );
 
-      if (testCompletion) {
-        // Reconstruct user answers from the completion
+      console.log('🔍 Looking for test attempt:', { testTypeValue, testId });
+      console.log('📊 Available attempts:', attempts);
+      console.log('✅ Found test attempt:', testAttempt);
+
+      if (testAttempt) {
+        // Reconstruct user answers from the attempt
         const answers: { [key: number]: number } = {};
-        if (testCompletion.answers && Array.isArray(testCompletion.answers)) {
-          testCompletion.answers.forEach((answer: any, index: number) => {
-            if (answer.selectedOption !== undefined && answer.selectedOption !== -1) {
-              answers[index] = answer.selectedOption;
+        if (testAttempt.answers && testAttempt.answers.details && Array.isArray(testAttempt.answers.details)) {
+          console.log('🔍 Processing answer details:', testAttempt.answers.details);
+          testAttempt.answers.details.forEach((answer: any) => {
+            // Find the question index by matching questionId
+            const questionIndex = data.questions.findIndex(q => q.id === answer.questionId);
+            console.log(`🔍 Answer for questionId ${answer.questionId}:`, { 
+              questionIndex, 
+              selectedOption: answer.selectedOption,
+              isCorrect: answer.isCorrect 
+            });
+            if (questionIndex !== -1 && answer.selectedOption !== undefined && answer.selectedOption !== -1) {
+              answers[questionIndex] = answer.selectedOption;
             }
           });
         }
         setUserAnswers(answers);
+
+        console.log('📝 Reconstructed answers:', answers);
 
         // Calculate test results
         const correct = Object.keys(answers).reduce((count, index) => {
@@ -160,23 +227,39 @@ const SolutionsViewer = () => {
           return sum - q.negativeMarks; // Incorrect
         }, 0);
 
-        const score = totalMarks > 0 ? Math.round((obtainedMarks / totalMarks) * 100) : 0;
+        // Use the score from the API (which is already calculated correctly)
+        const apiScore = testAttempt.score || 0;
+        const calculatedScore = totalMarks > 0 ? Math.round((obtainedMarks / totalMarks) * 100) : 0;
+        
+        // Use API score if available, otherwise use calculated score
+        const finalScore = apiScore > 0 ? apiScore : calculatedScore;
+
+        console.log('📊 Calculated results:', { 
+          correct, 
+          total: data.questions.length, 
+          apiScore,
+          calculatedScore,
+          finalScore,
+          obtainedMarks, 
+          totalMarks,
+          timeTaken: testAttempt.time_taken 
+        });
 
         setTestResults({
-          score,
+          score: finalScore,
           correct,
           total: data.questions.length,
-          timeTaken: testCompletion.time_taken || 0,
+          timeTaken: testAttempt.time_taken || 0,
           obtainedMarks,
           totalMarks
         });
 
-        // Fetch rank information for Mock and PYQ tests
-        if (testTypeValue === 'mock' || testTypeValue === 'pyq') {
-          await fetchRankInfo(examId, testTypeValue, testId);
-        }
+        // Rank information will be fetched by useEffect when user is ready
       } else {
+        console.log('❌ No test attempt found for this test');
         setError('No completion found for this test');
+        
+        // Rank information will be fetched by useEffect when user is ready
       }
     } catch (err) {
       console.error('Error loading test data:', err);

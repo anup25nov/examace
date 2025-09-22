@@ -306,8 +306,15 @@ const TestInterface = () => {
     try {
       console.log('Fetching rank data for:', { testId, testType, score });
       
+      // Only fetch rank data if user is authenticated
+      const userId = getUserId();
+      if (!userId) {
+        console.warn('fetchRankData: User not authenticated, skipping rank fetch');
+        return;
+      }
+      
       // Get real-time rank and highest score data
-      const { data: rankData, error: rankError } = await supabaseStatsService.getTestRankAndHighestScore(examId!, testType, testId, getUserId() || '');
+      const { data: rankData, error: rankError } = await supabaseStatsService.getTestRankAndHighestScore(examId!, testType, testId, userId);
       
       if (rankError) {
         console.error('Error fetching real-time rank data:', rankError);

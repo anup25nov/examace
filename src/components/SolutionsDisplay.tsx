@@ -413,42 +413,51 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                 </div>
               </div>
 
-              {/* Ranking & Competition Row */}
-              {(rank && totalParticipants) || highestMarks ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-blue-200">
-                  {rank && totalParticipants && (
-                    <div className="text-center bg-purple-50 rounded-lg p-4 border border-purple-200">
-                      <div className="flex items-center justify-center space-x-2 mb-2">
-                        <Trophy className="w-5 h-5 text-purple-600" />
-                        <span className="text-sm font-medium text-purple-700">Your Rank</span>
-                        {onUpdateRank && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={onUpdateRank}
-                            className="text-xs h-6 px-2"
-                          >
-                            <RefreshCw className="w-3 h-3 mr-1" />
-                            Refresh
-                          </Button>
-                        )}
-                      </div>
-                      <p className="text-2xl font-bold text-purple-600">#{rank}</p>
-                      <p className="text-xs text-muted-foreground">out of {totalParticipants} participants</p>
-                    </div>
-                  )}
-                  {highestMarks && (
-                    <div className="text-center bg-orange-50 rounded-lg p-4 border border-orange-200">
-                      <div className="flex items-center justify-center space-x-2 mb-2">
-                        <Trophy className="w-5 h-5 text-orange-600" />
-                        <span className="text-sm font-medium text-orange-700">Highest Score</span>
-                      </div>
-                      <p className="text-2xl font-bold text-orange-600">{highestMarks}</p>
-                      <p className="text-xs text-muted-foreground">marks achieved by anyone</p>
-                    </div>
-                  )}
+              {/* Ranking & Competition Row - Always Show */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-blue-200">
+                {/* Your Rank - Always Show */}
+                <div className="text-center bg-purple-50 rounded-lg p-4 border border-purple-200">
+                  <div className="flex items-center justify-center space-x-2 mb-2">
+                    <Trophy className="w-5 h-5 text-purple-600" />
+                    <span className="text-sm font-medium text-purple-700">Your Rank</span>
+                    {onUpdateRank && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onUpdateRank}
+                        className="text-xs h-6 px-2"
+                      >
+                        <RefreshCw className="w-3 h-3 mr-1" />
+                        Refresh
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-2xl font-bold text-purple-600">
+                    {rank !== null && rank !== undefined ? `#${rank}` : 'N/A'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {totalParticipants !== null && totalParticipants !== undefined 
+                      ? `out of ${totalParticipants} participants` 
+                      : 'Loading...'}
+                  </p>
                 </div>
-              ) : null}
+
+                {/* Highest Score - Always Show */}
+                <div className="text-center bg-orange-50 rounded-lg p-4 border border-orange-200">
+                  <div className="flex items-center justify-center space-x-2 mb-2">
+                    <Trophy className="w-5 h-5 text-orange-600" />
+                    <span className="text-sm font-medium text-orange-700">Highest Score</span>
+                  </div>
+                  <p className="text-2xl font-bold text-orange-600">
+                    {highestMarks !== null && highestMarks !== undefined ? highestMarks : 'N/A'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {highestMarks !== null && highestMarks !== undefined 
+                      ? 'marks achieved by anyone' 
+                      : 'Loading...'}
+                  </p>
+                </div>
+              </div>
             </div>
           </CardHeader>
         </Card>
