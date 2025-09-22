@@ -28,7 +28,7 @@ import { useExamStats } from "@/hooks/useExamStats";
 import { useComprehensiveStats } from "@/hooks/useComprehensiveStats";
 import { useAuth } from "@/hooks/useAuth";
 import { useDashboardData } from "@/contexts/DashboardDataContext";
-import { QuestionLoader } from "@/lib/questionLoader";
+import { dynamicQuestionLoader } from "@/lib/dynamicQuestionLoader";
 import { analytics } from "@/lib/analytics";
 import { testAvailabilityService } from "@/lib/testAvailability";
 import { ProfessionalExamCard } from "@/components/ProfessionalExamCard";

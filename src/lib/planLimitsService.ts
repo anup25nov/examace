@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { unifiedPaymentService } from './unifiedPaymentService';
+import { dynamicTestDataLoader } from './dynamicTestDataLoader';
 
 export interface PlanLimits {
   maxTests: number;
@@ -185,10 +186,11 @@ export class PlanLimitsService {
    */
   private async isTestPremiumInData(testId: string, testType: string): Promise<boolean> {
     try {
-      // Import testDataLoader dynamically to avoid circular imports
-      const { testDataLoader } = await import('./testDataLoader');
-      const testData = testDataLoader.getTestById('ssc-cgl', testId);
-      return testData?.isPremium || false;
+      // Check premium status using dynamic test data loader
+      const { mock, pyq, practice } = await dynamicTestDataLoader.getAllTestData('ssc-cgl');
+      const allTests = [...mock, ...pyq.flatMap(year => year.papers), ...practice.flatMap(subject => subject.topics.flatMap(topic => topic.tests))];
+      const test = allTests.find(t => t.id === testId);
+      return test?.isPremium || false;
     } catch (error) {
       console.error('❌ [planLimitsService] Error checking test premium status:', error);
       // Default to premium if we can't determine

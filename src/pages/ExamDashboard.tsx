@@ -27,7 +27,7 @@ import { useExamStats } from "@/hooks/useExamStats";
 import { useComprehensiveStats } from "@/hooks/useComprehensiveStats";
 import { useAuth } from "@/hooks/useAuth";
 import { useDashboardData } from "@/contexts/DashboardDataContext";
-import { QuestionLoader } from "@/lib/questionLoader";
+import { dynamicQuestionLoader } from "@/lib/dynamicQuestionLoader";
 import { analytics } from "@/lib/analytics";
 import { testAvailabilityService } from "@/lib/testAvailability";
 import { ProfessionalExamCard } from "@/components/ProfessionalExamCard";
@@ -124,9 +124,8 @@ const ExamDashboard = () => {
             practice: practiceTests
           };
 
-          // Filter to only show available tests
-          const availableTests = await testAvailabilityService.getAvailableTests(examId);
-          setAvailableTests(availableTests);
+          // Use the processed test data instead of testAvailabilityService
+          setAvailableTests(allTests);
         } catch (error) {
           console.error('Error loading dynamic test data:', error);
           setAvailableTests({ mock: [], pyq: [], practice: [] });
@@ -141,16 +140,85 @@ const ExamDashboard = () => {
     if (!examId || !exam) return;
 
     try {
-      // Get all test completions for the exam at once
+      console.log('🔍 [ExamDashboard] Checking test completions for exam:', examId);
+      
+      // Try bulk API first
       const { data: allCompletions, error } = await bulkTestService.getAllTestCompletionsForExam(examId);
       
-      if (error) {
-        console.error('Error getting bulk test completions:', error);
+      if (error || !allCompletions || allCompletions.length === 0) {
+        console.log('⚠️ [ExamDashboard] Bulk API failed or returned no data, falling back to individual checks');
+        
+        // Fallback: Check individual test completions
+        const completedTests = new Set<string>();
+        const testScores = new Map<string, { score: number; rank: number; totalParticipants: number }>();
+        
+        // Check mock tests
+        for (const test of availableTests.mock) {
+          const completionKey = `mock-${test.id}`;
+          const isCompleted = await isTestCompleted(examId, 'mock', test.id);
+          if (isCompleted) {
+            completedTests.add(completionKey);
+            
+            // Get individual test score
+            const scoreResult = await getIndividualTestScore(examId, 'mock', test.id);
+            if ('data' in scoreResult && scoreResult.data) {
+              testScores.set(completionKey, {
+                score: scoreResult.data.score,
+                rank: scoreResult.data.rank || 0,
+                totalParticipants: scoreResult.data.total_participants || 0
+              });
+            } else if ('score' in scoreResult) {
+              testScores.set(completionKey, {
+                score: scoreResult.score,
+                rank: scoreResult.rank || 0,
+                totalParticipants: scoreResult.totalParticipants || 0
+              });
+            }
+          }
+        }
+        
+        // Check PYQ tests
+        for (const yearData of availableTests.pyq) {
+          for (const paper of yearData.papers) {
+            const completionKey = `pyq-${paper.id}`;
+            const isCompleted = await isTestCompleted(examId, 'pyq', paper.id);
+            if (isCompleted) {
+              completedTests.add(completionKey);
+              
+              // Get individual test score
+              const scoreResult = await getIndividualTestScore(examId, 'pyq', paper.id);
+              if ('data' in scoreResult && scoreResult.data) {
+                testScores.set(completionKey, {
+                  score: scoreResult.data.score,
+                  rank: scoreResult.data.rank || 0,
+                  totalParticipants: scoreResult.data.total_participants || 0
+                });
+              } else if ('score' in scoreResult) {
+                testScores.set(completionKey, {
+                  score: scoreResult.score,
+                  rank: scoreResult.rank || 0,
+                  totalParticipants: scoreResult.totalParticipants || 0
+                });
+              }
+            }
+          }
+        }
+        
+        console.log('✅ [ExamDashboard] Fallback completed tests:', Array.from(completedTests));
+        console.log('📈 [ExamDashboard] Fallback test scores:', Array.from(testScores.entries()));
+        
+        setCompletedTests(completedTests);
+        setTestScores(testScores);
         return;
       }
 
+      console.log('📊 [ExamDashboard] Raw completions data:', allCompletions);
+
       // Process completions into maps
       const { completedTests, testScores } = bulkTestService.processBulkCompletionsWithType(allCompletions);
+      
+      console.log('✅ [ExamDashboard] Processed completed tests:', Array.from(completedTests));
+      console.log('📈 [ExamDashboard] Processed test scores:', Array.from(testScores.entries()));
       
       setCompletedTests(completedTests);
       setTestScores(testScores);
@@ -161,7 +229,7 @@ const ExamDashboard = () => {
 
   // Test scores are now loaded with completions in the bulk API
 
-  // Calculate accurate filter counts
+  // Calculate accurate filter counts (excluding practice tests)
   const getFilterCounts = () => {
     let completedCount = 0;
     let notAttemptedCount = 0;
@@ -187,6 +255,8 @@ const ExamDashboard = () => {
         }
       });
     });
+    
+    // Practice tests are excluded from counts
     
     return { completedCount, notAttemptedCount };
   };
@@ -461,6 +531,14 @@ const ExamDashboard = () => {
     // Get score and rank for Mock and PYQ tests  
     const scoreKey = topicId ? `${testType}-${testId}-${topicId}` : `${testType}-${testId}`;
     const testScore = testScores.get(scoreKey);
+    
+    // Debug logging for score lookup
+    if (isCompleted) {
+      console.log(`🔍 [createTestButton] Looking for score for test ${testId} (${testType}):`);
+      console.log(`   - Score key: ${scoreKey}`);
+      console.log(`   - Found score:`, testScore);
+      console.log(`   - Available score keys:`, Array.from(testScores.keys()));
+    }
 
     return (
       <Card key={testId} className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02] h-64 ${
@@ -771,7 +849,10 @@ const ExamDashboard = () => {
         {/* Main Sections */}
         <div className="space-y-6">
           {exam.sections.map((section) => {
-            const isDisabled = section.id === 'practice';
+            // Hide practice section for now
+            if (section.id === 'practice') return null;
+            
+            const isDisabled = false; // No sections are disabled now
             
             // Check if section has any tests based on filter
             let hasTests = false;
@@ -779,8 +860,6 @@ const ExamDashboard = () => {
               hasTests = availableTests.mock.length > 0;
             } else if (section.id === 'pyq') {
               hasTests = availableTests.pyq.length > 0;
-            } else if (section.id === 'practice') {
-              hasTests = availableTests.practice.length > 0;
             }
             
             // Don't render section if no tests available

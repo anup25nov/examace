@@ -139,7 +139,9 @@ class SupabaseStatsService {
       .from('user_profiles')
       .upsert({
         id: user.id,
-        email
+        email,
+        phone: '',
+        phone_verified: false
       })
       .select()
       .single();
@@ -303,6 +305,8 @@ class SupabaseStatsService {
       .insert({
         user_id: user.id,
         exam_id: submission.examId,
+        test_id: submission.testId || 'default',
+        test_type: submission.testType || 'mock',
         score: submission.score,
         total_questions: submission.totalQuestions,
         correct_answers: submission.correctAnswers,
@@ -707,7 +711,7 @@ class SupabaseStatsService {
   // Get real-time rank and highest score for a test
   async getTestRankAndHighestScore(examId: string, testType: string, testId: string, userId: string): Promise<{ data: any; error: any }> {
     try {
-      const { data, error } = await supabase.rpc('get_test_rank_and_highest_score', {
+      const { data, error } = await supabase.rpc('get_test_rank_and_highest_score' as any, {
         p_exam_id: examId,
         p_test_type: testType,
         p_test_id: testId,
@@ -719,7 +723,7 @@ class SupabaseStatsService {
         return { data: null, error };
       }
 
-      return { data: data && data.length > 0 ? data[0] : null, error: null };
+      return { data: data && Array.isArray(data) && data.length > 0 ? data[0] : null, error: null };
     } catch (error) {
       console.error('Error in getTestRankAndHighestScore:', error);
       return { data: null, error };
@@ -729,7 +733,7 @@ class SupabaseStatsService {
   // Get test leaderboard
   async getTestLeaderboard(examId: string, testType: string, testId: string, limit: number = 10): Promise<{ data: any[]; error: any }> {
     try {
-      const { data, error } = await supabase.rpc('get_test_leaderboard', {
+      const { data, error } = await supabase.rpc('get_test_leaderboard' as any, {
         p_exam_id: examId,
         p_test_type: testType,
         p_test_id: testId,
@@ -741,7 +745,7 @@ class SupabaseStatsService {
         return { data: [], error };
       }
 
-      return { data: data || [], error: null };
+      return { data: Array.isArray(data) ? data : [], error: null };
     } catch (error) {
       console.error('Error in getTestLeaderboard:', error);
       return { data: [], error };

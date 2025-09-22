@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { QuestionLoader, TestData, QuestionWithProps } from '@/lib/questionLoader';
+import { dynamicQuestionLoader, TestData, QuestionWithProps } from '@/lib/dynamicQuestionLoader';
 import { useExamStats } from '@/hooks/useExamStats';
+import { useAuth } from '@/hooks/useAuth';
 import { supabaseStatsService } from '@/lib/supabaseStats';
 import SolutionsDisplay from '@/components/SolutionsDisplay';
 import { ReferralBanner } from '@/components/ReferralBanner';
@@ -12,6 +13,7 @@ import ImageDisplay from '@/components/ImageDisplay';
 const SolutionsViewer = () => {
   const { examId, sectionId, testType, topic } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { loadTestAttempts } = useExamStats(examId);
   
   const [testData, setTestData] = useState<TestData | null>(null);
@@ -114,7 +116,7 @@ const SolutionsViewer = () => {
       setActualTestId(testId);
 
       // Load test data
-      const data = await QuestionLoader.loadQuestions(examId, testTypeValue as 'pyq' | 'practice' | 'mock', testId);
+      const data = await dynamicQuestionLoader.loadQuestions(examId, testTypeValue as 'pyq' | 'practice' | 'mock', testId);
       if (!data) {
         setError('Test data not found');
         return;

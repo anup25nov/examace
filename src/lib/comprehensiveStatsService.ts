@@ -233,7 +233,7 @@ class ComprehensiveStatsService {
 
       // Use the upsert function to handle both create and update in one call
       const { data: upsertResult, error: upsertError } = await supabase
-        .rpc('upsert_test_attempt', {
+        .rpc('upsert_test_attempt' as any, {
           p_user_id: user.id,
           p_exam_id: submission.examId,
           p_test_type: submission.testType,
@@ -251,7 +251,7 @@ class ComprehensiveStatsService {
         return { data: null, error: upsertError };
       }
 
-      const attemptData = upsertResult && upsertResult.length > 0 ? upsertResult[0] : null;
+      const attemptData = upsertResult && Array.isArray(upsertResult) && upsertResult.length > 0 ? upsertResult[0] : null;
       console.log('Test attempt upsert result:', { attemptData, upsertError });
 
       if (!attemptData || !attemptData.success) {

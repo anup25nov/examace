@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Clock, Target, BookOpen, CheckCircle, AlertCircle } from 'lucide-react';
-import { TestData } from '@/lib/questionLoader';
+import { TestData } from '@/lib/dynamicQuestionLoader';
 
 interface TestInstructionsProps {
   examId: string;
@@ -123,7 +123,7 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {testData.examInfo.languages.map((language) => (
+                {['en', 'hi'].map((language) => (
                   <Button
                     key={language}
                     variant={selectedLanguage === language ? "default" : "outline"}

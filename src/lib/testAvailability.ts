@@ -1,12 +1,12 @@
 // Test Availability Service
 // This service checks which test files actually exist and returns only available tests
 
-import { TestConfig } from "@/config/examConfig";
+import { TestData } from "@/lib/dynamicExamService";
 
 interface AvailableTests {
-  mock: (TestConfig & { isPremium?: boolean })[];
-  pyq: { year: string; papers: (TestConfig & { isPremium?: boolean })[] }[];
-  practice: (TestConfig & { isPremium?: boolean })[];
+  mock: (TestData & { isPremium?: boolean })[];
+  pyq: { year: string; papers: (TestData & { isPremium?: boolean })[] }[];
+  practice: (TestData & { isPremium?: boolean })[];
 }
 
 class TestAvailabilityService {
@@ -34,8 +34,8 @@ class TestAvailabilityService {
   }
 
   // Filter available mock tests
-  async getAvailableMockTests(examId: string, allMockTests: TestConfig[]): Promise<TestConfig[]> {
-    const availableTests: TestConfig[] = [];
+  async getAvailableMockTests(examId: string, allMockTests: TestData[]): Promise<TestData[]> {
+    const availableTests: TestData[] = [];
     
     for (const test of allMockTests) {
       const exists = await this.checkTestFileExists(examId, 'mock', test.id);
@@ -48,11 +48,11 @@ class TestAvailabilityService {
   }
 
   // Filter available PYQ tests by year
-  async getAvailablePYQTests(examId: string, allPYQTests: { year: string; papers: TestConfig[] }[]): Promise<{ year: string; papers: TestConfig[] }[]> {
-    const availableYears: { year: string; papers: TestConfig[] }[] = [];
+  async getAvailablePYQTests(examId: string, allPYQTests: { year: string; papers: TestData[] }[]): Promise<{ year: string; papers: TestData[] }[]> {
+    const availableYears: { year: string; papers: TestData[] }[] = [];
     
     for (const yearData of allPYQTests) {
-      const availablePapers: TestConfig[] = [];
+      const availablePapers: TestData[] = [];
       
       for (const paper of yearData.papers) {
         const exists = await this.checkTestFileExists(examId, 'pyq', paper.id);
@@ -74,8 +74,8 @@ class TestAvailabilityService {
   }
 
   // Filter available practice tests
-  async getAvailablePracticeTests(examId: string, allPracticeTests: TestConfig[]): Promise<TestConfig[]> {
-    const availableTests: TestConfig[] = [];
+  async getAvailablePracticeTests(examId: string, allPracticeTests: TestData[]): Promise<TestData[]> {
+    const availableTests: TestData[] = [];
     
     for (const test of allPracticeTests) {
       const exists = await this.checkTestFileExists(examId, 'practice', test.id);
@@ -89,9 +89,9 @@ class TestAvailabilityService {
 
   // Get all available tests for an exam with custom test data
   async getAvailableTestsWithData(examId: string, allTests: {
-    mock: TestConfig[];
-    pyq: { year: string; papers: TestConfig[] }[];
-    practice: TestConfig[];
+    mock: TestData[];
+    pyq: { year: string; papers: TestData[] }[];
+    practice: TestData[];
   }): Promise<AvailableTests> {
     const [mock, pyq, practice] = await Promise.all([
       this.getAvailableMockTests(examId, allTests.mock),
@@ -107,32 +107,32 @@ class TestAvailabilityService {
     // Return default test data for now
     return {
       mock: [
-        { id: 'mock-test-1', name: 'SSC CGL Mock Test 1', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness', isPremium: false },
-        { id: 'mock-test-2', name: 'SSC CGL Mock Test 2', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness', isPremium: false },
-        { id: 'mock-test-3', name: 'SSC CGL Mock Test 3', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness', isPremium: true },
-        { id: 'mock-test-4', name: 'SSC CGL Premium Mock Test 1', duration: 180, questions: [], breakdown: 'Advanced General Intelligence, English, Quantitative Aptitude, General Awareness', isPremium: true },
-        { id: 'mock-test-5', name: 'SSC CGL Premium Mock Test 2', duration: 180, questions: [], breakdown: 'Advanced General Intelligence, English, Quantitative Aptitude, General Awareness', isPremium: true }
+        { id: 'mock-test-1', name: 'SSC CGL Mock Test 1', description: 'Complete mock test covering all subjects', duration: 180, questions: 100, subjects: ['General Intelligence', 'English', 'Quantitative Aptitude', 'General Awareness'], difficulty: 'mixed', isPremium: false, price: 0, order: 1, metadata: {} },
+        { id: 'mock-test-2', name: 'SSC CGL Mock Test 2', description: 'Complete mock test covering all subjects', duration: 180, questions: 100, subjects: ['General Intelligence', 'English', 'Quantitative Aptitude', 'General Awareness'], difficulty: 'mixed', isPremium: false, price: 0, order: 2, metadata: {} },
+        { id: 'mock-test-3', name: 'SSC CGL Mock Test 3', description: 'Complete mock test covering all subjects', duration: 180, questions: 100, subjects: ['General Intelligence', 'English', 'Quantitative Aptitude', 'General Awareness'], difficulty: 'mixed', isPremium: true, price: 199, order: 3, metadata: {} },
+        { id: 'mock-test-4', name: 'SSC CGL Premium Mock Test 1', description: 'Advanced mock test covering all subjects', duration: 180, questions: 100, subjects: ['General Intelligence', 'English', 'Quantitative Aptitude', 'General Awareness'], difficulty: 'hard', isPremium: true, price: 299, order: 4, metadata: {} },
+        { id: 'mock-test-5', name: 'SSC CGL Premium Mock Test 2', description: 'Advanced mock test covering all subjects', duration: 180, questions: 100, subjects: ['General Intelligence', 'English', 'Quantitative Aptitude', 'General Awareness'], difficulty: 'hard', isPremium: true, price: 299, order: 5, metadata: {} }
       ],
       pyq: [
         {
           year: '2024',
           papers: [
-            { id: '2024-set-1', name: 'SSC CGL 2024 Set 1', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness' },
-            { id: '2024-set-2', name: 'SSC CGL 2024 Set 2', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness' },
-            { id: '2021-set-1', name: 'SSC CGL 2021 27 June Set 1', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness' }
+            { id: '2024-set-1', name: 'SSC CGL 2024 Set 1', description: 'Previous Year Questions 2024 Set 1', duration: 180, questions: 100, subjects: ['General Intelligence', 'English', 'Quantitative Aptitude', 'General Awareness'], difficulty: 'mixed', isPremium: false, price: 0, order: 1, metadata: {} },
+            { id: '2024-set-2', name: 'SSC CGL 2024 Set 2', description: 'Previous Year Questions 2024 Set 2', duration: 180, questions: 100, subjects: ['General Intelligence', 'English', 'Quantitative Aptitude', 'General Awareness'], difficulty: 'mixed', isPremium: false, price: 0, order: 2, metadata: {} },
+            { id: '2021-set-1', name: 'SSC CGL 2021 27 June Set 1', description: 'Previous Year Questions 2021 Set 1', duration: 180, questions: 100, subjects: ['General Intelligence', 'English', 'Quantitative Aptitude', 'General Awareness'], difficulty: 'mixed', isPremium: false, price: 0, order: 3, metadata: {} }
           ]
         },
         {
           year: '2023',
           papers: [
-            { id: '2023-set-1', name: 'SSC CGL 2023 Set 1', duration: 180, questions: [], breakdown: 'General Intelligence, English, Quantitative Aptitude, General Awareness' }
+            { id: '2023-set-1', name: 'SSC CGL 2023 Set 1', description: 'Previous Year Questions 2023 Set 1', duration: 180, questions: 100, subjects: ['General Intelligence', 'English', 'Quantitative Aptitude', 'General Awareness'], difficulty: 'mixed', isPremium: false, price: 0, order: 1, metadata: {} }
           ]
         }
       ],
       practice: [
-        { id: 'maths-algebra', name: 'Mathematics - Algebra', duration: 60, questions: [], breakdown: 'Algebra fundamentals and practice' },
-        { id: 'english-grammar', name: 'English - Grammar', duration: 45, questions: [], breakdown: 'Grammar rules and practice' },
-        { id: 'general-awareness', name: 'General Awareness', duration: 30, questions: [], breakdown: 'Current affairs and general knowledge' }
+        { id: 'maths-algebra', name: 'Mathematics - Algebra', description: 'Algebra fundamentals and practice', duration: 60, questions: 50, subjects: ['Quantitative Aptitude'], difficulty: 'mixed', isPremium: false, price: 0, order: 1, metadata: {} },
+        { id: 'english-grammar', name: 'English - Grammar', description: 'Grammar rules and practice', duration: 45, questions: 50, subjects: ['English Language'], difficulty: 'mixed', isPremium: false, price: 0, order: 2, metadata: {} },
+        { id: 'general-awareness', name: 'General Awareness', description: 'Current affairs and general knowledge', duration: 30, questions: 50, subjects: ['General Awareness'], difficulty: 'mixed', isPremium: false, price: 0, order: 3, metadata: {} }
       ]
     };
   }

@@ -17,7 +17,6 @@ import {
 import { testSubmissionService } from "@/lib/testSubmissionService";
 import { useAuth } from "@/hooks/useAuth";
 import { dynamicQuestionLoader, DynamicQuestionLoader, TestData, QuestionWithProps } from "@/lib/dynamicQuestionLoader";
-import { testDataLoader } from "@/lib/testDataLoader";
 import SolutionsDisplay from "@/components/SolutionsDisplay";
 import ImageDisplay from "@/components/ImageDisplay";
 import { planLimitsService, PlanLimits } from "@/lib/planLimitsService";
@@ -291,8 +290,8 @@ const TestInterface = () => {
   const isTestPremium = (testId: string, testType: string): boolean => {
     try {
       // Load the test data to check if it's premium
-      const testData = testDataLoader.getTestById('ssc-cgl', testId);
-      const isPremium = testData?.isPremium || false;
+      // Test data is now loaded dynamically through dynamicQuestionLoader
+      const isPremium = (testData as any)?.isPremium || false;
       console.log(`🔍 [isTestPremium] Test ${testId} (${testType}): isPremium = ${isPremium}`);
       return isPremium;
     } catch (error) {

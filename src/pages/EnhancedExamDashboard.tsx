@@ -26,7 +26,6 @@ import {
   Users
 } from "lucide-react";
 import { dynamicExamService } from "@/lib/dynamicExamService";
-import { dynamicTestDataLoader } from "@/lib/dynamicTestDataLoader";
 import { useExamStats } from "@/hooks/useExamStats";
 import { useComprehensiveStats } from "@/hooks/useComprehensiveStats";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,9 +34,8 @@ import { useDashboardData } from "@/contexts/DashboardDataContext";
 import { analytics } from "@/lib/analytics";
 import { EnhancedTestCard } from "@/components/EnhancedTestCard";
 import { YearWiseTabs } from "@/components/YearWiseTabs";
-import { testDataLoader, YearData } from "@/lib/testDataLoader";
+import { dynamicTestDataLoader } from "@/lib/dynamicTestDataLoader";
 import { premiumService, PremiumTest } from "@/lib/premiumService";
-import { examConfigService } from "@/lib/examConfigService";
 import { supabase } from "@/integrations/supabase/client";
 import Footer from "@/components/Footer";
 import { AdminAccess } from "@/components/admin/AdminAccess";
@@ -82,7 +80,7 @@ const EnhancedExamDashboard = () => {
   
   // New state for enhanced features
   const [mockTests, setMockTests] = useState<{ free: PremiumTest[]; premium: PremiumTest[] }>({ free: [], premium: [] });
-  const [pyqData, setPyqData] = useState<YearData[]>([]);
+  const [pyqData, setPyqData] = useState<any[]>([]);
   const [practiceData, setPracticeData] = useState<any[]>([]);
   const [userMembership, setUserMembership] = useState(membership || premiumService.getUserMembership());
   
@@ -108,7 +106,7 @@ const EnhancedExamDashboard = () => {
   }, [membership]);
 
   const exam = dynamicExamService.getExamConfig(examId as string);
-  const examConfig = examConfigService.getExamConfig(examId as string);
+  // Using dynamic exam service instead of examConfigService
   const userPhone = (profile as any)?.phone || localStorage.getItem("userPhone");
   const userName = (profile as any)?.name || localStorage.getItem("userName");
   const cleanedPhone = userPhone?.replace(/^\+91/, "");
@@ -681,10 +679,13 @@ const EnhancedExamDashboard = () => {
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue={examConfig?.tabOrder[0] || "pyq"} value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+        <Tabs defaultValue="pyq" value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="grid w-full grid-cols-2 bg-gradient-to-r from-slate-100 via-blue-50 to-indigo-100 p-1 rounded-xl shadow-lg border border-white/50">
-            {examConfig?.tabOrder.map((tab) => {
-              const isEnabled = examConfigService.isSectionEnabled(examId as string, tab);
+            {exam?.sections.map((section) => {
+              // Hide practice section for now
+              if (section.id === 'practice') return null;
+              
+              const isEnabled = true; // All sections are enabled in dynamic system
               if (!isEnabled) return null;
 
               const tabConfig = {
@@ -693,7 +694,7 @@ const EnhancedExamDashboard = () => {
                 practice: { icon: BookOpen, label: 'Practice' }
               };
 
-              const { icon: Icon, label } = tabConfig[tab];
+              const { icon: Icon, label } = tabConfig[section.id as keyof typeof tabConfig];
 
               const tabGradients = {
                 pyq: 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-500',
@@ -703,9 +704,9 @@ const EnhancedExamDashboard = () => {
 
               return (
                 <TabsTrigger 
-                  key={tab}
-                  value={tab} 
-                  className={`flex items-center space-x-2 ${tabGradients[tab]} data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-lg font-medium`}
+                  key={section.id}
+                  value={section.id} 
+                  className={`flex items-center space-x-2 ${tabGradients[section.id as keyof typeof tabGradients]} data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-lg font-medium`}
                 >
                   <Icon className="w-4 h-4" />
                   <span>{label}</span>
@@ -805,8 +806,8 @@ const EnhancedExamDashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* Practice Tab - Coming Soon */}
-          <TabsContent value="practice" className="space-y-6">
+          {/* Practice Tab - Hidden for now */}
+          {/* <TabsContent value="practice" className="space-y-6">
             <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-purple-50 to-pink-50">
               <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-t-lg">
                 <CardTitle className="flex items-center space-x-3">
@@ -830,7 +831,6 @@ const EnhancedExamDashboard = () => {
                     Stay tuned for subject-wise practice questions with detailed solutions.
                   </p>
                   
-                  {/* Practice Categories Preview */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto mb-8">
                     <div className="p-4 border border-purple-200 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 hover:shadow-md transition-all duration-300">
                       <h4 className="font-semibold text-purple-700 mb-2">Subject-wise Practice</h4>
@@ -871,7 +871,7 @@ const EnhancedExamDashboard = () => {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </TabsContent> */}
         </Tabs>
       </div>
       <Footer />

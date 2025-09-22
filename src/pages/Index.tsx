@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Clock, Trophy, Users, TrendingUp, Brain, ChevronRight, Flame, FileText, Smartphone, Download, QrCode } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { examConfigs } from "@/config/examConfig";
+import { dynamicExamService } from "@/lib/dynamicExamService";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useOptimizedUserProfile } from "@/hooks/useOptimizedUserProfile";
@@ -29,7 +29,7 @@ const iconMap: { [key: string]: any } = {
   Brain
 };
 
-const exams = Object.values(examConfigs).map(exam => ({
+const exams = dynamicExamService.getAllExams().map(exam => ({
   ...exam,
   icon: iconMap[exam.icon] || BookOpen
 }));
