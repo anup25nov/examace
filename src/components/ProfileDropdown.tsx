@@ -26,7 +26,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useUserProfile } from '@/hooks/useUserProfile';
+import { useOptimizedUserProfile } from '@/hooks/useOptimizedUserProfile';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ProfileUpdateModal } from './ProfileUpdateModal';
 import { referralService } from '@/lib/referralService';
@@ -46,7 +46,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
 }) => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const { profile } = useUserProfile();
+  const { profile } = useOptimizedUserProfile();
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
   const [showProfileUpdate, setShowProfileUpdate] = useState(false);

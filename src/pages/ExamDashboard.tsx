@@ -25,7 +25,7 @@ import { examConfigs } from "@/config/examConfig";
 import { useExamStats } from "@/hooks/useExamStats";
 import { useComprehensiveStats } from "@/hooks/useComprehensiveStats";
 import { useAuth } from "@/hooks/useAuth";
-import { useUserProfile } from "@/hooks/useUserProfile";
+import { useDashboardData } from "@/contexts/DashboardDataContext";
 import { QuestionLoader } from "@/lib/questionLoader";
 import { analytics } from "@/lib/analytics";
 import { testAvailabilityService } from "@/lib/testAvailability";
@@ -48,7 +48,7 @@ const ExamDashboard = () => {
   const { examId } = useParams();
   const navigate = useNavigate();
   const { user, isAuthenticated, loading } = useAuth();
-  const { profile } = useUserProfile();
+  const { profile } = useDashboardData();
   const { allStats, loadAllStats, getExamStatById, isTestCompleted, getIndividualTestScore } = useExamStats();
   const { stats: comprehensiveStats, loading: statsLoading, error: statsError, refreshStats } = useComprehensiveStats(examId);
   

@@ -30,7 +30,7 @@ import { useExamStats } from "@/hooks/useExamStats";
 import { useComprehensiveStats } from "@/hooks/useComprehensiveStats";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdmin } from "@/hooks/useAdmin";
-import { useUserProfile } from "@/hooks/useUserProfile";
+import { useDashboardData } from "@/contexts/DashboardDataContext";
 import { analytics } from "@/lib/analytics";
 import { EnhancedTestCard } from "@/components/EnhancedTestCard";
 import { YearWiseTabs } from "@/components/YearWiseTabs";
@@ -55,7 +55,7 @@ const EnhancedExamDashboard = () => {
   const { examId } = useParams();
   const navigate = useNavigate();
   const { user, isAuthenticated, loading } = useAuth();
-  const { profile } = useUserProfile();
+  const { profile, membership } = useDashboardData();
   const { allStats, loadAllStats, getExamStatById, isTestCompleted, getIndividualTestScore } = useExamStats();
   const { stats: comprehensiveStats, loading: statsLoading, error: statsError, refreshStats } = useComprehensiveStats(examId);
   
@@ -83,7 +83,7 @@ const EnhancedExamDashboard = () => {
   const [mockTests, setMockTests] = useState<{ free: PremiumTest[]; premium: PremiumTest[] }>({ free: [], premium: [] });
   const [pyqData, setPyqData] = useState<YearData[]>([]);
   const [practiceData, setPracticeData] = useState<any[]>([]);
-  const [userMembership, setUserMembership] = useState(premiumService.getUserMembership());
+  const [userMembership, setUserMembership] = useState(membership || premiumService.getUserMembership());
   
   // Check for last visited section on component mount
   useEffect(() => {
@@ -95,28 +95,23 @@ const EnhancedExamDashboard = () => {
     }
   }, []);
   
-  // Load user membership status
+  // Update membership status when context data changes
   useEffect(() => {
-    const loadMembershipStatus = async () => {
-      if (user?.id) {
-        try {
-          // Update membership status from the service
-          const membership = premiumService.getUserMembership();
-          setUserMembership(membership);
-        } catch (error) {
-          console.error('Error loading membership status:', error);
-        }
-      }
-    };
-    
-    loadMembershipStatus();
-  }, [user?.id]);
+    if (membership) {
+      setUserMembership(membership);
+    } else {
+      // Fallback to service if no membership in context
+      const serviceMembership = premiumService.getUserMembership();
+      setUserMembership(serviceMembership);
+    }
+  }, [membership]);
 
   const exam = examConfigs[examId as string];
   const examConfig = examConfigService.getExamConfig(examId as string);
   const userPhone = (profile as any)?.phone || localStorage.getItem("userPhone");
   const userName = (profile as any)?.name || localStorage.getItem("userName");
-  const displayName = userName || (userPhone ? `Hi, ${userPhone}` : "User");
+  const cleanedPhone = userPhone?.replace(/^\+91/, "");
+  const displayName = userName || (cleanedPhone ? `Hi, ${cleanedPhone}` : "User");
 
   // Load test data from JSON
   useEffect(() => {

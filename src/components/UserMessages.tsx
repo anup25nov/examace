@@ -40,24 +40,33 @@ export const UserMessages: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      loadMessages();
-      loadUnreadCount();
+      // Load messages and unread count in a single call
+      loadMessagesAndCount();
     }
   }, [user]);
 
-  const loadMessages = async () => {
+  const loadMessagesAndCount = async () => {
     if (!user) return;
     
     try {
       setLoading(true);
+      // Single API call to get both messages and unread count
       const { data, error } = await supabase.rpc('get_user_messages' as any, {
         user_uuid: user.id,
         limit_count: 50
       });
 
-      if (!error && data) {
-        setMessages(data);
+      if (error) {
+        console.error('Error loading messages:', error);
+        return;
       }
+
+      const messagesData = data || [];
+      setMessages(messagesData);
+      
+      // Calculate unread count from the messages data
+      const unreadCount = messagesData.filter(msg => !msg.is_read).length;
+      setUnreadCount(unreadCount);
     } catch (error) {
       console.error('Error loading messages:', error);
     } finally {
@@ -65,21 +74,6 @@ export const UserMessages: React.FC = () => {
     }
   };
 
-  const loadUnreadCount = async () => {
-    if (!user) return;
-    
-    try {
-      const { data, error } = await supabase.rpc('get_unread_message_count' as any, {
-        user_uuid: user.id
-      });
-
-      if (!error && data !== null) {
-        setUnreadCount(data);
-      }
-    } catch (error) {
-      console.error('Error loading unread count:', error);
-    }
-  };
 
   const markAsRead = async (messageId: string) => {
     if (!user) return;

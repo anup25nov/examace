@@ -704,6 +704,50 @@ class SupabaseStatsService {
     }
   }
 
+  // Get real-time rank and highest score for a test
+  async getTestRankAndHighestScore(examId: string, testType: string, testId: string, userId: string): Promise<{ data: any; error: any }> {
+    try {
+      const { data, error } = await supabase.rpc('get_test_rank_and_highest_score', {
+        p_exam_id: examId,
+        p_test_type: testType,
+        p_test_id: testId,
+        p_user_id: userId
+      });
+
+      if (error) {
+        console.error('Error getting test rank and highest score:', error);
+        return { data: null, error };
+      }
+
+      return { data: data && data.length > 0 ? data[0] : null, error: null };
+    } catch (error) {
+      console.error('Error in getTestRankAndHighestScore:', error);
+      return { data: null, error };
+    }
+  }
+
+  // Get test leaderboard
+  async getTestLeaderboard(examId: string, testType: string, testId: string, limit: number = 10): Promise<{ data: any[]; error: any }> {
+    try {
+      const { data, error } = await supabase.rpc('get_test_leaderboard', {
+        p_exam_id: examId,
+        p_test_type: testType,
+        p_test_id: testId,
+        p_limit: limit
+      });
+
+      if (error) {
+        console.error('Error getting test leaderboard:', error);
+        return { data: [], error };
+      }
+
+      return { data: data || [], error: null };
+    } catch (error) {
+      console.error('Error in getTestLeaderboard:', error);
+      return { data: [], error };
+    }
+  }
+
   // Update daily visit streak
   async updateDailyVisit(): Promise<{ success: boolean; error?: any }> {
     const user = await this.getCurrentUser();

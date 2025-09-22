@@ -96,6 +96,7 @@ const TestInterface = () => {
     highestMarks?: number;
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
   const [actualTestType, setActualTestType] = useState<string>('');
   const [actualTestId, setActualTestId] = useState<string>('');
   const [subjectDistribution, setSubjectDistribution] = useState<Array<{
@@ -306,41 +307,35 @@ const TestInterface = () => {
     try {
       console.log('Fetching rank data for:', { testId, testType, score });
       
-      // Get real rank data from the database
-      const { data: rankData, error: rankError } = await supabaseStatsService.getIndividualTestScore(examId!, testType, testId);
+      // Get real-time rank and highest score data
+      const { data: rankData, error: rankError } = await supabaseStatsService.getTestRankAndHighestScore(examId!, testType, testId, user?.id || '');
       
       if (rankError) {
-        console.error('Error fetching rank data:', rankError);
-        throw rankError;
+        console.error('Error fetching real-time rank data:', rankError);
+        // Fallback to individual test score
+        const { data: fallbackData } = await supabaseStatsService.getIndividualTestScore(examId!, testType, testId);
+        if (fallbackData) {
+          const realRankData = {
+            rank: fallbackData.rank || 0,
+            totalParticipants: fallbackData.total_participants || 0,
+            highestMarks: fallbackData.score || score
+          };
+          setRankData(realRankData);
+        }
+        return;
       }
       
-      if (rankData && rankData.score !== null && rankData.score !== undefined) {
-        console.log('Found rank data:', rankData);
-        
-        // Get highest score for this test
-        let highestMarks = score; // Default to current user's score
-        try {
-          const { data: highestScoreData, error: highestError } = await supabaseStatsService.getHighestScoreForTest(examId!, testType, testId);
-          if (highestError) {
-            console.error('Error fetching highest score:', highestError);
-          } else if (highestScoreData && highestScoreData.length > 0) {
-            const maxScore = Math.max(...highestScoreData.map((item: any) => item.score || 0));
-            highestMarks = maxScore;
-          }
-        } catch (highestScoreError) {
-          console.error('Error fetching highest score:', highestScoreError);
-        }
-        
+      if (rankData) {
         const realRankData = {
-          rank: rankData.rank || 0,
+          rank: rankData.user_rank || 0,
           totalParticipants: rankData.total_participants || 0,
-          highestMarks: highestMarks
+          highestMarks: rankData.highest_score || score
         };
         
-        console.log('Setting rank data:', realRankData);
+        console.log('Real-time rank data:', realRankData);
         setRankData(realRankData);
       } else {
-        console.log('No rank data found, using fallback');
+        console.log('No real-time rank data found, using fallback');
         // Fallback to basic data if no rank info is available
         const fallbackData = {
           rank: 0,
@@ -559,7 +554,7 @@ const TestInterface = () => {
   };
 
   const handleSubmit = async (skipConfirmation = false) => {
-    if (isSubmitting) return; // Prevent double submission
+    if (isSubmitting || hasSubmitted) return; // Prevent double submission
     
     // Show confirmation dialog first unless explicitly skipped (for time up)
     if (skipConfirmation) {
@@ -570,8 +565,10 @@ const TestInterface = () => {
   };
 
   const confirmSubmit = async () => {
+    if (hasSubmitted) return; // Prevent double submission
     setShowSubmitConfirmation(false);
     setIsSubmitting(true);
+    setHasSubmitted(true);
     
     try {
       const endTime = Date.now();

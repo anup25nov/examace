@@ -32,31 +32,40 @@ const SolutionsViewer = () => {
 
   const fetchRankInfo = async (examId: string, testType: string, testId: string) => {
     try {
-      const { data: rankData } = await supabaseStatsService.getIndividualTestScore(examId, testType, testId);
+      // Get real-time rank and highest score data
+      const { data: rankData, error: rankError } = await supabaseStatsService.getTestRankAndHighestScore(examId, testType, testId, user?.id || '');
+      
+      if (rankError) {
+        console.error('Error fetching rank info:', rankError);
+        // Fallback to individual test score
+        const { data: fallbackData } = await supabaseStatsService.getIndividualTestScore(examId, testType, testId);
+        if (fallbackData) {
+          setRank(fallbackData.rank || 0);
+          setTotalParticipants(fallbackData.total_participants || 0);
+          setHighestMarks(fallbackData.score || 0);
+        }
+        return;
+      }
+
       if (rankData) {
-        setRank(rankData.rank);
-        setTotalParticipants(rankData.total_participants);
-        
-        // Try to get the actual highest score from the database
-        try {
-          const { data: highestScoreData } = await supabaseStatsService.getHighestScoreForTest(examId, testType, testId);
-          if (highestScoreData && highestScoreData.length > 0) {
-            // Get the highest score from the results
-            const maxScore = Math.max(...highestScoreData.map((item: any) => item.score || 0));
-            setHighestMarks(maxScore);
-          } else {
-            // Fallback to current user's score if no other data available
-            setHighestMarks(rankData.score || 0);
-          }
-        } catch (highestScoreError) {
-          console.error('Error fetching highest score:', highestScoreError);
-          // Fallback to current user's score
-          setHighestMarks(rankData.score || 0);
+        setRank(rankData.user_rank || 0);
+        setTotalParticipants(rankData.total_participants || 0);
+        setHighestMarks(rankData.highest_score || 0);
+        console.log('Real-time rank data:', rankData);
+      } else {
+        // Fallback to individual test score if no real-time data
+        const { data: fallbackData } = await supabaseStatsService.getIndividualTestScore(examId, testType, testId);
+        if (fallbackData) {
+          setRank(fallbackData.rank || 0);
+          setTotalParticipants(fallbackData.total_participants || 0);
+          setHighestMarks(fallbackData.score || 0);
         }
       }
     } catch (error) {
       console.error('Error fetching rank info:', error);
       // Set default values if rank info is not available
+      setRank(0);
+      setTotalParticipants(0);
       setHighestMarks(0);
     }
   };

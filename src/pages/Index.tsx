@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { examConfigs } from "@/config/examConfig";
 
 import { useAuth } from "@/hooks/useAuth";
-import { useUserProfile } from "@/hooks/useUserProfile";
+import { useOptimizedUserProfile } from "@/hooks/useOptimizedUserProfile";
 import { useUserStreak } from "@/hooks/useUserStreak";
 import { analytics } from "@/lib/analytics";
 import { optimizeRouteTransition } from "@/lib/navigationOptimizer";
@@ -37,7 +37,7 @@ const exams = Object.values(examConfigs).map(exam => ({
 const Index = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, loading, logout } = useAuth();
-  const { profile } = useUserProfile();
+  const { profile } = useOptimizedUserProfile();
   const { streak, refreshStreak } = useUserStreak();
   const [isNavigating, setIsNavigating] = useState(false);
   

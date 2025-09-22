@@ -231,75 +231,45 @@ class ComprehensiveStatsService {
         return { data: null, error: 'User not authenticated' };
       }
 
-      // First, try to find existing incomplete attempt for this test (score = 0, no completed_at)
-      const { data: existingAttempts, error: findError } = await (supabase as any)
+      // Use the upsert function to handle both create and update in one call
+      const { data: upsertResult, error: upsertError } = await supabase
+        .rpc('upsert_test_attempt', {
+          p_user_id: user.id,
+          p_exam_id: submission.examId,
+          p_test_type: submission.testType,
+          p_test_id: submission.testId,
+          p_score: submission.score,
+          p_total_questions: submission.totalQuestions,
+          p_correct_answers: submission.correctAnswers,
+          p_time_taken: submission.timeTaken,
+          p_answers: submission.answers,
+          p_status: 'completed'
+        });
+
+      if (upsertError) {
+        console.error('Error upserting test attempt:', upsertError);
+        return { data: null, error: upsertError };
+      }
+
+      const attemptData = upsertResult && upsertResult.length > 0 ? upsertResult[0] : null;
+      console.log('Test attempt upsert result:', { attemptData, upsertError });
+
+      if (!attemptData || !attemptData.success) {
+        return { data: null, error: attemptData?.message || 'Failed to save test attempt' };
+      }
+
+      // Get the full attempt data
+      const { data: fullAttemptData, error: getError } = await supabase
         .from('test_attempts')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('exam_id', submission.examId)
-        .eq('test_type', submission.testType)
-        .eq('test_id', submission.testId)
-        .eq('score', 0)
-        .is('completed_at', null)
-        .limit(1);
+        .select('*')
+        .eq('id', attemptData.attempt_id)
+        .single();
 
-      let attemptData;
-      let attemptError;
-
-      if (findError) {
-        console.error('Error finding existing attempt:', findError);
-        return { data: null, error: findError };
+      if (getError) {
+        console.error('Error getting full attempt data:', getError);
+        return { data: null, error: getError };
       }
 
-      if (existingAttempts && existingAttempts.length > 0) {
-        // Update existing attempt
-        console.log('Updating existing test attempt:', existingAttempts[0].id);
-        const { data: updateData, error: updateError } = await supabase
-          .from('test_attempts')
-          .update({
-            score: submission.score,
-            total_questions: submission.totalQuestions,
-            correct_answers: submission.correctAnswers,
-            time_taken: submission.timeTaken,
-            answers: submission.answers,
-            completed_at: new Date().toISOString()
-          })
-          .eq('id', existingAttempts[0].id)
-          .select()
-          .single();
-
-        attemptData = updateData;
-        attemptError = updateError;
-        console.log('Test attempt update result:', { attemptData, attemptError });
-      } else {
-        // Create new attempt if no existing incomplete attempt found
-        console.log('No existing attempt found, creating new one');
-        const { data: insertData, error: insertError } = await supabase
-          .from('test_attempts')
-          .insert({
-            user_id: user.id,
-            exam_id: submission.examId,
-            test_type: submission.testType,
-            test_id: submission.testId,
-            score: submission.score,
-            total_questions: submission.totalQuestions,
-            correct_answers: submission.correctAnswers,
-            time_taken: submission.timeTaken,
-            answers: submission.answers,
-            completed_at: new Date().toISOString()
-          })
-          .select()
-          .single();
-
-        attemptData = insertData;
-        attemptError = insertError;
-        console.log('Test attempt insert result:', { attemptData, attemptError });
-      }
-
-      if (attemptError) {
-        console.error('Error with test attempt:', attemptError);
-        return { data: null, error: attemptError };
-      }
 
       // Clear cache to force refresh
       const cacheKey = this.getCacheKey(user.id, submission.examId);
@@ -308,7 +278,7 @@ class ComprehensiveStatsService {
       // Update exam stats using the comprehensive calculation
       await this.updateExamStats(user.id, submission.examId);
 
-      return { data: attemptData, error: null };
+      return { data: fullAttemptData, error: null };
     } catch (error) {
       console.error('Error in submitTestAttempt:', error);
       return { data: null, error: error instanceof Error ? error.message : 'Unknown error' };

@@ -27,6 +27,8 @@ import AdminPage from "./pages/AdminPage";
 import Profile from "./pages/Profile";
 import { MembershipPlans } from "./components/MembershipPlans";
 import { GlobalMembershipModal } from "./components/GlobalMembershipModal";
+import { MembershipProvider } from "./contexts/MembershipContext";
+import { DashboardDataProvider } from "./contexts/DashboardDataContext";
 
 const queryClient = new QueryClient();
 
@@ -39,9 +41,11 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+        <MembershipProvider>
+          <DashboardDataProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
           <MobileBackButtonHandler />
           <MobileAppStateManager />
           <Routes>
@@ -121,6 +125,8 @@ const App = () => {
         </BrowserRouter>
         {/* <DebugInfo /> */}
         <GlobalMembershipModal />
+          </DashboardDataProvider>
+        </MembershipProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
