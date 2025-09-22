@@ -119,7 +119,7 @@ class ComprehensiveStatsService {
 
       // Calculate comprehensive statistics
       console.log('Calculating comprehensive stats for', testAttempts.length, 'test attempts');
-      const stats = this.calculateComprehensiveStats(testAttempts);
+      const stats = this.calculateComprehensiveStats(testAttempts as TestAttempt[]);
       console.log('Calculated stats:', stats);
       
       // Cache the result
@@ -231,28 +231,73 @@ class ComprehensiveStatsService {
         return { data: null, error: 'User not authenticated' };
       }
 
-      // Insert test attempt
-      const { data: attemptData, error: attemptError } = await supabase
+      // First, try to find existing incomplete attempt for this test (score = 0, no completed_at)
+      const { data: existingAttempts, error: findError } = await (supabase as any)
         .from('test_attempts')
-        .insert({
-          user_id: user.id,
-          exam_id: submission.examId,
-          test_type: submission.testType,
-          test_id: submission.testId,
-          score: submission.score,
-          total_questions: submission.totalQuestions,
-          correct_answers: submission.correctAnswers,
-          time_taken: submission.timeTaken,
-          answers: submission.answers,
-          completed_at: new Date().toISOString()
-        })
-        .select()
-        .single();
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('exam_id', submission.examId)
+        .eq('test_type', submission.testType)
+        .eq('test_id', submission.testId)
+        .eq('score', 0)
+        .is('completed_at', null)
+        .limit(1);
 
-      console.log('Test attempt insert result:', { attemptData, attemptError });
+      let attemptData;
+      let attemptError;
+
+      if (findError) {
+        console.error('Error finding existing attempt:', findError);
+        return { data: null, error: findError };
+      }
+
+      if (existingAttempts && existingAttempts.length > 0) {
+        // Update existing attempt
+        console.log('Updating existing test attempt:', existingAttempts[0].id);
+        const { data: updateData, error: updateError } = await supabase
+          .from('test_attempts')
+          .update({
+            score: submission.score,
+            total_questions: submission.totalQuestions,
+            correct_answers: submission.correctAnswers,
+            time_taken: submission.timeTaken,
+            answers: submission.answers,
+            completed_at: new Date().toISOString()
+          })
+          .eq('id', existingAttempts[0].id)
+          .select()
+          .single();
+
+        attemptData = updateData;
+        attemptError = updateError;
+        console.log('Test attempt update result:', { attemptData, attemptError });
+      } else {
+        // Create new attempt if no existing incomplete attempt found
+        console.log('No existing attempt found, creating new one');
+        const { data: insertData, error: insertError } = await supabase
+          .from('test_attempts')
+          .insert({
+            user_id: user.id,
+            exam_id: submission.examId,
+            test_type: submission.testType,
+            test_id: submission.testId,
+            score: submission.score,
+            total_questions: submission.totalQuestions,
+            correct_answers: submission.correctAnswers,
+            time_taken: submission.timeTaken,
+            answers: submission.answers,
+            completed_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        attemptData = insertData;
+        attemptError = insertError;
+        console.log('Test attempt insert result:', { attemptData, attemptError });
+      }
 
       if (attemptError) {
-        console.error('Error inserting test attempt:', attemptError);
+        console.error('Error with test attempt:', attemptError);
         return { data: null, error: attemptError };
       }
 
@@ -326,7 +371,7 @@ class ComprehensiveStatsService {
         return { data: [], error };
       }
 
-      return { data: attempts || [], error: null };
+      return { data: (attempts || []) as TestAttempt[], error: null };
     } catch (error) {
       console.error('Error in getTestAttempts:', error);
       return { data: [], error: error instanceof Error ? error.message : 'Unknown error' };

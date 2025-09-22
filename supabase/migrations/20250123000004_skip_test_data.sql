@@ -1,0 +1,2 @@
+-- Skip test data creation to avoid foreign key issues
+-- Test data will be created by the application when needed

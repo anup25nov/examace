@@ -608,6 +608,10 @@ export type Database = {
           exam_id: string
           id: string
           score: number
+          started_at: string | null
+          status: string | null
+          test_id: string
+          test_type: string
           time_taken: number | null
           total_questions: number
           user_id: string
@@ -619,6 +623,10 @@ export type Database = {
           exam_id: string
           id?: string
           score: number
+          started_at?: string | null
+          status?: string | null
+          test_id: string
+          test_type: string
           time_taken?: number | null
           total_questions: number
           user_id: string
@@ -630,6 +638,10 @@ export type Database = {
           exam_id?: string
           id?: string
           score?: number
+          started_at?: string | null
+          status?: string | null
+          test_id?: string
+          test_type?: string
           time_taken?: number | null
           total_questions?: number
           user_id?: string
@@ -789,35 +801,56 @@ export type Database = {
       user_profiles: {
         Row: {
           created_at: string | null
+          email: string | null
           id: string
+          is_admin: boolean | null
           membership_expiry: string | null
           membership_plan: string | null
-          membership_status: string | null
+          name: string | null
           phone: string
+          phone_verified: boolean | null
+          pin: string | null
           referral_code: string | null
+          referral_earnings: number | null
           referred_by: string | null
+          total_referrals: number | null
+          upi_id: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
+          email?: string | null
           id: string
+          is_admin?: boolean | null
           membership_expiry?: string | null
           membership_plan?: string | null
-          membership_status?: string | null
+          name?: string | null
           phone: string
+          phone_verified?: boolean | null
+          pin?: string | null
           referral_code?: string | null
+          referral_earnings?: number | null
           referred_by?: string | null
+          total_referrals?: number | null
+          upi_id?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
+          email?: string | null
           id?: string
+          is_admin?: boolean | null
           membership_expiry?: string | null
           membership_plan?: string | null
-          membership_status?: string | null
+          name?: string | null
           phone?: string
+          phone_verified?: boolean | null
+          pin?: string | null
           referral_code?: string | null
+          referral_earnings?: number | null
           referred_by?: string | null
+          total_referrals?: number | null
+          upi_id?: string | null
           updated_at?: string | null
         }
         Relationships: []

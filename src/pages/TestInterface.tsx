@@ -9,10 +9,11 @@ import {
   ArrowLeft, 
   ArrowRight, 
   AlertCircle,
-  Flag
+  Flag,
+  RefreshCw
 } from "lucide-react";
 // Removed unused imports: getQuestionsForTest, getTestDuration
-import { useExamStats } from "@/hooks/useExamStats";
+// Removed useExamStats import - using testSubmissionService instead
 import { testSubmissionService } from "@/lib/testSubmissionService";
 import { useAuth } from "@/hooks/useAuth";
 import { QuestionLoader, TestData, QuestionWithProps } from "@/lib/questionLoader";
@@ -68,7 +69,7 @@ const TestInterface = () => {
   const { examId, sectionId, testType, topic } = useParams();
   const navigate = useNavigate();
   const { getUserId } = useAuth();
-  const { submitTestAttempt, submitIndividualTestScore } = useExamStats(examId);
+  // Removed unused submitTestAttempt and submitIndividualTestScore - using testSubmissionService instead
   
   const [testData, setTestData] = useState<TestData | null>(null);
   const [questions, setQuestions] = useState<QuestionWithProps[]>([]);
@@ -80,6 +81,7 @@ const TestInterface = () => {
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
   const [startTime] = useState(Date.now());
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [testStarted, setTestStarted] = useState(false);
   const [showSolutions, setShowSolutions] = useState(false);
   const [testResults, setTestResults] = useState<{
@@ -235,6 +237,7 @@ const TestInterface = () => {
         
         if (!loadedTestData) {
           console.error('Failed to load test data for:', { examId, testTypeValue, testId });
+          setError(`Test data not found for ${testTypeValue} test: ${testId}`);
           setLoading(false);
           return;
         }
@@ -301,15 +304,26 @@ const TestInterface = () => {
   // Fetch rank data for the test
   const fetchRankData = async (testId: string, testType: string, score: number) => {
     try {
-      // Get real rank data from the database
-      const { data: rankData } = await supabaseStatsService.getIndividualTestScore(examId!, testType, testId);
+      console.log('Fetching rank data for:', { testId, testType, score });
       
-      if (rankData && rankData.score !== null) {
+      // Get real rank data from the database
+      const { data: rankData, error: rankError } = await supabaseStatsService.getIndividualTestScore(examId!, testType, testId);
+      
+      if (rankError) {
+        console.error('Error fetching rank data:', rankError);
+        throw rankError;
+      }
+      
+      if (rankData && rankData.score !== null && rankData.score !== undefined) {
+        console.log('Found rank data:', rankData);
+        
         // Get highest score for this test
         let highestMarks = score; // Default to current user's score
         try {
-          const { data: highestScoreData } = await supabaseStatsService.getHighestScoreForTest(examId!, testType, testId);
-          if (highestScoreData && highestScoreData.length > 0) {
+          const { data: highestScoreData, error: highestError } = await supabaseStatsService.getHighestScoreForTest(examId!, testType, testId);
+          if (highestError) {
+            console.error('Error fetching highest score:', highestError);
+          } else if (highestScoreData && highestScoreData.length > 0) {
             const maxScore = Math.max(...highestScoreData.map((item: any) => item.score || 0));
             highestMarks = maxScore;
           }
@@ -323,8 +337,10 @@ const TestInterface = () => {
           highestMarks: highestMarks
         };
         
+        console.log('Setting rank data:', realRankData);
         setRankData(realRankData);
       } else {
+        console.log('No rank data found, using fallback');
         // Fallback to basic data if no rank info is available
         const fallbackData = {
           rank: 0,
@@ -625,34 +641,7 @@ const TestInterface = () => {
             console.error('Test submission failed:', submissionResult.error);
           }
 
-          // Also submit to legacy system for backward compatibility
-          try {
-            await submitTestAttempt(
-              examId,
-              score,
-              questions.length,
-              correct,
-              cleanTimeTaken,
-              {
-                details: questions.map((question, index) => ({
-                  questionId: question.id,
-                  selectedOption: answers[index] ?? -1,
-                  isCorrect: answers[index] === question.correct
-                })),
-                skipped: questions.length - Object.keys(answers).length
-              },
-              actualTestType,
-              actualTestId,
-              topic
-            );
-
-            // Submit individual test score for Mock and PYQ tests only
-            if (actualTestType === 'mock' || actualTestType === 'pyq') {
-              await submitIndividualTestScore(examId, actualTestType, actualTestId, score);
-            }
-          } catch (legacyError) {
-            console.error('Legacy submission failed:', legacyError);
-          }
+          // Legacy submission removed - testSubmissionService handles everything comprehensively
 
         } catch (error) {
           console.error('Error submitting test attempt:', error);
@@ -683,7 +672,7 @@ const TestInterface = () => {
       }
       
       // Show success message
-      messagingService.testCompleted(correct, questions.length);
+      // messagingService.testCompleted(correct, questions.length);
     } catch (error) {
       console.error('Error in handleSubmit:', error);
     } finally {
@@ -719,6 +708,38 @@ const TestInterface = () => {
           </div>
           <h2 className="text-xl font-bold text-foreground mb-2">Loading Test...</h2>
           <p className="text-muted-foreground">Preparing your questions</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error screen if there's an error
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+            <AlertCircle className="w-8 h-8 text-red-600" />
+          </div>
+          <h2 className="text-xl font-bold text-foreground mb-2">Test Not Found</h2>
+          <p className="text-muted-foreground mb-6">{error}</p>
+          <div className="space-y-3">
+            <Button 
+              onClick={() => window.location.reload()} 
+              className="w-full"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Try Again
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => navigate(`/exam/${examId}`)}
+              className="w-full"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Dashboard
+            </Button>
+          </div>
         </div>
       </div>
     );
