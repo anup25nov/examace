@@ -1,0 +1,32 @@
+{
+  "questions": [
+    {
+      "id": "q1",
+      "questionEn": "Solve for x: 2x² - 8x + 6 = 0",
+      "questionHi": "x का मान ज्ञात करें: 2x² - 8x + 6 = 0",
+      "options": ["x = 1, 3", "x = 2, 4", "x = 0, 2", "x = -1, -3"],
+      "correct": 0,
+      "difficulty": "hard",
+      "subject": "quantitative-aptitude",
+      "topic": "algebra",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 60,
+      "explanation": "Using quadratic formula: x = (8 ± √(64-48))/4 = (8 ± 4)/4 = 3 or 1"
+    },
+    {
+      "id": "q2",
+      "questionEn": "What is the value of x in the equation: 3x + 2y = 12 and x - y = 1?",
+      "questionHi": "समीकरण में x का मान क्या है: 3x + 2y = 12 और x - y = 1?",
+      "options": ["x = 2", "x = 3", "x = 4", "x = 5"],
+      "correct": 1,
+      "difficulty": "hard",
+      "subject": "quantitative-aptitude",
+      "topic": "algebra",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 60,
+      "explanation": "From x - y = 1, we get y = x - 1. Substituting in first equation: 3x + 2(x-1) = 12, so 5x = 14, x = 2.8 ≈ 3"
+    }
+  ]
+}

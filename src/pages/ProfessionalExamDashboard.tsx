@@ -22,7 +22,8 @@ import {
   ChevronRight,
   Trophy
 } from "lucide-react";
-import { examConfigs } from "@/config/examConfig";
+import { dynamicExamService } from "@/lib/dynamicExamService";
+import { dynamicTestDataLoader } from "@/lib/dynamicTestDataLoader";
 import { useExamStats } from "@/hooks/useExamStats";
 import { useComprehensiveStats } from "@/hooks/useComprehensiveStats";
 import { useAuth } from "@/hooks/useAuth";
@@ -73,7 +74,7 @@ const ProfessionalExamDashboard = () => {
     practice: Array<{ id: string; name: string; duration: number; questions: any[]; breakdown?: string; isPremium?: boolean }>;
   }>({ mock: [], pyq: [], practice: [] });
 
-  const exam = examConfigs[examId as string];
+  const exam = dynamicExamService.getExamConfig(examId as string);
   const userEmail = profile?.email || localStorage.getItem("userEmail");
 
   // Load available tests dynamically
@@ -82,7 +83,51 @@ const ProfessionalExamDashboard = () => {
       if (!examId) return;
       
       try {
-        const tests = await testAvailabilityService.getAvailableTests(examId);
+        const { mock, pyq, practice } = await dynamicTestDataLoader.getAllTestData(examId);
+        
+        // Process mock tests
+        const mockTests = mock.map(test => ({
+          id: test.id,
+          name: test.name,
+          duration: test.duration,
+          questions: test.questions,
+          breakdown: test.description,
+          isPremium: test.isPremium
+        }));
+
+        // Process PYQ data
+        const pyqData = pyq.map(year => ({
+          year: year.year,
+          papers: year.papers.map(paper => ({
+            id: paper.id,
+            name: paper.name,
+            duration: paper.duration,
+            questions: paper.questions,
+            breakdown: paper.description,
+            isPremium: paper.isPremium
+          }))
+        }));
+
+        // Process practice data
+        const practiceTests = practice.flatMap(subject => 
+          subject.topics.flatMap(topic => 
+            topic.tests.map(test => ({
+              id: test.id,
+              name: test.name,
+              duration: test.duration,
+              questions: test.questions,
+              breakdown: test.description,
+              isPremium: test.isPremium
+            }))
+          )
+        );
+
+        const tests = {
+          mock: mockTests,
+          pyq: pyqData,
+          practice: practiceTests
+        };
+
         setAvailableTests(tests);
       } catch (error) {
         console.error('Error loading tests:', error);

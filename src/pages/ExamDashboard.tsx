@@ -21,7 +21,8 @@ import {
   Star,
   Medal
 } from "lucide-react";
-import { examConfigs } from "@/config/examConfig";
+import { dynamicExamService } from "@/lib/dynamicExamService";
+import { dynamicTestDataLoader } from "@/lib/dynamicTestDataLoader";
 import { useExamStats } from "@/hooks/useExamStats";
 import { useComprehensiveStats } from "@/hooks/useComprehensiveStats";
 import { useAuth } from "@/hooks/useAuth";
@@ -73,34 +74,63 @@ const ExamDashboard = () => {
     practice: Array<{ id: string; name: string; duration: number; questions: any[]; breakdown?: string }>;
   }>({ mock: [], pyq: [], practice: [] });
 
-  const exam = examConfigs[examId as string];
+  const exam = dynamicExamService.getExamConfig(examId as string);
   const userEmail = profile?.email || localStorage.getItem("userEmail");
 
   // Load available tests dynamically
   useEffect(() => {
     const loadAvailableTests = async () => {
       if (examId) {
-        const examConfig = examConfigs[examId];
-        if (!examConfig) return;
+        try {
+          const { mock, pyq, practice } = await dynamicTestDataLoader.getAllTestData(examId);
+          
+          // Process mock tests
+          const mockTests = mock.map(test => ({
+            id: test.id,
+            name: test.name,
+            duration: test.duration,
+            questions: test.questions,
+            breakdown: test.description
+          }));
 
-        // Get all tests from config
-        const allTests = {
-          mock: examConfig.sections.find(s => s.id === 'mock')?.tests || [],
-          pyq: examConfig.sections.find(s => s.id === 'pyq')?.years || [],
-          practice: examConfig.sections.find(s => s.id === 'practice')?.subjects?.flatMap(subject => 
-            subject.topics?.map(topic => ({
-              id: `${subject.id}-${topic.id}`,
-              name: topic.name,
-              duration: 30, // Default duration for practice tests
-              questions: [], // Empty questions array for practice tests
-              breakdown: `Practice questions - ${subject.name}`
-            })) || []
-          ) || []
-        };
+          // Process PYQ data
+          const pyqData = pyq.map(year => ({
+            year: year.year,
+            papers: year.papers.map(paper => ({
+              id: paper.id,
+              name: paper.name,
+              duration: paper.duration,
+              questions: paper.questions,
+              breakdown: paper.description
+            }))
+          }));
 
-        // Filter to only show available tests
-        const availableTests = await testAvailabilityService.getAvailableTests(examId);
-        setAvailableTests(availableTests);
+          // Process practice data
+          const practiceTests = practice.flatMap(subject => 
+            subject.topics.flatMap(topic => 
+              topic.tests.map(test => ({
+                id: test.id,
+                name: test.name,
+                duration: test.duration,
+                questions: test.questions,
+                breakdown: test.description
+              }))
+            )
+          );
+
+          const allTests = {
+            mock: mockTests,
+            pyq: pyqData,
+            practice: practiceTests
+          };
+
+          // Filter to only show available tests
+          const availableTests = await testAvailabilityService.getAvailableTests(examId);
+          setAvailableTests(availableTests);
+        } catch (error) {
+          console.error('Error loading dynamic test data:', error);
+          setAvailableTests({ mock: [], pyq: [], practice: [] });
+        }
       }
     };
     loadAvailableTests();

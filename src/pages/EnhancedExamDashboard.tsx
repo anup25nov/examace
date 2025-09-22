@@ -25,7 +25,8 @@ import {
   Lock,
   Users
 } from "lucide-react";
-import { examConfigs } from "@/config/examConfig";
+import { dynamicExamService } from "@/lib/dynamicExamService";
+import { dynamicTestDataLoader } from "@/lib/dynamicTestDataLoader";
 import { useExamStats } from "@/hooks/useExamStats";
 import { useComprehensiveStats } from "@/hooks/useComprehensiveStats";
 import { useAuth } from "@/hooks/useAuth";
@@ -106,26 +107,95 @@ const EnhancedExamDashboard = () => {
     }
   }, [membership]);
 
-  const exam = examConfigs[examId as string];
+  const exam = dynamicExamService.getExamConfig(examId as string);
   const examConfig = examConfigService.getExamConfig(examId as string);
   const userPhone = (profile as any)?.phone || localStorage.getItem("userPhone");
   const userName = (profile as any)?.name || localStorage.getItem("userName");
   const cleanedPhone = userPhone?.replace(/^\+91/, "");
   const displayName = userName || (cleanedPhone ? `Hi, ${cleanedPhone}` : "User");
 
-  // Load test data from JSON
+  // Load test data dynamically
   useEffect(() => {
-    if (examId) {
-      const testData = testDataLoader.getExamTestData(examId);
-      if (testData) {
-        setMockTests({
-          free: testData.mock.free || [],
-          premium: testData.mock.premium || []
-        });
-        setPyqData(testDataLoader.getPYQData(examId));
-        setPracticeData(testDataLoader.getPracticeData(examId));
+    const loadDynamicTestData = async () => {
+      if (examId) {
+        try {
+          const { mock, pyq, practice } = await dynamicTestDataLoader.getAllTestData(examId);
+          
+          // Process mock tests
+          const freeTests = mock.filter(test => !test.isPremium);
+          const premiumTests = mock.filter(test => test.isPremium);
+          
+          setMockTests({
+            free: freeTests.map(test => ({
+              id: test.id,
+              name: test.name,
+              duration: test.duration,
+              questions: test.questions.length, // Convert to number
+              breakdown: test.description,
+              subjects: test.subjects,
+              difficulty: test.difficulty,
+              description: test.description,
+              isPremium: test.isPremium,
+              price: test.price
+            })),
+            premium: premiumTests.map(test => ({
+              id: test.id,
+              name: test.name,
+              duration: test.duration,
+              questions: test.questions.length, // Convert to number
+              breakdown: test.description,
+              subjects: test.subjects,
+              difficulty: test.difficulty,
+              description: test.description,
+              isPremium: test.isPremium,
+              price: test.price
+            }))
+          });
+
+          // Process PYQ data
+          setPyqData(pyq.map(year => ({
+            year: year.year,
+            papers: year.papers.map(paper => ({
+              id: paper.id,
+              name: paper.name,
+              duration: paper.duration,
+              questions: paper.questions.length, // Convert to number
+              breakdown: paper.description,
+              subjects: paper.subjects,
+              difficulty: paper.difficulty,
+              description: paper.description,
+              isPremium: paper.isPremium,
+              price: paper.price
+            }))
+          })));
+
+          // Process practice data
+          setPracticeData(practice.map(subject => ({
+            id: subject.id,
+            name: subject.name,
+            topics: subject.topics.map(topic => ({
+              id: topic.id,
+              name: topic.name,
+              sets: topic.tests.map(test => ({
+                id: test.id,
+                name: test.name,
+                duration: test.duration,
+                questions: test.questions,
+                breakdown: test.description
+              }))
+            }))
+          })));
+        } catch (error) {
+          console.error('Error loading dynamic test data:', error);
+          // Fallback to empty data
+          setMockTests({ free: [], premium: [] });
+          setPyqData([]);
+          setPracticeData([]);
+        }
       }
-    }
+    };
+
+    loadDynamicTestData();
   }, [examId]);
 
   // Check test completions using bulk API

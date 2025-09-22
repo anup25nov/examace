@@ -1,0 +1,32 @@
+{
+  "questions": [
+    {
+      "id": "q1",
+      "questionEn": "What is the value of 15% of 200?",
+      "questionHi": "200 का 15% क्या है?",
+      "options": ["25", "30", "35", "40"],
+      "correct": 1,
+      "difficulty": "easy",
+      "subject": "quantitative-aptitude",
+      "topic": "percentage",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 90,
+      "explanation": "15% of 200 = (15/100) × 200 = 30"
+    },
+    {
+      "id": "q2",
+      "questionEn": "Which of the following is not a programming language?",
+      "questionHi": "निम्नलिखित में से कौन सी प्रोग्रामिंग भाषा नहीं है?",
+      "options": ["Python", "Java", "HTML", "C++"],
+      "correct": 2,
+      "difficulty": "medium",
+      "subject": "general-awareness",
+      "topic": "computer",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 90,
+      "explanation": "HTML is a markup language, not a programming language."
+    }
+  ]
+}

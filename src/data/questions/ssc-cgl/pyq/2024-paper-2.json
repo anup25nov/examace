@@ -1,0 +1,32 @@
+{
+  "questions": [
+    {
+      "id": "q1",
+      "questionEn": "What is the capital of Maharashtra?",
+      "questionHi": "महाराष्ट्र की राजधानी क्या है?",
+      "options": ["Pune", "Mumbai", "Nagpur", "Nashik"],
+      "correct": 1,
+      "difficulty": "easy",
+      "subject": "general-awareness",
+      "topic": "geography",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 15,
+      "explanation": "Mumbai is the capital of Maharashtra."
+    },
+    {
+      "id": "q2",
+      "questionEn": "Who wrote the book 'Gitanjali'?",
+      "questionHi": "'गीतांजलि' पुस्तक किसने लिखी?",
+      "options": ["Rabindranath Tagore", "Bankim Chandra Chatterjee", "Sarat Chandra Chattopadhyay", "Mahatma Gandhi"],
+      "correct": 0,
+      "difficulty": "medium",
+      "subject": "general-awareness",
+      "topic": "literature",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 15,
+      "explanation": "Rabindranath Tagore wrote 'Gitanjali' and won the Nobel Prize in Literature in 1913."
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "questions": [
+    {
+      "id": "q1",
+      "questionEn": "Which is the smallest state in India?",
+      "questionHi": "भारत का सबसे छोटा राज्य कौन सा है?",
+      "options": ["Goa", "Sikkim", "Tripura", "Mizoram"],
+      "correct": 0,
+      "difficulty": "easy",
+      "subject": "general-awareness",
+      "topic": "geography",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 15,
+      "explanation": "Goa is the smallest state in India by area."
+    },
+    {
+      "id": "q2",
+      "questionEn": "What is the currency of Japan?",
+      "questionHi": "जापान की मुद्रा क्या है?",
+      "options": ["Yuan", "Yen", "Won", "Dong"],
+      "correct": 1,
+      "difficulty": "easy",
+      "subject": "general-awareness",
+      "topic": "general-knowledge",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 15,
+      "explanation": "The currency of Japan is Yen."
+    }
+  ]
+}

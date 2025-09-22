@@ -1,0 +1,55 @@
+{
+  "tests": [
+    {
+      "id": "mock-paper-1",
+      "name": "SSC CGL Mock Paper 1",
+      "description": "Complete SSC CGL Mock Test - General Intelligence, English, Quantitative Aptitude, General Awareness",
+      "duration": 180,
+      "questions": 100,
+      "subjects": ["General Intelligence", "English Language", "Quantitative Aptitude", "General Awareness"],
+      "difficulty": "mixed",
+      "isPremium": false,
+      "price": 0,
+      "order": 1,
+      "metadata": {
+        "paper": 1,
+        "created_at": "2024-01-15T00:00:00Z",
+        "updated_at": "2024-01-15T00:00:00Z"
+      }
+    },
+    {
+      "id": "mock-paper-2",
+      "name": "SSC CGL Mock Paper 2",
+      "description": "Advanced SSC CGL Mock Test - General Intelligence, English, Quantitative Aptitude, General Awareness",
+      "duration": 180,
+      "questions": 100,
+      "subjects": ["General Intelligence", "English Language", "Quantitative Aptitude", "General Awareness"],
+      "difficulty": "hard",
+      "isPremium": true,
+      "price": 199,
+      "order": 2,
+      "metadata": {
+        "paper": 2,
+        "created_at": "2024-01-15T00:00:00Z",
+        "updated_at": "2024-01-15T00:00:00Z"
+      }
+    },
+    {
+      "id": "mock-paper-3",
+      "name": "SSC CGL Mock Paper 3",
+      "description": "Expert Level SSC CGL Mock Test - Advanced Questions",
+      "duration": 180,
+      "questions": 100,
+      "subjects": ["General Intelligence", "English Language", "Quantitative Aptitude", "General Awareness"],
+      "difficulty": "hard",
+      "isPremium": true,
+      "price": 299,
+      "order": 3,
+      "metadata": {
+        "paper": 3,
+        "created_at": "2024-01-15T00:00:00Z",
+        "updated_at": "2024-01-15T00:00:00Z"
+      }
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "questions": [
+    {
+      "id": "q1",
+      "questionEn": "What is the area of a circle with radius 7 cm?",
+      "questionHi": "7 सेमी त्रिज्या वाले वृत्त का क्षेत्रफल क्या है?",
+      "options": ["154 cm²", "44 cm²", "22 cm²", "88 cm²"],
+      "correct": 0,
+      "difficulty": "medium",
+      "subject": "quantitative-aptitude",
+      "topic": "geometry",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 15,
+      "explanation": "Area of circle = πr² = (22/7) × 7 × 7 = 154 cm²"
+    },
+    {
+      "id": "q2",
+      "questionEn": "Which is the longest river in India?",
+      "questionHi": "भारत की सबसे लंबी नदी कौन सी है?",
+      "options": ["Yamuna", "Ganga", "Brahmaputra", "Godavari"],
+      "correct": 1,
+      "difficulty": "easy",
+      "subject": "general-awareness",
+      "topic": "geography",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 15,
+      "explanation": "Ganga is the longest river in India with a length of about 2,525 km."
+    }
+  ]
+}

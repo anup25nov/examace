@@ -1,14 +1,4 @@
 {
-  "examInfo": {
-    "examId": "ssc-cgl",
-    "examName": "SSC CGL",
-    "testType": "practice",
-    "testId": "english-grammar",
-    "testName": "English Grammar Practice Set",
-    "totalQuestions": 4,
-    "languages": ["english", "hindi"],
-    "defaultLanguage": "english"
-  },
   "questions": [
     {
       "id": "q1",
@@ -17,11 +7,12 @@
       "options": ["go", "goes", "went", "going"],
       "correct": 2,
       "difficulty": "easy",
-      "subject": "english",
+      "subject": "english-language",
       "topic": "grammar",
       "marks": 1,
       "negativeMarks": 0.25,
-      "duration": 1
+      "duration": 60,
+      "explanation": "The correct form is 'went' because it's past tense and the subject is 'She'."
     },
     {
       "id": "q2",
@@ -30,11 +21,12 @@
       "options": ["He don't like apples", "He doesn't like apples", "He not like apples", "He no like apples"],
       "correct": 1,
       "difficulty": "easy",
-      "subject": "english",
+      "subject": "english-language",
       "topic": "grammar",
       "marks": 1,
       "negativeMarks": 0.25,
-      "duration": 1
+      "duration": 60,
+      "explanation": "The correct sentence is 'He doesn't like apples' because 'doesn't' is the correct negative form for third person singular."
     },
     {
       "id": "q3",
@@ -43,11 +35,12 @@
       "options": ["childs", "children", "childes", "child"],
       "correct": 1,
       "difficulty": "easy",
-      "subject": "english",
+      "subject": "english-language",
       "topic": "grammar",
       "marks": 1,
       "negativeMarks": 0.25,
-      "duration": 1
+      "duration": 60,
+      "explanation": "The plural of 'child' is 'children' - it's an irregular plural form."
     },
     {
       "id": "q4",
@@ -56,11 +49,12 @@
       "options": ["in", "on", "at", "by"],
       "correct": 1,
       "difficulty": "medium",
-      "subject": "english",
+      "subject": "english-language",
       "topic": "grammar",
       "marks": 2,
       "negativeMarks": 0.5,
-      "duration": 2
+      "duration": 60,
+      "explanation": "The correct preposition is 'on' because the book is placed on top of the table."
     }
   ]
 }

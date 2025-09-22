@@ -1,0 +1,32 @@
+{
+  "questions": [
+    {
+      "id": "q1",
+      "questionEn": "What is the value of 25 × 4?",
+      "questionHi": "25 × 4 का मान क्या है?",
+      "options": ["90", "100", "110", "120"],
+      "correct": 1,
+      "difficulty": "easy",
+      "subject": "quantitative-aptitude",
+      "topic": "arithmetic",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 15,
+      "explanation": "25 × 4 = 100. This is a basic multiplication problem."
+    },
+    {
+      "id": "q2",
+      "questionEn": "Which of the following is a prime number?",
+      "questionHi": "निम्नलिखित में से कौन सी अभाज्य संख्या है?",
+      "options": ["15", "17", "21", "25"],
+      "correct": 1,
+      "difficulty": "medium",
+      "subject": "quantitative-aptitude",
+      "topic": "number-system",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 15,
+      "explanation": "17 is a prime number because it has only two factors: 1 and 17."
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "questions": [
+    {
+      "id": "q1",
+      "questionEn": "What is the value of √(144 + 25)?",
+      "questionHi": "√(144 + 25) का मान क्या है?",
+      "options": ["13", "17", "19", "21"],
+      "correct": 0,
+      "difficulty": "medium",
+      "subject": "quantitative-aptitude",
+      "topic": "arithmetic",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 90,
+      "explanation": "√(144 + 25) = √169 = 13"
+    },
+    {
+      "id": "q2",
+      "questionEn": "Which of the following is a palindrome?",
+      "questionHi": "निम्नलिखित में से कौन सा palindrome है?",
+      "options": ["RADAR", "HELLO", "WORLD", "INDIA"],
+      "correct": 0,
+      "difficulty": "easy",
+      "subject": "general-intelligence",
+      "topic": "word-pattern",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 90,
+      "explanation": "RADAR reads the same forwards and backwards, making it a palindrome."
+    },
+    {
+      "id": "q3",
+      "questionEn": "What is the synonym of 'Ubiquitous'?",
+      "questionHi": "'Ubiquitous' का समानार्थी शब्द क्या है?",
+      "options": ["Rare", "Common", "Omnipresent", "Unique"],
+      "correct": 2,
+      "difficulty": "hard",
+      "subject": "english-language",
+      "topic": "vocabulary",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 90,
+      "explanation": "Ubiquitous means present everywhere, which is synonymous with omnipresent."
+    }
+  ]
+}

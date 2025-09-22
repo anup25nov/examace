@@ -1,0 +1,32 @@
+{
+  "questions": [
+    {
+      "id": "q1",
+      "questionEn": "Which planet is known as the Red Planet?",
+      "questionHi": "लाल ग्रह के रूप में किस ग्रह को जाना जाता है?",
+      "options": ["Venus", "Mars", "Jupiter", "Saturn"],
+      "correct": 1,
+      "difficulty": "easy",
+      "subject": "general-awareness",
+      "topic": "science",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 15,
+      "explanation": "Mars is known as the Red Planet due to its reddish appearance."
+    },
+    {
+      "id": "q2",
+      "questionEn": "What is the chemical symbol for Gold?",
+      "questionHi": "सोने का रासायनिक प्रतीक क्या है?",
+      "options": ["Go", "Gd", "Au", "Ag"],
+      "correct": 2,
+      "difficulty": "medium",
+      "subject": "general-awareness",
+      "topic": "science",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 15,
+      "explanation": "The chemical symbol for Gold is Au (from Latin 'aurum')."
+    }
+  ]
+}

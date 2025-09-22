@@ -1,0 +1,46 @@
+{
+  "questions": [
+    {
+      "id": "q1",
+      "questionEn": "Who was the first Prime Minister of India?",
+      "questionHi": "भारत के पहले प्रधानमंत्री कौन थे?",
+      "options": ["Mahatma Gandhi", "Jawaharlal Nehru", "Sardar Patel", "Dr. Rajendra Prasad"],
+      "correct": 1,
+      "difficulty": "easy",
+      "subject": "general-awareness",
+      "topic": "history",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 60,
+      "explanation": "Jawaharlal Nehru was the first Prime Minister of India from 1947 to 1964."
+    },
+    {
+      "id": "q2",
+      "questionEn": "Which is the largest state in India by area?",
+      "questionHi": "क्षेत्रफल के अनुसार भारत का सबसे बड़ा राज्य कौन सा है?",
+      "options": ["Madhya Pradesh", "Rajasthan", "Maharashtra", "Uttar Pradesh"],
+      "correct": 1,
+      "difficulty": "easy",
+      "subject": "general-awareness",
+      "topic": "geography",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 60,
+      "explanation": "Rajasthan is the largest state in India by area with 342,239 square kilometers."
+    },
+    {
+      "id": "q3",
+      "questionEn": "What is the chemical symbol for Gold?",
+      "questionHi": "सोने का रासायनिक प्रतीक क्या है?",
+      "options": ["Go", "Gd", "Au", "Ag"],
+      "correct": 2,
+      "difficulty": "medium",
+      "subject": "general-awareness",
+      "topic": "science",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 60,
+      "explanation": "The chemical symbol for Gold is Au (from Latin 'aurum')."
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "questions": [
+    {
+      "id": "q1",
+      "questionEn": "What is the synonym of 'Beautiful'?",
+      "questionHi": "'Beautiful' का समानार्थी शब्द क्या है?",
+      "options": ["Ugly", "Pretty", "Bad", "Worst"],
+      "correct": 1,
+      "difficulty": "easy",
+      "subject": "english-language",
+      "topic": "vocabulary",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 15,
+      "explanation": "Pretty is a synonym of beautiful, both meaning attractive or pleasing."
+    },
+    {
+      "id": "q2",
+      "questionEn": "Complete the series: 2, 4, 8, 16, ?",
+      "questionHi": "श्रृंखला पूरी करें: 2, 4, 8, 16, ?",
+      "options": ["24", "32", "20", "28"],
+      "correct": 1,
+      "difficulty": "medium",
+      "subject": "general-intelligence",
+      "topic": "series",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 15,
+      "explanation": "The series follows the pattern: each number is multiplied by 2. So 16 × 2 = 32."
+    }
+  ]
+}

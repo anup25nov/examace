@@ -16,7 +16,7 @@ import {
 // Removed useExamStats import - using testSubmissionService instead
 import { testSubmissionService } from "@/lib/testSubmissionService";
 import { useAuth } from "@/hooks/useAuth";
-import { QuestionLoader, TestData, QuestionWithProps } from "@/lib/questionLoader";
+import { dynamicQuestionLoader, DynamicQuestionLoader, TestData, QuestionWithProps } from "@/lib/dynamicQuestionLoader";
 import { testDataLoader } from "@/lib/testDataLoader";
 import SolutionsDisplay from "@/components/SolutionsDisplay";
 import ImageDisplay from "@/components/ImageDisplay";
@@ -234,7 +234,7 @@ const TestInterface = () => {
         
         // Load test data from JSON
         console.log('Loading test data with:', { examId, testTypeValue, testId });
-        const loadedTestData = await QuestionLoader.loadQuestions(examId!, testTypeValue as 'pyq' | 'practice' | 'mock', testId);
+        const loadedTestData = await dynamicQuestionLoader.loadQuestions(examId!, testTypeValue as 'pyq' | 'practice' | 'mock', testId, topic);
         
         if (!loadedTestData) {
           console.error('Failed to load test data for:', { examId, testTypeValue, testId });
@@ -260,8 +260,8 @@ const TestInterface = () => {
         // Calculate total duration dynamically from questions and round to integer
         let totalDuration = 60; // Default fallback
         try {
-          if (QuestionLoader.calculateTotalDuration) {
-            totalDuration = Math.round(QuestionLoader.calculateTotalDuration(loadedTestData.questions));
+          if (DynamicQuestionLoader.calculateTotalDuration) {
+            totalDuration = Math.round(DynamicQuestionLoader.calculateTotalDuration(loadedTestData.questions));
           } else {
             // Use local fallback function
             totalDuration = calculateTotalDurationFallback(loadedTestData.questions);
@@ -308,7 +308,7 @@ const TestInterface = () => {
       console.log('Fetching rank data for:', { testId, testType, score });
       
       // Get real-time rank and highest score data
-      const { data: rankData, error: rankError } = await supabaseStatsService.getTestRankAndHighestScore(examId!, testType, testId, user?.id || '');
+      const { data: rankData, error: rankError } = await supabaseStatsService.getTestRankAndHighestScore(examId!, testType, testId, getUserId() || '');
       
       if (rankError) {
         console.error('Error fetching real-time rank data:', rankError);

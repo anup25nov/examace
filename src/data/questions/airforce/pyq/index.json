@@ -1,0 +1,38 @@
+{
+  "tests": [
+    {
+      "id": "2024-set-1",
+      "name": "Air Force PYQ 2024 Set 1",
+      "description": "Previous Year Questions 2024 Set 1",
+      "duration": 60,
+      "questions": 70,
+      "subjects": ["Mathematics", "Physics", "Chemistry", "English", "General Knowledge"],
+      "difficulty": "mixed",
+      "isPremium": false,
+      "price": 0,
+      "order": 1,
+      "metadata": {
+        "year": "2024",
+        "created_at": "2024-01-15T00:00:00Z",
+        "updated_at": "2024-01-15T00:00:00Z"
+      }
+    },
+    {
+      "id": "2023-set-1",
+      "name": "Air Force PYQ 2023 Set 1",
+      "description": "Previous Year Questions 2023 Set 1",
+      "duration": 60,
+      "questions": 70,
+      "subjects": ["Mathematics", "Physics", "Chemistry", "English", "General Knowledge"],
+      "difficulty": "mixed",
+      "isPremium": false,
+      "price": 0,
+      "order": 2,
+      "metadata": {
+        "year": "2023",
+        "created_at": "2024-01-15T00:00:00Z",
+        "updated_at": "2024-01-15T00:00:00Z"
+      }
+    }
+  ]
+}

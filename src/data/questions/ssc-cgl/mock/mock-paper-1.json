@@ -1,0 +1,35 @@
+{
+  "questions": [
+    {
+      "id": "q1",
+      "questionEn": "What is the capital of India?",
+      "questionHi": "भारत की राजधानी क्या है?",
+      "options": ["Mumbai", "Delhi", "Kolkata", "Chennai"],
+      "correct": 1,
+      "difficulty": "easy",
+      "subject": "general-awareness",
+      "topic": "geography",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 90,
+      "explanation": "Delhi is the capital of India. It is located in northern India and serves as the seat of the Government of India.",
+      "explanationImage": "india-map.svg"
+    },
+    {
+      "id": "q2",
+      "questionEn": "What is 15 + 25?",
+      "questionHi": "15 + 25 क्या है?",
+      "options": ["35", "40", "45", "50"],
+      "correct": 1,
+      "difficulty": "easy",
+      "subject": "quantitative-aptitude",
+      "topic": "arithmetic",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "duration": 90,
+      "explanation": "15 + 25 = 40. This is a basic arithmetic addition problem.",
+      "explanationImage": "math-addition.svg",
+      "questionImage": "math-problem.svg"
+    }
+  ]
+}
