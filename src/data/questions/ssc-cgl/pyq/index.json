@@ -4,7 +4,7 @@
       "id": "2024-paper-1",
       "name": "SSC CGL 2024 Paper 1",
       "description": "Previous Year Questions 2024 Day 1 Shift 1",
-      "duration": 180,
+      "duration": 600,
       "questions": 100,
       "subjects": ["General Intelligence", "English Language", "Quantitative Aptitude", "General Awareness"],
       "difficulty": "mixed",
@@ -16,6 +16,7 @@
         "day": 1,
         "shift": 1,
         "paper": 1,
+        "date": "2024-01-15",
         "created_at": "2024-01-15T00:00:00Z",
         "updated_at": "2024-01-15T00:00:00Z"
       }
@@ -36,6 +37,7 @@
         "day": 1,
         "shift": 2,
         "paper": 2,
+        "date": "2024-01-15",
         "created_at": "2024-01-15T00:00:00Z",
         "updated_at": "2024-01-15T00:00:00Z"
       }
@@ -56,6 +58,7 @@
         "day": 1,
         "shift": 3,
         "paper": 3,
+        "date": "2024-01-15",
         "created_at": "2024-01-15T00:00:00Z",
         "updated_at": "2024-01-15T00:00:00Z"
       }
@@ -74,6 +77,7 @@
       "metadata": {
         "year": "2024",
         "paper": 4,
+        "date": "2024-01-15",
         "created_at": "2024-01-15T00:00:00Z",
         "updated_at": "2024-01-15T00:00:00Z"
       }
@@ -92,6 +96,7 @@
       "metadata": {
         "year": "2024",
         "paper": 5,
+        "date": "2024-01-15",
         "created_at": "2024-01-15T00:00:00Z",
         "updated_at": "2024-01-15T00:00:00Z"
       }
@@ -110,6 +115,7 @@
       "metadata": {
         "year": "2023",
         "paper": 1,
+        "date": "2023-01-15",
         "created_at": "2024-01-15T00:00:00Z",
         "updated_at": "2024-01-15T00:00:00Z"
       }
@@ -128,6 +134,7 @@
       "metadata": {
         "year": "2021",
         "paper": 1,
+        "date": "2021-01-15",
         "created_at": "2024-01-15T00:00:00Z",
         "updated_at": "2024-01-15T00:00:00Z"
       }

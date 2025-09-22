@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { PremiumTest } from '@/lib/premiumService';
 import { TestStartModal } from './TestStartModal';
-import { UnifiedPaymentModal } from './UnifiedPaymentModal';
+import { MembershipPlans } from './MembershipPlans';
 import { unifiedPaymentService } from '@/lib/unifiedPaymentService';
 import { useAuth } from '@/hooks/useAuth';
 import { useMembership } from '@/contexts/MembershipContext';
@@ -51,24 +51,24 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
   const { user } = useAuth();
   const { hasAccess: checkAccess, membership } = useMembership();
   const [showTestStartModal, setShowTestStartModal] = useState(false);
-  const [showMembershipModal, setShowMembershipModal] = useState(false);
+  const [showMembershipPlans, setShowMembershipPlans] = useState(false);
 
   // Use centralized membership check
   const hasAccess = checkAccess(test.id, test.isPremium);
 
   const handleStartTest = () => {
     if (test.isPremium && !hasAccess) {
-      setShowMembershipModal(true);
+      setShowMembershipPlans(true);
     } else {
       setShowTestStartModal(true);
     }
   };
 
   const handleCardClick = () => {
-    console.log('Card clicked:', { isPremium: test.isPremium, hasAccess, showMembershipModal });
+    console.log('Card clicked:', { isPremium: test.isPremium, hasAccess, showMembershipPlans });
     if (test.isPremium && !hasAccess) {
-      console.log('Showing membership modal');
-      setShowMembershipModal(true);
+      console.log('Showing membership plans');
+      setShowMembershipPlans(true);
     }
   };
 
@@ -76,9 +76,10 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
     onStartTest(language);
   };
 
-  const handlePaymentSuccess = (planId: string) => {
-    // Membership will be refreshed automatically by the context
-    console.log('Payment successful, membership will be refreshed');
+  const handlePlanSelection = (plan: any) => {
+    console.log('Selected plan:', plan);
+    setShowMembershipPlans(false);
+    // The membership context will automatically update
   };
 
   return (
@@ -263,16 +264,14 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
         testType={testType}
       />
 
-      {/* Unified Payment Modal */}
-      <UnifiedPaymentModal
-        isOpen={showMembershipModal}
-        onClose={() => setShowMembershipModal(false)}
-        onPaymentSuccess={handlePaymentSuccess}
-        testId={test.id}
-        testName={test.name}
-        testPrice={0} // No individual test price, only membership
-        testDescription={`Access to ${test.name} and all premium content`}
-      />
+      {/* Membership Plans Modal */}
+      {showMembershipPlans && (
+        <MembershipPlans
+          onSelectPlan={handlePlanSelection}
+          onClose={() => setShowMembershipPlans(false)}
+          currentPlan={membership?.plan_id}
+        />
+      )}
     </>
   );
 };

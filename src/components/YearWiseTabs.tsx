@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { PremiumTest, premiumService } from '@/lib/premiumService';
 import { TestStartModal } from './TestStartModal';
-import { UnifiedPaymentModal } from './UnifiedPaymentModal';
+import { MembershipPlans } from './MembershipPlans';
 import { unifiedPaymentService } from '@/lib/unifiedPaymentService';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -63,7 +63,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
   const { user } = useAuth();
   const [selectedYear, setSelectedYear] = useState(years[0]?.year || '');
   const [currentPage, setCurrentPage] = useState(0);
-  const [showMembershipModal, setShowMembershipModal] = useState(false);
+  const [showMembershipPlans, setShowMembershipPlans] = useState(false);
   const [showTestStartModal, setShowTestStartModal] = useState(false);
   const [selectedTestForStart, setSelectedTestForStart] = useState<PremiumTest | null>(null);
   const [userMembership, setUserMembership] = useState<any>(null);
@@ -127,7 +127,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
   const handleStartTest = (paper: PremiumTest) => {
     // Check if paper is premium and user doesn't have access
     if (paper.isPremium && !hasAccess.get(paper.id)) {
-      setShowMembershipModal(true);
+      setShowMembershipPlans(true);
       return;
     } else {
       setSelectedTestForStart(paper);
@@ -137,7 +137,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
 
   const handleCardClick = (paper: PremiumTest) => {
     if (paper.isPremium && !hasAccess.get(paper.id)) {
-      setShowMembershipModal(true);
+      setShowMembershipPlans(true);
     }
   };
 
@@ -147,8 +147,11 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
     }
   };
 
-  const handlePaymentSuccess = (planId: string) => {
-    // Update access for all premium papers
+  const handlePlanSelection = (plan: any) => {
+    console.log('Selected plan:', plan);
+    setShowMembershipPlans(false);
+    
+    // Update access for all premium papers after successful payment
     const newHasAccess = new Map(hasAccess);
     years.forEach(year => {
       year.papers.forEach(paper => {
@@ -335,13 +338,22 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                           <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                             <div className="flex items-center space-x-1">
                               <Calendar className="w-3 h-3" />
-                              <span>{paper.date}</span>
+                              <span>{(paper as any).metadata?.date ? new Date((paper as any).metadata.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : (paper as any).date || 'Date TBD'}</span>
                             </div>
                             <div className="flex items-center space-x-1">
                               <Clock className="w-3 h-3" />
                               <span>{paper.duration} min</span>
                             </div>
                           </div>
+                          
+                          {/* Shift Information */}
+                          {(paper as any).metadata?.shift && (
+                            <div className="flex items-center space-x-1">
+                              <Badge variant="outline" className="text-xs">
+                                Shift {(paper as any).metadata.shift}
+                              </Badge>
+                            </div>
+                          )}
                           
                           <div className="flex items-center space-x-1">
                             <FileText className="w-3 h-3 text-blue-500" />
@@ -503,16 +515,14 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
         </Card>
       )}
 
-      {/* Unified Payment Modal */}
-      <UnifiedPaymentModal
-        isOpen={showMembershipModal}
-        onClose={() => setShowMembershipModal(false)}
-        onPaymentSuccess={handlePaymentSuccess}
-        testId="pyq-premium"
-        testName="PYQ Premium Access"
-        testPrice={0} // No individual test price, only membership
-        testDescription="Access to all PYQ tests and premium content"
-      />
+      {/* Membership Plans Modal */}
+      {showMembershipPlans && (
+        <MembershipPlans
+          onSelectPlan={handlePlanSelection}
+          onClose={() => setShowMembershipPlans(false)}
+          currentPlan={userMembership?.plan_id}
+        />
+      )}
 
       {/* Test Start Modal */}
       {selectedTestForStart && (

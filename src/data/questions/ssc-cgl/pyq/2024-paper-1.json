@@ -11,7 +11,7 @@
       "topic": "arithmetic",
       "marks": 2,
       "negativeMarks": 0.5,
-      "duration": 15,
+      "duration": 1,
       "explanation": "25 × 4 = 100. This is a basic multiplication problem."
     },
     {
@@ -25,7 +25,7 @@
       "topic": "number-system",
       "marks": 2,
       "negativeMarks": 0.5,
-      "duration": 15,
+      "duration": 1,
       "explanation": "17 is a prime number because it has only two factors: 1 and 17."
     }
   ]

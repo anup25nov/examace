@@ -83,11 +83,13 @@ const SolutionsViewer = () => {
         setRank(rankData.user_rank || null);
         setTotalParticipants(rankData.total_participants || 0);
         // highest_score from the API is the actual highest score achieved by anyone
-        setHighestMarks(rankData.highest_score || null);
+        // Show 0 if highest_score is 0, only show null if it's actually null/undefined
+        const highestScore = rankData.highest_score !== null && rankData.highest_score !== undefined ? rankData.highest_score : null;
+        setHighestMarks(highestScore);
         console.log('✅ Set rank values:', { 
           rank: rankData.user_rank || null, 
           totalParticipants: rankData.total_participants || 0, 
-          highestMarks: rankData.highest_score || null 
+          highestMarks: highestScore 
         });
       } else {
         console.log('⚠️ No real-time rank data, trying fallback...');
@@ -310,12 +312,6 @@ const SolutionsViewer = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Referral Banner */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="container mx-auto px-4 py-4">
-          <ReferralBanner variant="compact" />
-        </div>
-      </div>
       
       <SolutionsDisplay
         questions={questions}

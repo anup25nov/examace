@@ -109,6 +109,7 @@ const TestInterface = () => {
   const [filteredQuestions, setFilteredQuestions] = useState<QuestionWithProps[]>([]);
   const questionGridRef = useRef<HTMLDivElement>(null);
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
+  const [submitReason, setSubmitReason] = useState<'manual' | 'timeup'>('manual');
   const [planLimits, setPlanLimits] = useState<PlanLimits | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [canTakeTest, setCanTakeTest] = useState(true);
@@ -256,10 +257,13 @@ const TestInterface = () => {
         setFilteredQuestions(loadedTestData.questions);
         
         
-        // Calculate total duration dynamically from questions and round to integer
+        // Use duration from test data if available, otherwise calculate from questions
         let totalDuration = 60; // Default fallback
         try {
-          if (DynamicQuestionLoader.calculateTotalDuration) {
+          if (loadedTestData && loadedTestData.examInfo && loadedTestData.examInfo.duration) {
+            // Use duration from test data
+            totalDuration = loadedTestData.examInfo.duration;
+          } else if (DynamicQuestionLoader.calculateTotalDuration) {
             totalDuration = Math.round(DynamicQuestionLoader.calculateTotalDuration(loadedTestData.questions));
           } else {
             // Use local fallback function
@@ -271,8 +275,13 @@ const TestInterface = () => {
         }
         setTimeLeft(totalDuration * 60); // Convert minutes to seconds
         
-        // Set default language
-        setSelectedLanguage(loadedTestData.examInfo?.defaultLanguage || 'english');
+        // Set language from session storage or default
+        const savedLanguage = sessionStorage.getItem('selectedLanguage') || localStorage.getItem('preferredLanguage');
+        const finalLanguage = savedLanguage || loadedTestData.examInfo?.defaultLanguage || 'english';
+        setSelectedLanguage(finalLanguage);
+        
+        // Also save to session storage for immediate use
+        sessionStorage.setItem('selectedLanguage', finalLanguage);
         
         setLoading(false);
       } catch (error) {
@@ -416,8 +425,13 @@ const TestInterface = () => {
       const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
       return () => clearTimeout(timer);
     } else if (timeLeft === 0 && !isCompleted && !loading && testStarted) {
-      // Auto-submit immediately when time is up without showing popup
-      handleSubmit(true); // Skip confirmation for time up
+      // Auto-submit when time is up with popup
+      setSubmitReason('timeup');
+      setShowSubmitConfirmation(true);
+      // Auto-submit after showing popup
+      setTimeout(() => {
+        handleSubmit(true); // Skip confirmation for time up
+      }, 2000);
     }
   }, [timeLeft, isCompleted, loading, testStarted]);
 
@@ -764,7 +778,7 @@ const TestInterface = () => {
             <div className="text-sm text-muted-foreground">
               <p><strong>Duration:</strong> {Math.round(timeLeft / 60)} minutes</p>
               <p><strong>Questions:</strong> {questions.length}</p>
-              <p><strong>Language:</strong> {selectedLanguage === 'english' ? 'English' : selectedLanguage === 'hindi' ? 'Hindi' : 'Both'}</p>
+              <p><strong>Language:</strong> {selectedLanguage === 'en' ? 'English' : selectedLanguage === 'hi' ? 'Hindi' : selectedLanguage === 'english' ? 'English' : selectedLanguage === 'hindi' ? 'Hindi' : 'Both'}</p>
             </div>
             <div className="space-y-3">
               <Button 
@@ -1023,8 +1037,8 @@ const TestInterface = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="text-lg leading-relaxed text-foreground">
-                  {selectedLanguage === 'hindi' ? question.questionHi : question.questionEn}
+                <div className="text-lg leading-relaxed text-foreground select-none" style={{userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none'}}>
+                  {(selectedLanguage === 'hi' || selectedLanguage === 'hindi') ? question.questionHi : question.questionEn}
                 </div>
                 
                 {/* Question Image */}
@@ -1065,7 +1079,7 @@ const TestInterface = () => {
                             className="w-4 h-4 text-primary mt-1"
                           />
                           <div className="flex-1">
-                            <span className="text-foreground block">{optionText}</span>
+                            <span className="text-foreground block select-none" style={{userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none'}}>{optionText}</span>
                             {optionImage && (
                               <div className="mt-2">
                                 <img 
@@ -1209,7 +1223,7 @@ const TestInterface = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-center text-lg font-bold">
-              Confirm Test Submission
+              {submitReason === 'timeup' ? 'Time Up - Auto Submitting' : 'Confirm Test Submission'}
             </DialogTitle>
           </DialogHeader>
           <div className="text-center py-4">
@@ -1217,7 +1231,10 @@ const TestInterface = () => {
               <AlertCircle className="w-12 h-12 text-warning" />
             </div>
             <p className="text-muted-foreground mb-4">
-              Are you sure you want to submit your test? This action cannot be undone.
+              {submitReason === 'timeup' 
+                ? 'Your test time has ended. The test will be automatically submitted in 2 seconds.'
+                : 'Are you sure you want to submit your test? This action cannot be undone.'
+              }
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button

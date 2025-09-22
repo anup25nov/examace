@@ -50,6 +50,8 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
   const handleStartTest = () => {
     // Save language preference
     localStorage.setItem('preferredLanguage', selectedLanguage);
+    // Also save in session storage for immediate use
+    sessionStorage.setItem('selectedLanguage', selectedLanguage);
     onStartTest(selectedLanguage);
   };
 
@@ -97,7 +99,7 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
                 <div className="flex items-center space-x-2">
                   <Clock className="w-5 h-5 text-muted-foreground" />
                   <span className="text-sm text-muted-foreground">
-                    Duration: {Math.round(testData.questions.reduce((total, q) => total + q.duration, 0))} minutes
+                    Duration: {testData.examInfo.duration} minutes
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -109,7 +111,7 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
                 <div className="flex items-center space-x-2">
                   <AlertCircle className="w-5 h-5 text-muted-foreground" />
                   <span className="text-sm text-muted-foreground">
-                    Negative Marking: Yes
+                    Negative Marking: {testData.questions.some(q => q.negativeMarks > 0) ? 'Yes' : 'No'}
                   </span>
                 </div>
               </div>
@@ -136,6 +138,40 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
                     )}
                   </Button>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Marking Scheme */}
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Marking Scheme</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center space-x-2">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <span className="text-sm text-muted-foreground">
+                    Correct Answer: +{testData.questions[0]?.marks || 1} mark(s)
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <AlertCircle className="w-5 h-5 text-red-600" />
+                  <span className="text-sm text-muted-foreground">
+                    Incorrect Answer: -{testData.questions[0]?.negativeMarks || 0.25} mark(s)
+                  </span>
+                </div>
+              </div>
+              
+              {/* Additional marking scheme details */}
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                <h4 className="text-sm font-semibold text-blue-800 mb-2">Marking Details:</h4>
+                <div className="text-xs text-blue-700 space-y-1">
+                  <p>• Each question carries {testData.questions[0]?.marks || 1} mark(s)</p>
+                  <p>• Wrong answer will deduct {testData.questions[0]?.negativeMarks || 0.25} mark(s)</p>
+                  <p>• Unattempted questions carry 0 marks</p>
+                  <p>• Total marks: {testData.questions.reduce((total, q) => total + q.marks, 0)}</p>
+                </div>
               </div>
             </CardContent>
           </Card>

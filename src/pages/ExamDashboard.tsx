@@ -519,7 +519,8 @@ const ExamDashboard = () => {
     testId: string,
     testName: string,
     testType: 'mock' | 'pyq' | 'practice',
-    topicId?: string
+    topicId?: string,
+    paperData?: any
   ) => {
     const completionKey = topicId ? `${testType}-${testId}-${topicId}` : `${testType}-${testId}`;
     const isCompleted = completedTests.has(completionKey);
@@ -598,6 +599,26 @@ const ExamDashboard = () => {
               </div>
             )}
           </div>
+          
+          {/* Date and Shift for PYQ tests */}
+          {testType === 'pyq' && paperData?.metadata && (
+            <div className="mb-3 p-2 bg-gray-50 rounded-lg">
+              <div className="text-xs text-muted-foreground space-y-1">
+                {paperData.metadata.date && (
+                  <div className="flex items-center space-x-1">
+                    <Calendar className="w-3 h-3" />
+                    <span>{paperData.metadata?.date ? new Date(paperData.metadata.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : paperData.date || 'Date TBD'}</span>
+                  </div>
+                )}
+                {paperData.metadata.shift && (
+                  <div className="flex items-center space-x-1">
+                    <Clock className="w-3 h-3" />
+                    <span>Shift {paperData.metadata.shift}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           
           {/* Action buttons - Fixed at bottom */}
           <div className="flex flex-col space-y-3 mt-auto">
@@ -938,7 +959,8 @@ const ExamDashboard = () => {
                                         paper.id,
                                         paper.name,
                                         'pyq',
-                                        null
+                                        null,
+                                        paper
                                       )
                                     )}
                                   </div>
