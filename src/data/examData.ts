@@ -255,7 +255,7 @@ class ExamDataService {
       },
       {
         id: '2023-paper-1',
-        name: 'SSC CGL 2023 Paper 1',
+        name: 'SSC CGL 2023 Paper 1**',
         description: 'Previous Year Questions 2023 Day 1 Shift 1',
         duration: 180,
         questions: 100,
@@ -412,7 +412,7 @@ class ExamDataService {
     this.questionData.set('ssc-cgl-mock-mock-paper-4', [
       {
         id: 'q1',
-        questionEn: 'Which planet is known as the Red Planet?',
+        questionEn: 'Which planetsssss is known as the Red Planet?',
         questionHi: 'किस ग्रह को लाल ग्रह के रूप में जाना जाता है?',
         optionsEn: ['Venus', 'Mars', 'Jupiter', 'Saturn'],
         optionsHi: ['वीनस', 'मंगल', 'बृहस्पति', 'शनि'],
