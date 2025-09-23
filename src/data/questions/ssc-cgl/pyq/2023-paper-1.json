@@ -2,7 +2,7 @@
   "questions": [
     {
       "id": "q1",
-      "questionEn": "Which planetuu is known as the Red Planet?",
+      "questionEn": "Which planet is known as the Red Planet?",
       "questionHi": "लाल ग्रह के रूप में किस ग्रह को जाना जाता है?",
       "options": ["Venus", "Mars", "Jupiter", "Saturn"],
       "correct": 1,

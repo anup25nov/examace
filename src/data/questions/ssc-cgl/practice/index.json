@@ -20,25 +20,6 @@
       }
     },
     {
-      "id": "english-grammar-paper-2",
-      "name": "English Grammar Paper 2",
-      "description": "Advanced English Grammar Practice - Complex Tenses, Advanced Grammar Rules",
-      "duration": 60,
-      "questions": 50,
-      "subjects": ["English Language"],
-      "difficulty": "hard",
-      "isPremium": true,
-      "price": 99,
-      "order": 2,
-      "metadata": {
-        "subject": "english",
-        "topic": "grammar",
-        "paper": 2,
-        "created_at": "2024-01-15T00:00:00Z",
-        "updated_at": "2024-01-15T00:00:00Z"
-      }
-    },
-    {
       "id": "maths-algebra-paper-1",
       "name": "Mathematics Algebra Paper 1",
       "description": "Practice questions for Mathematics Algebra - Linear Equations, Quadratic Equations, etc.",
@@ -58,25 +39,6 @@
       }
     },
     {
-      "id": "maths-algebra-paper-2",
-      "name": "Mathematics Algebra Paper 2",
-      "description": "Advanced Mathematics Algebra Practice - Complex Equations, Advanced Topics",
-      "duration": 60,
-      "questions": 50,
-      "subjects": ["Quantitative Aptitude"],
-      "difficulty": "hard",
-      "isPremium": true,
-      "price": 99,
-      "order": 4,
-      "metadata": {
-        "subject": "maths",
-        "topic": "algebra",
-        "paper": 2,
-        "created_at": "2024-01-15T00:00:00Z",
-        "updated_at": "2024-01-15T00:00:00Z"
-      }
-    },
-    {
       "id": "general-awareness-paper-1",
       "name": "General Awareness Paper 1",
       "description": "Practice questions for General Awareness - History, Geography, Science, etc.",
@@ -90,25 +52,6 @@
       "metadata": {
         "subject": "general-awareness",
         "topic": "mixed",
-        "paper": 1,
-        "created_at": "2024-01-15T00:00:00Z",
-        "updated_at": "2024-01-15T00:00:00Z"
-      }
-    },
-    {
-      "id": "general-intelligence-paper-1",
-      "name": "General Intelligence Paper 1",
-      "description": "Practice questions for General Intelligence - Reasoning, Series, Analogy, etc.",
-      "duration": 60,
-      "questions": 50,
-      "subjects": ["General Intelligence"],
-      "difficulty": "mixed",
-      "isPremium": false,
-      "price": 0,
-      "order": 6,
-      "metadata": {
-        "subject": "general-intelligence",
-        "topic": "reasoning",
         "paper": 1,
         "created_at": "2024-01-15T00:00:00Z",
         "updated_at": "2024-01-15T00:00:00Z"
