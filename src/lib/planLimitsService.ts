@@ -33,9 +33,28 @@ export class PlanLimitsService {
       let planType: 'free' | 'pro' | 'pro_plus' = 'free';
       let maxTests = 0;
 
-      if (membership && membership.status === 'active' && new Date(membership.end_date) > new Date()) {
-        planType = membership.plan_id as 'pro' | 'pro_plus';
-        maxTests = planType === 'pro' ? 11 : 9999; // Pro gets 11 tests, Pro+ gets unlimited
+      // Enhanced membership expiry handling
+      if (membership && membership.status === 'active') {
+        const now = new Date();
+        const expiryDate = new Date(membership.end_date);
+        const timeUntilExpiry = expiryDate.getTime() - now.getTime();
+        const daysUntilExpiry = timeUntilExpiry / (1000 * 60 * 60 * 24);
+
+        // Check if membership is expired
+        if (timeUntilExpiry <= 0) {
+          console.log('⚠️ [planLimitsService] Membership expired, downgrading to free plan');
+          await this.handleMembershipExpiry(userId, membership);
+          planType = 'free';
+        } else if (daysUntilExpiry <= 7) {
+          // Grace period - show warning but allow access
+          console.log(`⚠️ [planLimitsService] Membership expires in ${Math.ceil(daysUntilExpiry)} days`);
+          planType = membership.plan_id as 'pro' | 'pro_plus';
+          maxTests = planType === 'pro' ? 11 : 9999;
+        } else {
+          // Active membership
+          planType = membership.plan_id as 'pro' | 'pro_plus';
+          maxTests = planType === 'pro' ? 11 : 9999;
+        }
       }
 
       // Count used tests for premium users (only premium tests count against limits)
@@ -357,6 +376,108 @@ export class PlanLimitsService {
       return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     }
     return membership.start_date;
+  }
+
+  /**
+   * Handle membership expiry
+   */
+  private async handleMembershipExpiry(userId: string, membership: any): Promise<void> {
+    try {
+      console.log('🔄 [planLimitsService] Handling membership expiry for user:', userId);
+
+      // Update membership status to expired
+      const { error: membershipError } = await supabase
+        .from('user_memberships')
+        .update({
+          status: 'expired',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', membership.id);
+
+      if (membershipError) {
+        console.error('❌ [planLimitsService] Failed to update membership status:', membershipError);
+      }
+
+      // Update user profile to free plan
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .update({
+          membership_plan: 'free',
+          membership_status: 'inactive',
+          membership_expiry: null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (profileError) {
+        console.error('❌ [planLimitsService] Failed to update user profile:', profileError);
+      }
+
+      // Send expiry notification
+      await this.sendExpiryNotification(userId, membership);
+
+      console.log('✅ [planLimitsService] Membership expiry handled successfully');
+    } catch (error) {
+      console.error('❌ [planLimitsService] Error handling membership expiry:', error);
+    }
+  }
+
+  /**
+   * Send membership expiry notification
+   */
+  private async sendExpiryNotification(userId: string, membership: any): Promise<void> {
+    try {
+      const { error } = await (supabase as any)
+        .from('user_messages')
+        .insert({
+          user_id: userId,
+          message_type: 'membership_expired',
+          message: `Your ${membership.plan_id} membership has expired. Upgrade to continue accessing premium features.`,
+          is_read: false,
+          created_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Failed to send expiry notification:', error);
+      }
+    } catch (error) {
+      console.error('Error sending expiry notification:', error);
+    }
+  }
+
+  /**
+   * Check if user has grace period access
+   */
+  async hasGracePeriodAccess(userId: string): Promise<{ hasAccess: boolean; daysRemaining: number; message: string }> {
+    try {
+      const membership = await unifiedPaymentService.getUserMembership(userId);
+      
+      if (!membership || membership.status !== 'active') {
+        return { hasAccess: false, daysRemaining: 0, message: 'No active membership' };
+      }
+
+      const now = new Date();
+      const expiryDate = new Date(membership.end_date);
+      const timeUntilExpiry = expiryDate.getTime() - now.getTime();
+      const daysRemaining = Math.ceil(timeUntilExpiry / (1000 * 60 * 60 * 24));
+
+      if (timeUntilExpiry <= 0) {
+        return { hasAccess: false, daysRemaining: 0, message: 'Membership has expired' };
+      }
+
+      if (daysRemaining <= 7) {
+        return { 
+          hasAccess: true, 
+          daysRemaining, 
+          message: `Membership expires in ${daysRemaining} days` 
+        };
+      }
+
+      return { hasAccess: true, daysRemaining, message: 'Membership is active' };
+    } catch (error) {
+      console.error('Error checking grace period access:', error);
+      return { hasAccess: false, daysRemaining: 0, message: 'Error checking membership status' };
+    }
   }
 
   /**

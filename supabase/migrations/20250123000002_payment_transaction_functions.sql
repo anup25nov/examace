@@ -123,6 +123,9 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 3. GET USER MEMBERSHIP STATUS FUNCTION
 -- ==============================================
 
+-- Drop existing function first to avoid signature conflicts
+DROP FUNCTION IF EXISTS get_user_membership_status(UUID);
+
 CREATE OR REPLACE FUNCTION get_user_membership_status(p_user_id UUID)
 RETURNS TABLE(
   membership_plan VARCHAR(50),
@@ -247,11 +250,12 @@ GRANT EXECUTE ON FUNCTION get_payment_statistics TO authenticated;
 CREATE INDEX IF NOT EXISTS idx_membership_transactions_user_id ON membership_transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_membership_transactions_status ON membership_transactions(status);
 CREATE INDEX IF NOT EXISTS idx_membership_transactions_created_at ON membership_transactions(created_at);
-CREATE INDEX IF NOT EXISTS idx_membership_transactions_gateway_payment_id ON membership_transactions(gateway_payment_id);
+-- Note: gateway_payment_id column may not exist, skip this index for now
+-- CREATE INDEX IF NOT EXISTS idx_membership_transactions_gateway_payment_id ON membership_transactions(gateway_payment_id);
 
 CREATE INDEX IF NOT EXISTS idx_user_memberships_user_id ON user_memberships(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_memberships_status ON user_memberships(status);
-CREATE INDEX IF NOT EXISTS idx_user_memberships_expires_at ON user_memberships(expires_at);
+CREATE INDEX IF NOT EXISTS idx_user_memberships_end_date ON user_memberships(end_date);
 
 -- ==============================================
 -- 8. ADD CONSTRAINTS
@@ -261,7 +265,7 @@ CREATE INDEX IF NOT EXISTS idx_user_memberships_expires_at ON user_memberships(e
 ALTER TABLE membership_transactions ADD CONSTRAINT check_amount_positive CHECK (amount > 0);
 ALTER TABLE membership_transactions ADD CONSTRAINT check_status_valid CHECK (status IN ('pending', 'completed', 'failed', 'refunded', 'cancelled'));
 
-ALTER TABLE user_memberships ADD CONSTRAINT check_expires_after_starts CHECK (expires_at > starts_at);
+ALTER TABLE user_memberships ADD CONSTRAINT check_expires_after_starts CHECK (end_date > start_date);
 ALTER TABLE user_memberships ADD CONSTRAINT check_status_valid CHECK (status IN ('active', 'expired', 'cancelled'));
 
 -- ==============================================

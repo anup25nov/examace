@@ -24,6 +24,11 @@ import { planLimitsService, PlanLimits } from "@/lib/planLimitsService";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { messagingService } from "@/lib/messagingService";
 import { supabaseStatsService } from "@/lib/supabaseStats";
+import { testStateRecoveryService, TestState } from "@/lib/testStateRecoveryService";
+import { errorHandlingService } from "@/lib/errorHandlingService";
+import { dataValidationService } from "@/lib/dataValidationService";
+import { performanceMonitoringService } from "@/lib/performanceMonitoringService";
+import EnhancedErrorBoundary from "@/components/EnhancedErrorBoundary";
 
 // Fallback function for calculating total duration
 const calculateTotalDurationFallback = (questions: QuestionWithProps[]): number => {
@@ -108,6 +113,7 @@ const TestInterface = () => {
   }>>([]);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [filteredQuestions, setFilteredQuestions] = useState<QuestionWithProps[]>([]);
+  const [autoSaveInterval, setAutoSaveInterval] = useState<NodeJS.Timeout | null>(null);
   const questionGridRef = useRef<HTMLDivElement>(null);
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
   const [submitReason, setSubmitReason] = useState<'manual' | 'timeup'>('manual');
@@ -200,8 +206,9 @@ const TestInterface = () => {
   // Load questions and set timer
   useEffect(() => {
     const loadTestData = async () => {
+      const endTiming = performanceMonitoringService.startTiming('load_test_data');
+      
       try {
-        
         // Determine the correct test ID based on the route parameters
         let testId = '';
         let testTypeValue = '';
@@ -232,22 +239,69 @@ const TestInterface = () => {
         setActualTestType(testTypeValue);
         setActualTestId(testId);
         
+        // Try to recover test state first
+        console.log('🔄 Attempting to recover test state...');
+        const recoveryResult = await errorHandlingService.executeWithRetry(
+          () => testStateRecoveryService.recoverTestState(examId!, sectionId!, testTypeValue, testId),
+          { maxRetries: 2 },
+          { action: 'recover_test_state', resource: 'test_interface' }
+        );
+        
+        if (recoveryResult.success && recoveryResult.state && recoveryResult.canResume) {
+          console.log('✅ Test state recovered successfully');
+          const recoveredState = recoveryResult.state;
+          
+          // Restore state
+          setCurrentQuestion(recoveredState.currentQuestion);
+          setAnswers(recoveredState.answers);
+          setTimeLeft(recoveredState.timeLeft);
+          setFlagged(new Set(recoveredState.flagged));
+          setSelectedLanguage(recoveredState.selectedLanguage);
+          setIsCompleted(recoveredState.isCompleted);
+          setTestStarted(true);
+          
+          // Load test data for display
+          const loadedTestData = await errorHandlingService.executeWithRetry(
+            () => secureDynamicQuestionLoader.loadQuestions(
+              examId!, 
+              testTypeValue as 'pyq' | 'practice' | 'mock', 
+              testId, 
+              topic,
+              user?.id
+            ),
+            { maxRetries: 3 },
+            { action: 'load_test_data', resource: 'test_interface' }
+          );
+          
+          if (loadedTestData) {
+            setTestData(loadedTestData);
+            setQuestions(loadedTestData.questions);
+            setSubjectDistribution(analyzeSubjectDistribution(loadedTestData.questions));
+            setLoading(false);
+            endTiming();
+            return;
+          }
+        }
         
         // Load test data securely
         console.log('Loading test data securely with:', { examId, testTypeValue, testId, userId: user?.id });
-        const loadedTestData = await secureDynamicQuestionLoader.loadQuestions(
-          examId!, 
-          testTypeValue as 'pyq' | 'practice' | 'mock', 
-          testId, 
-          topic,
-          user?.id
-          // Premium status will be determined dynamically
+        const loadedTestData = await errorHandlingService.executeWithRetry(
+          () => secureDynamicQuestionLoader.loadQuestions(
+            examId!, 
+            testTypeValue as 'pyq' | 'practice' | 'mock', 
+            testId, 
+            topic,
+            user?.id
+          ),
+          { maxRetries: 3 },
+          { action: 'load_test_data', resource: 'test_interface' }
         );
         
         if (!loadedTestData) {
           console.error('Failed to load test data for:', { examId, testTypeValue, testId });
           setError(`Test data not found for ${testTypeValue} test: ${testId}`);
           setLoading(false);
+          endTiming();
           return;
         }
         
@@ -442,6 +496,55 @@ const TestInterface = () => {
       }, 2000);
     }
   }, [timeLeft, isCompleted, loading, testStarted]);
+
+  // Auto-save test state
+  useEffect(() => {
+    if (!testStarted || !testData || isCompleted) return;
+
+    const saveTestState = async () => {
+      try {
+        const testState: TestState = {
+          examId: examId!,
+          sectionId: sectionId!,
+          testType: actualTestType,
+          testId: actualTestId,
+          currentQuestion,
+          answers,
+          timeLeft,
+          startTime,
+          flagged: Array.from(flagged),
+          selectedLanguage,
+          isCompleted,
+          lastSaved: new Date()
+        };
+
+        await testStateRecoveryService.saveTestState(testState);
+      } catch (error) {
+        console.error('Failed to auto-save test state:', error);
+        errorHandlingService.handleError(error, {
+          action: 'auto_save_test_state',
+          resource: 'test_interface'
+        });
+      }
+    };
+
+    // Start auto-save every 30 seconds
+    const interval = setInterval(saveTestState, 30000);
+    setAutoSaveInterval(interval);
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [testStarted, testData, isCompleted, currentQuestion, answers, timeLeft, flagged, selectedLanguage, actualTestType, actualTestId]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveInterval) {
+        clearInterval(autoSaveInterval);
+      }
+    };
+  }, [autoSaveInterval]);
 
   // Prevent fullscreen exit during test
   useEffect(() => {
@@ -1291,4 +1394,22 @@ const TestInterface = () => {
   );
 };
 
-export default TestInterface;
+// Wrap with error boundary
+const TestInterfaceWithErrorBoundary = () => {
+  return (
+    <EnhancedErrorBoundary
+      showDetails={process.env.NODE_ENV === 'development'}
+      onError={(error, errorInfo) => {
+        console.error('TestInterface Error:', error, errorInfo);
+        errorHandlingService.handleError(error, {
+          action: 'test_interface_error',
+          resource: 'test_interface'
+        });
+      }}
+    >
+      <TestInterface />
+    </EnhancedErrorBoundary>
+  );
+};
+
+export default TestInterfaceWithErrorBoundary;

@@ -25,12 +25,40 @@ export interface ErrorInfo {
   retryable: boolean;
 }
 
+export interface RetryConfig {
+  maxRetries: number;
+  baseDelay: number;
+  maxDelay: number;
+  backoffMultiplier: number;
+  retryCondition?: (error: any) => boolean;
+}
+
+export interface NetworkState {
+  isOnline: boolean;
+  lastOnlineTime: Date | null;
+  retryQueue: Array<() => Promise<any>>;
+}
+
 export class ErrorHandlingService {
   private static instance: ErrorHandlingService;
   private errorLog: ErrorInfo[] = [];
   private maxLogSize = 1000;
+  private networkState: NetworkState = {
+    isOnline: navigator.onLine,
+    lastOnlineTime: navigator.onLine ? new Date() : null,
+    retryQueue: []
+  };
+  private defaultRetryConfig: RetryConfig = {
+    maxRetries: 3,
+    baseDelay: 1000,
+    maxDelay: 10000,
+    backoffMultiplier: 2,
+    retryCondition: (error) => this.isRetryableError(error)
+  };
 
-  private constructor() {}
+  private constructor() {
+    this.setupNetworkMonitoring();
+  }
 
   public static getInstance(): ErrorHandlingService {
     if (!ErrorHandlingService.instance) {
@@ -350,6 +378,128 @@ export class ErrorHandlingService {
       bySeverity,
       recent
     };
+  }
+
+  /**
+   * Setup network monitoring
+   */
+  private setupNetworkMonitoring(): void {
+    if (typeof window === 'undefined') return;
+
+    window.addEventListener('online', () => {
+      this.networkState.isOnline = true;
+      this.networkState.lastOnlineTime = new Date();
+      this.processRetryQueue();
+    });
+
+    window.addEventListener('offline', () => {
+      this.networkState.isOnline = false;
+    });
+  }
+
+  /**
+   * Check if error is retryable
+   */
+  private isRetryableError(error: any): boolean {
+    const { retryable } = this.categorizeError(error);
+    return retryable && this.networkState.isOnline;
+  }
+
+  /**
+   * Execute function with retry mechanism
+   */
+  async executeWithRetry<T>(
+    fn: () => Promise<T>,
+    config: Partial<RetryConfig> = {},
+    context?: ErrorContext
+  ): Promise<T> {
+    const retryConfig = { ...this.defaultRetryConfig, ...config };
+    let lastError: any;
+
+    for (let attempt = 0; attempt <= retryConfig.maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (error) {
+        lastError = error;
+        
+        // Check if we should retry
+        if (attempt === retryConfig.maxRetries || 
+            !retryConfig.retryCondition?.(error) ||
+            !this.networkState.isOnline) {
+          break;
+        }
+
+        // Calculate delay with exponential backoff
+        const delay = Math.min(
+          retryConfig.baseDelay * Math.pow(retryConfig.backoffMultiplier, attempt),
+          retryConfig.maxDelay
+        );
+
+        // Log retry attempt
+        this.handleError(error, {
+          ...context,
+          action: `retry_attempt_${attempt + 1}`,
+          resource: 'retry_mechanism'
+        });
+
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+
+    // If we're offline, queue the function for later retry
+    if (!this.networkState.isOnline) {
+      this.networkState.retryQueue.push(fn);
+      throw new Error('Network offline. Request queued for retry when connection is restored.');
+    }
+
+    // All retries failed, throw the last error
+    throw lastError;
+  }
+
+  /**
+   * Process retry queue when network comes back online
+   */
+  private async processRetryQueue(): Promise<void> {
+    if (this.networkState.retryQueue.length === 0) return;
+
+    console.log(`🔄 Processing ${this.networkState.retryQueue.length} queued requests...`);
+    
+    const queue = [...this.networkState.retryQueue];
+    this.networkState.retryQueue = [];
+
+    for (const fn of queue) {
+      try {
+        await fn();
+      } catch (error) {
+        console.error('Failed to process queued request:', error);
+        // Re-queue if still retryable
+        if (this.isRetryableError(error)) {
+          this.networkState.retryQueue.push(fn);
+        }
+      }
+    }
+  }
+
+  /**
+   * Get network state
+   */
+  getNetworkState(): NetworkState {
+    return { ...this.networkState };
+  }
+
+  /**
+   * Check if currently online
+   */
+  isOnline(): boolean {
+    return this.networkState.isOnline;
+  }
+
+  /**
+   * Get retry queue length
+   */
+  getRetryQueueLength(): number {
+    return this.networkState.retryQueue.length;
   }
 
   /**

@@ -56,12 +56,22 @@ ALTER TABLE exam_questions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE exam_test_data ENABLE ROW LEVEL SECURITY;
 
 -- Policy for exam_questions - only authenticated users can read
-CREATE POLICY "Users can read exam questions" ON exam_questions
-  FOR SELECT USING (auth.role() = 'authenticated');
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'exam_questions' AND policyname = 'Users can read exam questions') THEN
+        CREATE POLICY "Users can read exam questions" ON exam_questions
+        FOR SELECT USING (auth.role() = 'authenticated');
+    END IF;
+END $$;
 
 -- Policy for exam_test_data - only authenticated users can read
-CREATE POLICY "Users can read exam test data" ON exam_test_data
-  FOR SELECT USING (auth.role() = 'authenticated');
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'exam_test_data' AND policyname = 'Users can read exam test data') THEN
+        CREATE POLICY "Users can read exam test data" ON exam_test_data
+        FOR SELECT USING (auth.role() = 'authenticated');
+    END IF;
+END $$;
 
 -- Create function to check premium access
 CREATE OR REPLACE FUNCTION check_premium_access(user_id UUID, exam_id VARCHAR, test_type VARCHAR, test_id VARCHAR)

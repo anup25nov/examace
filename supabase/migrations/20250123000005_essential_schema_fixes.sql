@@ -63,8 +63,12 @@ CREATE INDEX IF NOT EXISTS idx_individual_test_scores_user_id_exam_id_test_type_
 CREATE INDEX IF NOT EXISTS idx_user_memberships_user_id ON user_memberships(user_id);
 CREATE INDEX IF NOT EXISTS idx_membership_transactions_user_id ON membership_transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_referral_codes_user_id ON referral_codes(user_id);
-CREATE INDEX IF NOT EXISTS idx_referral_tracking_referrer_id ON referral_tracking(referrer_id);
-CREATE INDEX IF NOT EXISTS idx_referral_rewards_referrer_id ON referral_rewards(referrer_id);
-CREATE INDEX IF NOT EXISTS idx_daily_visits_user_id_visit_date ON daily_visits(user_id, visit_date);
-CREATE INDEX IF NOT EXISTS idx_payment_verifications_order_id ON payment_verifications(order_id);
-CREATE INDEX IF NOT EXISTS idx_payment_verifications_user_id ON payment_verifications(user_id);
+-- Note: referral_tracking table may not exist, skip this index for now
+-- CREATE INDEX IF NOT EXISTS idx_referral_tracking_referrer_id ON referral_tracking(referrer_id);
+-- Note: referral_rewards table may not exist, skip this index for now
+-- CREATE INDEX IF NOT EXISTS idx_referral_rewards_referrer_id ON referral_rewards(referrer_id);
+-- Note: daily_visits table may not exist, skip this index for now
+-- CREATE INDEX IF NOT EXISTS idx_daily_visits_user_id_visit_date ON daily_visits(user_id, visit_date);
+-- Note: payment_verifications table may not exist, skip these indexes for now
+-- CREATE INDEX IF NOT EXISTS idx_payment_verifications_order_id ON payment_verifications(order_id);
+-- CREATE INDEX IF NOT EXISTS idx_payment_verifications_user_id ON payment_verifications(user_id);
