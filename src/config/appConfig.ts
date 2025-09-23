@@ -418,10 +418,41 @@ export const getWithdrawalProcessingDays = () => configManager.getSection('commi
 export const getTableName = (table: keyof AppConfig['database']) => configManager.getSection('database')[table];
 
 // Security helpers
-export const isRightClickBlocked = () => configManager.getSection('security').enableRightClickBlock;
-export const isDevToolsBlocked = () => configManager.getSection('security').enableDevToolsBlock;
-export const isTextSelectionBlocked = () => configManager.getSection('security').enableTextSelectionBlock;
-export const isKeyboardShortcutsBlocked = () => configManager.getSection('security').enableKeyboardShortcutsBlock;
+export const isRightClickBlocked = () => {
+  try {
+    return configManager.getSection('security')?.enableRightClickBlock || false;
+  } catch (error) {
+    console.warn('Error getting right click block setting:', error);
+    return false;
+  }
+};
+
+export const isDevToolsBlocked = () => {
+  try {
+    return configManager.getSection('security')?.enableDevToolsBlock || false;
+  } catch (error) {
+    console.warn('Error getting dev tools block setting:', error);
+    return false;
+  }
+};
+
+export const isTextSelectionBlocked = () => {
+  try {
+    return configManager.getSection('security')?.enableTextSelectionBlock || false;
+  } catch (error) {
+    console.warn('Error getting text selection block setting:', error);
+    return false;
+  }
+};
+
+export const isKeyboardShortcutsBlocked = () => {
+  try {
+    return configManager.getSection('security')?.enableKeyboardShortcutsBlock || false;
+  } catch (error) {
+    console.warn('Error getting keyboard shortcuts block setting:', error);
+    return false;
+  }
+};
 
 // Notification duration helpers
 export const getSuccessNotificationDuration = () => configManager.getSection('notifications').successDuration;

@@ -889,7 +889,7 @@ const TestInterface = () => {
             <div className="text-sm text-muted-foreground">
               <p><strong>Duration:</strong> {Math.round(timeLeft / 60)} minutes</p>
               <p><strong>Questions:</strong> {questions.length}</p>
-              <p><strong>Language:</strong> {selectedLanguage === 'en' ? 'English' : selectedLanguage === 'hi' ? 'Hindi' : selectedLanguage === 'english' ? 'English' : selectedLanguage === 'hindi' ? 'Hindi' : 'Both'}</p>
+              <p><strong>Language:</strong> {selectedLanguage === 'en' || selectedLanguage === 'english' ? 'English' : selectedLanguage === 'hi' || selectedLanguage === 'hindi' ? 'Hindi' : 'Both'}</p>
             </div>
             <div className="space-y-3">
               <Button 

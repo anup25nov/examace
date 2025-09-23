@@ -37,6 +37,7 @@ interface YearWiseTabsProps {
   onViewSolutions: (testId: string) => void;
   onRetry: (testId: string) => void;
   testFilter?: 'all' | 'attempted' | 'not-attempted';
+  examId?: string;
   className?: string;
   sectionMessage?: {
     type: string;
@@ -56,6 +57,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
   onViewSolutions,
   onRetry,
   testFilter = 'all',
+  examId,
   className = '',
   sectionMessage,
   onMessageAction
@@ -532,6 +534,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
           onStart={handleStartWithLanguage}
           test={selectedTestForStart}
           testType="pyq"
+          examId={examId}
         />
       )}
     </div>

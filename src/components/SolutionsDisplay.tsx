@@ -119,36 +119,53 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
   // Security measures to prevent data inspection - CENTRALIZED CONFIG
   useEffect(() => {
     // Only apply security measures if enabled in config
-    if (!isRightClickBlocked() && !isDevToolsBlocked() && !isTextSelectionBlocked() && !isKeyboardShortcutsBlocked()) {
+    try {
+      if (!isRightClickBlocked() && !isDevToolsBlocked() && !isTextSelectionBlocked() && !isKeyboardShortcutsBlocked()) {
+        return;
+      }
+    } catch (error) {
+      console.warn('Error checking security settings:', error);
       return;
     }
 
     // Disable right-click context menu
     const handleContextMenu = (e: MouseEvent) => {
-      if (isRightClickBlocked()) {
-        e.preventDefault();
+      try {
+        if (isRightClickBlocked()) {
+          e.preventDefault();
+        }
+      } catch (error) {
+        console.warn('Error in right click handler:', error);
       }
     };
 
     // Disable F12, Ctrl+Shift+I, Ctrl+U, etc.
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isKeyboardShortcutsBlocked() || isDevToolsBlocked()) {
-        if (
-          e.key === 'F12' ||
-          (e.ctrlKey && e.shiftKey && e.key === 'I') ||
-          (e.ctrlKey && e.key === 'u') ||
-          (e.ctrlKey && e.shiftKey && e.key === 'C') ||
-          (e.ctrlKey && e.key === 'a')
-        ) {
-          e.preventDefault();
+      try {
+        if (isKeyboardShortcutsBlocked() || isDevToolsBlocked()) {
+          if (
+            e.key === 'F12' ||
+            (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+            (e.ctrlKey && e.key === 'u') ||
+            (e.ctrlKey && e.shiftKey && e.key === 'C') ||
+            (e.ctrlKey && e.key === 'a')
+          ) {
+            e.preventDefault();
+          }
         }
+      } catch (error) {
+        console.warn('Error in keyboard handler:', error);
       }
     };
 
     // Disable text selection
     const handleSelectStart = (e: Event) => {
-      if (isTextSelectionBlocked()) {
-        e.preventDefault();
+      try {
+        if (isTextSelectionBlocked()) {
+          e.preventDefault();
+        }
+      } catch (error) {
+        console.warn('Error in text selection handler:', error);
       }
     };
 
@@ -539,7 +556,7 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
 
                   {/* Options */}
                   <div className="space-y-2 sm:space-y-3 mb-4">
-                    {question.options.map((option, optionIndex) => {
+                    {question.options && Array.isArray(question.options) ? question.options.map((option, optionIndex) => {
                       const isUserAnswer = userAnswer === optionIndex;
                       const isCorrectAnswer = question.correct === optionIndex;
                       
@@ -590,7 +607,11 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                           </div>
                         </div>
                       );
-                    })}
+                    }) : (
+                      <div className="text-center text-muted-foreground py-4">
+                        No options available for this question.
+                      </div>
+                    )}
                   </div>
 
                   {/* Answer Summary */}

@@ -35,6 +35,7 @@ interface EnhancedTestCardProps {
   onViewSolutions: () => void;
   onRetry: () => void;
   testType?: 'mock' | 'pyq';
+  examId?: string;
   className?: string;
 }
 
@@ -46,6 +47,7 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
   onViewSolutions,
   onRetry,
   testType = 'mock',
+  examId,
   className = ''
 }) => {
   const { user } = useAuth();
@@ -262,6 +264,7 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
         onStart={handleStartWithLanguage}
         test={test}
         testType={testType}
+        examId={examId}
       />
 
       {/* Membership Plans Modal */}

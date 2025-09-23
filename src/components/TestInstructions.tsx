@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Clock, Target, BookOpen, CheckCircle, AlertCircle } from 'lucide-react';
 import { TestData } from '@/lib/secureDynamicQuestionLoader';
+import { dynamicExamService } from '@/lib/dynamicExamService';
 
 interface TestInstructionsProps {
   examId: string;
@@ -23,6 +24,19 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
 }) => {
   const navigate = useNavigate();
   const [selectedLanguage, setSelectedLanguage] = useState(testData.examInfo.defaultLanguage);
+
+  // Get marking scheme based on exam type
+  const getMarkingScheme = () => {
+    const examConfig = dynamicExamService.getExamConfig(examId);
+    if (examConfig?.examPattern?.markingScheme) {
+      const { correct, incorrect, unattempted } = examConfig.examPattern.markingScheme;
+      return { correct, incorrect, unattempted };
+    }
+    // Default marking scheme if no exam config found
+    return { correct: 1, incorrect: -0.25, unattempted: 0 };
+  };
+
+  const markingScheme = getMarkingScheme();
 
   const instructions = [
     {
@@ -152,13 +166,13 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
                 <div className="flex items-center space-x-2">
                   <CheckCircle className="w-5 h-5 text-green-600" />
                   <span className="text-sm text-muted-foreground">
-                    Correct Answer: +{testData.questions[0]?.marks || 1} mark(s)
+                    Correct Answer: +{markingScheme.correct} mark{markingScheme.correct !== 1 ? 's' : ''}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <AlertCircle className="w-5 h-5 text-red-600" />
                   <span className="text-sm text-muted-foreground">
-                    Incorrect Answer: -{testData.questions[0]?.negativeMarks || 0.25} mark(s)
+                    Incorrect Answer: {markingScheme.incorrect < 0 ? `${markingScheme.incorrect} marks` : 'No negative marking'}
                   </span>
                 </div>
               </div>
@@ -167,10 +181,10 @@ const TestInstructions: React.FC<TestInstructionsProps> = ({
               <div className="mt-4 p-3 bg-blue-50 rounded-lg">
                 <h4 className="text-sm font-semibold text-blue-800 mb-2">Marking Details:</h4>
                 <div className="text-xs text-blue-700 space-y-1">
-                  <p>• Each question carries {testData.questions[0]?.marks || 1} mark(s)</p>
-                  <p>• Wrong answer will deduct {testData.questions[0]?.negativeMarks || 0.25} mark(s)</p>
-                  <p>• Unattempted questions carry 0 marks</p>
-                  <p>• Total marks: {testData.questions.reduce((total, q) => total + q.marks, 0)}</p>
+                  <p>• Each question carries {markingScheme.correct} mark{markingScheme.correct !== 1 ? 's' : ''}</p>
+                  <p>• Wrong answer will {markingScheme.incorrect < 0 ? `deduct ${Math.abs(markingScheme.incorrect)} mark${Math.abs(markingScheme.incorrect) !== 1 ? 's' : ''}` : 'not deduct any marks'}</p>
+                  <p>• Unattempted questions carry {markingScheme.unattempted} mark{markingScheme.unattempted !== 1 ? 's' : ''}</p>
+                  <p>• Total marks: {testData.questions.reduce((total, q) => total + (q.marks || markingScheme.correct), 0)}</p>
                 </div>
               </div>
             </CardContent>

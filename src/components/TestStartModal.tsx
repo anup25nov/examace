@@ -21,6 +21,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { planLimitsService, PlanLimits } from '@/lib/planLimitsService';
 import { UpgradeModal } from './UpgradeModal';
+import { dynamicExamService } from '@/lib/dynamicExamService';
 
 interface TestStartModalProps {
   isOpen: boolean;
@@ -36,6 +37,7 @@ interface TestStartModalProps {
     price?: number;
   };
   testType: 'mock' | 'pyq';
+  examId?: string;
 }
 
 export const TestStartModal: React.FC<TestStartModalProps> = ({
@@ -43,13 +45,29 @@ export const TestStartModal: React.FC<TestStartModalProps> = ({
   onClose,
   onStart,
   test,
-  testType
+  testType,
+  examId
 }) => {
   const { getUserId } = useAuth();
   const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [hasReadInstructions, setHasReadInstructions] = useState(false);
   const [planLimits, setPlanLimits] = useState<PlanLimits | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  // Get marking scheme based on exam type
+  const getMarkingScheme = () => {
+    if (examId) {
+      const examConfig = dynamicExamService.getExamConfig(examId);
+      if (examConfig?.examPattern?.markingScheme) {
+        const { correct, incorrect, unattempted } = examConfig.examPattern.markingScheme;
+        return { correct, incorrect, unattempted };
+      }
+    }
+    // Default marking scheme if no exam config found
+    return { correct: 1, incorrect: -0.25, unattempted: 0 };
+  };
+
+  const markingScheme = getMarkingScheme();
   const [canTakeTest, setCanTakeTest] = useState(true);
 
   // Check plan limits when modal opens
@@ -93,6 +111,10 @@ export const TestStartModal: React.FC<TestStartModalProps> = ({
 
     // Record test attempt when user actually starts the test
     await planLimitsService.recordTestAttempt(userId, test.name, 'ssc-cgl', testType, test.questions, isRetry);
+    
+    // Save language preference to session storage and localStorage
+    sessionStorage.setItem('selectedLanguage', selectedLanguage);
+    localStorage.setItem('preferredLanguage', selectedLanguage);
     
     onStart(selectedLanguage);
     onClose();
@@ -153,29 +175,29 @@ export const TestStartModal: React.FC<TestStartModalProps> = ({
                   <Clock className="w-4 h-4 text-muted-foreground" />
                   <div>
                     <div className="text-sm font-medium">{test.duration} min</div>
-                    <div className="text-xs text-muted-foreground">Duration</div>
+                    {/* <div className="text-xs text-muted-foreground">Duration</div> */}
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
                   <FileText className="w-4 h-4 text-muted-foreground" />
                   <div>
-                    <div className="text-sm font-medium">{test.questions}</div>
-                    <div className="text-xs text-muted-foreground">Questions</div>
+                    <div className="text-sm font-medium">{test.questions} Questions</div>
+                    {/* <div className="text-xs text-muted-foreground">Questions</div> */}
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Users className="w-4 h-4 text-muted-foreground" />
                   <div>
-                    <div className="text-sm font-medium">{test.subjects.length}</div>
-                    <div className="text-xs text-muted-foreground">Subjects</div>
+                    <div className="text-sm font-medium">{test.subjects.length} Subjects</div>
+                    {/* <div className="text-xs text-muted-foreground">Subjects</div> */}
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Trophy className="w-4 h-4 text-muted-foreground" />
-                  <div>
+                  {/* <Trophy className="w-4 h-4 text-muted-foreground" /> */}
+                  {/* <div>
                     <div className="text-sm font-medium">{test.difficulty}</div>
                     <div className="text-xs text-muted-foreground">Level</div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             </CardContent>
@@ -253,8 +275,9 @@ export const TestStartModal: React.FC<TestStartModalProps> = ({
                   <div>
                     <div className="font-medium">Marking Scheme</div>
                     <div className="text-sm text-muted-foreground">
-                      +1 mark for correct answer, -0.25 marks for incorrect answer. 
-                      No negative marking for unattempted questions.
+                      +{markingScheme.correct} mark{markingScheme.correct !== 1 ? 's' : ''} for correct answer, 
+                      {markingScheme.incorrect < 0 ? ` ${markingScheme.incorrect} marks` : ' no negative marking'} for incorrect answer. 
+                      {markingScheme.unattempted === 0 ? 'No negative marking' : `${markingScheme.unattempted} marks`} for unattempted questions.
                     </div>
                   </div>
                 </div>

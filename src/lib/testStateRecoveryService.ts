@@ -38,7 +38,7 @@ export class TestStateRecoveryService {
   /**
    * Save test state to localStorage and database
    */
-  async saveTestState(state: TestState): Promise<boolean> {
+  async saveTestState(state: TestState, userId?: string): Promise<boolean> {
     try {
       // Save to localStorage for immediate access
       const stateWithTimestamp = {
@@ -48,29 +48,31 @@ export class TestStateRecoveryService {
       
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(stateWithTimestamp));
 
-      // Save to database for persistence across devices
-      const { error } = await (supabase as any)
-        .from('test_states')
-        .upsert({
-          user_id: state.examId, // This should be actual user ID
-          exam_id: state.examId,
-          section_id: state.sectionId,
-          test_type: state.testType,
-          test_id: state.testId,
-          current_question: state.currentQuestion,
-          answers: state.answers,
-          time_left: state.timeLeft,
-          start_time: new Date(state.startTime).toISOString(),
-          flagged_questions: state.flagged,
-          selected_language: state.selectedLanguage,
-          is_completed: state.isCompleted,
-          state_data: stateWithTimestamp,
-          updated_at: new Date().toISOString()
-        });
+      // Only save to database if we have a user ID
+      if (userId) {
+        const { error } = await (supabase as any)
+          .from('test_states')
+          .upsert({
+            user_id: userId, // Use the actual user ID
+            exam_id: state.examId,
+            section_id: state.sectionId,
+            test_type: state.testType,
+            test_id: state.testId,
+            current_question: state.currentQuestion,
+            answers: state.answers,
+            time_left: state.timeLeft,
+            start_time: new Date(state.startTime).toISOString(),
+            flagged_questions: state.flagged,
+            selected_language: state.selectedLanguage,
+            is_completed: state.isCompleted,
+            state_data: stateWithTimestamp,
+            updated_at: new Date().toISOString()
+          });
 
-      if (error) {
-        console.warn('Failed to save test state to database:', error);
-        // Don't throw error, localStorage is sufficient for basic recovery
+        if (error) {
+          console.warn('Failed to save test state to database:', error);
+          // Don't throw error, localStorage is sufficient for basic recovery
+        }
       }
 
       return true;
@@ -238,9 +240,14 @@ export class TestStateRecoveryService {
         .eq('section_id', sectionId)
         .eq('test_type', testType)
         .eq('test_id', testId)
-        .single();
+        .maybeSingle(); // Use maybeSingle() instead of single() to handle 0 rows gracefully
 
-      if (error || !data) return null;
+      if (error) {
+        console.error('Database error getting test state:', error);
+        return null;
+      }
+
+      if (!data) return null; // No state found
 
       return this.mapDatabaseStateToTestState(data);
     } catch (error) {

@@ -29,7 +29,6 @@ import { dynamicExamService } from "@/lib/dynamicExamService";
 import { useExamStats } from "@/hooks/useExamStats";
 import { useComprehensiveStats } from "@/hooks/useComprehensiveStats";
 import { useAuth } from "@/hooks/useAuth";
-import { useAdmin } from "@/hooks/useAdmin";
 import { useDashboardData } from "@/contexts/DashboardDataContext";
 import { analytics } from "@/lib/analytics";
 import { EnhancedTestCard } from "@/components/EnhancedTestCard";
@@ -38,7 +37,6 @@ import { secureTestDataLoader } from "@/lib/secureTestDataLoader";
 import { premiumService, PremiumTest } from "@/lib/premiumService";
 import { supabase } from "@/integrations/supabase/client";
 import Footer from "@/components/Footer";
-import { AdminAccess } from "@/components/admin/AdminAccess";
 import { bulkTestService } from "@/lib/bulkTestService";
 
 // Icon mapping for dynamic loading
@@ -60,7 +58,6 @@ const EnhancedExamDashboard = () => {
   
   // Remove focus event listener to prevent unnecessary API calls
   // Stats will be refreshed only when needed (e.g., after test completion)
-  const { isAdmin, loading: adminLoading } = useAdmin();
   
   const [userStats, setUserStats] = useState({
     totalTests: 0,
@@ -70,7 +67,6 @@ const EnhancedExamDashboard = () => {
     lastActive: null as Date | null,
     avgScoreLast10: 0
   });
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
   
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [completedTests, setCompletedTests] = useState<Set<string>>(new Set());
@@ -588,22 +584,9 @@ const EnhancedExamDashboard = () => {
               <div className="text-right">
                 <div className="flex items-center space-x-2 justify-end">
                   <p className="text-sm font-medium text-foreground">{displayName}!</p>
-                  {getMembershipBadge()}
+                  {/* {getMembershipBadge()} */}
                 </div>
-                {isAdmin && (
-                  <Badge variant="destructive" className="text-xs mt-1">Admin</Badge>
-                )}
               </div>
-              {isAdmin && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowAdminPanel(true)}
-                  className="text-xs"
-                >
-                  Admin Panel
-                </Button>
-              )}
             </div>
           </div>
         </div>
@@ -881,10 +864,6 @@ const EnhancedExamDashboard = () => {
       </div>
       <Footer />
 
-      {/* Admin Panel */}
-      {showAdminPanel && (
-        <AdminAccess onClose={() => setShowAdminPanel(false)} />
-      )}
     </div>
   );
 };

@@ -29,6 +29,7 @@ import { useExamStats } from "@/hooks/useExamStats";
 import { useComprehensiveStats } from "@/hooks/useComprehensiveStats";
 import { useAuth } from "@/hooks/useAuth";
 import { useDashboardData } from "@/contexts/DashboardDataContext";
+import { useMembership } from "@/hooks/useMembership";
 import { analytics } from "@/lib/analytics";
 import { testAvailabilityService } from "@/lib/testAvailability";
 import { ProfessionalExamCard } from "@/components/ProfessionalExamCard";
@@ -51,6 +52,7 @@ const ExamDashboard = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, loading } = useAuth();
   const { profile } = useDashboardData();
+  const { currentPlan } = useMembership();
   const { allStats, loadAllStats, getExamStatById, isTestCompleted, getIndividualTestScore } = useExamStats();
   const { stats: comprehensiveStats, loading: statsLoading, error: statsError, refreshStats } = useComprehensiveStats(examId);
   
@@ -77,6 +79,39 @@ const ExamDashboard = () => {
 
   const exam = secureExamService.getExamConfig(examId as string);
   const userEmail = profile?.email || localStorage.getItem("userEmail");
+
+  // Get user display name and membership info
+  const userPhone = profile?.phone || '';
+  const userName = profile?.name || '';
+  const membershipPlan = currentPlan || 'free';
+
+  // Format display name - prioritize phone, then name, then fallback
+  const getDisplayName = () => {
+    if (userPhone) {
+      // Remove +91 if it exists
+      const cleanPhone = userPhone.replace(/^\+91/, "");
+      return `Hi, ${cleanPhone}`;
+    }
+    if (userName) return userName;
+    return "User";
+  };
+  
+  const displayName = getDisplayName();
+
+  const getMembershipBadge = () => {
+    switch (membershipPlan) {
+      case 'basic':
+        return <Badge variant="secondary" className="bg-blue-100 text-blue-800">Basic Plan</Badge>;
+      case 'premium':
+        return <Badge variant="secondary" className="bg-purple-100 text-purple-800">Premium Plan</Badge>;
+      case 'pro':
+        return <Badge variant="secondary" className="bg-gold-100 text-gold-800">Pro Plan</Badge>;
+      case 'pro_plus':
+        return <Badge variant="secondary" className="bg-purple-100 text-purple-800">Pro+ Plan</Badge>;
+      default:
+        return <Badge variant="outline" className="text-muted-foreground">Free Plan</Badge>;
+    }
+  };
 
   // Load available tests dynamically
   useEffect(() => {
@@ -698,7 +733,10 @@ const ExamDashboard = () => {
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-right">
-                <p className="text-sm font-medium text-foreground">Welcome!</p>
+                <div className="flex items-center space-x-2 justify-end">
+                  <p className="text-sm font-medium text-foreground">{displayName}!</p>
+                  {getMembershipBadge()}
+                </div>
                 <p className="text-xs text-muted-foreground">{userEmail}</p>
               </div>
             </div>

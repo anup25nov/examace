@@ -265,28 +265,6 @@ class ExamDataService {
         metadata: { year: '2023', day: 1, shift: 1, paper: 1, date: '2023-01-15' }
       },
       {
-        id: '2023-paper-2',
-        name: 'SSC CGL 2023 Paper 2',
-        description: 'Previous Year Questions 2023 Day 1 Shift 2',
-        duration: 180,
-        questions: 100,
-        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
-        isPremium: false,
-        price: 0,
-        metadata: { year: '2023', day: 1, shift: 2, paper: 2, date: '2023-01-15' }
-      },
-      {
-        id: '2022-paper-1',
-        name: 'SSC CGL 2022 Paper 1',
-        description: 'Previous Year Questions 2022 Day 1 Shift 1',
-        duration: 180,
-        questions: 100,
-        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
-        isPremium: false,
-        price: 0,
-        metadata: { year: '2022', day: 1, shift: 1, paper: 1, date: '2022-01-15' }
-      },
-      {
         id: '2024-paper-5',
         name: 'SSC CGL 2024 Paper 5',
         description: 'Previous Year Questions 2024 Set 2 (Premium)',

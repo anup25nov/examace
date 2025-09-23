@@ -11,6 +11,7 @@ import {
 } from '@/lib/supabaseAuthSimple';
 import OTPInput from './OTPInput';
 import { supabase } from '@/integrations/supabase/client';
+import { defaultConfig } from '@/config/appConfig';
 
 interface SupabaseAuthFlowProps {
   onAuthSuccess: () => void;
@@ -281,7 +282,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
             </Alert>
           )}
           
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full" disabled={loading || phone.length !== 10}>
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -429,7 +430,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
           {/* Info */}
           <div className="text-center">
             <p className="text-xs text-gray-500">
-              You can earn 50% commission by referring friends!
+              You can earn {defaultConfig.commission.percentage}% commission by referring friends!
             </p>
           </div>
         </div>
