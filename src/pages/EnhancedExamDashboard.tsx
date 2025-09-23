@@ -34,7 +34,7 @@ import { useDashboardData } from "@/contexts/DashboardDataContext";
 import { analytics } from "@/lib/analytics";
 import { EnhancedTestCard } from "@/components/EnhancedTestCard";
 import { YearWiseTabs } from "@/components/YearWiseTabs";
-import { dynamicTestDataLoader } from "@/lib/dynamicTestDataLoader";
+import { secureTestDataLoader } from "@/lib/secureTestDataLoader";
 import { premiumService, PremiumTest } from "@/lib/premiumService";
 import { supabase } from "@/integrations/supabase/client";
 import Footer from "@/components/Footer";
@@ -117,7 +117,7 @@ const EnhancedExamDashboard = () => {
     const loadDynamicTestData = async () => {
       if (examId) {
         try {
-          const { mock, pyq, practice } = await dynamicTestDataLoader.getAllTestData(examId);
+          const { mock, pyq, practice } = await secureTestDataLoader.getAllTestData(examId);
           
           // Process mock tests
           const freeTests = mock.filter(test => !test.isPremium);
@@ -128,7 +128,7 @@ const EnhancedExamDashboard = () => {
               id: test.id,
               name: test.name,
               duration: test.duration,
-              questions: test.questions.length, // Convert to number
+              questions: test.questions, // questions is already a number
               breakdown: test.description,
               subjects: test.subjects,
               difficulty: test.difficulty,
@@ -140,7 +140,7 @@ const EnhancedExamDashboard = () => {
               id: test.id,
               name: test.name,
               duration: test.duration,
-              questions: test.questions.length, // Convert to number
+              questions: test.questions, // questions is already a number
               breakdown: test.description,
               subjects: test.subjects,
               difficulty: test.difficulty,
@@ -150,41 +150,46 @@ const EnhancedExamDashboard = () => {
             }))
           });
 
-          // Process PYQ data
-          setPyqData(pyq.map(year => ({
-            year: year.year,
-            papers: year.papers.map(paper => ({
-              id: paper.id,
-              name: paper.name,
-              duration: paper.duration,
-              questions: paper.questions.length, // Convert to number
-              breakdown: paper.description,
-              subjects: paper.subjects,
-              difficulty: paper.difficulty,
-              description: paper.description,
-              isPremium: paper.isPremium,
-              price: paper.price
-            }))
-          })));
+          // Process PYQ data - group by year
+          const pyqByYear = pyq.reduce((acc, test) => {
+            const year = test.year || test.metadata?.year || '2024';
+            if (!acc[year]) {
+              acc[year] = [];
+            }
+            acc[year].push({
+              id: test.id,
+              name: test.name,
+              duration: test.duration,
+              questions: test.questions, // questions is already a number
+              breakdown: test.description,
+              subjects: test.subjects,
+              difficulty: test.difficulty,
+              description: test.description,
+              isPremium: test.isPremium,
+              price: test.price
+            });
+            return acc;
+          }, {} as Record<string, any[]>);
+
+          const pyqData = Object.entries(pyqByYear).map(([year, papers]) => ({
+            year,
+            papers
+          }));
+
+          setPyqData(pyqData);
 
           // Process practice data
-          setPracticeData(practice.map(subject => ({
-            id: subject.id,
-            name: subject.name,
-            topics: subject.topics.map(topic => ({
-              id: topic.id,
-              name: topic.name,
-              sets: topic.tests.map(test => ({
-                id: test.id,
-                name: test.name,
-                duration: test.duration,
-                questions: test.questions,
-                breakdown: test.description
-              }))
-            }))
+          setPracticeData(practice.map(test => ({
+            id: test.id,
+            name: test.name,
+            duration: test.duration,
+            questions: test.questions, // questions is already a number
+            breakdown: test.description,
+            isPremium: test.isPremium,
+            price: test.price
           })));
         } catch (error) {
-          console.error('Error loading dynamic test data:', error);
+          console.error('❌ [EnhancedExamDashboard] Error loading test data:', error);
           // Fallback to empty data
           setMockTests({ free: [], premium: [] });
           setPyqData([]);

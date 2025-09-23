@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Data Loading Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        .info { background-color: #d1ecf1; }
+    </style>
+</head>
+<body>
+    <h1>Test Data Loading Debug</h1>
+    <div id="results"></div>
+
+    <script type="module">
+        // Test the fallback data loading
+        async function testDataLoading() {
+            const resultsDiv = document.getElementById('results');
+            
+            try {
+                // Test 1: Check if fallback service is available
+                resultsDiv.innerHTML += '<div class="test info">Testing fallback service...</div>';
+                
+                // Since we can't import ES modules directly in HTML, let's test the API
+                const response = await fetch('/api/test-data-debug');
+                if (response.ok) {
+                    const data = await response.json();
+                    resultsDiv.innerHTML += `<div class="test success">✅ API Response: ${JSON.stringify(data)}</div>`;
+                } else {
+                    resultsDiv.innerHTML += `<div class="test error">❌ API Error: ${response.status}</div>`;
+                }
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `<div class="test error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        // Run the test
+        testDataLoading();
+    </script>
+</body>
+</html>

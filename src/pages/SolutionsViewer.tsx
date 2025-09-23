@@ -174,8 +174,8 @@ const SolutionsViewer = () => {
           testTypeValue as 'pyq' | 'practice' | 'mock', 
           testId,
           undefined,
-          user?.id,
-          testTypeValue === 'pyq' && testId === '2024-paper-5' // Premium test check
+          user?.id
+          // Premium status will be determined dynamically
         );
       if (!data) {
         setError('Test data not found');
@@ -225,14 +225,14 @@ const SolutionsViewer = () => {
           const questionIndex = parseInt(index);
           const question = data.questions[questionIndex];
           const userAnswer = answers[questionIndex];
-          return count + (userAnswer === question.correct ? 1 : 0);
+          return count + (userAnswer === question.correctAnswerIndex ? 1 : 0);
         }, 0);
 
         const totalMarks = data.questions.reduce((sum, q) => sum + q.marks, 0);
         const obtainedMarks = data.questions.reduce((sum, q, index) => {
           const userAnswer = answers[index];
           if (userAnswer === undefined) return sum; // Skipped
-          if (userAnswer === q.correct) return sum + q.marks; // Correct
+          if (userAnswer === q.correctAnswerIndex) return sum + q.marks; // Correct
           return sum - q.negativeMarks; // Incorrect
         }, 0);
 
@@ -321,7 +321,7 @@ const SolutionsViewer = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       
       <SolutionsDisplay
-        questions={questions}
+        questions={questions as any}
         userAnswers={userAnswers}
         score={testResults.score}
         totalQuestions={testResults.total}

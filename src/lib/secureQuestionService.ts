@@ -4,9 +4,12 @@ import { useAuth } from '@/hooks/useAuth';
 export interface SecureQuestionData {
   id: string;
   questionEn: string;
-  questionHi: string;
+  questionHi?: string;
   options: string[];
+  optionsEn?: string[];
+  optionsHi?: string[];
   correct: number;
+  correctAnswerIndex?: number;
   difficulty: string;
   subject: string;
   topic: string;
@@ -14,7 +17,10 @@ export interface SecureQuestionData {
   negativeMarks: number;
   duration: number;
   explanation: string;
+  explanationEn?: string;
+  explanationHi?: string;
   questionImage?: string;
+  imageUrl?: string;
   optionsImages?: string[];
   explanationImage?: string;
 }
@@ -221,6 +227,21 @@ class SecureQuestionService {
   // Clear all cache
   clearAllCache(): void {
     this.cache.clear();
+  }
+
+  /**
+   * Get question data for a specific test (fallback method)
+   */
+  async getQuestionData(examId: string, sectionId: string, testId: string): Promise<any[] | null> {
+    try {
+      // This is a fallback method that returns empty array
+      // In production, questions should be loaded through loadQuestions method
+      console.warn('getQuestionData is deprecated. Use loadQuestions instead.');
+      return [];
+    } catch (error) {
+      console.error('Error in getQuestionData:', error);
+      return null;
+    }
   }
 }
 

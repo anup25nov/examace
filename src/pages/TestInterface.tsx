@@ -240,8 +240,8 @@ const TestInterface = () => {
           testTypeValue as 'pyq' | 'practice' | 'mock', 
           testId, 
           topic,
-          user?.id,
-          testTypeValue === 'pyq' && testId === '2024-paper-5' // Premium test check
+          user?.id
+          // Premium status will be determined dynamically
         );
         
         if (!loadedTestData) {
@@ -610,7 +610,7 @@ const TestInterface = () => {
       
       questions.forEach((question, index) => {
         if (answers[index] !== undefined) {
-          if (answers[index] === question.correct) {
+          if (answers[index] === question.correctAnswerIndex) {
             correct++;
           } else {
             incorrect++;
@@ -625,7 +625,7 @@ const TestInterface = () => {
       questions.forEach((question, index) => {
         totalMarks += question.marks;
         if (answers[index] !== undefined) {
-          if (answers[index] === question.correct) {
+          if (answers[index] === question.correctAnswerIndex) {
             obtainedMarks += question.marks;
           } else {
             obtainedMarks -= question.negativeMarks;
@@ -653,7 +653,7 @@ const TestInterface = () => {
               details: questions.map((question, index) => ({
                 questionId: question.id,
                 selectedOption: answers[index] ?? -1,
-                isCorrect: answers[index] === question.correct
+                isCorrect: answers[index] === question.correctAnswerIndex
               })),
               skipped: questions.length - Object.keys(answers).length
             },
@@ -876,7 +876,7 @@ const TestInterface = () => {
   if (showSolutions && testResults) {
     return (
       <SolutionsDisplay
-        questions={questions}
+        questions={questions as any}
         userAnswers={answers}
         score={testResults.score}
         totalQuestions={questions.length}
@@ -1051,10 +1051,10 @@ const TestInterface = () => {
                 </div>
                 
                 {/* Question Image */}
-                {question.questionImage && (
+                {question.imageUrl && (
                   <div className="my-4 flex justify-center">
                     <ImageDisplay
-                      imagePath={question.questionImage}
+                      imagePath={question.imageUrl}
                       alt="Question image"
                       maxHeight="400px"
                       showZoom={true}
@@ -1064,11 +1064,11 @@ const TestInterface = () => {
                 )}
                 
                 <div className="space-y-3">
-                  {question.options && question.options.length > 0 ? (
-                    question.options.map((option, index) => {
+                  {question.optionsEn && question.optionsEn.length > 0 ? (
+                    question.optionsEn.map((option, index) => {
                       // Handle both string and object formats
-                      const optionText = typeof option === 'string' ? option : option.text;
-                      const optionImage = typeof option === 'object' ? option.image : undefined;
+                      const optionText = typeof option === 'string' ? option : (option as any)?.text || option;
+                      const optionImage = typeof option === 'object' ? (option as any)?.image : undefined;
                       
                       return (
                         <label

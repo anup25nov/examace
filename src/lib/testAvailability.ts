@@ -1,12 +1,21 @@
 // Test Availability Service
 // This service checks which test files actually exist and returns only available tests
 
-import { TestData } from "@/lib/dynamicExamService";
+import { SecureTestData } from "@/lib/secureTestDataLoader";
+
+interface TestData {
+  id: string;
+  name: string;
+  duration: number;
+  questions: any[];
+  breakdown?: string;
+  isPremium?: boolean;
+}
 
 interface AvailableTests {
-  mock: (TestData & { isPremium?: boolean })[];
-  pyq: { year: string; papers: (TestData & { isPremium?: boolean })[] }[];
-  practice: (TestData & { isPremium?: boolean })[];
+  mock: TestData[];
+  pyq: { year: string; papers: TestData[] }[];
+  practice: TestData[];
 }
 
 class TestAvailabilityService {
@@ -107,32 +116,32 @@ class TestAvailabilityService {
     // Return default test data for now
     return {
       mock: [
-        { id: 'mock-test-1', name: 'SSC CGL Mock Test 1', description: 'Complete mock test covering all subjects', duration: 180, questions: 100, subjects: ['General Intelligence', 'English', 'Quantitative Aptitude', 'General Awareness'], difficulty: 'mixed', isPremium: false, price: 0, order: 1, metadata: {} },
-        { id: 'mock-test-2', name: 'SSC CGL Mock Test 2', description: 'Complete mock test covering all subjects', duration: 180, questions: 100, subjects: ['General Intelligence', 'English', 'Quantitative Aptitude', 'General Awareness'], difficulty: 'mixed', isPremium: false, price: 0, order: 2, metadata: {} },
-        { id: 'mock-test-3', name: 'SSC CGL Mock Test 3', description: 'Complete mock test covering all subjects', duration: 180, questions: 100, subjects: ['General Intelligence', 'English', 'Quantitative Aptitude', 'General Awareness'], difficulty: 'mixed', isPremium: true, price: 199, order: 3, metadata: {} },
-        { id: 'mock-test-4', name: 'SSC CGL Premium Mock Test 1', description: 'Advanced mock test covering all subjects', duration: 180, questions: 100, subjects: ['General Intelligence', 'English', 'Quantitative Aptitude', 'General Awareness'], difficulty: 'hard', isPremium: true, price: 299, order: 4, metadata: {} },
-        { id: 'mock-test-5', name: 'SSC CGL Premium Mock Test 2', description: 'Advanced mock test covering all subjects', duration: 180, questions: 100, subjects: ['General Intelligence', 'English', 'Quantitative Aptitude', 'General Awareness'], difficulty: 'hard', isPremium: true, price: 299, order: 5, metadata: {} }
+        { id: 'mock-test-1', name: 'SSC CGL Mock Test 1', duration: 180, questions: Array(100).fill(null), breakdown: 'Complete mock test covering all subjects', isPremium: false },
+        { id: 'mock-test-2', name: 'SSC CGL Mock Test 2', duration: 180, questions: Array(100).fill(null), breakdown: 'Complete mock test covering all subjects', isPremium: false },
+        { id: 'mock-test-3', name: 'SSC CGL Mock Test 3', duration: 180, questions: Array(100).fill(null), breakdown: 'Complete mock test covering all subjects', isPremium: true },
+        { id: 'mock-test-4', name: 'SSC CGL Premium Mock Test 1', duration: 180, questions: Array(100).fill(null), breakdown: 'Advanced mock test covering all subjects', isPremium: true },
+        { id: 'mock-test-5', name: 'SSC CGL Premium Mock Test 2', duration: 180, questions: Array(100).fill(null), breakdown: 'Advanced mock test covering all subjects', isPremium: true }
       ],
       pyq: [
         {
           year: '2024',
           papers: [
-            { id: '2024-set-1', name: 'SSC CGL 2024 Set 1', description: 'Previous Year Questions 2024 Set 1', duration: 180, questions: 100, subjects: ['General Intelligence', 'English', 'Quantitative Aptitude', 'General Awareness'], difficulty: 'mixed', isPremium: false, price: 0, order: 1, metadata: {} },
-            { id: '2024-set-2', name: 'SSC CGL 2024 Set 2', description: 'Previous Year Questions 2024 Set 2', duration: 180, questions: 100, subjects: ['General Intelligence', 'English', 'Quantitative Aptitude', 'General Awareness'], difficulty: 'mixed', isPremium: false, price: 0, order: 2, metadata: {} },
-            { id: '2021-set-1', name: 'SSC CGL 2021 27 June Set 1', description: 'Previous Year Questions 2021 Set 1', duration: 180, questions: 100, subjects: ['General Intelligence', 'English', 'Quantitative Aptitude', 'General Awareness'], difficulty: 'mixed', isPremium: false, price: 0, order: 3, metadata: {} }
+            { id: '2024-set-1', name: 'SSC CGL 2024 Set 1', duration: 180, questions: Array(100).fill(null), breakdown: 'Previous Year Questions 2024 Set 1', isPremium: false },
+            { id: '2024-set-2', name: 'SSC CGL 2024 Set 2', duration: 180, questions: Array(100).fill(null), breakdown: 'Previous Year Questions 2024 Set 2', isPremium: false },
+            { id: '2021-set-1', name: 'SSC CGL 2021 27 June Set 1', duration: 180, questions: Array(100).fill(null), breakdown: 'Previous Year Questions 2021 Set 1', isPremium: false }
           ]
         },
         {
           year: '2023',
           papers: [
-            { id: '2023-set-1', name: 'SSC CGL 2023 Set 1', description: 'Previous Year Questions 2023 Set 1', duration: 180, questions: 100, subjects: ['General Intelligence', 'English', 'Quantitative Aptitude', 'General Awareness'], difficulty: 'mixed', isPremium: false, price: 0, order: 1, metadata: {} }
+            { id: '2023-set-1', name: 'SSC CGL 2023 Set 1', duration: 180, questions: Array(100).fill(null), breakdown: 'Previous Year Questions 2023 Set 1', isPremium: false }
           ]
         }
       ],
       practice: [
-        { id: 'maths-algebra', name: 'Mathematics - Algebra', description: 'Algebra fundamentals and practice', duration: 60, questions: 50, subjects: ['Quantitative Aptitude'], difficulty: 'mixed', isPremium: false, price: 0, order: 1, metadata: {} },
-        { id: 'english-grammar', name: 'English - Grammar', description: 'Grammar rules and practice', duration: 45, questions: 50, subjects: ['English Language'], difficulty: 'mixed', isPremium: false, price: 0, order: 2, metadata: {} },
-        { id: 'general-awareness', name: 'General Awareness', description: 'Current affairs and general knowledge', duration: 30, questions: 50, subjects: ['General Awareness'], difficulty: 'mixed', isPremium: false, price: 0, order: 3, metadata: {} }
+        { id: 'maths-algebra', name: 'Mathematics - Algebra', duration: 60, questions: Array(50).fill(null), breakdown: 'Algebra fundamentals and practice', isPremium: false },
+        { id: 'english-grammar', name: 'English - Grammar', duration: 45, questions: Array(50).fill(null), breakdown: 'Grammar rules and practice', isPremium: false },
+        { id: 'general-awareness', name: 'General Awareness', duration: 30, questions: Array(50).fill(null), breakdown: 'Current affairs and general knowledge', isPremium: false }
       ]
     };
   }

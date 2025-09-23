@@ -1,6 +1,25 @@
 // Secure Dynamic Question Loader - Handles all question loading with security
-import { dynamicExamService, QuestionData } from './dynamicExamService';
+import { secureExamService } from './secureExamService';
 import { secureQuestionService, SecureQuestionData, SecureTestData } from './secureQuestionService';
+import { premiumTestService } from './premiumTestService';
+import { examDataService } from '@/data/examData';
+
+export interface QuestionData {
+  id: string;
+  questionEn: string;
+  questionHi?: string;
+  optionsEn: string[];
+  optionsHi?: string[];
+  correctAnswerIndex: number;
+  explanationEn?: string;
+  explanationHi?: string;
+  marks?: number;
+  negativeMarks?: number;
+  difficulty?: string;
+  subject?: string;
+  topic?: string;
+  imageUrl?: string;
+}
 
 export interface QuestionWithProps extends QuestionData {
   marks: number;
@@ -62,6 +81,13 @@ export class SecureDynamicQuestionLoader {
     }
 
     try {
+      // Determine premium status dynamically if not provided
+      let actualIsPremium = isPremium;
+      if (actualIsPremium === undefined && userId) {
+        const premiumInfo = await premiumTestService.checkPremiumAccess(examId, sectionId, testId, userId);
+        actualIsPremium = premiumInfo.isPremium;
+      }
+      
       // If security is enabled and we have user info, use secure service
       if (this.securityEnabled && userId) {
         const secureData = await secureQuestionService.loadQuestions(
@@ -69,7 +95,7 @@ export class SecureDynamicQuestionLoader {
           sectionId, 
           testId, 
           userId, 
-          isPremium || false
+          actualIsPremium || false
         );
         
         if (secureData) {
@@ -80,18 +106,18 @@ export class SecureDynamicQuestionLoader {
               id: q.id,
               questionEn: q.questionEn,
               questionHi: q.questionHi,
-              options: q.options,
-              correct: q.correct,
-              difficulty: q.difficulty as 'easy' | 'medium' | 'hard',
+              optionsEn: q.options || q.optionsEn || [],
+              optionsHi: q.optionsHi || [],
+              correctAnswerIndex: q.correct || q.correctAnswerIndex || 0,
+              difficulty: (q.difficulty as 'easy' | 'medium' | 'hard') || 'medium',
               subject: q.subject,
               topic: q.topic,
-              marks: q.marks,
-              negativeMarks: q.negativeMarks,
-              duration: q.duration,
-              explanation: q.explanation,
-              questionImage: q.questionImage,
-              optionsImages: q.optionsImages,
-              explanationImage: q.explanationImage
+              marks: q.marks || 1,
+              negativeMarks: q.negativeMarks || 0.25,
+              duration: q.duration || 60,
+              explanationEn: q.explanation || q.explanationEn,
+              explanationHi: q.explanationHi,
+              imageUrl: q.questionImage || q.imageUrl
             }))
           };
           
@@ -119,32 +145,64 @@ export class SecureDynamicQuestionLoader {
   ): Promise<TestData | null> {
     try {
       // Get exam configuration
-      const exam = dynamicExamService.getExamConfig(examId);
+      const exam = secureExamService.getExamConfig(examId);
       if (!exam) {
         console.error('Exam not found:', examId);
         return null;
       }
 
-      // Get questions
-      const questions = await dynamicExamService.getQuestionData(examId, sectionId, testId);
+      // Get questions from secure service
+      const questions = await secureQuestionService.getQuestionData(examId, sectionId, testId);
       if (!questions || questions.length === 0) {
-        console.error('No questions found for test:', { examId, sectionId, testId, topicId });
-        return null;
+        console.log('No questions found in secure service, using centralized data...');
+        // Use centralized data if secure service fails
+        const centralizedQuestions = examDataService.getQuestionData(examId, sectionId, testId);
+        if (centralizedQuestions.length === 0) {
+          console.error('No questions found for test:', { examId, sectionId, testId, topicId });
+          return null;
+        }
+        // Convert centralized questions to our format
+        const convertedQuestions: QuestionWithProps[] = centralizedQuestions.map(q => ({
+          id: q.id,
+          questionEn: q.questionEn,
+          questionHi: q.questionHi,
+          optionsEn: q.optionsEn,
+          optionsHi: q.optionsHi,
+          correctAnswerIndex: q.correctAnswerIndex,
+          explanationEn: q.explanationEn,
+          explanationHi: q.explanationHi,
+          marks: q.marks,
+          negativeMarks: q.negativeMarks,
+          duration: 60, // Default duration
+          difficulty: q.difficulty,
+          subject: q.subject,
+          topic: q.topic,
+          imageUrl: q.imageUrl
+        }));
+        return this.createTestDataFromQuestions(examId, sectionId, testId, convertedQuestions);
       }
 
       // Convert to QuestionWithProps format
       const questionsWithProps: QuestionWithProps[] = questions.map(q => ({
-        ...q,
+        id: q.id,
+        questionEn: q.questionEn,
+        questionHi: q.questionHi,
+        optionsEn: q.options || q.optionsEn || [],
+        optionsHi: q.optionsHi || [],
+        correctAnswerIndex: q.correct || q.correctAnswerIndex || 0,
+        explanationEn: q.explanationEn,
+        explanationHi: q.explanationHi,
         marks: q.marks || 1,
-        negativeMarks: q.negativeMarks || 0,
+        negativeMarks: q.negativeMarks || 0.25,
         duration: q.duration || 60,
         subject: q.subject || 'general',
         topic: q.topic || 'general',
-        difficulty: q.difficulty || 'medium'
+        difficulty: (q.difficulty as 'easy' | 'medium' | 'hard') || 'medium',
+        imageUrl: q.imageUrl
       }));
 
       // Get test duration from exam pattern or calculate from questions
-      const testDuration = this.calculateTestDuration(questionsWithProps, exam.examPattern.duration);
+      const testDuration = this.calculateTestDuration(questionsWithProps, exam.examPattern?.duration || 60);
 
       // Create test data
       const testData: TestData = {
@@ -178,9 +236,49 @@ export class SecureDynamicQuestionLoader {
     return Math.max(totalMinutes, defaultDuration);
   }
 
+  // Create test data from questions
+  private createTestDataFromQuestions(examId: string, sectionId: string, testId: string, questions: QuestionWithProps[]): TestData {
+    const exam = secureExamService.getExamConfig(examId);
+    const testName = this.getTestName(examId, sectionId, testId);
+    
+    // Calculate total duration
+    const totalDuration = SecureDynamicQuestionLoader.calculateTotalDuration(questions);
+    
+    // Get subjects from questions
+    const subjects = [...new Set(questions.map(q => q.subject).filter(Boolean))];
+    
+    // Get marking scheme from first question
+    const firstQuestion = questions[0];
+    const markingScheme = {
+      correct: firstQuestion?.marks || 1,
+      incorrect: firstQuestion?.negativeMarks || 0.25,
+      unattempted: 0
+    };
+
+    return {
+      examInfo: {
+        testName,
+        duration: totalDuration,
+        totalQuestions: questions.length,
+        subjects: subjects.length > 0 ? subjects : ['General Knowledge'],
+        markingScheme,
+        defaultLanguage: 'english'
+      },
+      questions: questions.map(q => ({
+        ...q,
+        marks: q.marks || 1,
+        negativeMarks: q.negativeMarks || 0.25,
+        duration: 60, // Default 1 minute per question
+        subject: q.subject || 'General Knowledge',
+        topic: q.topic || '',
+        difficulty: (q.difficulty as 'easy' | 'medium' | 'hard') || 'medium'
+      }))
+    };
+  }
+
   // Get test name
   private getTestName(examId: string, sectionId: string, testId: string): string {
-    const exam = dynamicExamService.getExamConfig(examId);
+    const exam = secureExamService.getExamConfig(examId);
     if (!exam) return testId;
 
     const section = exam.sections.find(s => s.id === sectionId);

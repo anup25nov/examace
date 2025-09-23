@@ -421,17 +421,9 @@ export class DynamicExamService {
     }
   }
 
-  // Load static test data as fallback
+  // Load static test data as fallback - DISABLED FOR SECURITY
   private async loadStaticTestData(examId: string, sectionId: string): Promise<TestData[]> {
-    try {
-      const response = await fetch(`/src/data/questions/${examId}/${sectionId}/index.json`);
-      if (response.ok) {
-        const data = await response.json();
-        return data.tests || [];
-      }
-    } catch (error) {
-      console.error('Error loading static test data:', error);
-    }
+    console.warn('SECURITY: JSON loading disabled. Use secure services instead.');
     return [];
   }
 
@@ -455,17 +447,9 @@ export class DynamicExamService {
     }
   }
 
-  // Load static question data as fallback
+  // Load static question data as fallback - DISABLED FOR SECURITY
   private async loadStaticQuestionData(examId: string, sectionId: string, testId: string): Promise<QuestionData[]> {
-    try {
-      const response = await fetch(`/src/data/questions/${examId}/${sectionId}/${testId}.json`);
-      if (response.ok) {
-        const data = await response.json();
-        return data.questions || [];
-      }
-    } catch (error) {
-      console.error('Error loading static question data:', error);
-    }
+    console.warn('SECURITY: JSON loading disabled. Use secure services instead.');
     return [];
   }
 

@@ -1,6 +1,6 @@
 // Navigation performance optimization utilities
 
-import { dynamicExamService } from './dynamicExamService';
+import { secureExamService } from './secureExamService';
 
 // Prefetch routes for better navigation performance
 export const prefetchRoutes = () => {
@@ -8,7 +8,7 @@ export const prefetchRoutes = () => {
     const routes = [
       '/',
       '/auth',
-      ...dynamicExamService.getAllExams().map(exam => `/exam/${exam.id}`)
+      ...secureExamService.getAllExams().map(exam => `/exam/${exam.id}`)
     ];
 
     routes.forEach(route => {
@@ -46,7 +46,7 @@ export const optimizeRouteTransition = (fromRoute: string, toRoute: string) => {
   // Preload critical data for the destination route
   if (toRoute.startsWith('/exam/')) {
     const examId = toRoute.split('/')[2];
-    const exam = dynamicExamService.getExamConfig(examId);
+    const exam = secureExamService.getExamConfig(examId);
     if (exam) {
       // Cache exam data
       cacheNavigationData(`exam-${examId}`, exam);

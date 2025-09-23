@@ -19,15 +19,16 @@ import {
   CheckCircle,
   BarChart3,
   Star,
-  Medal
+  Medal,
+  Calendar
 } from "lucide-react";
-import { dynamicExamService } from "@/lib/dynamicExamService";
-import { dynamicTestDataLoader } from "@/lib/dynamicTestDataLoader";
+import { secureExamService } from "@/lib/secureExamService";
+import { secureDynamicQuestionLoader } from "@/lib/secureDynamicQuestionLoader";
+import { secureTestDataLoader } from "@/lib/secureTestDataLoader";
 import { useExamStats } from "@/hooks/useExamStats";
 import { useComprehensiveStats } from "@/hooks/useComprehensiveStats";
 import { useAuth } from "@/hooks/useAuth";
 import { useDashboardData } from "@/contexts/DashboardDataContext";
-import { secureDynamicQuestionLoader } from "@/lib/secureDynamicQuestionLoader";
 import { analytics } from "@/lib/analytics";
 import { testAvailabilityService } from "@/lib/testAvailability";
 import { ProfessionalExamCard } from "@/components/ProfessionalExamCard";
@@ -74,49 +75,56 @@ const ExamDashboard = () => {
     practice: Array<{ id: string; name: string; duration: number; questions: any[]; breakdown?: string }>;
   }>({ mock: [], pyq: [], practice: [] });
 
-  const exam = dynamicExamService.getExamConfig(examId as string);
+  const exam = secureExamService.getExamConfig(examId as string);
   const userEmail = profile?.email || localStorage.getItem("userEmail");
 
   // Load available tests dynamically
   useEffect(() => {
     const loadAvailableTests = async () => {
       if (examId) {
+        console.log('🔍 [ExamDashboard] Loading tests for exam:', examId);
         try {
-          const { mock, pyq, practice } = await dynamicTestDataLoader.getAllTestData(examId);
+          const { mock, pyq, practice } = await secureTestDataLoader.getAllTestData(examId);
+          console.log('📊 [ExamDashboard] Loaded test data:', { mock: mock.length, pyq: pyq.length, practice: practice.length });
           
           // Process mock tests
           const mockTests = mock.map(test => ({
             id: test.id,
             name: test.name,
             duration: test.duration,
-            questions: test.questions,
+            questions: Array(test.questions).fill(null), // Convert number to array
             breakdown: test.description
           }));
 
-          // Process PYQ data
-          const pyqData = pyq.map(year => ({
-            year: year.year,
-            papers: year.papers.map(paper => ({
-              id: paper.id,
-              name: paper.name,
-              duration: paper.duration,
-              questions: paper.questions,
-              breakdown: paper.description
-            }))
+          // Process PYQ data - group by year
+          const pyqByYear = pyq.reduce((acc, test) => {
+            const year = test.year || test.metadata?.year || '2024';
+            if (!acc[year]) {
+              acc[year] = [];
+            }
+            acc[year].push({
+              id: test.id,
+              name: test.name,
+              duration: test.duration,
+              questions: Array(test.questions).fill(null), // Convert number to array
+              breakdown: test.description
+            });
+            return acc;
+          }, {} as Record<string, any[]>);
+
+          const pyqData = Object.entries(pyqByYear).map(([year, papers]) => ({
+            year,
+            papers
           }));
 
           // Process practice data
-          const practiceTests = practice.flatMap(subject => 
-            subject.topics.flatMap(topic => 
-              topic.tests.map(test => ({
-                id: test.id,
-                name: test.name,
-                duration: test.duration,
-                questions: test.questions,
-                breakdown: test.description
-              }))
-            )
-          );
+          const practiceTests = practice.map(test => ({
+            id: test.id,
+            name: test.name,
+            duration: test.duration,
+            questions: Array(test.questions).fill(null), // Convert number to array
+            breakdown: test.description
+          }));
 
           const allTests = {
             mock: mockTests,
@@ -124,10 +132,12 @@ const ExamDashboard = () => {
             practice: practiceTests
           };
 
+          console.log('🎯 [ExamDashboard] Setting available tests:', allTests);
           // Use the processed test data instead of testAvailabilityService
           setAvailableTests(allTests);
         } catch (error) {
-          console.error('Error loading dynamic test data:', error);
+          console.error('❌ [ExamDashboard] Error loading test data:', error);
+          // Set empty state on error
           setAvailableTests({ mock: [], pyq: [], practice: [] });
         }
       }
@@ -425,6 +435,9 @@ const ExamDashboard = () => {
       }
     }
   }, [examId, comprehensiveStats, allStats, testScores, statsLoading]);
+
+  // Debug: Log available tests state
+  console.log('🔍 [ExamDashboard] Current availableTests state:', availableTests);
 
   if (loading || statsLoading) {
     return (
