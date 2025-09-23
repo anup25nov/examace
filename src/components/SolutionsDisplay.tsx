@@ -215,16 +215,16 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
     let skippedQuestions = 0;
 
     questions.forEach((question, index) => {
-      totalMarks += question.marks;
+      totalMarks += question.marks || 0;
       const userAnswer = userAnswers[index];
       
       if (userAnswer !== undefined) {
         attemptedQuestions++;
-        if (userAnswer === question.correct) {
-          obtainedMarks += question.marks;
+        if (question.correct !== undefined && userAnswer === question.correct) {
+          obtainedMarks += question.marks || 0;
           correctQuestions++;
         } else {
-          negativeMarks += question.negativeMarks;
+          negativeMarks += question.negativeMarks || 0;
           incorrectQuestions++;
         }
       } else {
@@ -483,7 +483,7 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
         <div className="space-y-6">
           {questions.map((question, index) => {
             const userAnswer = userAnswers[index];
-            const isCorrect = userAnswer === question.correct;
+            const isCorrect = question.correct !== undefined && userAnswer === question.correct;
             const hasExplanation = !!question.explanation;
 
             return (
@@ -497,22 +497,22 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                           <Badge variant="outline" className="text-xs sm:text-sm font-medium">
                             Q{index + 1}
                           </Badge>
-                          <Badge className={`text-xs ${getDifficultyColor(question.difficulty)}`}>
-                            {question.difficulty}
+                          <Badge className={`text-xs ${getDifficultyColor(question.difficulty || 'medium')}`}>
+                            {question.difficulty || 'medium'}
                           </Badge>
-                          <Badge className={`text-xs ${getSubjectColor(question.subject)}`}>
-                            {question.subject}
+                          <Badge className={`text-xs ${getSubjectColor(question.subject || 'general')}`}>
+                            {question.subject || 'general'}
                           </Badge>
                           <Badge variant="outline" className="text-xs">
-                            {question.topic}
+                            {question.topic || 'general'}
                           </Badge>
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge className="text-xs bg-green-100 text-green-800">
-                            +{question.marks}
+                            +{question.marks || 0}
                           </Badge>
                           <Badge className="text-xs bg-red-100 text-red-800">
-                            -{question.negativeMarks}
+                            -{question.negativeMarks || 0}
                           </Badge>
                           <QuestionReportModal
                             examId={examId}
@@ -558,7 +558,7 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                   <div className="space-y-2 sm:space-y-3 mb-4">
                     {question.options && Array.isArray(question.options) ? question.options.map((option, optionIndex) => {
                       const isUserAnswer = userAnswer === optionIndex;
-                      const isCorrectAnswer = question.correct === optionIndex;
+                      const isCorrectAnswer = question.correct !== undefined && question.correct === optionIndex;
                       
                       // Handle both string and object formats
                       const optionText = typeof option === 'string' ? option : option.text;
@@ -622,11 +622,11 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                           Your Answer: {userAnswer !== undefined ? String.fromCharCode(65 + userAnswer) : 'Not Attempted'}
                         </p>
                         <p className="text-xs sm:text-sm text-muted-foreground">
-                          Correct Answer: {String.fromCharCode(65 + question.correct)}
+                          Correct Answer: {question.correct !== undefined ? String.fromCharCode(65 + question.correct) : 'Not available'}
                         </p>
                         {userAnswer !== undefined && (
                           <p className={`text-xs sm:text-sm font-medium ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
-                            {isCorrect ? `+${question.marks} marks earned` : `-${question.negativeMarks} marks deducted`}
+                            {isCorrect ? `+${question.marks || 0} marks earned` : `-${question.negativeMarks || 0} marks deducted`}
                           </p>
                         )}
                       </div>
@@ -642,7 +642,7 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                             variant="outline"
                             className={`text-xs ${isCorrect ? "border-green-200 text-green-700" : "border-red-200 text-red-700"}`}
                           >
-                            {isCorrect ? `+${question.marks}` : `-${question.negativeMarks}`}
+                            {isCorrect ? `+${question.marks || 0}` : `-${question.negativeMarks || 0}`}
                           </Badge>
                         )}
                       </div>
@@ -677,7 +677,7 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
                         <h5 className="font-medium text-blue-900 mb-2 text-sm sm:text-base">Step-by-step Solution:</h5>
                         <p className="text-blue-800 text-xs sm:text-sm leading-relaxed mb-3 break-words">
-                          {question.explanation || `This ${question.difficulty} level ${question.subject} question tests your knowledge of ${question.topic}. The correct answer is option ${String.fromCharCode(65 + question.correct)} based on the given options.`}
+                          {question.explanation || `This ${question.difficulty || 'medium'} level ${question.subject || 'general'} question tests your knowledge of ${question.topic || 'general'}. The correct answer is option ${question.correct !== undefined ? String.fromCharCode(65 + question.correct) : 'Not available'} based on the given options.`}
                         </p>
                         
                         {/* Explanation Image */}
@@ -695,7 +695,7 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                         )}
                         <div className="bg-green-50 border border-green-200 rounded p-3">
                           <p className="text-green-800 text-sm font-medium">
-                            <strong>Final Answer:</strong> Option {String.fromCharCode(65 + question.correct)} - {getOptionText(question.options[question.correct])}
+                            <strong>Final Answer:</strong> Option {String.fromCharCode(65 + question.correct)} - {question.options && question.options[question.correct] ? getOptionText(question.options[question.correct]) : 'Answer not available'}
                           </p>
                         </div>
                       </div>

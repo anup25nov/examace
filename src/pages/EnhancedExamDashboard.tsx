@@ -635,37 +635,6 @@ const EnhancedExamDashboard = () => {
           </Card>
         </div>
 
-        {/* Test Filter */}
-        <div className="mb-6">
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <span className="text-sm font-medium text-muted-foreground mr-2">Filter:</span>
-            <Button
-              variant={testFilter === 'all' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setTestFilter('all')}
-              className="text-xs"
-            >
-              All Tests ({completedCount + notAttemptedCount})
-            </Button>
-            <Button
-              variant={testFilter === 'attempted' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setTestFilter('attempted')}
-              className="text-xs"
-            >
-              Completed ({completedCount})
-            </Button>
-            <Button
-              variant={testFilter === 'not-attempted' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setTestFilter('not-attempted')}
-              className="text-xs"
-            >
-              Not Attempted ({notAttemptedCount})
-            </Button>
-          </div>
-        </div>
-
         {/* Main Content Tabs */}
         <Tabs defaultValue="pyq" value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="grid w-full grid-cols-2 bg-gradient-to-r from-slate-100 via-blue-50 to-indigo-100 p-1 rounded-xl shadow-lg border border-white/50">
@@ -702,6 +671,37 @@ const EnhancedExamDashboard = () => {
               );
             })}
           </TabsList>
+
+          {/* Test Filter */}
+          <div className="mb-6">
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              <span className="text-sm font-medium text-muted-foreground mr-2">Filter:</span>
+              <Button
+                variant={testFilter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTestFilter('all')}
+                className="text-xs"
+              >
+                All Tests ({completedCount + notAttemptedCount})
+              </Button>
+              <Button
+                variant={testFilter === 'attempted' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTestFilter('attempted')}
+                className="text-xs"
+              >
+                Completed ({completedCount})
+              </Button>
+              <Button
+                variant={testFilter === 'not-attempted' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setTestFilter('not-attempted')}
+                className="text-xs"
+              >
+                Not Attempted ({notAttemptedCount})
+              </Button>
+            </div>
+          </div>
 
           {/* PYQ Tab - First */}
           <TabsContent value="pyq" className="space-y-6">

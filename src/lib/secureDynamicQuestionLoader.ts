@@ -3,6 +3,7 @@ import { secureExamService } from './secureExamService';
 import { secureQuestionService, SecureQuestionData, SecureTestData } from './secureQuestionService';
 import { premiumTestService } from './premiumTestService';
 import { examDataService } from '@/data/examData';
+import { dynamicExamService } from './dynamicExamService';
 
 export interface QuestionData {
   id: string;
@@ -145,17 +146,58 @@ export class SecureDynamicQuestionLoader {
   ): Promise<TestData | null> {
     try {
       // Get exam configuration
-      const exam = secureExamService.getExamConfig(examId);
+      const exam = dynamicExamService.getExamConfig(examId);
       if (!exam) {
         console.error('Exam not found:', examId);
         return null;
       }
 
       // Get questions from secure service
+      console.log(`🔍 Attempting to load questions for: ${examId}/${sectionId}/${testId}`);
       const questions = await secureQuestionService.getQuestionData(examId, sectionId, testId);
+      console.log(`🔍 Secure service returned:`, questions ? `${questions.length} questions` : 'null/empty');
       if (!questions || questions.length === 0) {
-        console.log('No questions found in secure service, using centralized data...');
-        // Use centralized data if secure service fails
+        console.log('No questions found in secure service, trying direct JSON loading...');
+        // Try to load questions directly from JSON file
+        const directQuestions = await this.loadQuestionsFromJson(examId, sectionId, testId);
+        if (directQuestions && directQuestions.length > 0) {
+          console.log(`✅ Loaded ${directQuestions.length} questions directly from JSON file`);
+          const convertedQuestions: QuestionWithProps[] = directQuestions.map(q => ({
+            id: q.id,
+            questionEn: q.questionEn,
+            questionHi: q.questionHi,
+            optionsEn: q.options || [],
+            optionsHi: q.options || [],
+            correctAnswerIndex: q.correct,
+            explanationEn: q.explanation,
+            explanationHi: q.explanation,
+            marks: q.marks || 1,
+            negativeMarks: q.negativeMarks || 0.25,
+            duration: q.duration || 60,
+            difficulty: q.difficulty || 'medium',
+            subject: q.subject || 'general',
+            topic: q.topic || 'general',
+            imageUrl: q.imageUrl
+          }));
+          
+          // Create test data with loaded questions
+          const testData: TestData = {
+            examInfo: {
+              testName: this.getTestName(examId, sectionId, testId),
+              duration: this.calculateTestDuration(convertedQuestions, exam.examPattern?.duration || 60),
+              totalQuestions: convertedQuestions.length,
+              subjects: exam.examPattern?.subjects || ['General'],
+              markingScheme: exam.examPattern?.markingScheme || { correct: 1, incorrect: -0.25, unattempted: 0 },
+              defaultLanguage: 'english'
+            },
+            questions: convertedQuestions
+          };
+          
+          return testData;
+        }
+        
+        console.log('No questions found in JSON file, using centralized data...');
+        // Use centralized data if direct loading fails
         const centralizedQuestions = examDataService.getQuestionData(examId, sectionId, testId);
         if (centralizedQuestions.length === 0) {
           console.error('No questions found for test:', { examId, sectionId, testId, topicId });
@@ -210,8 +252,8 @@ export class SecureDynamicQuestionLoader {
           testName: this.getTestName(examId, sectionId, testId),
           duration: testDuration,
           totalQuestions: questionsWithProps.length,
-          subjects: exam.examPattern.subjects,
-          markingScheme: exam.examPattern.markingScheme,
+          subjects: exam.examPattern?.subjects || ['General'],
+          markingScheme: exam.examPattern?.markingScheme || { correct: 1, incorrect: -0.25, unattempted: 0 },
           defaultLanguage: 'english'
         },
         questions: questionsWithProps
@@ -238,7 +280,7 @@ export class SecureDynamicQuestionLoader {
 
   // Create test data from questions
   private createTestDataFromQuestions(examId: string, sectionId: string, testId: string, questions: QuestionWithProps[]): TestData {
-    const exam = secureExamService.getExamConfig(examId);
+    const exam = dynamicExamService.getExamConfig(examId);
     const testName = this.getTestName(examId, sectionId, testId);
     
     // Calculate total duration
@@ -278,7 +320,7 @@ export class SecureDynamicQuestionLoader {
 
   // Get test name
   private getTestName(examId: string, sectionId: string, testId: string): string {
-    const exam = secureExamService.getExamConfig(examId);
+    const exam = dynamicExamService.getExamConfig(examId);
     if (!exam) return testId;
 
     const section = exam.sections.find(s => s.id === sectionId);
@@ -353,6 +395,32 @@ export class SecureDynamicQuestionLoader {
       if (key.includes(userId)) {
         this.cache.delete(key);
       }
+    }
+  }
+
+  // Load questions directly from JSON file
+  private async loadQuestionsFromJson(examId: string, sectionId: string, testId: string): Promise<any[] | null> {
+    try {
+      const filePath = `/src/data/questions/${examId}/${sectionId}/${testId}.json`;
+      console.log(`📁 Attempting to load questions from: ${filePath}`);
+      
+      const response = await fetch(filePath);
+      if (!response.ok) {
+        console.log(`❌ File not found: ${filePath}`);
+        return null;
+      }
+      
+      const data = await response.json();
+      if (data.questions && Array.isArray(data.questions)) {
+        console.log(`✅ Successfully loaded ${data.questions.length} questions from JSON`);
+        return data.questions;
+      }
+      
+      console.log('❌ Invalid JSON structure - no questions array found');
+      return null;
+    } catch (error) {
+      console.error('❌ Error loading questions from JSON:', error);
+      return null;
     }
   }
 }
