@@ -90,7 +90,7 @@
       "questions": 100,
       "subjects": ["General Intelligence", "English Language", "Quantitative Aptitude", "General Awareness"],
       "difficulty": "mixed",
-      "isPremium": false,
+      "isPremium": true,
       "price": 0,
       "order": 5,
       "metadata": {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { dynamicQuestionLoader, TestData, QuestionWithProps } from '@/lib/dynamicQuestionLoader';
+import { secureDynamicQuestionLoader, TestData, QuestionWithProps } from '@/lib/secureDynamicQuestionLoader';
 import { useExamStats } from '@/hooks/useExamStats';
 import { useAuth } from '@/hooks/useAuth';
 import { supabaseStatsService } from '@/lib/supabaseStats';
@@ -168,8 +168,15 @@ const SolutionsViewer = () => {
       setActualTestType(testTypeValue);
       setActualTestId(testId);
 
-      // Load test data
-      const data = await dynamicQuestionLoader.loadQuestions(examId, testTypeValue as 'pyq' | 'practice' | 'mock', testId);
+        // Load test data securely
+        const data = await secureDynamicQuestionLoader.loadQuestions(
+          examId, 
+          testTypeValue as 'pyq' | 'practice' | 'mock', 
+          testId,
+          undefined,
+          user?.id,
+          testTypeValue === 'pyq' && testId === '2024-paper-5' // Premium test check
+        );
       if (!data) {
         setError('Test data not found');
         return;

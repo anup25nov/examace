@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Clock, Target, BookOpen, CheckCircle, AlertCircle } from 'lucide-react';
-import { TestData } from '@/lib/dynamicQuestionLoader';
+import { TestData } from '@/lib/secureDynamicQuestionLoader';
 
 interface TestInstructionsProps {
   examId: string;

@@ -16,9 +16,10 @@ import {
 // Removed useExamStats import - using testSubmissionService instead
 import { testSubmissionService } from "@/lib/testSubmissionService";
 import { useAuth } from "@/hooks/useAuth";
-import { dynamicQuestionLoader, DynamicQuestionLoader, TestData, QuestionWithProps } from "@/lib/dynamicQuestionLoader";
+import { secureDynamicQuestionLoader, SecureQuestionLoader, TestData, QuestionWithProps } from "@/lib/secureDynamicQuestionLoader";
 import SolutionsDisplay from "@/components/SolutionsDisplay";
 import ImageDisplay from "@/components/ImageDisplay";
+import { ContentProtection } from "@/components/ContentProtection";
 import { planLimitsService, PlanLimits } from "@/lib/planLimitsService";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { messagingService } from "@/lib/messagingService";
@@ -67,7 +68,7 @@ const analyzeSubjectDistribution = (questions: QuestionWithProps[]) => {
 const TestInterface = () => {
   const { examId, sectionId, testType, topic } = useParams();
   const navigate = useNavigate();
-  const { getUserId } = useAuth();
+  const { getUserId, user } = useAuth();
   // Removed unused submitTestAttempt and submitIndividualTestScore - using testSubmissionService instead
   
   const [testData, setTestData] = useState<TestData | null>(null);
@@ -232,9 +233,16 @@ const TestInterface = () => {
         setActualTestId(testId);
         
         
-        // Load test data from JSON
-        console.log('Loading test data with:', { examId, testTypeValue, testId });
-        const loadedTestData = await dynamicQuestionLoader.loadQuestions(examId!, testTypeValue as 'pyq' | 'practice' | 'mock', testId, topic);
+        // Load test data securely
+        console.log('Loading test data securely with:', { examId, testTypeValue, testId, userId: user?.id });
+        const loadedTestData = await secureDynamicQuestionLoader.loadQuestions(
+          examId!, 
+          testTypeValue as 'pyq' | 'practice' | 'mock', 
+          testId, 
+          topic,
+          user?.id,
+          testTypeValue === 'pyq' && testId === '2024-paper-5' // Premium test check
+        );
         
         if (!loadedTestData) {
           console.error('Failed to load test data for:', { examId, testTypeValue, testId });
@@ -263,8 +271,8 @@ const TestInterface = () => {
           if (loadedTestData && loadedTestData.examInfo && loadedTestData.examInfo.duration) {
             // Use duration from test data
             totalDuration = loadedTestData.examInfo.duration;
-          } else if (DynamicQuestionLoader.calculateTotalDuration) {
-            totalDuration = Math.round(DynamicQuestionLoader.calculateTotalDuration(loadedTestData.questions));
+          } else if (SecureQuestionLoader.calculateTotalDuration) {
+            totalDuration = Math.round(SecureQuestionLoader.calculateTotalDuration(loadedTestData.questions));
           } else {
             // Use local fallback function
             totalDuration = calculateTotalDurationFallback(loadedTestData.questions);
@@ -887,7 +895,8 @@ const TestInterface = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <ContentProtection enableProtection={true}>
+      <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-3">
@@ -1277,7 +1286,8 @@ const TestInterface = () => {
           message={planLimitsService.getUpgradeMessage(planLimits)}
         />
       )}
-    </div>
+      </div>
+    </ContentProtection>
   );
 };
 
