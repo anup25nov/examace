@@ -119,7 +119,7 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
                 
                 {/* Completion Status */}
                 {isCompleted && (
-                  <div className="flex items-center space-x-1 animate-bounce">
+                  <div className="flex items-center space-x-1">
                     <CheckCircle className="w-4 h-4 text-green-500" />
                     <span className="text-xs text-green-600 font-medium hidden sm:inline">Completed</span>
                   </div>
@@ -129,7 +129,7 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
 
             {/* Test Details */}
             <div className="space-y-2 mb-3">
-              <div className="flex items-center space-x-4 text-xs text-muted-foreground">
+              <div className="flex flex-col space-y-2 text-xs text-muted-foreground">
                 <div className="flex items-center space-x-1">
                   <Clock className="w-3 h-3" />
                   <span>{test.duration} min</span>

@@ -383,7 +383,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                               )}
                             </Badge>
                             {isCompleted && (
-                              <div className="flex items-center space-x-1 animate-bounce">
+                              <div className="flex items-center space-x-1">
                                 <CheckCircle className="w-4 h-4 text-green-500" />
                                 <span className="text-xs text-green-600 font-medium hidden sm:inline">Completed</span>
                               </div>
@@ -394,10 +394,10 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                         {/* Paper Details */}
                         <div className="space-y-2 mb-3">
                           <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                            <div className="flex items-center space-x-1">
+                            {/* <div className="flex items-center space-x-1">
                               <Calendar className="w-3 h-3" />
-                              <span>{(paper as any).metadata?.date ? new Date((paper as any).metadata.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : (paper as any).date || 'Date TBD'}</span>
-                            </div>
+                              <span>{(paper as any).metadata?.date ? new Date((paper as any).metadata.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : (paper as any).date || 'Date TBDs  '}</span>
+                            </div> */}
                             <div className="flex items-center space-x-1">
                               <Clock className="w-3 h-3" />
                               <span>{paper.duration} min</span>

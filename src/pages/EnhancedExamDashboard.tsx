@@ -598,7 +598,7 @@ const EnhancedExamDashboard = () => {
         <div className="mb-6 text-center">
           <div className="flex items-center justify-center space-x-2 mb-2">
             <Trophy className="w-5 h-5 text-primary animate-pulse" />
-            <h3 className="text-lg font-bold text-foreground">Performance</h3>
+            <h3 className="text-lg font-bold text-foreground">Performance Statistics</h3>
           </div>
         </div>
         
@@ -610,7 +610,7 @@ const EnhancedExamDashboard = () => {
                 <BarChart3 className="w-5 h-5 md:w-8 md:h-8 text-white" />
               </div>
               <p className="text-xl md:text-3xl font-bold mb-1 md:mb-2">{userStats.totalTests}</p>
-              <p className="text-xs md:text-sm text-blue-100 font-medium">Tests</p>
+              <p className="text-xs md:text-sm text-blue-100 font-medium">Test Attempted</p>
             </CardContent>
           </Card>
           
@@ -620,7 +620,8 @@ const EnhancedExamDashboard = () => {
                 <Trophy className="w-5 h-5 md:w-8 md:h-8 text-white" />
               </div>
               <p className="text-xl md:text-3xl font-bold mb-1 md:mb-2">{userStats.bestScore}</p>
-              <p className="text-xs md:text-sm text-purple-100 font-medium">Best</p>
+              <p className="text-xs md:text-sm text-purple-100 font-medium">Best Score</p>
+
             </CardContent>
           </Card>
           
@@ -630,7 +631,7 @@ const EnhancedExamDashboard = () => {
                 <Star className="w-5 h-5 md:w-8 md:h-8 text-white" />
               </div>
               <p className="text-xl md:text-3xl font-bold mb-1 md:mb-2">{userStats.avgScoreLast10}</p>
-              <p className="text-xs md:text-sm text-orange-100 font-medium">Avg</p>
+              <p className="text-xs md:text-sm text-orange-100 font-medium">Average Score</p>
             </CardContent>
           </Card>
         </div>
@@ -675,7 +676,7 @@ const EnhancedExamDashboard = () => {
           {/* Test Filter */}
           <div className="mb-6">
             <div className="flex flex-wrap items-center justify-center gap-4">
-              <span className="text-sm font-medium text-muted-foreground mr-2">Filter:</span>
+              {/* <span className="text-sm font-medium text-muted-foreground mr-2">Filter:</span> */}
               <Button
                 variant={testFilter === 'all' ? 'default' : 'outline'}
                 size="sm"
