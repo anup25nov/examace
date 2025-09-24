@@ -38,7 +38,7 @@ export default async function handler(req, res) {
     const fs = require('fs');
     const path = require('path');
     
-    const jsonPath = path.join(process.cwd(), 'public', 'data', 'questions', finalExamId, finalSectionId, `${finalTestId}.json`);
+    const jsonPath = path.join(process.cwd(), 'src', 'data', 'questions', finalExamId, finalSectionId, `${finalTestId}.json`);
     
     if (!fs.existsSync(jsonPath)) {
       return res.status(404).json({ error: 'Test not found' });

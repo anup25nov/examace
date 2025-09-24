@@ -211,6 +211,20 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
     }
     return String(option);
   };
+
+  // Debug: Log question data structure
+  useEffect(() => {
+    if (questions.length > 0) {
+      console.log('🔍 [SolutionsDisplay] Questions data structure:', questions.map((q, index) => ({
+        index,
+        id: q.id,
+        correct: q.correct,
+        correctAnswerIndex: (q as any).correctAnswerIndex,
+        optionsLength: q.options?.length || 0,
+        optionsType: Array.isArray(q.options) ? 'array' : typeof q.options
+      })));
+    }
+  }, [questions]);
   const [showExplanations, setShowExplanations] = useState<{ [key: number]: boolean }>(() => {
     // Show explanations by default for all questions
     const defaultState: { [key: number]: boolean } = {};
@@ -657,7 +671,7 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                           Your Answer: {userAnswer !== undefined ? String.fromCharCode(65 + userAnswer) : 'Not Attempted'}
                         </p>
                         <p className="text-xs sm:text-sm text-muted-foreground">
-                          Correct Answer: {question.correct !== undefined ? String.fromCharCode(65 + question.correct) : 'Not available'}
+                          Correct Answer: {question.correct !== undefined && question.correct >= 0 && question.correct < (question.options?.length || 0) ? String.fromCharCode(65 + question.correct) : 'Not available'}
                         </p>
                         {userAnswer !== undefined && (
                           <p className={`text-xs sm:text-sm font-medium ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
@@ -739,7 +753,7 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                         })()}
                         <div className="bg-green-50 border border-green-200 rounded p-3">
                           <p className="text-green-800 text-sm font-medium">
-                            <strong>Final Answer:</strong> Option {String.fromCharCode(65 + question.correct)} - {question.options && question.options[question.correct] ? getOptionText(question.options[question.correct]) : 'Answer not available'}
+                            <strong>Final Answer:</strong> Option {question.correct !== undefined && question.correct >= 0 && question.correct < (question.options?.length || 0) ? String.fromCharCode(65 + question.correct) : 'N/A'} - {question.options && question.correct !== undefined && question.correct >= 0 && question.correct < question.options.length && question.options[question.correct] ? getOptionText(question.options[question.correct]) : 'Answer not available'}
                           </p>
                         </div>
                       </div>

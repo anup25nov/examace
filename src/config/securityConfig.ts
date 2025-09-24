@@ -50,7 +50,7 @@ export const securityConfig = {
     disableTextSelection: true,
     disablePrintScreen: true,
     disableDevTools: false, // Set to true in production
-    watermarkText: 'ExamAce - Confidential'
+    watermarkText: 'Step 2 Sarkari - Confidential'
   }
 };
 

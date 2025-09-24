@@ -156,6 +156,25 @@ serve(async (req) => {
 
     console.log('Membership activated successfully')
 
+    // Create membership purchase message
+    const planName = body.plan === 'pro' ? 'Pro Plan' : body.plan === 'pro_plus' ? 'Pro Plus Plan' : 'Premium Plan';
+    const { error: messageError } = await supabase
+      .from('user_messages')
+      .insert({
+        user_id: body.user_id,
+        message_type: 'membership_purchased',
+        title: `Welcome to ${planName}!`,
+        message: `Congratulations! You have successfully purchased the ${planName} for ₹${planAmount}. Your membership is now active and you can access all premium features.`,
+        is_read: false
+      });
+
+    if (messageError) {
+      console.error('Error creating membership message:', messageError);
+      // Don't fail the payment for message creation error
+    } else {
+      console.log('Membership purchase message created successfully');
+    }
+
     // Process referral commission DIRECTLY (no RPC calls)
     if (body.referral_code) {
       console.log('=== PROCESSING REFERRAL COMMISSION ===')

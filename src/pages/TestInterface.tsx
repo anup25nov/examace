@@ -115,6 +115,7 @@ const TestInterface = () => {
   }>>([]);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [filteredQuestions, setFilteredQuestions] = useState<QuestionWithProps[]>([]);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [autoSaveInterval, setAutoSaveInterval] = useState<NodeJS.Timeout | null>(null);
   const questionGridRef = useRef<HTMLDivElement>(null);
   const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
@@ -500,6 +501,16 @@ const TestInterface = () => {
     }
     setTestStarted(true);
     
+    // Enter fullscreen mode when test starts
+    try {
+      if (document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+        setIsFullscreen(true);
+      }
+    } catch (error) {
+      console.warn('Fullscreen not supported or denied:', error);
+    }
+    
     // Start the timer when user explicitly starts the test
     if (testData) {
       const totalDuration = testData.examInfo?.duration || 60; // Default to 60 minutes
@@ -510,19 +521,32 @@ const TestInterface = () => {
     }
   };
 
-  // Timer effect - only start when test is actually started
+  // Robust timer effect - only start when test is actually started
   useEffect(() => {
-    if (timeLeft > 0 && !isCompleted && !loading && testStarted) {
-      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+    if (!testStarted || isCompleted || loading) {
+      return;
+    }
+
+    if (timeLeft > 0) {
+      const timer = setTimeout(() => {
+        setTimeLeft(prev => {
+          const newTime = prev - 1;
+          if (newTime <= 0) {
+            // Time is up - trigger auto-submit
+            console.log('⏰ [TestInterface] Time is up, triggering auto-submit');
+            setSubmitReason('timeup');
+            setShowSubmitConfirmation(true);
+            // Auto-submit after showing popup
+            setTimeout(() => {
+              handleSubmit(true); // Skip confirmation for time up
+            }, 2000);
+            return 0;
+          }
+          return newTime;
+        });
+      }, 1000);
+      
       return () => clearTimeout(timer);
-    } else if (timeLeft === 0 && !isCompleted && !loading && testStarted) {
-      // Auto-submit when time is up with popup
-      setSubmitReason('timeup');
-      setShowSubmitConfirmation(true);
-      // Auto-submit after showing popup
-      setTimeout(() => {
-        handleSubmit(true); // Skip confirmation for time up
-      }, 2000);
     }
   }, [timeLeft, isCompleted, loading, testStarted]);
 
@@ -575,73 +599,57 @@ const TestInterface = () => {
     };
   }, [autoSaveInterval]);
 
-  // Prevent fullscreen exit during test
+  // Simple fullscreen and basic security
   useEffect(() => {
-    if (testStarted && !isCompleted) {
-      const handleFullscreenChange = () => {
-        if (!document.fullscreenElement && testStarted && !isCompleted) {
-          // User tried to exit fullscreen, prevent it
-          console.log('🚫 [TestInterface] Preventing fullscreen exit during test');
-          document.documentElement.requestFullscreen().catch(err => {
-            console.log('Fullscreen re-request failed:', err);
-          });
-        }
-      };
-
-      const handleKeyDown = (e: KeyboardEvent) => {
-        // Prevent F11 and Escape keys from exiting fullscreen
-        if ((e.key === 'F11' || e.key === 'Escape') && testStarted && !isCompleted) {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('🚫 [TestInterface] Prevented fullscreen exit key:', e.key);
-        }
-      };
-
-      // Add event listeners
-      document.addEventListener('fullscreenchange', handleFullscreenChange);
-      document.addEventListener('keydown', handleKeyDown);
-
-      // Cleanup
-      return () => {
-        document.removeEventListener('fullscreenchange', handleFullscreenChange);
-        document.removeEventListener('keydown', handleKeyDown);
-      };
+    if (!testStarted || isCompleted) {
+      return;
     }
-  }, [testStarted, isCompleted]);
 
-  // Auto-submit on page unload or visibility change
-  useEffect(() => {
-    if (testStarted && !isCompleted) {
-      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-        console.log('🚨 [TestInterface] Page is being unloaded, auto-submitting test');
-        // Auto-submit the test
-        handleSubmit(true); // Skip confirmation for auto-submit
-        
-        // Show warning message
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && testStarted && !isCompleted) {
+        console.log('🚫 [TestInterface] User exited fullscreen, attempting to re-enter');
+        // Try to re-enter fullscreen
+        document.documentElement.requestFullscreen().catch(err => {
+          console.log('Failed to re-enter fullscreen:', err);
+        });
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent F11, Escape, and other fullscreen exit keys
+      if ((e.key === 'F11' || e.key === 'Escape' || e.key === 'F12') && testStarted && !isCompleted) {
         e.preventDefault();
-        e.returnValue = 'Your test is being automatically submitted. Are you sure you want to leave?';
-        return 'Your test is being automatically submitted. Are you sure you want to leave?';
-      };
+        e.stopPropagation();
+        console.log('🚫 [TestInterface] Prevented fullscreen exit key:', e.key);
+      }
+    };
 
-      const handleVisibilityChange = () => {
-        if (document.hidden && testStarted && !isCompleted) {
-          console.log('🚨 [TestInterface] Page became hidden, auto-submitting test');
-          // Auto-submit the test when page becomes hidden
-          handleSubmit(true); // Skip confirmation for auto-submit
-        }
-      };
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = 'Are you sure you want to leave? Your test will be submitted automatically.';
+      return 'Are you sure you want to leave? Your test will be submitted automatically.';
+    };
 
-      // Add event listeners
-      window.addEventListener('beforeunload', handleBeforeUnload);
-      document.addEventListener('visibilitychange', handleVisibilityChange);
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      console.log('🚫 [TestInterface] Right-click prevented');
+    };
 
-      // Cleanup
-      return () => {
-        window.removeEventListener('beforeunload', handleBeforeUnload);
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-      };
-    }
+    // Add event listeners
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('contextmenu', handleContextMenu);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('contextmenu', handleContextMenu);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, [testStarted, isCompleted]);
+
+
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -699,6 +707,9 @@ const TestInterface = () => {
       }
     } else if (!selectedSubject) {
       // If we're viewing all questions and on the last question, go to first question
+      setCurrentQuestion(0);
+    } else {
+      // If we're on the last question and no subject filtering, go to first question
       setCurrentQuestion(0);
     }
   };
@@ -1303,13 +1314,19 @@ const TestInterface = () => {
                   
                   <Button
                     onClick={handleNext}
-                    disabled={currentQuestion === filteredQuestions.length - 1 && !selectedSubject}
+                    disabled={false}
                     className="gradient-primary border-0 text-sm sm:text-base"
                   >
                     {currentQuestion === filteredQuestions.length - 1 && selectedSubject ? (
                       <>
                         <span className="hidden sm:inline">Next Subject</span>
                         <span className="sm:hidden">Next Sub</span>
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </>
+                    ) : currentQuestion === filteredQuestions.length - 1 ? (
+                      <>
+                        <span className="hidden sm:inline">Go to First</span>
+                        <span className="sm:hidden">First</span>
                         <ArrowRight className="w-4 h-4 ml-2" />
                       </>
                     ) : (

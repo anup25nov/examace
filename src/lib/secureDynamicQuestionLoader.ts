@@ -12,6 +12,7 @@ export interface QuestionData {
   questionHi?: string;
   options: Array<{en: string; hi?: string}> | string[];
   correctAnswerIndex: number;
+  correct?: number; // Add correct field for SolutionsDisplay compatibility
   explanationEn?: string;
   explanationHi?: string;
   marks?: number;
@@ -113,6 +114,7 @@ export class SecureDynamicQuestionLoader {
               questionHi: q.questionHi,
               options: q.options || [],
               correctAnswerIndex: q.correct || q.correctAnswerIndex || 0,
+              correct: q.correct || q.correctAnswerIndex || 0, // Add correct field for SolutionsDisplay
               difficulty: (q.difficulty as 'easy' | 'medium' | 'hard') || 'medium',
               subject: q.subject,
               topic: q.topic,
@@ -276,26 +278,32 @@ export class SecureDynamicQuestionLoader {
     const testName = this.getTestName(examId, sectionId, testId);
     
     // Convert raw JSON questions to QuestionWithProps format
-    const questionsWithProps: QuestionWithProps[] = jsonData.questions.map(q => ({
-      id: q.id,
-      questionEn: q.questionEn,
-      questionHi: q.questionHi,
-      options: q.options || [],
-      correctAnswerIndex: q.correct || q.correctAnswerIndex || 0,
-      explanationEn: q.explanationEn,
-      explanationHi: q.explanationHi,
-      marks: q.marks || 1,
-      negativeMarks: q.negativeMarks || 0.25,
-      duration: q.duration || 60,
-      subject: q.subject || 'general',
-      topic: q.topic || 'general',
-      difficulty: (q.difficulty as 'easy' | 'medium' | 'hard') || 'medium',
-      imageUrl: q.imageUrl,
-      hasImages: q.hasImages,
-      questionImage: q.questionImage,
-      optionImages: q.optionImages,
-      explanationImage: q.explanationImage
-    }));
+    const questionsWithProps: QuestionWithProps[] = jsonData.questions.map(q => {
+      const correctValue = q.correct || q.correctAnswerIndex || 0;
+      console.log(`🔍 [secureDynamicQuestionLoader] Question ${q.id}: correct=${q.correct}, correctAnswerIndex=${q.correctAnswerIndex}, final=${correctValue}`);
+      
+      return {
+        id: q.id,
+        questionEn: q.questionEn,
+        questionHi: q.questionHi,
+        options: q.options || [],
+        correctAnswerIndex: correctValue,
+        correct: correctValue, // Add correct field for SolutionsDisplay
+        explanationEn: q.explanationEn,
+        explanationHi: q.explanationHi,
+        marks: q.marks || 1,
+        negativeMarks: q.negativeMarks || 0.25,
+        duration: q.duration || 60,
+        subject: q.subject || 'general',
+        topic: q.topic || 'general',
+        difficulty: (q.difficulty as 'easy' | 'medium' | 'hard') || 'medium',
+        imageUrl: q.imageUrl,
+        hasImages: q.hasImages,
+        questionImage: q.questionImage,
+        optionImages: q.optionImages,
+        explanationImage: q.explanationImage
+      };
+    });
     
     // Use duration from JSON metadata
     const totalDuration = jsonData.duration || 180;

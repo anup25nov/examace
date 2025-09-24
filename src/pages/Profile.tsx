@@ -271,9 +271,9 @@ const Profile = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       {getMembershipBadge()}
-                      <span className="text-sm text-gray-600">
+                      {/* <span className="text-sm text-gray-600">
                         {membership ? `₹${membership.amount}` : 'Free'}
-                      </span>
+                      </span> */}
                     </div>
                     <div className="flex items-center space-x-1">
                       {React.createElement(getMembershipStatus().icon, { className: `w-4 h-4 ${getMembershipStatus().color}` })}
