@@ -145,8 +145,8 @@ export const defaultConfig: AppConfig = {
 
   // Centralized commission configuration - SINGLE SOURCE OF TRUTH
   commission: {
-    percentage: 50, // 50% commission rate
-    minimumWithdrawal: 100, // Minimum withdrawal amount
+    percentage: 12, // 50% commission rate
+    minimumWithdrawal: 8, // Minimum withdrawal amount
     maximumWithdrawal: 10000, // Maximum withdrawal amount
     processingFee: 0, // Processing fee percentage
     taxDeduction: 0, // Tax deduction percentage
