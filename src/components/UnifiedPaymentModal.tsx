@@ -15,7 +15,8 @@ import {
   Loader2,
   Smartphone,
   Globe,
-  Lock
+  Lock,
+  RotateCcw
 } from 'lucide-react';
 import { unifiedPaymentService, PaymentPlan } from '@/lib/unifiedPaymentService';
 import { useAuth } from '@/hooks/useAuth';
@@ -54,25 +55,118 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [paymentStep, setPaymentStep] = useState<'select' | 'processing' | 'success' | 'failed'>('select');
   const [userMembership, setUserMembership] = useState<any>(null);
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+  const [razorpayLoading, setRazorpayLoading] = useState(true);
+  const [razorpayError, setRazorpayError] = useState(false);
 
   // Load Razorpay script
   useEffect(() => {
-    const loadRazorpayScript = () => {
-      return new Promise((resolve) => {
+    const loadRazorpayScript = async () => {
+      try {
+        setRazorpayLoading(true);
+        
+        // Check if already loaded
         if (window.Razorpay) {
-          resolve(true);
+          setRazorpayLoaded(true);
+          setRazorpayLoading(false);
+          setRazorpayError(false);
           return;
         }
+
+        // Check if script already exists
+        const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+        if (existingScript) {
+          // Wait for existing script to load
+          existingScript.addEventListener('load', () => {
+            setRazorpayLoaded(true);
+            setRazorpayLoading(false);
+            setRazorpayError(false);
+          });
+          existingScript.addEventListener('error', () => {
+            setRazorpayLoaded(false);
+            setRazorpayLoading(false);
+            setRazorpayError(true);
+          });
+          return;
+        }
+
+        // Create and load new script
         const script = document.createElement('script');
         script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-        script.onload = () => resolve(true);
-        script.onerror = () => resolve(false);
-        document.body.appendChild(script);
-      });
+        script.async = true;
+        
+        script.onload = () => {
+          setRazorpayLoaded(true);
+          setRazorpayLoading(false);
+          setRazorpayError(false);
+        };
+        
+        script.onerror = () => {
+          setRazorpayLoaded(false);
+          setRazorpayLoading(false);
+          setRazorpayError(true);
+          setError('Failed to load payment system. Please try again.');
+        };
+        
+        document.head.appendChild(script);
+      } catch (error) {
+        console.error('Error loading Razorpay script:', error);
+        setRazorpayLoaded(false);
+        setRazorpayLoading(false);
+        setRazorpayError(true);
+        setError('Failed to load payment system. Please try again.');
+      }
     };
 
+    if (isOpen) {
+      loadRazorpayScript();
+    }
+  }, [isOpen]);
+
+  // Retry function for Razorpay loading
+  const retryRazorpayLoading = () => {
+    setRazorpayError(false);
+    setError(null);
+    const script = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+    if (script) {
+      script.remove();
+    }
+    delete window.Razorpay;
+    
+    // Reload script
+    const loadRazorpayScript = async () => {
+      try {
+        setRazorpayLoading(true);
+        
+        const newScript = document.createElement('script');
+        newScript.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        newScript.async = true;
+        
+        newScript.onload = () => {
+          setRazorpayLoaded(true);
+          setRazorpayLoading(false);
+          setRazorpayError(false);
+        };
+        
+        newScript.onerror = () => {
+          setRazorpayLoaded(false);
+          setRazorpayLoading(false);
+          setRazorpayError(true);
+          setError('Failed to load payment system. Please try again.');
+        };
+        
+        document.head.appendChild(newScript);
+      } catch (error) {
+        console.error('Error retrying Razorpay script:', error);
+        setRazorpayLoaded(false);
+        setRazorpayLoading(false);
+        setRazorpayError(true);
+        setError('Failed to load payment system. Please try again.');
+      }
+    };
+    
     loadRazorpayScript();
-  }, []);
+  };
 
   // Load plans and user membership
   useEffect(() => {
@@ -109,7 +203,7 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
   };
 
   const handlePayment = async () => {
-    if (!user || !window.Razorpay || !selectedPlan) {
+    if (!user || !razorpayLoaded || !selectedPlan) {
       setError('Payment system not ready. Please try again.');
       return;
     }
@@ -577,14 +671,24 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
           {/* Payment Button */}
           <div className="flex justify-center">
             <Button
-              onClick={handlePayment}
-              disabled={loading || !selectedPlan || !window.Razorpay || !selectedPlanDetails}
+              onClick={razorpayError ? retryRazorpayLoading : handlePayment}
+              disabled={loading || !selectedPlan || (!razorpayLoaded && !razorpayError) || !selectedPlanDetails || razorpayLoading}
               className="w-full max-w-md h-12 text-lg bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                   Processing Payment...
+                </>
+              ) : razorpayLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Loading Payment System...
+                </>
+              ) : razorpayError ? (
+                <>
+                  <RotateCcw className="w-5 h-5 mr-2" />
+                  Retry Loading Payment
                 </>
               ) : (
                 <>
@@ -599,7 +703,9 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
           {process.env.NODE_ENV === 'development' && (
             <div className="text-xs text-gray-500 mt-2 text-center">
               Debug: selectedPlan={selectedPlan ? 'true' : 'false'}, 
-              Razorpay={window.Razorpay ? 'loaded' : 'not loaded'}, 
+              razorpayLoaded={razorpayLoaded ? 'true' : 'false'}, 
+              razorpayLoading={razorpayLoading ? 'true' : 'false'},
+              razorpayError={razorpayError ? 'true' : 'false'},
               selectedPlanDetails={selectedPlanDetails ? 'true' : 'false'}
             </div>
           )}

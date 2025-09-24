@@ -38,17 +38,60 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paymentStep, setPaymentStep] = useState<'init' | 'processing' | 'success' | 'failed'>('init');
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+  const [razorpayLoading, setRazorpayLoading] = useState(true);
 
   // Load Razorpay script
   useEffect(() => {
-    const loadRazorpayScript = () => {
-      return new Promise((resolve) => {
+    const loadRazorpayScript = async () => {
+      try {
+        setRazorpayLoading(true);
+        
+        // Check if already loaded
+        if (window.Razorpay) {
+          setRazorpayLoaded(true);
+          setRazorpayLoading(false);
+          return;
+        }
+
+        // Check if script already exists
+        const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+        if (existingScript) {
+          // Wait for existing script to load
+          existingScript.addEventListener('load', () => {
+            setRazorpayLoaded(true);
+            setRazorpayLoading(false);
+          });
+          existingScript.addEventListener('error', () => {
+            setRazorpayLoaded(false);
+            setRazorpayLoading(false);
+          });
+          return;
+        }
+
+        // Create and load new script
         const script = document.createElement('script');
         script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-        script.onload = () => resolve(true);
-        script.onerror = () => resolve(false);
-        document.body.appendChild(script);
-      });
+        script.async = true;
+        
+        script.onload = () => {
+          setRazorpayLoaded(true);
+          setRazorpayLoading(false);
+        };
+        
+        script.onerror = () => {
+          setRazorpayLoaded(false);
+          setRazorpayLoading(false);
+          setError('Failed to load payment system. Please refresh the page and try again.');
+        };
+        
+        document.head.appendChild(script);
+      } catch (error) {
+        console.error('Error loading Razorpay script:', error);
+        setRazorpayLoaded(false);
+        setRazorpayLoading(false);
+        setError('Failed to load payment system. Please refresh the page and try again.');
+      }
     };
 
     loadRazorpayScript();
@@ -60,7 +103,7 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
       return;
     }
     
-    if (!window.Razorpay) {
+    if (!razorpayLoaded) {
       messagingService.warning('Payment system is loading. Please wait a moment and try again.');
       return;
     }
@@ -334,13 +377,18 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
             </Button>
             <Button
               onClick={handlePayment}
-              disabled={loading || !window.Razorpay}
+              disabled={loading || !razorpayLoaded || razorpayLoading}
               className="flex-1 bg-blue-600 hover:bg-blue-700"
             >
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Processing...
+                </>
+              ) : razorpayLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Loading Payment System...
                 </>
               ) : (
                 `Pay ${razorpayPaymentService.formatAmount(plan.price)}`

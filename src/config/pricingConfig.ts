@@ -1,6 +1,14 @@
 // Centralized Pricing Configuration
 // This is the SINGLE SOURCE OF TRUTH for all pricing in the application
 
+// Centralized pricing constants - SINGLE SOURCE OF TRUTH
+const PRICING_CONSTANTS = {
+  PRO_PLAN_PRICE: 1,
+  PRO_PLUS_PLAN_PRICE: 2,
+  PREMIUM_PLAN_PRICE: 1, // Premium is alias for Pro
+  CURRENCY: 'INR',
+};
+
 export interface PlanPricing {
   id: string;
   name: string;
@@ -21,9 +29,9 @@ export const PRICING_CONFIG: Record<string, PlanPricing> = {
   pro: {
     id: 'pro',
     name: 'Pro Plan',
-    price: 1,
+    price: PRICING_CONSTANTS.PRO_PLAN_PRICE,
     originalPrice: 199,
-    currency: 'INR',
+    currency: PRICING_CONSTANTS.CURRENCY,
     description: 'Access to 11 mock tests',
     features: [
       '11 Mock Tests',
@@ -39,9 +47,9 @@ export const PRICING_CONFIG: Record<string, PlanPricing> = {
   pro_plus: {
     id: 'pro_plus',
     name: 'Pro Plus Plan',
-    price: 2,
+    price: PRICING_CONSTANTS.PRO_PLUS_PLAN_PRICE,
     originalPrice: 599,
-    currency: 'INR',
+    currency: PRICING_CONSTANTS.CURRENCY,
     description: 'Complete access to all mocks and features',
     features: [
       'Unlimited Mock Tests',

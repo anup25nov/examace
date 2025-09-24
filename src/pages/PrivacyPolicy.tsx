@@ -128,7 +128,7 @@ const PrivacyPolicy = () => {
               <div className="space-y-3 text-muted-foreground">
                 <p>If you have any questions about this Privacy Policy, please contact us:</p>
                 <p>• Email: privacy@examace.com</p>
-                <p>• Phone: +91 98765 43210</p>
+                <p>• Phone: +91 7050959444</p>
                 <p>• Address: New Delhi, India</p>
               </div>
             </CardContent>

@@ -1,6 +1,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+// Centralized pricing configuration - SINGLE SOURCE OF TRUTH
+const PLAN_PRICES: Record<string, number> = {
+  pro: 1, // Pro plan: 1 INR (test price)
+  pro_plus: 2, // Pro+ plan: 2 INR (test price)
+  premium: 1, // Premium plan: 1 INR (alias for pro)
+};
+
+// Helper function to get plan price
+const getPlanPrice = (planId: string): number => {
+  return PLAN_PRICES[planId] || 0;
+};
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -71,8 +83,8 @@ serve(async (req) => {
       console.log('Signature verified successfully')
     }
 
-    // Get plan amount
-    const planAmount = body.plan === 'pro_plus' ? 2.00 : 1.00
+    // Get plan amount - use centralized pricing
+    const planAmount = getPlanPrice(body.plan)
     console.log('Plan amount:', planAmount)
 
     // Insert payment record
@@ -89,8 +101,8 @@ serve(async (req) => {
         razorpay_signature: body.signature,
         paid_at: new Date().toISOString(),
         payment_id: body.payment_id,
-        plan_id: '00000000-0000-0000-0000-000000000002',
-        plan_name: body.plan,
+        plan_id: body.plan, // Use the actual plan ID (pro/pro_plus)
+        plan_name: body.plan === 'pro' ? 'Pro Plan' : 'Pro Plus Plan',
         payment_method: 'razorpay'
       })
       .select('id')
@@ -127,7 +139,7 @@ serve(async (req) => {
       .from('user_memberships')
       .insert({
         user_id: body.user_id,
-        plan_id: '00000000-0000-0000-0000-000000000002',
+        plan_id: body.plan, // Use the actual plan ID (pro/pro_plus)
         start_date: new Date().toISOString(),
         end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
         status: 'active',
