@@ -34,13 +34,13 @@ import { useAuth } from '@/hooks/useAuth';
 interface QuestionReport {
   id: string;
   user_id: string;
-  user_phone: string;
+  user_phone?: string;
   exam_id: string;
-  test_type: string;
-  test_id: string;
+  test_type?: string;
+  test_id?: string;
   question_id: string;
-  report_type: string;
-  description: string;
+  issue_type: string; // Changed from report_type to issue_type
+  issue_description: string; // Changed from description to issue_description
   created_at: string;
 }
 
@@ -263,21 +263,21 @@ export const AdminPanel: React.FC = () => {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-2">
-                            <Badge variant="outline">{report.report_type.replace('_', ' ')}</Badge>
+                            <Badge variant="outline">{(report.issue_type || 'unknown').replace('_', ' ')}</Badge>
                             <Badge variant="secondary">{report.exam_id}</Badge>
-                            <Badge variant="outline">{report.test_type}</Badge>
+                            <Badge variant="outline">{report.test_type || 'N/A'}</Badge>
                           </div>
                           <h4 className="font-semibold text-gray-900 mb-2">
                             Question ID: {report.question_id}
                           </h4>
                           <p className="text-sm text-gray-600 mb-2">
-                            <strong>User:</strong> {report.user_phone} | 
-                            <strong> Test:</strong> {report.test_id} | 
+                            <strong>User:</strong> {report.user_phone || 'N/A'} | 
+                            <strong> Test:</strong> {report.test_id || 'N/A'} | 
                             <strong> Date:</strong> {new Date(report.created_at).toLocaleDateString()}
                           </p>
-                          {report.description && (
+                          {report.issue_description && (
                             <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded">
-                              <strong>Description:</strong> {report.description}
+                              <strong>Description:</strong> {report.issue_description}
                             </p>
                           )}
                         </div>
@@ -370,11 +370,11 @@ export const AdminPanel: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label>Report Type</Label>
-                    <p className="text-sm text-gray-600">{selectedReport.report_type.replace('_', ' ')}</p>
+                    <p className="text-sm text-gray-600">{(selectedReport.issue_type || 'unknown').replace('_', ' ')}</p>
                   </div>
                   <div>
                     <Label>User</Label>
-                    <p className="text-sm text-gray-600">{selectedReport.user_phone}</p>
+                    <p className="text-sm text-gray-600">{selectedReport.user_phone || 'N/A'}</p>
                   </div>
                 </div>
                 
@@ -383,10 +383,10 @@ export const AdminPanel: React.FC = () => {
                   <p className="text-sm text-gray-600">{selectedReport.question_id}</p>
                 </div>
                 
-                {selectedReport.description && (
+                {selectedReport.issue_description && (
                   <div>
                     <Label>Description</Label>
-                    <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">{selectedReport.description}</p>
+                    <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded">{selectedReport.issue_description}</p>
                   </div>
                 )}
                 
