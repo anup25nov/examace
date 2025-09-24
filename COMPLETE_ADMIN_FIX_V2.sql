@@ -68,9 +68,11 @@ DECLARE
   v_exam_id VARCHAR(50);
   v_test_type VARCHAR(50);
   v_report_type VARCHAR(50);
+  v_question_id VARCHAR(100);
+  v_test_id VARCHAR(100);
 BEGIN
   -- Get report details
-  SELECT exam_id, test_type, report_type INTO v_exam_id, v_test_type, v_report_type
+  SELECT exam_id, test_type, report_type, question_id, test_id INTO v_exam_id, v_test_type, v_report_type, v_question_id, v_test_id
   FROM question_reports
   WHERE id = p_report_id AND user_id = p_user_id;
   
@@ -83,24 +85,26 @@ BEGIN
     WHEN 'resolved' THEN
       v_title := 'Question Report Resolved';
       v_message := CONCAT(
-        'Your question report for ', v_exam_id, ' - ', v_test_type, 
-        ' (Issue: ', v_report_type, ') has been reviewed and resolved. '
+        'Your report for ', UPPER(v_exam_id), ' ', v_test_type, 
+        ' Test ', v_test_id, ' Question ', v_question_id,
+        ' (', v_report_type, ') has been resolved. '
       );
       IF p_admin_notes IS NOT NULL THEN
-        v_message := v_message || 'Admin notes: ' || p_admin_notes;
+        v_message := v_message || 'Note: ' || p_admin_notes;
       ELSE
-        v_message := v_message || 'Thank you for helping us improve our content quality.';
+        v_message := v_message || 'Thank you for helping improve our content.';
       END IF;
     WHEN 'rejected' THEN
       v_title := 'Question Report Rejected';
       v_message := CONCAT(
-        'Your question report for ', v_exam_id, ' - ', v_test_type, 
-        ' (Issue: ', v_report_type, ') has been reviewed but was not accepted. '
+        'Your report for ', UPPER(v_exam_id), ' ', v_test_type, 
+        ' Test ', v_test_id, ' Question ', v_question_id,
+        ' (', v_report_type, ') was not accepted. '
       );
       IF p_admin_notes IS NOT NULL THEN
         v_message := v_message || 'Reason: ' || p_admin_notes;
       ELSE
-        v_message := v_message || 'Please contact support if you believe this is an error.';
+        v_message := v_message || 'Contact support if you believe this is an error.';
       END IF;
     ELSE
       RETURN false;
