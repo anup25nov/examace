@@ -283,7 +283,7 @@ export class PaymentService {
   /**
    * Update payment status
    */
-  async updatePaymentStatus(paymentId: string, status: 'created' | 'paid' | 'failed' | 'cancelled', reason?: string): Promise<boolean> {
+  async updatePaymentStatus(paymentId: string, status: 'created' | 'paid' | 'failed' | 'cancelled' | 'refunded', reason?: string): Promise<boolean> {
     try {
       console.log('📋 Updating payment status:', paymentId, status);
       
@@ -297,6 +297,11 @@ export class PaymentService {
         updateData.paid_at = new Date().toISOString();
       } else if (status === 'failed') {
         updateData.failed_at = new Date().toISOString();
+        if (reason) {
+          updateData.failed_reason = reason;
+        }
+      } else if (status === 'refunded') {
+        updateData.refunded_at = new Date().toISOString();
         if (reason) {
           updateData.failed_reason = reason;
         }
@@ -504,6 +509,7 @@ export class PaymentService {
       return false;
     }
   }
+
 
   /**
    * Get user membership details

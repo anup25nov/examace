@@ -8,6 +8,54 @@ const PLAN_PRICES: Record<string, number> = {
   premium: 999, // Premium plan: ₹999 (alias for pro)
 };
 
+/**
+ * Initiate refund for failed payments
+ */
+async function initiateRefund(paymentId: string, amount: number, reason: string): Promise<void> {
+  try {
+    console.log('🔄 Initiating refund for payment:', paymentId, 'Amount:', amount, 'Reason:', reason);
+    
+    // Get Razorpay credentials
+    const keyId = Deno.env.get('RAZORPAY_KEY_ID');
+    const keySecret = Deno.env.get('RAZORPAY_KEY_SECRET');
+    
+    if (!keyId || !keySecret) {
+      console.error('❌ Razorpay credentials not found for refund');
+      return;
+    }
+    
+    // Create refund request
+    const refundData = {
+      payment_id: paymentId,
+      amount: Math.round(amount * 100), // Convert to paise
+      notes: {
+        reason: reason,
+        refund_initiated_by: 'examace_system'
+      }
+    };
+    
+    // Make refund API call
+    const response = await fetch('https://api.razorpay.com/v1/payments/' + paymentId + '/refund', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Basic ' + btoa(keyId + ':' + keySecret),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(refundData)
+    });
+    
+    if (response.ok) {
+      const refundResult = await response.json();
+      console.log('✅ Refund initiated successfully:', refundResult.id);
+    } else {
+      const errorText = await response.text();
+      console.error('❌ Refund failed:', response.status, errorText);
+    }
+  } catch (error) {
+    console.error('❌ Error initiating refund:', error);
+  }
+}
+
 // Helper function to get plan price
 const getPlanPrice = (planId: string): number => {
   return PLAN_PRICES[planId] || 0;
@@ -44,24 +92,24 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Verify Razorpay signature
-    const webhookSecret = Deno.env.get('RAZORPAY_WEBHOOK_SECRET')
+    const keySecret = Deno.env.get('RAZORPAY_KEY_SECRET')
     
-    if (!webhookSecret || webhookSecret.length === 0) {
-      console.log('RAZORPAY_WEBHOOK_SECRET not set, skipping signature verification for testing')
+    if (!keySecret || keySecret.length === 0) {
+      console.log('RAZORPAY_KEY_SECRET not set, skipping signature verification for testing')
     } else {
       const encoder = new TextEncoder()
-      const keyData = encoder.encode(webhookSecret)
+      const keyData = encoder.encode(keySecret)
       
       // Create HMAC key
-  const key = await crypto.subtle.importKey(
-    'raw',
+      const key = await crypto.subtle.importKey(
+        'raw',
         keyData,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
       )
       
-      // Create signature
+      // Create signature - Razorpay uses order_id|payment_id format
       const data = encoder.encode(`${body.order_id}|${body.payment_id}`)
       const signature = await crypto.subtle.sign('HMAC', key, data)
       
@@ -70,17 +118,21 @@ serve(async (req) => {
         .map(b => b.toString(16).padStart(2, '0'))
         .join('')
       
+      console.log('Signature verification details:')
+      console.log('Order ID:', body.order_id)
+      console.log('Payment ID:', body.payment_id)
+      console.log('Expected signature:', expectedSignature)
+      console.log('Received signature:', body.signature)
+      
       if (expectedSignature !== body.signature) {
-        console.log('Signature verification failed')
-        console.log('Expected:', expectedSignature)
-        console.log('Received:', body.signature)
+        console.log('❌ Signature verification failed')
         return new Response(
           JSON.stringify({ success: false, error: 'Invalid signature' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
 
-      console.log('Signature verified successfully')
+      console.log('✅ Signature verified successfully')
     }
 
     // Get plan amount - use centralized pricing

@@ -201,7 +201,7 @@ async function handlePaymentFailed(supabaseClient: any, event: RazorpayWebhookEv
       .update({
         status: 'failed',
         gateway_payment_id: payment.id,
-        failure_reason: 'Payment failed',
+        failure_reason: (payment as any).error_description || 'Payment failed',
         updated_at: new Date().toISOString()
       })
       .eq('gateway_order_id', payment.order_id)
@@ -211,6 +211,62 @@ async function handlePaymentFailed(supabaseClient: any, event: RazorpayWebhookEv
       console.error('Error updating failed payment:', updateError)
     } else {
       console.log('Payment marked as failed')
+    }
+
+    // Check if payment was captured but failed later (needs refund)
+    if (payment.status === 'failed' && (payment as any).amount_captured > 0) {
+      console.log('💰 Payment was captured but failed, initiating refund for:', payment.id)
+      
+      try {
+        // Get Razorpay credentials
+        const keyId = Deno.env.get('RAZORPAY_KEY_ID');
+        const keySecret = Deno.env.get('RAZORPAY_KEY_SECRET');
+        
+        if (!keyId || !keySecret) {
+          console.error('❌ Razorpay credentials not found for refund');
+          return;
+        }
+        
+        // Create refund request
+        const refundData = {
+          payment_id: payment.id,
+          amount: (payment as any).amount_captured, // Already in paise
+          notes: {
+            reason: `Automatic refund due to payment failure: ${(payment as any).error_description || 'Unknown error'}`,
+            refund_initiated_by: 'examace_webhook_system'
+          }
+        };
+        
+        // Make refund API call
+        const response = await fetch('https://api.razorpay.com/v1/payments/' + payment.id + '/refund', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Basic ' + btoa(keyId + ':' + keySecret),
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(refundData)
+        });
+        
+        if (response.ok) {
+          const refundResult = await response.json();
+          console.log('✅ Refund initiated successfully:', refundResult.id);
+          
+          // Update payment record with refund details
+          await supabaseClient
+            .from('membership_transactions')
+            .update({
+              status: 'refunded',
+              failure_reason: `Automatic refund initiated: ${refundResult.id}`,
+              updated_at: new Date().toISOString()
+            })
+            .eq('gateway_order_id', payment.order_id);
+        } else {
+          const errorText = await response.text();
+          console.error('❌ Refund failed:', response.status, errorText);
+        }
+      } catch (refundError) {
+        console.error('❌ Error initiating refund:', refundError);
+      }
     }
 
   } catch (error) {

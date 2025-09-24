@@ -163,6 +163,41 @@ async function handlePaymentFailed(event: any) {
       console.error('Failed to update payment status to failed');
     }
 
+    // Check if payment was captured but failed later (needs refund)
+    if (payment.status === 'failed' && payment.amount_captured > 0) {
+      console.log('💰 Payment was captured but failed, initiating refund for:', payment.id);
+      
+      try {
+        // Initiate refund through Razorpay
+        const refundResult = await razorpayService.refundPayment(
+          payment.id,
+          payment.amount_captured / 100, // Convert from paise to rupees
+          `Automatic refund due to payment failure: ${payment.error_description || 'Unknown error'}`
+        );
+
+        if (refundResult && refundResult.id) {
+          console.log('✅ Refund initiated successfully:', refundResult.id);
+          
+          // Update payment record with refund details
+          await paymentService.updatePaymentStatus(
+            paymentRecord.id,
+            'refunded',
+            `Automatic refund initiated: ${refundResult.id}`
+          );
+        } else {
+          console.error('❌ Failed to initiate refund for payment:', payment.id);
+        }
+      } catch (refundError) {
+        console.error('❌ Error initiating refund:', refundError);
+        // Mark payment as failed with refund error
+        await paymentService.updatePaymentStatus(
+          paymentRecord.id,
+          'failed',
+          `Payment failed and refund error: ${refundError instanceof Error ? refundError.message : 'Unknown refund error'}`
+        );
+      }
+    }
+
   } catch (error) {
     console.error('Error handling payment failed:', error);
   }
