@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { paymentService } from '@/lib/paymentService';
 import { supabase } from '@/integrations/supabase/client';
+import { getPlanPricing } from '@/config/pricingConfig';
 
 interface PaymentRecord {
   id: string;
@@ -78,7 +79,7 @@ export const PaymentAdminPanel: React.FC<PaymentAdminPanelProps> = ({ onClose })
             payment_id: 'PAY_1703123456_ABC123',
             user_id: 'user123',
             plan_name: 'Monthly Premium',
-            amount: 299,
+            amount: getPlanPricing('pro_plus')?.price || 299,
             status: 'paid',
             verification_status: 'pending',
             payment_reference: 'UPI123456789',

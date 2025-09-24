@@ -21,7 +21,7 @@ export const PRICING_CONFIG: Record<string, PlanPricing> = {
   pro: {
     id: 'pro',
     name: 'Pro Plan',
-    price: 99,
+    price: 87,
     originalPrice: 199,
     currency: 'INR',
     description: 'Access to 11 mock tests',

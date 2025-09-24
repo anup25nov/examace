@@ -26,7 +26,7 @@
       "subjects": ["General Intelligence", "English Language", "Quantitative Aptitude", "General Awareness"],
       "difficulty": "hard",
       "isPremium": true,
-      "price": 199,
+      "price": 0,
       "order": 2,
       "metadata": {
         "paper": 2,
@@ -43,7 +43,7 @@
       "subjects": ["General Intelligence", "English Language", "Quantitative Aptitude", "General Awareness"],
       "difficulty": "hard",
       "isPremium": true,
-      "price": 299,
+      "price": 0,
       "order": 3,
       "metadata": {
         "paper": 3,

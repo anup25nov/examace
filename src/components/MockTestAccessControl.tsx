@@ -14,6 +14,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { membershipService } from '@/lib/membershipServiceSimple';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { getPlanPricing, formatPrice } from '@/config/pricingConfig';
 
 interface MockTestAccessControlProps {
   testId: string;
@@ -100,7 +101,7 @@ export const MockTestAccessControl: React.FC<MockTestAccessControlProps> = ({
       },
       pro: {
         name: 'Pro Plan',
-        price: 99,
+        price: getPlanPricing('pro')?.price || 99,
         mockTests: 50,
         icon: <Zap className="w-5 h-5" />,
         color: 'text-gold-600',

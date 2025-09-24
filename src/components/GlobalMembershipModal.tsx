@@ -17,7 +17,6 @@ export const GlobalMembershipModal: React.FC = () => {
   }, []);
 
   if (!isOpen) return null;
-
   return (
     <MembershipPlans
       onSelectPlan={(plan) => {

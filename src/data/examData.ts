@@ -243,7 +243,7 @@ class ExamDataService {
         questions: 100,
         subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
         isPremium: true,
-        price: 99,
+        price: 0, // Individual test pricing removed - use membership plans
         metadata: { year: '2024', paper: 5, date: '2024-01-15' }
       }
     ]);

@@ -1,6 +1,8 @@
 // Application Configuration
 // This file contains all configurable settings for the Step2Sarkari platform
 
+import { getAllActivePlans } from './pricingConfig';
+
 export interface AppConfig {
   // Platform Settings
   platform: {
@@ -205,45 +207,12 @@ export const defaultConfig: AppConfig = {
   },
   
   // Centralized Membership Plans Configuration - SINGLE SOURCE OF TRUTH
-  // Note: This is now imported from pricingConfig.ts to ensure consistency
-  // All pricing is managed in src/config/pricingConfig.ts
+  // Note: All pricing is now managed in src/config/pricingConfig.ts
+  // Use getActiveMembershipPlans() from pricingConfig.ts instead
   membershipPlans: {
     // This section is kept for backward compatibility but should not be used
-    // Use getActiveMembershipPlans() from pricingConfig.ts instead
-    pro: {
-      id: 'pro',
-      name: 'Pro Plan',
-      price: 99, // DEPRECATED: Use pricingConfig.ts
-      originalPrice: 199, // DEPRECATED: Use pricingConfig.ts
-      mockTests: 11,
-      duration: 90, // days
-      features: [
-        '11 Mock Tests',
-        '3 Months Access',
-        'Detailed Solutions',
-        'Performance Analytics'
-      ],
-      isActive: true,
-      displayOrder: 2
-    },
-    pro_plus: {
-      id: 'pro_plus',
-      name: 'Pro Plus Plan',
-      price: 299, // DEPRECATED: Use pricingConfig.ts
-      originalPrice: 599, // DEPRECATED: Use pricingConfig.ts
-      mockTests: 9999, // unlimited
-      duration: 365, // days
-      features: [
-        'Unlimited Mock Tests',
-        '12 Months Access',
-        'Detailed Solutions',
-        'Performance Analytics',
-        'Priority Support'
-      ],
-      isActive: true,
-      displayOrder: 1,
-      popular: true
-    }
+    // All pricing is now centralized in src/config/pricingConfig.ts
+    // Use getAllActivePlans() and getPlanPricing() from pricingConfig.ts
   },
 
   tests: {
@@ -377,10 +346,14 @@ export const getMembershipPlan = (planId: string) => {
 };
 
 export const getActiveMembershipPlans = () => {
-  const plans = configManager.getSection('membershipPlans');
-  return Object.values(plans)
-    .filter(plan => plan.isActive)
-    .sort((a, b) => a.displayOrder - b.displayOrder);
+  // Use centralized pricing configuration
+  try {
+    return getAllActivePlans();
+  } catch (error) {
+    console.error('Error loading centralized pricing:', error);
+    // Fallback to empty array
+    return [];
+  }
 };
 
 // Export referral config helpers

@@ -1,4 +1,5 @@
 // Service to handle premium content and payment flow
+
 export interface PremiumTest {
   id: string;
   name: string;
@@ -129,36 +130,6 @@ export class PremiumService {
     });
   }
 
-  /**
-   * Upgrade to premium membership
-   */
-  async upgradeToPremium(planType: 'monthly' | 'yearly' | 'lifetime'): Promise<boolean> {
-    try {
-      const prices = {
-        monthly: 299,
-        yearly: 2999,
-        lifetime: 9999
-      };
-
-      const paymentSuccess = await this.processPayment(prices[planType]);
-      
-      if (paymentSuccess) {
-        this.userMembership = {
-          isPremium: true,
-          purchasedTests: this.userMembership?.purchasedTests || [],
-          expiryDate: planType === 'lifetime' ? undefined : new Date(Date.now() + (planType === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000),
-          planType
-        };
-        this.saveUserMembership();
-        return true;
-      }
-      
-      return false;
-    } catch (error) {
-      console.error('Error upgrading to premium:', error);
-      return false;
-    }
-  }
 
   /**
    * Get user membership info

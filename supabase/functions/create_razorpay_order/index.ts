@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,13 +34,10 @@ serve(async (req: Request) => {
   try {
     const body: RequestBody = await req.json()
     
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    // Note: Supabase client not needed for this function as we only create Razorpay orders
     
     // Use centralized pricing configuration
-    const amount = PLAN_PRICES[body.plan];
+    let amount = PLAN_PRICES[body.plan];
     console.log('Using centralized pricing for plan', body.plan, ':', amount);
     console.log('PLAN_PRICES:', PLAN_PRICES);
     
