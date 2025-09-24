@@ -63,7 +63,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
   onMessageAction
 }) => {
   const { user } = useAuth();
-  const [selectedYear, setSelectedYear] = useState(years[0]?.year || '');
+  const [selectedYear, setSelectedYear] = useState('all'); // Default to 'all'
   const [currentPage, setCurrentPage] = useState(0);
   const [showMembershipPlans, setShowMembershipPlans] = useState(false);
   const [showTestStartModal, setShowTestStartModal] = useState(false);
@@ -71,6 +71,9 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
   const [userMembership, setUserMembership] = useState<any>(null);
   const [hasAccess, setHasAccess] = useState<Map<string, boolean>>(new Map());
   const papersPerPage = 6;
+
+  // Sort years in descending order (newest first)
+  const sortedYears = [...years].sort((a, b) => parseInt(b.year) - parseInt(a.year));
 
   // Check user membership status
   useEffect(() => {
@@ -99,16 +102,28 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
     }
   };
 
-  const selectedYearData = years.find(year => year.year === selectedYear);
+  // Get papers based on selected year or all years
+  const getPapersForSelectedYear = () => {
+    if (selectedYear === 'all') {
+      // Return all papers from all years
+      return sortedYears.flatMap(yearData => yearData.papers);
+    } else {
+      // Return papers from selected year
+      const selectedYearData = sortedYears.find(year => year.year === selectedYear);
+      return selectedYearData ? selectedYearData.papers : [];
+    }
+  };
+
+  const allPapers = getPapersForSelectedYear();
   
   // Filter papers based on test filter
-  const filteredPapers = selectedYearData ? selectedYearData.papers.filter(paper => {
+  const filteredPapers = allPapers.filter(paper => {
     const isCompleted = completedTests.has(`pyq-${paper.id}`);
     
     if (testFilter === 'attempted') return isCompleted;
     if (testFilter === 'not-attempted') return !isCompleted;
     return true; // Show all for 'all' filter
-  }) : [];
+  });
   
   const totalPages = Math.ceil(filteredPapers.length / papersPerPage);
   const currentPapers = filteredPapers.slice(currentPage * papersPerPage, (currentPage + 1) * papersPerPage);
@@ -170,9 +185,9 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
 
 
   const getYearStats = (year: string) => {
-    const yearData = years.find(y => y.year === year);
+    const yearData = sortedYears.find(y => y.year === year);
     if (!yearData) return { total: 0, completed: 0 };
-
+    
     const total = yearData.papers.length;
     const completed = yearData.papers.filter(paper => 
       completedTests.has(`pyq-${paper.id}`)
@@ -185,7 +200,42 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
     <div className={`space-y-6 ${className}`}>
       {/* Year Tabs */}
       <div className="flex flex-wrap gap-2 justify-center">
-        {years.map((yearData) => {
+        {/* All Years Option */}
+        <Button
+          key="all"
+          variant={selectedYear === 'all' ? "default" : "outline"}
+          size="sm"
+          onClick={() => handleYearChange('all')}
+          className={`relative transition-all duration-200 ${
+            selectedYear === 'all'
+              ? 'bg-primary text-primary-foreground shadow-lg' 
+              : 'hover:bg-muted'
+          }`}
+        >
+          <div className="flex items-center space-x-2">
+            <Calendar className="w-4 h-4" />
+            <span className="font-medium">All Years</span>
+            <Badge 
+              variant="secondary" 
+              className={`text-xs ${
+                selectedYear === 'all'
+                  ? 'bg-primary-foreground/20 text-primary-foreground' 
+                  : 'bg-muted-foreground/20'
+              }`}
+            >
+              {sortedYears.reduce((total, yearData) => {
+                const stats = getYearStats(yearData.year);
+                return total + stats.completed;
+              }, 0)}/{sortedYears.reduce((total, yearData) => {
+                const stats = getYearStats(yearData.year);
+                return total + stats.total;
+              }, 0)}
+            </Badge>
+          </div>
+        </Button>
+
+        {/* Individual Year Options */}
+        {sortedYears.map((yearData) => {
           const stats = getYearStats(yearData.year);
           const isSelected = selectedYear === yearData.year;
           
@@ -259,7 +309,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
       )}
 
       {/* Selected Year Content */}
-      {selectedYearData && (
+      {(selectedYear === 'all' || sortedYears.find(y => y.year === selectedYear)) && (
         <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-orange-50 to-red-50">
           <CardHeader className="pb-4 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-t-lg">
             <CardTitle className="flex items-center justify-between">
@@ -268,15 +318,21 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                   <FileText className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold">SSC CGL {selectedYear}</h3>
+                  <h3 className="text-xl font-bold">SSC CGL {selectedYear === 'all' ? 'All Years' : selectedYear}</h3>
                   <p className="text-sm text-orange-100">
-                    {selectedYearData.papers.length} Previous Year Papers
+                    {selectedYear === 'all' 
+                      ? `${sortedYears.reduce((total, yearData) => total + yearData.papers.length, 0)} Previous Year Papers`
+                      : `${sortedYears.find(y => y.year === selectedYear)?.papers.length || 0} Previous Year Papers`
+                    }
                   </p>
                 </div>
               </div>
               <div className="text-right">
                 <div className="text-2xl font-bold text-white">
-                  {getYearStats(selectedYear).completed}
+                  {selectedYear === 'all' 
+                    ? sortedYears.reduce((total, yearData) => total + getYearStats(yearData.year).completed, 0)
+                    : getYearStats(selectedYear).completed
+                  }
                 </div>
                 <div className="text-sm text-orange-100">Completed</div>
               </div>

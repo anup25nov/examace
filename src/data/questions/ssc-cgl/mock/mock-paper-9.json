@@ -1,0 +1,238 @@
+{
+  "duration": 180,
+  "totalQuestions": 9,
+  "subjects": ["General Intelligence", "English Language", "Quantitative Aptitude", "General Awareness"],
+  "questions": [
+    {
+      "id": "q1",
+      "questionEn": "What is the capital of India?",
+      "questionHi": "भारत की राजधानी क्या है?",
+      "options": [
+        {"en": "Mumbai", "hi": "मुंबई"},
+        {"en": "Delhi", "hi": "दिल्ली"},
+        {"en": "Kolkata", "hi": "कोलकाता"},
+        {"en": "Chennai", "hi": "चेन्नई"}
+      ],
+      "correct": 1,
+      "difficulty": "easy",
+      "subject": "general-awareness",
+      "topic": "geography",
+      "marks": 1,
+      "negativeMarks": 0.25,
+      "explanationEn": "Delhi is the capital of India and serves as the seat of the Government of India.",
+      "explanationHi": "दिल्ली भारत की राजधानी है और भारत सरकार की सीट के रूप में कार्य करता है।",
+      "hasImages": true,
+      "questionImage": {
+        "en": "/logos/india-map.svg",
+        "hi": "/logos/india-map.svg"
+      },
+      "optionImages": [
+        {"en": "/logos/math-addition.svg", "hi": "/logos/math-addition.svg"},
+        {"en": "/logos/math-problem.svg", "hi": "/logos/math-problem.svg"},
+        {"en": "/logos/india-map.svg", "hi": "/logos/india-map.svg"},
+        {"en": "/logos/alternate_image.png", "hi": "/logos/alternate_image.png"}
+      ]
+    },
+    {
+      "id": "q2",
+      "questionEn": "Look at the following figure and identify the pattern:",
+      "questionHi": "निम्नलिखित आकृति को देखें और पैटर्न की पहचान करें:",
+      "options": [
+        {"en": "Triangle, Circle, Square", "hi": "त्रिभुज, वृत्त, वर्ग"},
+        {"en": "Circle, Square, Triangle", "hi": "वृत्त, वर्ग, त्रिभुज"},
+        {"en": "Square, Triangle, Circle", "hi": "वर्ग, त्रिभुज, वृत्त"},
+        {"en": "Circle, Triangle, Square", "hi": "वृत्त, त्रिभुज, वर्ग"}
+      ],
+      "correct": 0,
+      "difficulty": "medium",
+      "subject": "general-intelligence",
+      "topic": "visual-reasoning",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "explanationEn": "The pattern follows: Triangle → Circle → Square, repeating in this sequence.",
+      "explanationHi": "पैटर्न इस प्रकार है: त्रिभुज → वृत्त → वर्ग, इस क्रम में दोहराता है।",
+      "hasImages": true,
+      "questionImage": {
+        "en": "/logos/math-addition.svg",
+        "hi": "/logos/math-addition.svg"
+      },
+      "optionImages": [
+        {"en": "/logos/math-addition.svg", "hi": "/logos/math-addition.svg"},
+        {"en": "/logos/math-problem.svg", "hi": "/logos/math-problem.svg"},
+        {"en": "/logos/india-map.svg", "hi": "/logos/india-map.svg"},
+        {"en": "/logos/alternate_image.png", "hi": "/logos/alternate_image.png"}
+      ]
+    },
+    {
+      "id": "q3",
+      "questionEn": "Calculate the area of the triangle shown in the diagram:",
+      "questionHi": "आरेख में दिखाए गए त्रिभुज का क्षेत्रफल ज्ञात करें:",
+      "options": [
+        {"en": "24 cm²", "hi": "24 सेमी²"},
+        {"en": "48 cm²", "hi": "48 सेमी²"},
+        {"en": "12 cm²", "hi": "12 सेमी²"},
+        {"en": "36 cm²", "hi": "36 सेमी²"}
+      ],
+      "correct": 0,
+      "difficulty": "medium",
+      "subject": "quantitative-aptitude",
+      "topic": "geometry",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "explanationEn": "Area of triangle = (1/2) × base × height = (1/2) × 8 × 6 = 24 cm²",
+      "explanationHi": "त्रिभुज का क्षेत्रफल = (1/2) × आधार × ऊँचाई = (1/2) × 8 × 6 = 24 सेमी²",
+      "hasImages": true,
+      "questionImage": {
+        "en": "/logos/math-problem.svg",
+        "hi": "/logos/math-problem.svg"
+      },
+      "explanationImage": {
+        "en": "/logos/math-addition.svg",
+        "hi": "/logos/math-addition.svg"
+      }
+    },
+    {
+      "id": "q4",
+      "questionEn": "Which of the following is the correct spelling?",
+      "questionHi": "निम्नलिखित में से कौन सी सही वर्तनी है?",
+      "options": [
+        {"en": "Accomodation", "hi": "Accomodation"},
+        {"en": "Accommodation", "hi": "Accommodation"},
+        {"en": "Acommodation", "hi": "Acommodation"},
+        {"en": "Accomodation", "hi": "Accomodation"}
+      ],
+      "correct": 1,
+      "difficulty": "easy",
+      "subject": "english-language",
+      "topic": "spelling",
+      "marks": 1,
+      "negativeMarks": 0.25,
+      "explanationEn": "The correct spelling is 'Accommodation' with double 'c' and double 'm'.",
+      "explanationHi": "सही वर्तनी 'Accommodation' है जिसमें दो 'c' और दो 'm' हैं।",
+      "hasImages": false
+    },
+    {
+      "id": "q5",
+      "questionEn": "Study the bar chart below and answer: Which month had the highest sales?",
+      "questionHi": "नीचे दिए गए बार चार्ट का अध्ययन करें और उत्तर दें: किस महीने में सबसे अधिक बिक्री हुई?",
+      "options": [
+        {"en": "January", "hi": "जनवरी"},
+        {"en": "March", "hi": "मार्च"},
+        {"en": "May", "hi": "मई"},
+        {"en": "July", "hi": "जुलाई"}
+      ],
+      "correct": 2,
+      "difficulty": "medium",
+      "subject": "general-intelligence",
+      "topic": "data-interpretation",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "explanationEn": "According to the bar chart, May shows the highest bar, indicating the highest sales.",
+      "explanationHi": "बार चार्ट के अनुसार, मई में सबसे ऊंचा बार दिखाई दे रहा है, जो सबसे अधिक बिक्री को दर्शाता है।",
+      "hasImages": true,
+      "questionImage": {
+        "en": "/logos/math-addition.svg",
+        "hi": "/logos/math-addition.svg"
+      },
+      "explanationImage": {
+        "en": "/logos/math-problem.svg",
+        "hi": "/logos/math-problem.svg"
+      }
+    },
+    {
+      "id": "q6",
+      "questionEn": "What is 15% of 200?",
+      "questionHi": "200 का 15% क्या है?",
+      "options": [
+        {"en": "25", "hi": "25"},
+        {"en": "30", "hi": "30"},
+        {"en": "35", "hi": "35"},
+        {"en": "40", "hi": "40"}
+      ],
+      "correct": 1,
+      "difficulty": "easy",
+      "subject": "quantitative-aptitude",
+      "topic": "percentage",
+      "marks": 1,
+      "negativeMarks": 0.25,
+      "explanationEn": "15% of 200 = (15/100) × 200 = 30",
+      "explanationHi": "200 का 15% = (15/100) × 200 = 30",
+      "hasImages": false
+    },
+    {
+      "id": "q7",
+      "questionEn": "Identify the missing number in the sequence: 2, 6, 12, 20, ?",
+      "questionHi": "क्रम में लुप्त संख्या की पहचान करें: 2, 6, 12, 20, ?",
+      "options": [
+        {"en": "28", "hi": "28"},
+        {"en": "30", "hi": "30"},
+        {"en": "32", "hi": "32"},
+        {"en": "36", "hi": "36"}
+      ],
+      "correct": 1,
+      "difficulty": "medium",
+      "subject": "general-intelligence",
+      "topic": "number-series",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "explanationEn": "The pattern is: 1×2=2, 2×3=6, 3×4=12, 4×5=20, 5×6=30",
+      "explanationHi": "पैटर्न है: 1×2=2, 2×3=6, 3×4=12, 4×5=20, 5×6=30",
+      "hasImages": false
+    },
+    {
+      "id": "q8",
+      "questionEn": "Look at the map and identify the state highlighted in red:",
+      "questionHi": "नक्शे को देखें और लाल रंग में हाइलाइट किए गए राज्य की पहचान करें:",
+      "options": [
+        {"en": "Maharashtra", "hi": "महाराष्ट्र"},
+        {"en": "Karnataka", "hi": "कर्नाटक"},
+        {"en": "Tamil Nadu", "hi": "तमिलनाडु"},
+        {"en": "Kerala", "hi": "केरल"}
+      ],
+      "correct": 1,
+      "difficulty": "medium",
+      "subject": "general-awareness",
+      "topic": "geography",
+      "marks": 2,
+      "negativeMarks": 0.5,
+      "explanationEn": "The highlighted state in the map is Karnataka, located in the southern part of India.",
+      "explanationHi": "नक्शे में हाइलाइट किया गया राज्य कर्नाटक है, जो भारत के दक्षिणी भाग में स्थित है।",
+      "hasImages": true,
+      "questionImage": {
+        "en": "/logos/india-map.svg",
+        "hi": "/logos/india-map.svg"
+      },
+      "optionImages": [
+        {"en": "/logos/math-addition.svg", "hi": "/logos/math-addition.svg"},
+        {"en": "/logos/math-problem.svg", "hi": "/logos/math-problem.svg"},
+        {"en": "/logos/india-map.svg", "hi": "/logos/india-map.svg"},
+        {"en": "/logos/alternate_image.png", "hi": "/logos/alternate_image.png"}
+      ],
+      "explanationImage": {
+        "en": "/logos/math-addition.svg",
+        "hi": "/logos/math-addition.svg"
+      }
+    },
+    {
+      "id": "q9",
+      "questionEn": "Choose the correct form: 'She _____ to school every day.'",
+      "questionHi": "सही रूप चुनें: 'वह हर दिन स्कूल _____ जाती है।'",
+      "options": [
+        {"en": "go", "hi": "go"},
+        {"en": "goes", "hi": "goes"},
+        {"en": "going", "hi": "going"},
+        {"en": "gone", "hi": "gone"}
+      ],
+      "correct": 1,
+      "difficulty": "easy",
+      "subject": "english-language",
+      "topic": "grammar",
+      "marks": 1,
+      "negativeMarks": 0.25,
+      "explanationEn": "The correct form is 'goes' for third person singular present tense.",
+      "explanationHi": "तीसरे व्यक्ति एकवचन वर्तमान काल के लिए सही रूप 'goes' है।",
+      "hasImages": false
+    }
+  
+  ]
+}

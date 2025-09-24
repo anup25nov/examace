@@ -28,6 +28,7 @@ import { testStateRecoveryService, TestState } from "@/lib/testStateRecoveryServ
 import { errorHandlingService } from "@/lib/errorHandlingService";
 import { dataValidationService } from "@/lib/dataValidationService";
 import { performanceMonitoringService } from "@/lib/performanceMonitoringService";
+import { secureAnswerValidationService } from "@/lib/secureAnswerValidationService";
 import EnhancedErrorBoundary from "@/components/EnhancedErrorBoundary";
 
 // Fallback function for calculating total duration
@@ -100,6 +101,7 @@ const TestInterface = () => {
     totalParticipants?: number;
     highestMarks?: number;
   } | null>(null);
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [actualTestType, setActualTestType] = useState<string>('');
@@ -202,6 +204,7 @@ const TestInterface = () => {
 
     checkPlanLimits();
   }, [getUserId, sectionId]);
+
 
   // Load questions and set timer
   useEffect(() => {
@@ -306,6 +309,8 @@ const TestInterface = () => {
         }
         
         console.log('Successfully loaded test data:', loadedTestData);
+        console.log('🔍 Test duration from loaded data:', loadedTestData?.examInfo?.duration);
+        console.log('🔍 Full exam info:', loadedTestData?.examInfo);
         
         
         setTestData(loadedTestData);
@@ -321,21 +326,35 @@ const TestInterface = () => {
         
         // Use duration from test data if available, otherwise calculate from questions
         let totalDuration = 60; // Default fallback
+        console.log('🔍 Test data loaded:', loadedTestData);
+        console.log('🔍 Exam info:', loadedTestData?.examInfo);
+        console.log('🔍 Duration from exam info:', loadedTestData?.examInfo?.duration);
+        
         try {
           if (loadedTestData && loadedTestData.examInfo && loadedTestData.examInfo.duration) {
             // Use duration from test data
             totalDuration = loadedTestData.examInfo.duration;
+            console.log('🔍 Using duration from exam info:', totalDuration);
           } else if (SecureQuestionLoader.calculateTotalDuration) {
             totalDuration = Math.round(SecureQuestionLoader.calculateTotalDuration(loadedTestData.questions));
+            console.log('🔍 Using calculated duration:', totalDuration);
           } else {
             // Use local fallback function
             totalDuration = calculateTotalDurationFallback(loadedTestData.questions);
+            console.log('🔍 Using fallback duration:', totalDuration);
           }
         } catch (error) {
           console.warn('Error calculating duration, using fallback:', error);
           totalDuration = calculateTotalDurationFallback(loadedTestData.questions);
+          console.log('🔍 Using error fallback duration:', totalDuration);
         }
-        setTimeLeft(totalDuration * 60); // Convert minutes to seconds
+        
+        // Ensure minimum duration
+        totalDuration = Math.max(totalDuration, 60);
+        console.log('🔍 Final duration:', totalDuration);
+        
+        // Set the timeLeft for display purposes (but don't start the timer)
+        setTimeLeft(totalDuration * 60); // Convert minutes to seconds for display
         
         // Set language from session storage or default
         const savedLanguage = sessionStorage.getItem('selectedLanguage') || localStorage.getItem('preferredLanguage');
@@ -433,13 +452,14 @@ const TestInterface = () => {
     }
   };
 
+
   // Handle language selection and start test
   const handleLanguageSelect = async (language: string) => {
     setSelectedLanguage(language);
     
     // Check plan limits before starting test
     const userId = getUserId();
-    if (userId) {
+    if (userId && userId !== 'anonymous') {
       // Determine test type for plan limits check
       let testTypeForCheck = 'mock'; // default
       if (sectionId === 'pyq') {
@@ -479,6 +499,15 @@ const TestInterface = () => {
       await planLimitsService.recordTestAttempt(userId, testType || 'mock', examId || 'ssc-cgl', testTypeForCheck, questions.length, isRetry);
     }
     setTestStarted(true);
+    
+    // Start the timer when user explicitly starts the test
+    if (testData) {
+      const totalDuration = testData.examInfo?.duration || 60; // Default to 60 minutes
+      setTimeLeft(Math.max(totalDuration, 60) * 60); // Convert minutes to seconds, ensure minimum
+    } else {
+      // Fallback if testData is not available
+      setTimeLeft(60 * 60); // 60 minutes fallback
+    }
   };
 
   // Timer effect - only start when test is actually started
@@ -709,35 +738,21 @@ const TestInterface = () => {
       const cleanTimeTaken = Math.round(timeTaken);
       
       let correct = 0;
-      let incorrect = 0;
       
-      questions.forEach((question, index) => {
-        if (answers[index] !== undefined) {
-          if (answers[index] === question.correctAnswerIndex) {
-            correct++;
-          } else {
-            incorrect++;
-          }
-        }
-      });
+      // Use secure answer validation
+      const validationResult = await secureAnswerValidationService.validateAnswers(
+        examId!,
+        actualTestType,
+        actualTestId,
+        answers,
+        questions
+      );
 
-      // Calculate score using individual question marks and negative marks
-      let totalMarks = 0;
-      let obtainedMarks = 0;
-      
-      questions.forEach((question, index) => {
-        totalMarks += question.marks;
-        if (answers[index] !== undefined) {
-          if (answers[index] === question.correctAnswerIndex) {
-            obtainedMarks += question.marks;
-          } else {
-            obtainedMarks -= question.negativeMarks;
-          }
-        }
-      });
-      
-      // Prevent division by zero
-      const score = totalMarks > 0 ? Math.round((obtainedMarks / totalMarks) * 100) : 0;
+      correct = validationResult.correctAnswers;
+      const incorrect = validationResult.incorrectAnswers;
+      const score = validationResult.score;
+      const totalMarks = validationResult.totalMarks;
+      const obtainedMarks = validationResult.obtainedMarks;
       
       
       // Submit test attempt using the comprehensive stats service
@@ -887,7 +902,7 @@ const TestInterface = () => {
           </p>
           <div className="space-y-4">
             <div className="text-sm text-muted-foreground">
-              <p><strong>Duration:</strong> {Math.round(timeLeft / 60)} minutes</p>
+              <p><strong>Duration:</strong> {testData?.examInfo?.duration || 60} minutes</p>
               <p><strong>Questions:</strong> {questions.length}</p>
               <p><strong>Language:</strong> {selectedLanguage === 'en' || selectedLanguage === 'english' ? 'English' : selectedLanguage === 'hi' || selectedLanguage === 'hindi' ? 'Hindi' : 'Both'}</p>
             </div>
@@ -899,7 +914,7 @@ const TestInterface = () => {
                   // Check plan limits before starting test
                   const userId = getUserId();
                   
-                  if (userId) {
+                  if (userId && userId !== 'anonymous') {
                     // Determine test type for plan limits check
                     let testTypeForCheck = 'mock'; // default
                     if (sectionId === 'pyq') {
@@ -1150,28 +1165,67 @@ const TestInterface = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="text-lg leading-relaxed text-foreground select-none" style={{userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none'}}>
-                  {(selectedLanguage === 'hi' || selectedLanguage === 'hindi') ? question.questionHi : question.questionEn}
+                  {(selectedLanguage === 'hi' || selectedLanguage === 'hindi') 
+                    ? (question.questionHi || question.questionEn) 
+                    : question.questionEn}
                 </div>
                 
-                {/* Question Image */}
-                {question.imageUrl && (
-                  <div className="my-4 flex justify-center">
-                    <ImageDisplay
-                      imagePath={question.imageUrl}
-                      alt="Question image"
-                      maxHeight="400px"
-                      showZoom={true}
-                      showDownload={true}
-                    />
-                  </div>
-                )}
+                {/* Question Image - Direct from JSON */}
+                {(() => {
+                  const questionImage = question.questionImage;
+                  let imagePath = null;
+                  
+                  if (questionImage) {
+                    if (typeof questionImage === 'string') {
+                      imagePath = questionImage;
+                    } else if (typeof questionImage === 'object' && questionImage !== null) {
+                      imagePath = (selectedLanguage === 'hi' || selectedLanguage === 'hindi') ? 
+                        (questionImage.hi || questionImage.en) : 
+                        questionImage.en;
+                    }
+                  } else if (question.imageUrl) {
+                    imagePath = question.imageUrl;
+                  }
+                  
+                  return imagePath && (
+                    <div className="my-4 flex justify-center">
+                      <ImageDisplay
+                        imagePath={imagePath}
+                        alt="Question image"
+                        maxHeight="400px"
+                        showZoom={true}
+                        showDownload={true}
+                      />
+                    </div>
+                  );
+                })()}
                 
                 <div className="space-y-3">
-                  {question.optionsEn && question.optionsEn.length > 0 ? (
-                    question.optionsEn.map((option, index) => {
-                      // Handle both string and object formats
-                      const optionText = typeof option === 'string' ? option : (option as any)?.text || option;
-                      const optionImage = typeof option === 'object' ? (option as any)?.image : undefined;
+                  {question.options && question.options.length > 0 ? (
+                    question.options.map((option, index) => {
+                      // Handle options - simple string format
+                      let optionText: string;
+                      let optionImage: string | undefined;
+                      
+                      if (typeof option === 'string') {
+                        optionText = option;
+                        optionImage = undefined;
+                      } else if (option && typeof option === 'object') {
+                        // Check if it's the language-aware format
+                        if ('en' in option && 'hi' in option) {
+                          optionText = selectedLanguage === 'hi' || selectedLanguage === 'hindi' 
+                            ? (option.hi || option.en) // Fallback to English if Hindi not available
+                            : option.en;
+                          optionImage = option.image;
+                        } else {
+                          // Fallback for old format
+                          optionText = (option as any)?.text || String(option);
+                          optionImage = (option as any)?.image;
+                        }
+                      } else {
+                        optionText = String(option);
+                        optionImage = undefined;
+                      }
                       
                       return (
                         <label
@@ -1192,19 +1246,37 @@ const TestInterface = () => {
                           />
                           <div className="flex-1">
                             <span className="text-foreground block select-none" style={{userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none'}}>{optionText}</span>
-                            {optionImage && (
-                              <div className="mt-2">
-                                <img 
-                                  src={`/logos/${optionImage}`} 
-                                  alt={`Option ${String.fromCharCode(65 + index)} image`}
-                                  className="max-w-full h-auto rounded border"
-                                  style={{ maxHeight: '150px' }}
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                  }}
-                                />
-                              </div>
-                            )}
+                            {(() => {
+                              const optionImages = question.optionImages;
+                              const optionImageData = optionImages?.[index];
+                              let imagePath = null;
+                              
+                              if (optionImageData) {
+                                if (typeof optionImageData === 'string') {
+                                  imagePath = optionImageData;
+                                } else if (typeof optionImageData === 'object' && optionImageData !== null) {
+                                  imagePath = (selectedLanguage === 'hi' || selectedLanguage === 'hindi') ? 
+                                    (optionImageData.hi || optionImageData.en) : 
+                                    optionImageData.en;
+                                }
+                              } else if (optionImage) {
+                                imagePath = optionImage;
+                              }
+                              
+                              return imagePath && (
+                                <div className="mt-2">
+                                  <img 
+                                    src={imagePath} 
+                                    alt={`Option ${String.fromCharCode(65 + index)} image`}
+                                    className="max-w-full h-auto rounded border"
+                                    style={{ maxHeight: '150px' }}
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                    }}
+                                  />
+                                </div>
+                              );
+                            })()}
                           </div>
                         </label>
                       );

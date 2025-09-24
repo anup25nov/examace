@@ -37,7 +37,7 @@ interface Question {
   id: string;
   questionEn: string;
   questionHi: string;
-  options: string[] | Array<{text: string; image?: string}>;
+  options: string[] | Array<{text: string; image?: string}> | Array<{en: string; hi?: string}>;
   correct: number;
   difficulty: string;
   subject?: string;
@@ -46,8 +46,14 @@ interface Question {
   negativeMarks: number;
   duration: number;
   explanation?: string;
+  explanationEn?: string;
+  explanationHi?: string;
   questionImage?: string;
   explanationImage?: string;
+  hasImages?: boolean;
+  questionImageData?: {en: string; hi?: string};
+  optionImagesData?: Array<{en: string; hi?: string}>;
+  explanationImageData?: {en: string; hi?: string};
 }
 
 interface SolutionsDisplayProps {
@@ -192,8 +198,18 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
     return data;
   };
   // Helper function to get option text
-  const getOptionText = (option: string | {text: string; image?: string}): string => {
-    return typeof option === 'string' ? option : option.text;
+  const getOptionText = (option: string | {text: string; image?: string} | {en: string; hi?: string; image?: string}): string => {
+    if (typeof option === 'string') {
+      return option;
+    } else if (option && typeof option === 'object') {
+      // Check if it's the language-aware format
+      if ('en' in option && 'hi' in option) {
+        return option.en; // Default to English for solutions
+      } else {
+        return (option as any)?.text || String(option);
+      }
+    }
+    return String(option);
   };
   const [showExplanations, setShowExplanations] = useState<{ [key: number]: boolean }>(() => {
     // Show explanations by default for all questions
@@ -484,7 +500,7 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
           {questions.map((question, index) => {
             const userAnswer = userAnswers[index];
             const isCorrect = question.correct !== undefined && userAnswer === question.correct;
-            const hasExplanation = !!question.explanation;
+            const hasExplanation = !!(question.explanation || question.explanationEn || question.explanationHi);
 
             return (
               <Card key={question.id} className="border-0 shadow-md">
@@ -560,9 +576,28 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                       const isUserAnswer = userAnswer === optionIndex;
                       const isCorrectAnswer = question.correct !== undefined && question.correct === optionIndex;
                       
-                      // Handle both string and object formats
-                      const optionText = typeof option === 'string' ? option : option.text;
-                      const optionImage = typeof option === 'object' ? option.image : undefined;
+                      // Handle options - simple string format
+                      let optionText: string;
+                      let optionImage: string | undefined;
+                      
+                      if (typeof option === 'string') {
+                        optionText = option;
+                        optionImage = undefined;
+                      } else if (option && typeof option === 'object') {
+                        // Check if it's the language-aware format
+                        if ('en' in option && 'hi' in option) {
+                          // For solutions, show English by default
+                          optionText = option.en;
+                          optionImage = option.image;
+                        } else {
+                          // Fallback for old format
+                          optionText = (option as any)?.text || String(option);
+                          optionImage = (option as any)?.image;
+                        }
+                      } else {
+                        optionText = String(option);
+                        optionImage = undefined;
+                      }
                       
                       let optionClass = "p-2 sm:p-3 rounded-lg border transition-colors";
                       
@@ -677,22 +712,31 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
                         <h5 className="font-medium text-blue-900 mb-2 text-sm sm:text-base">Step-by-step Solution:</h5>
                         <p className="text-blue-800 text-xs sm:text-sm leading-relaxed mb-3 break-words">
-                          {question.explanation || `This ${question.difficulty || 'medium'} level ${question.subject || 'general'} question tests your knowledge of ${question.topic || 'general'}. The correct answer is option ${question.correct !== undefined ? String.fromCharCode(65 + question.correct) : 'Not available'} based on the given options.`}
+                          {question.explanationEn || question.explanationHi || question.explanation || `This ${question.difficulty || 'medium'} level ${question.subject || 'general'} question tests your knowledge of ${question.topic || 'general'}. The correct answer is option ${question.correct !== undefined ? String.fromCharCode(65 + question.correct) : 'Not available'} based on the given options.`}
                         </p>
                         
-                        {/* Explanation Image */}
-                        {question.explanationImage && (
-                          <div className="mt-3 flex justify-center">
-                            <ImageDisplay
-                              imagePath={question.explanationImage}
-                              alt="Solution explanation"
-                              maxHeight="250px"
-                              showZoom={true}
-                              showDownload={true}
-                              caption="Step-by-step solution diagram"
-                            />
-                          </div>
-                        )}
+                        {/* Explanation Image - Direct from JSON */}
+                        {(() => {
+                          const explanationImage = question.explanationImage;
+                          const imagePath = explanationImage ? 
+                            (typeof explanationImage === 'string' ? 
+                              explanationImage : 
+                              (explanationImage as any).en) :
+                            null;
+                          
+                          return imagePath && (
+                            <div className="mt-3 flex justify-center">
+                              <ImageDisplay
+                                imagePath={imagePath}
+                                alt="Solution explanation"
+                                maxHeight="250px"
+                                showZoom={true}
+                                showDownload={true}
+                                caption="Step-by-step solution diagram"
+                              />
+                            </div>
+                          );
+                        })()}
                         <div className="bg-green-50 border border-green-200 rounded p-3">
                           <p className="text-green-800 text-sm font-medium">
                             <strong>Final Answer:</strong> Option {String.fromCharCode(65 + question.correct)} - {question.options && question.options[question.correct] ? getOptionText(question.options[question.correct]) : 'Answer not available'}

@@ -4,13 +4,13 @@ import { secureQuestionService, SecureQuestionData, SecureTestData } from './sec
 import { premiumTestService } from './premiumTestService';
 import { examDataService } from '@/data/examData';
 import { dynamicExamService } from './dynamicExamService';
+import { mockApiService } from './mockApiService';
 
 export interface QuestionData {
   id: string;
   questionEn: string;
   questionHi?: string;
-  optionsEn: string[];
-  optionsHi?: string[];
+  options: Array<{en: string; hi?: string}> | string[];
   correctAnswerIndex: number;
   explanationEn?: string;
   explanationHi?: string;
@@ -20,6 +20,10 @@ export interface QuestionData {
   subject?: string;
   topic?: string;
   imageUrl?: string;
+  hasImages?: boolean;
+  questionImage?: {en: string; hi?: string};
+  optionImages?: Array<{en: string; hi?: string}>;
+  explanationImage?: {en: string; hi?: string};
 }
 
 export interface QuestionWithProps extends QuestionData {
@@ -107,8 +111,7 @@ export class SecureDynamicQuestionLoader {
               id: q.id,
               questionEn: q.questionEn,
               questionHi: q.questionHi,
-              optionsEn: q.options || q.optionsEn || [],
-              optionsHi: q.optionsHi || [],
+              options: q.options || [],
               correctAnswerIndex: q.correct || q.correctAnswerIndex || 0,
               difficulty: (q.difficulty as 'easy' | 'medium' | 'hard') || 'medium',
               subject: q.subject,
@@ -137,6 +140,89 @@ export class SecureDynamicQuestionLoader {
     }
   }
 
+  // Load questions from secure API endpoint (using mock service for development)
+  private async loadQuestionsFromSecureAPI(
+    examId: string, 
+    sectionId: string, 
+    testId: string
+  ): Promise<{ questions: SecureQuestionData[]; duration: number; totalQuestions: number; subjects: string[]; } | null> {
+    try {
+      console.log(`🔒 Loading questions from secure API (mock): ${examId}/${sectionId}/${testId}`);
+      
+      // Use mock API service for development
+      const apiData = await mockApiService.getSecureQuestions(examId, sectionId, testId, Date.now());
+      
+      if (!apiData) {
+        console.error('Failed to load from mock API service');
+        // Try fallback to JSON loading as last resort
+        console.log('🔄 Falling back to JSON loading...');
+        return await this.loadQuestionsFromJson(examId, sectionId, testId);
+      }
+
+      console.log(`✅ Loaded from mock API:`, apiData);
+      
+      if (!apiData || !apiData.questions || !Array.isArray(apiData.questions)) {
+        console.error('Invalid data structure from mock API');
+        return null;
+      }
+
+      return {
+        questions: apiData.questions,
+        duration: apiData.examInfo.duration || 180,
+        totalQuestions: apiData.examInfo.totalQuestions || apiData.questions.length,
+        subjects: apiData.examInfo.subjects || ['General Knowledge']
+      };
+      
+    } catch (error) {
+      console.error('Error loading questions from mock API:', error);
+      return null;
+    }
+  }
+
+  // Load questions directly from JSON files (development fallback) - DEPRECATED
+  private async loadQuestionsFromJson(
+    examId: string, 
+    sectionId: string, 
+    testId: string
+  ): Promise<{ questions: SecureQuestionData[]; duration: number; totalQuestions: number; subjects: string[]; } | null> {
+    try {
+      console.log(`📁 Loading questions from JSON (secure import): ${examId}/${sectionId}/${testId}`);
+      
+      // Use dynamic import to avoid direct file exposure
+      let jsonData;
+      try {
+        const jsonModule = await import(`@/data/questions/${examId}/${sectionId}/${testId}.json`);
+        jsonData = jsonModule.default || jsonModule;
+      } catch (importError) {
+        console.error(`Failed to import JSON file: ${examId}/${sectionId}/${testId}.json`, importError);
+        return null;
+      }
+      
+      const questions = jsonData.questions || jsonData;
+      
+      if (!Array.isArray(questions) || questions.length === 0) {
+        console.error('No questions found in JSON file');
+        return null;
+      }
+      
+      console.log(`✅ Loaded ${questions.length} questions from JSON`);
+      console.log(`✅ JSON duration:`, jsonData.duration);
+      console.log(`✅ JSON subjects:`, jsonData.subjects);
+      
+      // Return both questions and metadata
+      return {
+        questions,
+        duration: jsonData.duration || 180,
+        totalQuestions: jsonData.totalQuestions || questions.length,
+        subjects: jsonData.subjects || ['General Knowledge']
+      };
+      
+    } catch (error) {
+      console.error('Error loading questions from JSON:', error);
+      return null;
+    }
+  }
+
   // Insecure fallback method (for development only)
   private async loadQuestionsInsecure(
     examId: string, 
@@ -152,115 +238,21 @@ export class SecureDynamicQuestionLoader {
         return null;
       }
 
-      // Get questions from secure service
-      console.log(`🔍 Attempting to load questions for: ${examId}/${sectionId}/${testId}`);
-      const questions = await secureQuestionService.getQuestionData(examId, sectionId, testId);
-      console.log(`🔍 Secure service returned:`, questions ? `${questions.length} questions` : 'null/empty');
-      if (!questions || questions.length === 0) {
-        console.log('No questions found in secure service, trying direct JSON loading...');
-        // Try to load questions directly from JSON file
-        const directQuestions = await this.loadQuestionsFromJson(examId, sectionId, testId);
-        if (directQuestions && directQuestions.length > 0) {
-          console.log(`✅ Loaded ${directQuestions.length} questions directly from JSON file`);
-          const convertedQuestions: QuestionWithProps[] = directQuestions.map(q => ({
-            id: q.id,
-            questionEn: q.questionEn,
-            questionHi: q.questionHi,
-            optionsEn: q.options || [],
-            optionsHi: q.options || [],
-            correctAnswerIndex: q.correct,
-            explanationEn: q.explanation,
-            explanationHi: q.explanation,
-            marks: q.marks || 1,
-            negativeMarks: q.negativeMarks || 0.25,
-            duration: q.duration || 60,
-            difficulty: q.difficulty || 'medium',
-            subject: q.subject || 'general',
-            topic: q.topic || 'general',
-            imageUrl: q.imageUrl
-          }));
-          
-          // Create test data with loaded questions
-          const testData: TestData = {
-            examInfo: {
-              testName: this.getTestName(examId, sectionId, testId),
-              duration: this.calculateTestDuration(convertedQuestions, exam.examPattern?.duration || 60),
-              totalQuestions: convertedQuestions.length,
-              subjects: exam.examPattern?.subjects || ['General'],
-              markingScheme: exam.examPattern?.markingScheme || { correct: 1, incorrect: -0.25, unattempted: 0 },
-              defaultLanguage: 'english'
-            },
-            questions: convertedQuestions
-          };
-          
-          return testData;
-        }
-        
-        console.log('No questions found in JSON file, using centralized data...');
-        // Use centralized data if direct loading fails
-        const centralizedQuestions = examDataService.getQuestionData(examId, sectionId, testId);
-        if (centralizedQuestions.length === 0) {
-          console.error('No questions found for test:', { examId, sectionId, testId, topicId });
-          return null;
-        }
-        // Convert centralized questions to our format
-        const convertedQuestions: QuestionWithProps[] = centralizedQuestions.map(q => ({
-          id: q.id,
-          questionEn: q.questionEn,
-          questionHi: q.questionHi,
-          optionsEn: q.optionsEn,
-          optionsHi: q.optionsHi,
-          correctAnswerIndex: q.correctAnswerIndex,
-          explanationEn: q.explanationEn,
-          explanationHi: q.explanationHi,
-          marks: q.marks,
-          negativeMarks: q.negativeMarks,
-          duration: 60, // Default duration
-          difficulty: q.difficulty,
-          subject: q.subject,
-          topic: q.topic,
-          imageUrl: q.imageUrl
-        }));
-        return this.createTestDataFromQuestions(examId, sectionId, testId, convertedQuestions);
+      // Use secure API endpoint instead of direct JSON loading
+      console.log(`🔍 Loading questions via secure API for: ${examId}/${sectionId}/${testId}`);
+      const secureApiData = await this.loadQuestionsFromSecureAPI(examId, sectionId, testId);
+      console.log(`🔍 Secure API returned:`, secureApiData ? `${secureApiData.questions?.length || 0} questions` : 'null/empty');
+      
+      if (secureApiData && secureApiData.questions && secureApiData.questions.length > 0) {
+        // Create test data from secure API response
+        const testDataFromAPI = this.createTestDataFromQuestionsWithMetadata(examId, sectionId, testId, secureApiData);
+        console.log(`🔍 Created test data from secure API:`, testDataFromAPI);
+        console.log(`🔍 Test duration:`, testDataFromAPI?.examInfo?.duration);
+        return testDataFromAPI;
+      } else {
+        console.error('No questions found for test:', { examId, sectionId, testId, topicId });
+        return null;
       }
-
-      // Convert to QuestionWithProps format
-      const questionsWithProps: QuestionWithProps[] = questions.map(q => ({
-        id: q.id,
-        questionEn: q.questionEn,
-        questionHi: q.questionHi,
-        optionsEn: q.options || q.optionsEn || [],
-        optionsHi: q.optionsHi || [],
-        correctAnswerIndex: q.correct || q.correctAnswerIndex || 0,
-        explanationEn: q.explanationEn,
-        explanationHi: q.explanationHi,
-        marks: q.marks || 1,
-        negativeMarks: q.negativeMarks || 0.25,
-        duration: q.duration || 60,
-        subject: q.subject || 'general',
-        topic: q.topic || 'general',
-        difficulty: (q.difficulty as 'easy' | 'medium' | 'hard') || 'medium',
-        imageUrl: q.imageUrl
-      }));
-
-      // Get test duration from exam pattern or calculate from questions
-      const testDuration = this.calculateTestDuration(questionsWithProps, exam.examPattern?.duration || 60);
-
-      // Create test data
-      const testData: TestData = {
-        examInfo: {
-          testName: this.getTestName(examId, sectionId, testId),
-          duration: testDuration,
-          totalQuestions: questionsWithProps.length,
-          subjects: exam.examPattern?.subjects || ['General'],
-          markingScheme: exam.examPattern?.markingScheme || { correct: 1, incorrect: -0.25, unattempted: 0 },
-          defaultLanguage: 'english'
-        },
-        questions: questionsWithProps
-      };
-
-      this.cache.set(`${examId}-${sectionId}-${testId}-${topicId || ''}-insecure`, testData);
-      return testData;
     } catch (error) {
       console.error('Error loading questions (insecure fallback):', error);
       return null;
@@ -278,19 +270,41 @@ export class SecureDynamicQuestionLoader {
     return Math.max(totalMinutes, defaultDuration);
   }
 
-  // Create test data from questions
-  private createTestDataFromQuestions(examId: string, sectionId: string, testId: string, questions: QuestionWithProps[]): TestData {
+  // Create test data from questions with metadata
+  private createTestDataFromQuestionsWithMetadata(examId: string, sectionId: string, testId: string, jsonData: any): TestData {
     const exam = dynamicExamService.getExamConfig(examId);
     const testName = this.getTestName(examId, sectionId, testId);
     
-    // Calculate total duration
-    const totalDuration = SecureDynamicQuestionLoader.calculateTotalDuration(questions);
+    // Convert raw JSON questions to QuestionWithProps format
+    const questionsWithProps: QuestionWithProps[] = jsonData.questions.map(q => ({
+      id: q.id,
+      questionEn: q.questionEn,
+      questionHi: q.questionHi,
+      options: q.options || [],
+      correctAnswerIndex: q.correct || q.correctAnswerIndex || 0,
+      explanationEn: q.explanationEn,
+      explanationHi: q.explanationHi,
+      marks: q.marks || 1,
+      negativeMarks: q.negativeMarks || 0.25,
+      duration: q.duration || 60,
+      subject: q.subject || 'general',
+      topic: q.topic || 'general',
+      difficulty: (q.difficulty as 'easy' | 'medium' | 'hard') || 'medium',
+      imageUrl: q.imageUrl,
+      hasImages: q.hasImages,
+      questionImage: q.questionImage,
+      optionImages: q.optionImages,
+      explanationImage: q.explanationImage
+    }));
     
-    // Get subjects from questions
-    const subjects = [...new Set(questions.map(q => q.subject).filter(Boolean))];
+    // Use duration from JSON metadata
+    const totalDuration = jsonData.duration || 180;
+    
+    // Get subjects from JSON metadata or questions
+    const subjects = jsonData.subjects || [...new Set(questionsWithProps.map(q => q.subject).filter(Boolean))];
     
     // Get marking scheme from first question
-    const firstQuestion = questions[0];
+    const firstQuestion = questionsWithProps[0];
     const markingScheme = {
       correct: firstQuestion?.marks || 1,
       incorrect: firstQuestion?.negativeMarks || 0.25,
@@ -301,20 +315,66 @@ export class SecureDynamicQuestionLoader {
       examInfo: {
         testName,
         duration: totalDuration,
-        totalQuestions: questions.length,
+        totalQuestions: jsonData.totalQuestions || questionsWithProps.length,
         subjects: subjects.length > 0 ? subjects : ['General Knowledge'],
         markingScheme,
         defaultLanguage: 'english'
       },
-      questions: questions.map(q => ({
-        ...q,
-        marks: q.marks || 1,
-        negativeMarks: q.negativeMarks || 0.25,
-        duration: 60, // Default 1 minute per question
-        subject: q.subject || 'General Knowledge',
-        topic: q.topic || '',
-        difficulty: (q.difficulty as 'easy' | 'medium' | 'hard') || 'medium'
-      }))
+      questions: questionsWithProps
+    };
+  }
+
+  // Create test data from questions
+  private createTestDataFromQuestions(examId: string, sectionId: string, testId: string, questions: any[]): TestData {
+    const exam = dynamicExamService.getExamConfig(examId);
+    const testName = this.getTestName(examId, sectionId, testId);
+    
+    // Convert raw JSON questions to QuestionWithProps format
+    const questionsWithProps: QuestionWithProps[] = questions.map(q => ({
+      id: q.id,
+      questionEn: q.questionEn,
+      questionHi: q.questionHi,
+      options: q.options || [],
+      correctAnswerIndex: q.correct || q.correctAnswerIndex || 0,
+      explanationEn: q.explanationEn,
+      explanationHi: q.explanationHi,
+      marks: q.marks || 1,
+      negativeMarks: q.negativeMarks || 0.25,
+      duration: q.duration || 60,
+      subject: q.subject || 'general',
+      topic: q.topic || 'general',
+      difficulty: (q.difficulty as 'easy' | 'medium' | 'hard') || 'medium',
+      imageUrl: q.imageUrl,
+      hasImages: q.hasImages,
+      questionImage: q.questionImage,
+      optionImages: q.optionImages,
+      explanationImage: q.explanationImage
+    }));
+    
+    // Calculate total duration
+    const totalDuration = Math.max(SecureDynamicQuestionLoader.calculateTotalDuration(questionsWithProps), 60);
+    
+    // Get subjects from questions
+    const subjects = [...new Set(questionsWithProps.map(q => q.subject).filter(Boolean))];
+    
+    // Get marking scheme from first question
+    const firstQuestion = questionsWithProps[0];
+    const markingScheme = {
+      correct: firstQuestion?.marks || 1,
+      incorrect: firstQuestion?.negativeMarks || 0.25,
+      unattempted: 0
+    };
+
+    return {
+      examInfo: {
+        testName,
+        duration: totalDuration,
+        totalQuestions: questionsWithProps.length,
+        subjects: subjects.length > 0 ? subjects : ['General Knowledge'],
+        markingScheme,
+        defaultLanguage: 'english'
+      },
+      questions: questionsWithProps
     };
   }
 
@@ -368,7 +428,7 @@ export class SecureDynamicQuestionLoader {
   }
 
   // Calculate total duration from questions (legacy compatibility)
-  static calculateTotalDuration(questions: QuestionWithProps[]): number {
+  static calculateTotalDuration(questions: any[]): number {
     if (!questions || questions.length === 0) return 60;
     
     const totalSeconds = questions.reduce((total, q) => total + (q.duration || 60), 0);
@@ -398,31 +458,6 @@ export class SecureDynamicQuestionLoader {
     }
   }
 
-  // Load questions directly from JSON file
-  private async loadQuestionsFromJson(examId: string, sectionId: string, testId: string): Promise<any[] | null> {
-    try {
-      const filePath = `/src/data/questions/${examId}/${sectionId}/${testId}.json`;
-      console.log(`📁 Attempting to load questions from: ${filePath}`);
-      
-      const response = await fetch(filePath);
-      if (!response.ok) {
-        console.log(`❌ File not found: ${filePath}`);
-        return null;
-      }
-      
-      const data = await response.json();
-      if (data.questions && Array.isArray(data.questions)) {
-        console.log(`✅ Successfully loaded ${data.questions.length} questions from JSON`);
-        return data.questions;
-      }
-      
-      console.log('❌ Invalid JSON structure - no questions array found');
-      return null;
-    } catch (error) {
-      console.error('❌ Error loading questions from JSON:', error);
-      return null;
-    }
-  }
 }
 
 // Export singleton instance

@@ -42,6 +42,7 @@ export interface TestData {
     type?: string;
     difficulty?: string;
     subject?: string;
+    hasImages?: boolean;
   };
 }
 
@@ -49,8 +50,7 @@ export interface QuestionData {
   id: string;
   questionEn: string;
   questionHi?: string;
-  optionsEn: string[];
-  optionsHi?: string[];
+  options: Array<{en: string; hi?: string}> | string[];
   correctAnswerIndex: number;
   explanationEn?: string;
   explanationHi?: string;
@@ -60,6 +60,10 @@ export interface QuestionData {
   subject: string;
   topic: string;
   imageUrl?: string;
+  hasImages?: boolean;
+  questionImage?: {en: string; hi?: string};
+  optionImages?: Array<{en: string; hi?: string}>;
+  explanationImage?: {en: string; hi?: string};
 }
 
 class ExamDataService {
@@ -160,6 +164,17 @@ class ExamDataService {
         isPremium: false,
         price: 0,
         metadata: { type: 'mock', difficulty: 'mixed' }
+      },
+      {
+        id: 'mock-paper-9',
+        name: 'SSC CGL Mock Test 9',
+        description: 'Comprehensive Mock Test with Visual Questions - Includes diagrams, charts, and images',
+        duration: 180,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: false,
+        price: 0,
+        metadata: { type: 'mock', difficulty: 'mixed', hasImages: true }
       }
     ]);
 

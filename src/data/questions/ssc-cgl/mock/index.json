@@ -50,6 +50,24 @@
         "created_at": "2024-01-15T00:00:00Z",
         "updated_at": "2024-01-15T00:00:00Z"
       }
+    },
+    {
+      "id": "mock-paper-9",
+      "name": "SSC CGL Mock Paper 9",
+      "description": "Comprehensive Mock Test with Visual Questions - Includes diagrams, charts, and images",
+      "duration": 180,
+      "questions": 100,
+      "subjects": ["General Intelligence", "English Language", "Quantitative Aptitude", "General Awareness"],
+      "difficulty": "mixed",
+      "isPremium": false,
+      "price": 0,
+      "order": 4,
+      "metadata": {
+        "paper": 4,
+        "hasImages": true,
+        "created_at": "2024-01-26T00:00:00Z",
+        "updated_at": "2024-01-26T00:00:00Z"
+      }
     }
   ]
 }

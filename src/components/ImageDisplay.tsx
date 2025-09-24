@@ -29,9 +29,19 @@ export const ImageDisplay: React.FC<ImageDisplayProps> = ({
   const [isLoading, setIsLoading] = useState(true);
 
   // Construct the full image path
-  const fullImagePath = imagePath.startsWith('/') 
-    ? imagePath 
-    : `/logos/${imagePath}`;
+  const fullImagePath = (() => {
+    // Handle case where imagePath might be an object or undefined
+    if (!imagePath) return '';
+    if (typeof imagePath === 'string') {
+      return imagePath.startsWith('/') ? imagePath : `/logos/${imagePath}`;
+    }
+    // If it's an object, try to extract the path
+    if (typeof imagePath === 'object' && imagePath !== null) {
+      const path = (imagePath as any).en || (imagePath as any).hi || (imagePath as any).path || '';
+      return path.startsWith('/') ? path : `/logos/${path}`;
+    }
+    return '';
+  })();
 
   const handleImageLoad = () => {
     setIsLoading(false);
@@ -44,9 +54,10 @@ export const ImageDisplay: React.FC<ImageDisplayProps> = ({
   };
 
   const handleDownload = () => {
+    if (!fullImagePath) return;
     const link = document.createElement('a');
     link.href = fullImagePath;
-    link.download = imagePath.split('/').pop() || 'image';
+    link.download = (typeof imagePath === 'string' ? imagePath : 'image').split('/').pop() || 'image';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -55,6 +66,11 @@ export const ImageDisplay: React.FC<ImageDisplayProps> = ({
   const handleOpenInNewTab = () => {
     window.open(fullImagePath, '_blank');
   };
+
+  // Don't render if no valid image path
+  if (!fullImagePath) {
+    return null;
+  }
 
   if (imageError) {
     return (
@@ -69,7 +85,7 @@ export const ImageDisplay: React.FC<ImageDisplayProps> = ({
             </svg>
           </div>
           <p className="text-sm text-muted-foreground">Image not found</p>
-          <p className="text-xs text-muted-foreground/70">{imagePath}</p>
+          <p className="text-xs text-muted-foreground/70">{typeof imagePath === 'string' ? imagePath : 'Invalid image path'}</p>
         </div>
       </div>
     );

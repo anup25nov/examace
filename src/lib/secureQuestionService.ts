@@ -5,9 +5,7 @@ export interface SecureQuestionData {
   id: string;
   questionEn: string;
   questionHi?: string;
-  options: string[];
-  optionsEn?: string[];
-  optionsHi?: string[];
+  options: Array<{en: string; hi?: string}> | string[];
   correct: number;
   correctAnswerIndex?: number;
   difficulty: string;
@@ -23,6 +21,10 @@ export interface SecureQuestionData {
   imageUrl?: string;
   optionsImages?: string[];
   explanationImage?: string;
+  hasImages?: boolean;
+  questionImageData?: {en: string; hi?: string};
+  optionImagesData?: Array<{en: string; hi?: string}>;
+  explanationImageData?: {en: string; hi?: string};
 }
 
 export interface SecureTestData {
@@ -100,34 +102,10 @@ class SecureQuestionService {
         throw new Error('Access denied: User does not have permission to access this test');
       }
 
-      // Load questions from secure endpoint
-      const { data, error } = await supabase.functions.invoke('get-test-questions', {
-        body: {
-          exam_id: examId,
-          section_id: sectionId,
-          test_id: testId,
-          user_id: userId,
-          is_premium: isPremium
-        }
-      });
-
-      if (error) {
-        console.error('Error loading secure questions:', error);
-        // Fallback to obfuscated local data for development
-        return await this.loadObfuscatedQuestions(examId, sectionId, testId);
-      }
-
-      if (!data || !data.questions) {
-        throw new Error('No questions found for this test');
-      }
-
-      const testData: SecureTestData = {
-        examInfo: data.examInfo,
-        questions: data.questions
-      };
-
-      this.cache.set(cacheKey, testData);
-      return testData;
+      // Skip Supabase function for now due to CORS issues
+      console.log('Skipping Supabase function due to CORS issues, using local fallback');
+      // Fallback to obfuscated local data for development
+      return await this.loadObfuscatedQuestions(examId, sectionId, testId);
 
     } catch (error) {
       console.error('Error loading secure questions:', error);

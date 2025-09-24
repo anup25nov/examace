@@ -50,11 +50,11 @@ class PremiumTestService {
       // Get test data from database
       const { data: testData, error } = await supabase
         .from('exam_test_data')
-        .select('is_premium, price')
+        .select('is_premium')
         .eq('exam_id', examId)
         .eq('test_type', testType)
         .eq('test_id', testId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.warn('Error fetching test data:', error);
@@ -70,7 +70,7 @@ class PremiumTestService {
       }
 
       const isPremium = testData.is_premium || false;
-      const price = testData.price || 0;
+      const price = 0; // Price column removed from database
 
       let hasAccess = true;
       let membershipRequired = false;
@@ -134,11 +134,11 @@ class PremiumTestService {
   /**
    * Get all premium tests for an exam
    */
-  async getPremiumTests(examId: string): Promise<Array<{testType: string, testId: string, name: string, price: number}>> {
+  async getPremiumTests(examId: string): Promise<Array<{testType: string, testId: string, name: string}>> {
     try {
       const { data, error } = await supabase
         .from('exam_test_data')
-        .select('test_type, test_id, name, price')
+        .select('test_type, test_id, name')
         .eq('exam_id', examId)
         .eq('is_premium', true);
 
@@ -150,8 +150,7 @@ class PremiumTestService {
       return (data || []).map(item => ({
         testType: item.test_type,
         testId: item.test_id,
-        name: item.name,
-        price: item.price
+        name: item.name
       }));
     } catch (error) {
       console.error('Error fetching premium tests:', error);
