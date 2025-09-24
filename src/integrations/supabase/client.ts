@@ -1,19 +1,19 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-// Get environment variables with fallbacks
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://talvssmwnsfotoutjlhd.supabase.co";
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhbHZzc213bnNmb3RvdXRqbGhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3MjQ2NjMsImV4cCI6MjA3MjMwMDY2M30.kViEumcw7qxZeITgtZf91D-UVFY5PaFyXganLyh2Tok";
+// Get environment variables - NO FALLBACKS IN PRODUCTION
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Validate environment variables
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error('Missing Supabase environment variables. Please check your .env file.');
-  console.error('SUPABASE_URL:', SUPABASE_URL);
+  const errorMessage = 'Missing Supabase environment variables. Please check your .env file.';
+  console.error(errorMessage);
+  console.error('SUPABASE_URL:', SUPABASE_URL ? 'Present' : 'Missing');
   console.error('SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? 'Present' : 'Missing');
-  // Don't throw error in production, just log it
-  if (import.meta.env.MODE === 'development') {
-    throw new Error('Missing Supabase environment variables. Please check your .env file.');
-  }
+  
+  // Always throw error - no fallbacks allowed for security
+  throw new Error(errorMessage);
 }
 
 // Log environment info in development

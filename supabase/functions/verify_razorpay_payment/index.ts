@@ -3,9 +3,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 // Centralized pricing configuration - SINGLE SOURCE OF TRUTH
 const PLAN_PRICES: Record<string, number> = {
-  pro: 1, // Pro plan: 1 INR (test price)
-  pro_plus: 2, // Pro+ plan: 2 INR (test price)
-  premium: 1, // Premium plan: 1 INR (alias for pro)
+  pro: 999, // Pro plan: ₹999 (production price)
+  pro_plus: 1999, // Pro+ plan: ₹1999 (production price)
+  premium: 999, // Premium plan: ₹999 (alias for pro)
 };
 
 // Helper function to get plan price
