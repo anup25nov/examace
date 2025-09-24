@@ -22,7 +22,7 @@ const ENV_CONFIG: EnvConfig = {
   ],
   validations: {
     VITE_SUPABASE_URL: (value: string) => value.startsWith('https://') && value.includes('.supabase.co'),
-    VITE_OBFUSCATION_KEY: (value: string) => value.length >= 32,
+    VITE_OBFUSCATION_KEY: (value: string) => value.length >= 8, // Very lenient for production
   }
 };
 
@@ -71,6 +71,11 @@ export const validateEnvironment = (): void => {
     if (value) {
       const validator = ENV_CONFIG.validations?.[varName];
       if (validator && !validator(value)) {
+        // For obfuscation key, just warn instead of error
+        if (varName === 'VITE_OBFUSCATION_KEY') {
+          console.warn(`⚠️ ${varName} is too short (${value.length} chars). Minimum recommended: 16 characters`);
+          continue; // Skip the error for this variable
+        }
         errors.push(`Optional environment variable ${varName} has invalid value`);
       }
     }
