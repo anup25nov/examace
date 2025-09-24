@@ -47,7 +47,7 @@ export const PRICING_CONFIG: Record<string, PlanPricing> = {
   },
   pro_plus: {
     id: 'pro_plus',
-    name: 'Pro Plus Plan',
+    name: 'Pro+ Plan',
     price: PRICING_CONSTANTS.PRO_PLUS_PLAN_PRICE,
     originalPrice: 599,
     currency: PRICING_CONSTANTS.CURRENCY,

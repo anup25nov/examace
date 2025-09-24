@@ -84,7 +84,14 @@ serve(async (req) => {
   try {
     const body: VerifyBody = await req.json()
     console.log('=== PAYMENT VERIFICATION START ===')
-    console.log('Body received:', JSON.stringify(body, null, 2))
+    // Log without sensitive data
+    console.log('Body received:', {
+      user_id: body.user_id,
+      plan: body.plan,
+      order_id: body.order_id,
+      payment_id: body.payment_id,
+      signature: body.signature ? '[REDACTED]' : 'missing'
+    })
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -93,46 +100,101 @@ serve(async (req) => {
 
     // Verify Razorpay signature
     const keySecret = Deno.env.get('RAZORPAY_KEY_SECRET')
+    const webhookSecret = Deno.env.get('RAZORPAY_WEBHOOK_SECRET')
+    
+    console.log('Environment check:')
+    console.log('RAZORPAY_KEY_SECRET present:', !!keySecret)
+    console.log('RAZORPAY_WEBHOOK_SECRET present:', !!webhookSecret)
+    
+    // For development/testing, allow skipping signature verification
+    const isTestMode = Deno.env.get('NODE_ENV') === 'development' || Deno.env.get('RAZORPAY_TEST_MODE') === 'true'
     
     if (!keySecret || keySecret.length === 0) {
-      console.log('RAZORPAY_KEY_SECRET not set, skipping signature verification for testing')
+      console.log('⚠️ RAZORPAY_KEY_SECRET not set, skipping signature verification for testing')
+      console.log('⚠️ This should NOT happen in production!')
+    } else if (isTestMode && body.signature === 'test_signature') {
+      console.log('🧪 Test mode: Skipping signature verification for test signature')
     } else {
-      const encoder = new TextEncoder()
-      const keyData = encoder.encode(keySecret)
+      // Use only RAZORPAY_KEY_SECRET for payment verification (webhook secret is for webhooks only)
+      console.log('🔐 Verifying signature with RAZORPAY_KEY_SECRET')
       
-      // Create HMAC key
-      const key = await crypto.subtle.importKey(
-        'raw',
-        keyData,
-        { name: 'HMAC', hash: 'SHA-256' },
-        false,
-        ['sign']
-      )
-      
-      // Create signature - Razorpay uses order_id|payment_id format
-      const data = encoder.encode(`${body.order_id}|${body.payment_id}`)
-      const signature = await crypto.subtle.sign('HMAC', key, data)
-      
-      // Convert to hex
-      const expectedSignature = Array.from(new Uint8Array(signature))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('')
-      
-      console.log('Signature verification details:')
-      console.log('Order ID:', body.order_id)
-      console.log('Payment ID:', body.payment_id)
-      console.log('Expected signature:', expectedSignature)
-      console.log('Received signature:', body.signature)
-      
-      if (expectedSignature !== body.signature) {
-        console.log('❌ Signature verification failed')
+      try {
+        const encoder = new TextEncoder()
+        const keyData = encoder.encode(keySecret)
+        
+        // Create HMAC key
+        const key = await crypto.subtle.importKey(
+          'raw',
+          keyData,
+          { name: 'HMAC', hash: 'SHA-256' },
+          false,
+          ['sign']
+        )
+        
+        // Create signature - Razorpay uses order_id|payment_id format
+        const data = encoder.encode(`${body.order_id}|${body.payment_id}`)
+        const signature = await crypto.subtle.sign('HMAC', key, data)
+        
+        // Convert to hex
+        const expectedSignature = Array.from(new Uint8Array(signature))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('')
+        
+        console.log('Signature verification details:')
+        console.log('Order ID:', body.order_id)
+        console.log('Payment ID:', body.payment_id)
+        console.log('Data to sign:', `${body.order_id}|${body.payment_id}`)
+        console.log('Expected signature:', expectedSignature)
+        console.log('Received signature:', '[REDACTED]')
+        console.log('Signatures match:', expectedSignature === body.signature)
+        
+        if (expectedSignature !== body.signature) {
+          console.log('❌ Signature verification failed')
+          console.log('')
+          console.log('🔍 Debug Information:')
+          console.log('1. Make sure RAZORPAY_KEY_SECRET is set correctly in Supabase Edge Function secrets')
+          console.log('2. The Key Secret should be from Razorpay Dashboard > Settings > API Keys')
+          console.log('3. Signature format should be: HMAC-SHA256(order_id|payment_id, key_secret)')
+          console.log('4. Use the debug endpoint: /functions/v1/debug-signature')
+          console.log('')
+          
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: 'Invalid signature',
+              debug: {
+                message: 'Signature verification failed. Check logs for details.',
+                order_id: body.order_id,
+                payment_id: body.payment_id,
+                data_to_sign: `${body.order_id}|${body.payment_id}`,
+                expected_signature: expectedSignature,
+                received_signature: body.signature,
+                signatures_match: false,
+                has_key_secret: !!keySecret,
+                key_secret_length: keySecret ? keySecret.length : 0
+              }
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+
+        console.log('✅ Signature verified successfully')
+      } catch (error) {
+        console.log('❌ Signature verification error:', error.message)
         return new Response(
-          JSON.stringify({ success: false, error: 'Invalid signature' }),
+          JSON.stringify({ 
+            success: false, 
+            error: 'Signature verification error: ' + error.message,
+            debug: {
+              message: 'Error during signature verification',
+              error: error.message,
+              order_id: body.order_id,
+              payment_id: body.payment_id
+            }
+          }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
-
-      console.log('✅ Signature verified successfully')
     }
 
     // Get plan amount - use centralized pricing

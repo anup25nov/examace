@@ -58,6 +58,7 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
   const [razorpayLoading, setRazorpayLoading] = useState(true);
   const [razorpayError, setRazorpayError] = useState(false);
+  const [processedPayments, setProcessedPayments] = useState<Set<string>>(new Set());
 
   // Load Razorpay script
   useEffect(() => {
@@ -183,15 +184,26 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
         unifiedPaymentService.getUserMembership(user!.id)
       ]);
       
-      setPlans(plansData);
+      // Filter plans based on current membership
+      let availablePlans = plansData;
+      if (membership && membership.plan_id) {
+        // Filter out plans that user already has or lower tier plans
+        if (membership.plan_id === 'pro') {
+          availablePlans = plansData.filter(p => p.id === 'pro_plus' || p.id === 'test');
+        } else if (membership.plan_id === 'pro_plus') {
+          availablePlans = plansData.filter(p => p.id === 'test');
+        }
+      }
+      
+      setPlans(availablePlans);
       setUserMembership(membership);
       
       // If it's a single test purchase, select the test plan
       if (testId && testPrice) {
         setSelectedPlan('test');
       } else {
-        // Select the most popular plan by default
-        const popularPlan = plansData.find(p => p.id === 'premium') || plansData[0];
+        // Select the most popular available plan by default
+        const popularPlan = availablePlans.find(p => p.id === 'premium') || availablePlans[0];
         setSelectedPlan(popularPlan?.id || '');
       }
     } catch (error) {
@@ -284,6 +296,12 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
           color: '#3B82F6',
         },
         handler: async (response: any) => {
+          // Prevent multiple handler executions
+          if (loading) {
+            console.log('Payment handler already processing, ignoring duplicate call');
+            return;
+          }
+
           try {
             setLoading(true);
             setError('');

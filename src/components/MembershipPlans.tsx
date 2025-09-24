@@ -94,7 +94,7 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
       const configPlans = getActiveMembershipPlans();
       
       // Convert config plans to component format
-      const componentPlans: MembershipPlan[] = configPlans.map(plan => ({
+      const allPlans: MembershipPlan[] = configPlans.map(plan => ({
         id: plan.id,
         name: plan.name,
         description: plan.id === 'pro_plus' ? 'Complete access to all mocks and features' : 
@@ -113,21 +113,59 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
         currency: 'INR'
       }));
       
-      setPlans(componentPlans);
+      // Filter plans based on current subscription
+      let availablePlans: MembershipPlan[] = [];
+      
+      console.log('Current user plan:', currentPlan);
+      
+      if (!currentPlan || currentPlan === 'free') {
+        // Show Pro and Pro+ for free users
+        availablePlans = allPlans.filter(plan => plan.id !== 'free');
+        console.log('Free user - showing plans:', availablePlans.map(p => p.id));
+      } else if (currentPlan === 'pro') {
+        // Show only Pro+ for Pro users (upgrade option) - hide Pro plan
+        availablePlans = allPlans.filter(plan => plan.id === 'pro_plus');
+        console.log('Pro user - showing upgrade plans:', availablePlans.map(p => p.id));
+      } else if (currentPlan === 'pro_plus') {
+        // Pro+ users don't need to upgrade - hide all plans
+        availablePlans = [];
+        console.log('Pro+ user - no upgrade needed');
+      } else {
+        // For any other plan status, hide the current plan
+        availablePlans = allPlans.filter(plan => plan.id !== currentPlan && plan.id !== 'free');
+        console.log('Other plan user - showing available plans:', availablePlans.map(p => p.id));
+      }
+      
+      setPlans(availablePlans);
     } catch (error) {
       console.error('Error loading membership plans:', error);
       setError('Failed to load membership plans');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [currentPlan]);
 
   const handleSelectPlan = (plan: MembershipPlan) => {
+    // Prevent selecting the same plan user already has
+    if (currentPlan === plan.id) {
+      console.log('User already has this plan:', plan.id);
+      return;
+    }
+    
+    console.log('User selected plan:', plan.id, 'Current plan:', currentPlan);
     setSelectedPlan(plan.id);
     onSelectPlan(plan);
   };
 
   const handleBuyPlan = (plan: MembershipPlan) => {
+    // Prevent buying the same plan user already has
+    if (currentPlan === plan.id) {
+      console.log('Cannot buy the same plan user already has:', plan.id);
+      alert('You already have this plan!');
+      return;
+    }
+    
+    console.log('User buying plan:', plan.id, 'Current plan:', currentPlan);
     setSelectedPlanForPayment(plan);
     setShowPaymentModal(true);
   };
@@ -213,17 +251,47 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
                 Try Again
               </Button>
             </div>
+          ) : plans.length === 0 && currentPlan === 'pro_plus' ? (
+            <div className="text-center py-12">
+              <div className="text-green-600 mb-4">
+                <Crown className="w-12 h-12 mx-auto mb-2" />
+                <p className="text-lg font-medium">You have the highest plan!</p>
+                <p className="text-sm text-gray-600">You already have Pro+ membership with unlimited access to all features.</p>
+              </div>
+              <Button onClick={onClose} variant="outline">
+                Close
+              </Button>
+            </div>
+          ) : plans.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-gray-600 mb-4">
+                <Crown className="w-12 h-12 mx-auto mb-2" />
+                <p className="text-lg font-medium">No upgrade options available</p>
+                <p className="text-sm text-gray-600">You already have an active subscription.</p>
+              </div>
+              <Button onClick={onClose} variant="outline">
+                Close
+              </Button>
+            </div>
           ) : (
             <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-2 gap-6'}`}>
-              {plans.map((plan) => (
+              {plans.map((plan) => {
+                const isCurrentPlan = currentPlan === plan.id;
+                const isDisabled = isCurrentPlan;
+                
+                return (
             <Card 
               key={plan.id}
-              className={`relative cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105 border-2 ${
-                plan.popular 
-                  ? 'border-purple-300 bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg transform scale-105' 
-                  : 'border-gray-200 hover:border-blue-300 bg-white'
-              } ${currentPlan === plan.id ? 'border-green-300 bg-green-50' : ''} rounded-xl overflow-hidden`}
-              onClick={() => handleSelectPlan(plan)}
+              className={`relative transition-all duration-300 border-2 rounded-xl overflow-hidden ${
+                isDisabled 
+                  ? 'border-gray-300 bg-gray-100 opacity-75 cursor-not-allowed' 
+                  : isCurrentPlan 
+                    ? 'border-green-300 bg-green-50 cursor-pointer hover:shadow-xl hover:scale-105'
+                    : plan.popular 
+                      ? 'border-purple-300 bg-gradient-to-br from-purple-50 to-pink-50 shadow-lg transform scale-105 cursor-pointer hover:shadow-xl hover:scale-105' 
+                      : 'border-gray-200 hover:border-blue-300 bg-white cursor-pointer hover:shadow-xl hover:scale-105'
+              }`}
+              onClick={() => !isDisabled && handleSelectPlan(plan)}
             >
               {/* {plan.popular && (
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
@@ -246,6 +314,15 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
                 </div>
                 
                 <div className="relative z-10">
+                  {/* Current Plan Badge */}
+                  {isCurrentPlan && (
+                    <div className="absolute -top-2 -right-2 z-20">
+                      <Badge className="bg-green-500 text-white px-3 py-1 text-xs font-bold shadow-lg">
+                        Current Plan
+                      </Badge>
+                    </div>
+                  )}
+                  
                   <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl w-fit mx-auto mb-3">
                     <Crown className="w-6 h-6 text-white" />
                   </div>
@@ -285,13 +362,19 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
 
                 {/* Action Button */}
                 <Button 
-                  className={`w-full py-3 text-sm font-bold rounded-xl transition-all duration-300 hover:scale-105 shadow-lg ${
-                    plan.popular 
-                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white' 
-                      : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white'
+                  className={`w-full py-3 text-sm font-bold rounded-xl transition-all duration-300 shadow-lg ${
+                    currentPlan === plan.id
+                      ? 'bg-gray-400 text-white cursor-not-allowed opacity-75'
+                      : plan.popular 
+                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white hover:scale-105' 
+                        : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white hover:scale-105'
                   }`}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (currentPlan === plan.id) {
+                      e.preventDefault();
+                      return;
+                    }
                     handleBuyPlan(plan);
                   }}
                   disabled={currentPlan === plan.id}
@@ -299,7 +382,7 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
                   {currentPlan === plan.id ? (
                     <>
                       <Shield className="w-4 h-4 mr-2" />
-                      Current Plan
+                      You Already Have This Plan
                     </>
                   ) : (
                     <>
@@ -316,10 +399,10 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
                 )} */}
               </CardContent>
             </Card>
-          ))}
+          );
+        })}
             </div>
           )}
-        </div>
 
         {/* Compact Footer */}
         <div className="border-t border-gray-200 p-4 bg-gray-50 text-center">
@@ -344,6 +427,7 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
           onPaymentSuccess={handlePaymentSuccess}
         />
       )}
+      </div>
     </div>
   );
 };
