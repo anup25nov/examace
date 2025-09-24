@@ -19,6 +19,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { referralService, ReferralStats } from '@/lib/referralServiceSimple';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { getPlanPricing, formatPrice } from '@/config/pricingConfig';
 
 interface ReferralSystemProps {
   onClose: () => void;
@@ -269,7 +270,7 @@ export const ReferralSystem: React.FC<ReferralSystemProps> = ({ onClose }) => {
                       <Badge className="bg-green-100 text-green-800">₹24.50</Badge>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-green-700">Pro Plan (₹99)</span>
+                      <span className="text-green-700">Pro Plan ({formatPrice(getPlanPricing('pro')?.price || 99)})</span>
                       <Badge className="bg-green-100 text-green-800">₹49.50</Badge>
                     </div>
                   </div>

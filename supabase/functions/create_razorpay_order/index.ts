@@ -16,10 +16,12 @@ interface RequestBody {
 const RZP_KEY_ID = Deno.env.get('RAZORPAY_KEY_ID') || '';
 const RZP_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET') || '';
 
-// Fallback prices if database is unavailable
-const FALLBACK_PRICES: Record<string, number> = {
+// Centralized pricing configuration - SINGLE SOURCE OF TRUTH
+// This should match the pricing in src/config/pricingConfig.ts
+const PLAN_PRICES: Record<string, number> = {
   pro: 99, // Pro plan: 99 INR
   pro_plus: 299, // Pro+ plan: 299 INR
+  premium: 99, // Premium plan: 99 INR (alias for pro)
 };
 
 serve(async (req: Request) => {
@@ -38,26 +40,18 @@ serve(async (req: Request) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
     
-    // Try to get plan price from database first
-    let amount: number;
-    try {
-      const { data: planData, error: planError } = await supabase
-        .from('membership_plans')
-        .select('price')
-        .eq('id', body.plan)
-        .eq('is_active', true)
-        .single()
-      
-      if (planError || !planData) {
-        console.warn('Failed to fetch plan from database, using fallback price:', planError)
-        amount = FALLBACK_PRICES[body.plan];
-      } else {
-        amount = planData.price;
-      }
-    } catch (dbError) {
-      console.warn('Database error, using fallback price:', dbError)
-      amount = FALLBACK_PRICES[body.plan];
+    // Use centralized pricing configuration
+    const amount = PLAN_PRICES[body.plan];
+    console.log('Using centralized pricing for plan', body.plan, ':', amount);
+    console.log('PLAN_PRICES:', PLAN_PRICES);
+    
+    // Final validation - ensure amount is valid
+    if (!amount || amount <= 0) {
+      console.warn('Invalid amount, using fallback price. Amount was:', amount);
+      amount = PLAN_PRICES[body.plan];
     }
+    
+    console.log('Final amount for plan', body.plan, ':', amount);
     
     if (!amount) {
       return new Response(JSON.stringify({ success: false, error: 'Invalid plan' }), { status: 400, headers: corsHeaders })
@@ -74,11 +68,14 @@ serve(async (req: Request) => {
 
     // Create Razorpay order via REST
     const auth = btoa(`${RZP_KEY_ID}:${RZP_KEY_SECRET}`)
+    const razorpayAmount = amount * 100; // Convert to paise
+    console.log('Creating Razorpay order with amount:', amount, 'paise:', razorpayAmount);
+    
     const r = await fetch('https://api.razorpay.com/v1/orders', {
       method: 'POST',
       headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        amount: amount * 100,
+        amount: razorpayAmount,
         currency: 'INR',
         receipt,
         notes: { user_id: body.user_id, plan: body.plan },
@@ -93,6 +90,7 @@ serve(async (req: Request) => {
     const order = await r.json()
 
     // Return minimal data; client will store payment via existing flow
+    console.log('Order created successfully:', { order_id: order.id, amount, currency: 'INR' });
     return new Response(JSON.stringify({ success: true, order_id: order.id, amount, currency: 'INR', key_id: RZP_KEY_ID, receipt }), { status: 200, headers: corsHeaders })
   } catch (e) {
     return new Response(JSON.stringify({ success: false, error: e instanceof Error ? e.message : 'Unknown error' }), { status: 500, headers: corsHeaders })

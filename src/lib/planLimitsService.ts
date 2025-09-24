@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { unifiedPaymentService } from './unifiedPaymentService';
 import { dynamicTestDataLoader } from './dynamicTestDataLoader';
+import { getPlanPricing, formatPrice } from '@/config/pricingConfig';
 
 export interface PlanLimits {
   maxTests: number;
@@ -484,10 +485,13 @@ export class PlanLimitsService {
    * Get upgrade message for user
    */
   getUpgradeMessage(limits: PlanLimits): string {
+    const proPlan = getPlanPricing('pro');
+    const proPlusPlan = getPlanPricing('pro_plus');
+    
     if (limits.planType === 'free') {
-      return 'Upgrade to Pro (₹99) or Pro+ (₹299) to access mock tests and unlock your potential!';
+      return `Upgrade to Pro (${formatPrice(proPlan?.price || 99)}) or Pro+ (${formatPrice(proPlusPlan?.price || 299)}) to access mock tests and unlock your potential!`;
     } else if (limits.planType === 'pro' && limits.remainingTests <= 2) {
-      return `Only ${limits.remainingTests} tests left! Upgrade to Pro+ (₹299) for unlimited access.`;
+      return `Only ${limits.remainingTests} tests left! Upgrade to Pro+ (${formatPrice(proPlusPlan?.price || 299)}) for unlimited access.`;
     } else if (limits.planType === 'pro' && limits.usedTests >= limits.maxTests) {
       return 'You\'ve completed all 11 tests in your Pro plan. Upgrade to Pro+ for unlimited access!';
     }

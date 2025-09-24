@@ -5,64 +5,28 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Crown, Check, Star, Zap, Shield, Users, Trophy } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { getAllActivePlans, formatPrice } from '@/config/pricingConfig';
 
 const Membership = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
-  const membershipPlans = [
-    {
-      id: 'basic',
-      name: 'Basic Plan',
-      price: '₹299',
-      duration: '1 Month',
-      description: 'Perfect for getting started',
-      features: [
-        'Access to all Mock Tests',
-        'Access to all PYQ Papers',
-        'Detailed Solutions',
-        'Performance Analytics',
-        'Mobile App Access'
-      ],
-      popular: false,
-      color: 'from-blue-500 to-blue-600'
-    },
-    {
-      id: 'pro',
-      name: 'Pro Plan',
-      price: '₹799',
-      duration: '3 Months',
-      description: 'Most popular choice',
-      features: [
-        'Everything in Basic',
-        'Unlimited Test Attempts',
-        'Advanced Analytics',
-        'Priority Support',
-        'Study Materials',
-        'Exam Notifications'
-      ],
-      popular: true,
-      color: 'from-purple-500 to-purple-600'
-    },
-    {
-      id: 'premium',
-      name: 'Premium Plan',
-      price: '₹1499',
-      duration: '6 Months',
-      description: 'Best value for serious aspirants',
-      features: [
-        'Everything in Pro',
-        'Personal Mentor Support',
-        'Custom Study Plans',
-        'Mock Interview Sessions',
-        'Career Guidance',
-        'Lifetime Updates'
-      ],
-      popular: false,
-      color: 'from-orange-500 to-orange-600'
-    }
-  ];
+  // Get membership plans from centralized pricing configuration
+  const centralizedPlans = getAllActivePlans();
+  
+  const membershipPlans = centralizedPlans.map(plan => ({
+    id: plan.id,
+    name: plan.name,
+    price: formatPrice(plan.price, plan.currency),
+    duration: `${Math.round(plan.duration / 30)} Month${Math.round(plan.duration / 30) > 1 ? 's' : ''}`,
+    description: plan.description,
+    features: plan.features,
+    popular: plan.popular || false,
+    color: plan.id === 'pro_plus' ? 'from-purple-500 to-purple-600' : 
+           plan.id === 'pro' ? 'from-blue-500 to-blue-600' : 
+           'from-gray-500 to-gray-600'
+  }));
 
   const handleSelectPlan = (planId: string) => {
     setSelectedPlan(planId);

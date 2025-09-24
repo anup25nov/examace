@@ -15,6 +15,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { PremiumTest } from '@/lib/premiumService';
+import { getAllActivePlans, formatPrice } from '@/config/pricingConfig';
 
 interface PremiumPaymentModalProps {
   isOpen: boolean;
@@ -49,6 +50,9 @@ export const PremiumPaymentModal: React.FC<PremiumPaymentModalProps> = ({
     }
   };
 
+  // Get plans from centralized pricing configuration
+  const centralizedPlans = getAllActivePlans();
+  
   const plans = [
     {
       id: 'test',
@@ -58,48 +62,15 @@ export const PremiumPaymentModal: React.FC<PremiumPaymentModalProps> = ({
       features: test.benefits || [],
       popular: false
     },
-    {
-      id: 'monthly',
-      name: 'Monthly Premium',
-      price: 299,
-      description: 'Access to all premium content',
-      features: [
-        'All premium mock tests',
-        'All premium PYQ sets',
-        'All practice sets',
-        'Detailed analytics',
-        'Priority support'
-      ],
-      popular: true
-    },
-    {
-      id: 'yearly',
-      name: 'Yearly Premium',
-      price: 2999,
-      description: 'Best value for serious aspirants',
-      features: [
-        'All premium content',
-        'Detailed analytics',
-        'Priority support',
-        'Live doubt sessions',
-        'Study materials'
-      ],
-      popular: false
-    },
-    {
-      id: 'lifetime',
-      name: 'Lifetime Access',
-      price: 9999,
-      description: 'One-time payment, lifetime access',
-      features: [
-        'All premium content forever',
-        'All future updates',
-        'Priority support',
-        'Exclusive content',
-        'Study materials'
-      ],
-      popular: false
-    }
+    // Map centralized plans to the expected format
+    ...centralizedPlans.map(plan => ({
+      id: plan.id,
+      name: plan.name,
+      price: plan.price,
+      description: plan.description,
+      features: plan.features,
+      popular: plan.popular || false
+    }))
   ];
 
   return (

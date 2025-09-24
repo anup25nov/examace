@@ -205,12 +205,16 @@ export const defaultConfig: AppConfig = {
   },
   
   // Centralized Membership Plans Configuration - SINGLE SOURCE OF TRUTH
+  // Note: This is now imported from pricingConfig.ts to ensure consistency
+  // All pricing is managed in src/config/pricingConfig.ts
   membershipPlans: {
+    // This section is kept for backward compatibility but should not be used
+    // Use getActiveMembershipPlans() from pricingConfig.ts instead
     pro: {
       id: 'pro',
       name: 'Pro Plan',
-      price: 99,
-      originalPrice: 199,
+      price: 99, // DEPRECATED: Use pricingConfig.ts
+      originalPrice: 199, // DEPRECATED: Use pricingConfig.ts
       mockTests: 11,
       duration: 90, // days
       features: [
@@ -225,8 +229,8 @@ export const defaultConfig: AppConfig = {
     pro_plus: {
       id: 'pro_plus',
       name: 'Pro Plus Plan',
-      price: 299,
-      originalPrice: 599,
+      price: 299, // DEPRECATED: Use pricingConfig.ts
+      originalPrice: 599, // DEPRECATED: Use pricingConfig.ts
       mockTests: 9999, // unlimited
       duration: 365, // days
       features: [

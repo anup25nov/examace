@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { razorpayPaymentService, RazorpayPaymentRequest } from './razorpayPaymentService';
 import { getActiveMembershipPlans, getMembershipPlan } from '@/config/appConfig';
+import { getAllActivePlans, getPlanPricing } from '@/config/pricingConfig';
 
 export interface PaymentPlan {
   id: string;
@@ -378,6 +379,23 @@ export class UnifiedPaymentService {
    */
   private getDefaultPlans(): PaymentPlan[] {
     try {
+      // First try to get from centralized pricing config
+      const centralizedPlans = getAllActivePlans();
+      
+      if (centralizedPlans.length > 0) {
+        return centralizedPlans.map(plan => ({
+          id: plan.id,
+          name: plan.name,
+          description: plan.description,
+          price: plan.price,
+          currency: plan.currency,
+          features: plan.features,
+          duration: plan.duration,
+          isActive: plan.isActive
+        }));
+      }
+      
+      // Fallback to app config
       const configPlans = getActiveMembershipPlans();
       
       return configPlans.map(plan => ({
@@ -394,39 +412,9 @@ export class UnifiedPaymentService {
       }));
     } catch (error) {
       console.error('Error loading default plans from config:', error);
-      // Fallback to hardcoded plans if config fails
-      return [
-        {
-          id: 'free',
-          name: 'Free Plan',
-          description: 'Basic access to practice tests',
-          price: 0,
-          currency: 'INR',
-          features: ['Basic Practice Tests', 'Limited Analytics'],
-          duration: 365,
-          isActive: true
-        },
-        {
-          id: 'pro_plus',
-          name: 'Pro+ Plan',
-          description: 'Complete access to all mocks and features',
-          price: 299,
-          currency: 'INR',
-          features: ['12 months validity', 'Unlimited mock tests', 'Premium PYQs', 'Detailed Solutions', 'Priority Support', 'Advanced Analytics'],
-          duration: 365,
-          isActive: true
-        },
-        {
-          id: 'pro',
-          name: 'Pro Plan',
-          description: 'Access to 11 mock tests',
-          price: 99,
-          currency: 'INR',
-          features: ['3 months validity', '11 mock tests', 'Premium PYQs', 'Detailed Solutions', 'Performance Analytics'],
-          duration: 90,
-          isActive: true
-        }
-      ];
+      // Final fallback - return empty array to force error handling
+      console.error('All pricing sources failed, returning empty plans array');
+      return [];
     }
   }
 
