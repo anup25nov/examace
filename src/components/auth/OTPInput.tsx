@@ -177,6 +177,36 @@ const OTPInput: React.FC<OTPInputProps> = ({
 
   return (
     <div className={`flex space-x-2 justify-center ${className}`}>
+      {/* Hidden input for SMS autofill */}
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        autoComplete="one-time-code"
+        style={{
+          position: 'absolute',
+          left: '-9999px',
+          opacity: 0,
+          pointerEvents: 'none'
+        }}
+        onChange={(e) => {
+          const value = e.target.value.replace(/\D/g, '');
+          if (value.length === length) {
+            const digits = value.split('');
+            setOtp(digits);
+            onChange(digits.join(''));
+            
+            // Auto-submit after a short delay
+            setTimeout(() => {
+              const form = e.target.closest('form');
+              if (form) {
+                const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                form.dispatchEvent(submitEvent);
+              }
+            }, 300);
+          }
+        }}
+      />
       {otp.map((digit, index) => (
         <Input
           key={index}
@@ -184,14 +214,14 @@ const OTPInput: React.FC<OTPInputProps> = ({
           type="text"
           inputMode="numeric"
           pattern="[0-9]*"
-          maxLength={1}
+          maxLength={6}
           value={digit}
           onChange={(e) => handleChange(index, e.target.value)}
           onKeyDown={(e) => handleKeyDown(index, e)}
           onPaste={handlePaste}
           disabled={disabled}
           className="w-12 h-12 text-center text-lg font-semibold border-2 focus:border-primary focus:ring-2 focus:ring-primary/20"
-          autoComplete={index === 0 ? "one-time-code" : "off"}
+          autoComplete="one-time-code"
           autoFocus={index === 0}
           data-testid={`otp-input-${index}`}
           aria-label={`OTP digit ${index + 1}`}

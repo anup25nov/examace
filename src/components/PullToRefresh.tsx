@@ -24,8 +24,8 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
   const handleTouchStart = (e: TouchEvent) => {
     if (disabled || isRefreshing) return;
     
-    // Only trigger if we're at the top of the page
-    if (window.scrollY === 0) {
+    // Only trigger if we're at the top of the page or very close to it
+    if (window.scrollY <= 10) {
       startY.current = e.touches[0].clientY;
       setIsPulling(true);
     }
@@ -67,9 +67,10 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
     const container = containerRef.current;
     if (!container) return;
 
+    // Add event listeners with proper options
     container.addEventListener('touchstart', handleTouchStart, { passive: false });
     container.addEventListener('touchmove', handleTouchMove, { passive: false });
-    container.addEventListener('touchend', handleTouchEnd);
+    container.addEventListener('touchend', handleTouchEnd, { passive: true });
 
     return () => {
       container.removeEventListener('touchstart', handleTouchStart);

@@ -39,11 +39,12 @@ export const SwipeToGoBack: React.FC<SwipeToGoBackProps> = ({
       return;
     }
     
-    // Only start swipe from the left edge of the screen (first 50px for better precision)
+    // Only start swipe from the left edge of the screen (standard mobile app behavior)
     const touch = e.touches[0];
     console.log('SwipeToGoBack: Touch start', { clientX: touch.clientX, clientY: touch.clientY });
     
-    if (touch.clientX > 50) {
+    // Only trigger if touch starts within 20px of the left edge
+    if (touch.clientX > 20) {
       console.log('SwipeToGoBack: Touch too far from left edge');
       return;
     }
@@ -51,7 +52,7 @@ export const SwipeToGoBack: React.FC<SwipeToGoBackProps> = ({
     startX.current = touch.clientX;
     startY.current = touch.clientY;
     setIsSwipeActive(true);
-    console.log('SwipeToGoBack: Swipe started');
+    console.log('SwipeToGoBack: Swipe started from left edge');
     onSwipeStart?.();
   }, [disabled, isGoingBack, onSwipeStart]);
 
@@ -65,7 +66,7 @@ export const SwipeToGoBack: React.FC<SwipeToGoBackProps> = ({
     console.log('SwipeToGoBack: Touch move', { deltaX, deltaY, isHorizontal: Math.abs(deltaX) > Math.abs(deltaY) });
     
     // Only allow horizontal swipes (more horizontal than vertical movement)
-    // And only allow right swipes (going back)
+    // And only allow right swipes (going back - standard mobile behavior)
     if (Math.abs(deltaX) > Math.abs(deltaY) && deltaX > 0) {
       e.preventDefault();
       e.stopPropagation();

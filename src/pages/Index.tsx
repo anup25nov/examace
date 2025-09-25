@@ -56,19 +56,22 @@ const Index = () => {
   // Refresh function for pull-to-refresh
   const handleRefresh = async () => {
     try {
-      // Refresh user profile data
-      if (profile) {
-        // Trigger a re-fetch of profile data
-        window.location.reload();
-      }
-      
       // Refresh streak data
       await refreshStreak();
       
-      // Add any other data refresh logic here
-      console.log('Dashboard refreshed');
+      // Refresh user profile data (this will trigger a re-render with fresh data)
+      if (profile) {
+        // The useOptimizedUserProfile hook will automatically refresh when needed
+        // No need to reload the entire page
+      }
+      
+      // Force a small delay to show the refresh animation
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      console.log('Dashboard refreshed successfully');
     } catch (error) {
       console.error('Refresh failed:', error);
+      // Don't throw the error, just log it to prevent the UI from breaking
     }
   };
 
@@ -208,6 +211,19 @@ const Index = () => {
           </div>
         </div>
       </header>
+
+          {/* Daily Accolades - Show first on opening screen */}
+          {showDailyAccolades && (
+            <div className="mb-6">
+              <DailyAccolades
+                isFirstVisit={isFirstDailyVisit}
+                onClose={() => {
+                  setShowDailyAccolades(false);
+                  setIsFirstDailyVisit(false);
+                }}
+              />
+            </div>
+          )}
 
           {/* Hero Section with Streak */}
       <section className="gradient-hero text-white py-16">
@@ -515,14 +531,6 @@ const Index = () => {
         />
       )}
 
-      {/* Daily Accolades */}
-      <DailyAccolades
-        isFirstVisit={isFirstDailyVisit}
-        onClose={() => {
-          setShowDailyAccolades(false);
-          setIsFirstDailyVisit(false);
-        }}
-      />
 
       {/* Referral Code Collection removed - now handled during OTP verification for new users only */}
 

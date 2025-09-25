@@ -10,19 +10,10 @@ const MobileStatusBarHandler = () => {
           if (typeof window !== 'undefined' && (window as any).Capacitor) {
             const { StatusBar } = (window as any).Capacitor.Plugins;
             if (StatusBar) {
-              // Set status bar style to LIGHT for better visibility
-              await StatusBar.setStyle({ style: 'LIGHT' });
+              // Hide status bar completely
+              await StatusBar.hide();
               
-              // Set status bar background color to white
-              await StatusBar.setBackgroundColor({ color: '#ffffff' });
-              
-              // CRITICAL: Ensure status bar doesn't overlay webview
-              await StatusBar.setOverlaysWebView({ overlay: false });
-              
-              // Show status bar
-              await StatusBar.show();
-              
-              console.log('Status bar configured successfully');
+              console.log('Status bar hidden successfully');
             }
           }
         } catch (error) {

@@ -371,6 +371,62 @@ header, .sticky-header {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Keyboard handling styles */
+.keyboard-visible {
+  /* Ensure inputs remain visible when keyboard opens */
+  scroll-behavior: smooth;
+}
+
+.keyboard-visible .fixed.inset-0 {
+  /* Adjust modal positioning when keyboard is open */
+  padding-bottom: 0;
+}
+
+.keyboard-visible .sticky.top-0 {
+  /* Ensure sticky headers don't interfere with keyboard */
+  position: relative;
+}
+
+.keyboard-visible input,
+.keyboard-visible textarea {
+  /* Ensure inputs are properly visible */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Mobile keyboard handler */
+.mobile-keyboard-handler {
+  transition: padding-bottom 0.3s ease-in-out;
+}
+
+.mobile-keyboard-handler.keyboard-open {
+  /* Additional styles when keyboard is open */
+  scroll-behavior: smooth;
+}
+
+/* Fix input focus issues on mobile */
+input:focus,
+textarea:focus {
+  /* Prevent zoom on iOS */
+  font-size: 16px !important;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Ensure forms are properly positioned when keyboard opens */
+.keyboard-visible form {
+  padding-bottom: 20px;
+}
+
+/* Hide scrollbar while maintaining functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
+
 /* Fix modal and dialog positioning */
 .modal-content, .dialog-content {
   margin-top: env(safe-area-inset-top);

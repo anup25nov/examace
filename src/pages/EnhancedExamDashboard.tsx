@@ -511,7 +511,14 @@ const EnhancedExamDashboard = () => {
   };
 
   // Get section-specific messages for edge cases
-  const getSectionMessage = (section: string) => {
+  const getSectionMessage = (section: string): {
+    type: 'info' | 'success' | 'warning';
+    message: string;
+    icon: string;
+    actionText: string;
+    actionType: string;
+    purchaseLink?: string;
+  } | undefined => {
     const { completedCount, notAttemptedCount } = getFilterCounts(section);
     const totalCount = completedCount + notAttemptedCount;
     const currentMembership = userMembership;
@@ -542,7 +549,7 @@ const EnhancedExamDashboard = () => {
         // Check if user has premium membership
         if (!currentMembership || !currentMembership.isPremium) {
           return {
-            type: 'congratulations',
+            type: 'success',
             message: '🎉 Excellent! You\'ve completed all free mock tests! Upgrade to Premium for 50+ advanced mock tests with detailed analytics.',
             icon: '🏆',
             actionText: 'Upgrade to Premium',
@@ -551,7 +558,7 @@ const EnhancedExamDashboard = () => {
           };
         } else if (currentMembership.planType === 'monthly' || currentMembership.planType === 'yearly') {
           return {
-            type: 'congratulations',
+            type: 'success',
             message: '🚀 Outstanding! You\'ve mastered all basic mock tests! Upgrade to Pro for unlimited access to all premium features.',
             icon: '💎',
             actionText: 'Upgrade to Pro',
@@ -560,7 +567,7 @@ const EnhancedExamDashboard = () => {
           };
         } else {
           return {
-            type: 'congratulations',
+            type: 'success',
             message: '🌟 Phenomenal! You\'ve completed all available mock tests! You\'re truly mastering this exam!',
             icon: '👑',
             actionText: 'View All Tests',
@@ -570,7 +577,7 @@ const EnhancedExamDashboard = () => {
       } else if (section === 'pyq') {
         if (!currentMembership || !currentMembership.isPremium) {
           return {
-            type: 'congratulations',
+            type: 'success',
             message: '📚 Amazing! You\'ve solved all free PYQ sets! Get Premium access to 10+ years of previous year papers with solutions.',
             icon: '🎓',
             actionText: 'Upgrade to Premium',
@@ -579,7 +586,7 @@ const EnhancedExamDashboard = () => {
           };
         } else if (currentMembership.planType === 'monthly' || currentMembership.planType === 'yearly') {
           return {
-            type: 'congratulations',
+            type: 'success',
             message: '🔥 Incredible! You\'ve completed all basic PYQ sets! Upgrade to Pro for exclusive access to all years and detailed analysis.',
             icon: '💎',
             actionText: 'Upgrade to Pro',
@@ -588,7 +595,7 @@ const EnhancedExamDashboard = () => {
           };
         } else {
           return {
-            type: 'congratulations',
+            type: 'success',
             message: '🏅 Outstanding! You\'ve mastered all available PYQ sets! Your preparation is top-notch!',
             icon: '👑',
             actionText: 'View All PYQ',
@@ -665,7 +672,7 @@ const EnhancedExamDashboard = () => {
               <div className="w-10 h-10 md:w-16 md:h-16 mx-auto mb-2 md:mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
                 <Trophy className="w-5 h-5 md:w-8 md:h-8 text-white" />
               </div>
-              <p className="text-xl md:text-3xl font-bold mb-1 md:mb-2">{userStats.bestScore}%</p>
+              <p className="text-xl md:text-3xl font-bold mb-1 md:mb-2">{userStats.bestScore}</p>
               <p className="text-xs md:text-sm text-purple-100 font-medium">Best Score</p>
             </CardContent>
           </Card>
@@ -675,7 +682,7 @@ const EnhancedExamDashboard = () => {
               <div className="w-10 h-10 md:w-16 md:h-16 mx-auto mb-2 md:mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
                 <Star className="w-5 h-5 md:w-8 md:h-8 text-white" />
               </div>
-              <p className="text-xl md:text-3xl font-bold mb-1 md:mb-2">{userStats.avgScoreLast10}%</p>
+              <p className="text-xl md:text-3xl font-bold mb-1 md:mb-2">{userStats.avgScoreLast10}</p>
               <p className="text-xs md:text-sm text-orange-100 font-medium">Average Score</p>
             </CardContent>
           </Card>
@@ -735,39 +742,56 @@ const EnhancedExamDashboard = () => {
                 <Button
                   variant={testFilter === 'all' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setTestFilter('all')}
+                  onClick={() => {
+                    console.log('Test filter changed to: all');
+                    setTestFilter('all');
+                  }}
                   className="text-xs flex-1 sm:flex-none min-w-0"
                 >
                   <span className="hidden sm:inline">All Tests</span>
                   <span className="sm:hidden">All</span>
-                  <span className="ml-1">({completedCount + notAttemptedCount})</span>
+                  <span className={`ml-1 inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold ${
+                    testFilter === 'all' ? 'bg-white text-primary' : 'bg-primary text-primary-foreground'
+                  }`}>
+                    {completedCount + notAttemptedCount}
+                  </span>
                 </Button>
                 <Button
                   variant={testFilter === 'attempted' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setTestFilter('attempted')}
+                  onClick={() => {
+                    console.log('Test filter changed to: attempted');
+                    setTestFilter('attempted');
+                  }}
                   className="text-xs flex-1 sm:flex-none min-w-0"
                 >
                   <span className="hidden sm:inline">Completed</span>
                   <span className="sm:hidden">Done</span>
-                  <span className="ml-1">({completedCount})</span>
+                  <span className="ml-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-600 text-white text-xs font-bold">
+                    {completedCount}
+                  </span>
                 </Button>
                 <Button
                   variant={testFilter === 'not-attempted' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => setTestFilter('not-attempted')}
+                  onClick={() => {
+                    console.log('Test filter changed to: not-attempted');
+                    setTestFilter('not-attempted');
+                  }}
                   className="text-xs flex-1 sm:flex-none min-w-0"
                 >
                   <span className="hidden sm:inline">Not Attempted</span>
                   <span className="sm:hidden">New</span>
-                  <span className="ml-1">({notAttemptedCount})</span>
+                  <span className="ml-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-orange-600 text-white text-xs font-bold">
+                    {notAttemptedCount}
+                  </span>
                 </Button>
               </div>
             </div>
           </div>
 
           {/* PYQ Tab - First */}
-          <TabsContent value="pyq" className="space-y-6">
+          <TabsContent value="pyq" className="space-y-0">
             <YearWiseTabs
               years={pyqData}
               completedTests={completedTests}
@@ -782,7 +806,7 @@ const EnhancedExamDashboard = () => {
           </TabsContent>
 
           {/* Mock Tests Tab - Second */}
-          <TabsContent value="mock" className="space-y-6">
+          <TabsContent value="mock" className="space-y-0">
             <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-emerald-50 to-green-50">
               <CardHeader className="bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-t-lg">
                 <CardTitle className="flex items-center space-x-3">

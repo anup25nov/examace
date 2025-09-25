@@ -1,29 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  Calendar, 
-  ChevronLeft, 
-  ChevronRight,
-  FileText,
-  Clock,
-  Users,
-  Eye,
-  RotateCcw,
-  Play,
-  Crown,
-  Lock,
-  CheckCircle,
-  Star
-} from 'lucide-react';
-import { PremiumTest, premiumService } from '@/lib/premiumService';
-import { TestStartModal } from './TestStartModal';
-import { MembershipPlans } from './MembershipPlans';
-import { unifiedPaymentService } from '@/lib/unifiedPaymentService';
+import { FileText, Calendar, Clock, CheckCircle, Star, Crown, Target } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import ResponsiveScrollContainer from './ResponsiveScrollContainer';
+import { unifiedPaymentService } from '@/lib/unifiedPaymentService';
+import { MembershipPlans } from '@/components/MembershipPlans';
+import { TestStartModal } from '@/components/TestStartModal';
+import ResponsiveScrollContainer from '@/components/ResponsiveScrollContainer';
+
+interface PremiumTest {
+  id: string;
+  name: string;
+  duration: number;
+  questions: any[];
+  breakdown?: string;
+  isPremium?: boolean;
+  subjects: string[];
+  difficulty: string;
+  price?: number;
+}
 
 interface YearData {
   year: string;
@@ -41,12 +37,13 @@ interface YearWiseTabsProps {
   examId?: string;
   className?: string;
   sectionMessage?: {
-    type: string;
+    type: 'info' | 'success' | 'warning';
     message: string;
     icon: string;
     actionText: string;
     actionType: string;
-  } | null;
+    purchaseLink?: string;
+  };
   onMessageAction?: (actionType: string) => void;
 }
 
@@ -64,14 +61,16 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
   onMessageAction
 }) => {
   const { user } = useAuth();
-  const [selectedYear, setSelectedYear] = useState(''); // Default to first available year
+  const [selectedYear, setSelectedYear] = useState(''); // Default to empty for "All test"
   
-  // Set default selected year to first available year
+  // Always default to "All Years" for any test filter
+  // Only change to specific year if user explicitly selects one
   useEffect(() => {
-    if (years.length > 0 && !selectedYear) {
-      setSelectedYear(years[0].year);
-    }
-  }, [years, selectedYear]);
+    // Always reset to "All Years" when test filter changes
+    // This ensures consistent behavior: all filters default to showing all years
+    setSelectedYear('');
+  }, [testFilter]);
+  
   const [showMembershipPlans, setShowMembershipPlans] = useState(false);
   const [showTestStartModal, setShowTestStartModal] = useState(false);
   const [selectedTestForStart, setSelectedTestForStart] = useState<PremiumTest | null>(null);
@@ -82,13 +81,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
   const sortedYears = [...years].sort((a, b) => parseInt(b.year) - parseInt(a.year));
 
   // Check user membership status
-  useEffect(() => {
-    if (user) {
-      checkMembershipStatus();
-    }
-  }, [user]);
-
-  const checkMembershipStatus = async () => {
+  const checkMembershipStatus = useCallback(async () => {
     if (!user) return;
     
     try {
@@ -106,31 +99,65 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
     } catch (error) {
       console.error('Error checking membership:', error);
     }
-  };
+  }, [user, years]);
+
+  useEffect(() => {
+    if (user) {
+      checkMembershipStatus();
+    }
+  }, [user, checkMembershipStatus]);
 
   // Get papers based on selected year
-  const getPapersForSelectedYear = () => {
+  const allPapers = useMemo(() => {
     if (!selectedYear) {
-      // If no year selected, return empty array
-      return [];
+      // If no year selected (All test), return all papers from all years
+      return sortedYears.flatMap(year => year.papers);
     }
     // Return papers from selected year
     const selectedYearData = sortedYears.find(year => year.year === selectedYear);
     return selectedYearData ? selectedYearData.papers : [];
-  };
-
-  const allPapers = getPapersForSelectedYear();
+  }, [selectedYear, sortedYears]);
   
-  // Filter papers based on test filter
-  const filteredPapers = allPapers.filter(paper => {
-    const isCompleted = completedTests.has(`pyq-${paper.id}`);
+  // Filter papers based on selected year first, then test filter
+  const filteredPapers = useMemo(() => {
+    console.log('Filtering papers - selectedYear:', selectedYear, 'testFilter:', testFilter);
+    console.log('Completed tests set:', Array.from(completedTests));
     
-    if (testFilter === 'attempted') return isCompleted;
-    if (testFilter === 'not-attempted') return !isCompleted;
-    return true; // Show all for 'all' filter
-  });
+    // First filter by year
+    let yearFilteredPapers = allPapers;
+    if (selectedYear !== '' && selectedYear !== 'all') {
+      yearFilteredPapers = allPapers.filter(paper => {
+        return sortedYears.some(yearData => 
+          yearData.year === selectedYear && 
+          yearData.papers.some(p => p.id === paper.id)
+        );
+      });
+      console.log(`Papers after year filter (${selectedYear}):`, yearFilteredPapers.length);
+    } else {
+      console.log('Showing all papers (no year filter)');
+    }
+    
+    // Then filter by test status
+    const finalPapers = yearFilteredPapers.filter(paper => {
+      const testKey = `pyq-${paper.id}`;
+      const isCompleted = completedTests.has(testKey);
+      
+      console.log(`Paper ${paper.id}: key="${testKey}", isCompleted=${isCompleted}`);
+      
+      if (testFilter === 'attempted') return isCompleted;
+      if (testFilter === 'not-attempted') return !isCompleted;
+      return true; // Show all for 'all' filter
+    });
+    
+    console.log('Final filtered papers count:', finalPapers.length);
+    return finalPapers;
+  }, [allPapers, selectedYear, sortedYears, completedTests, testFilter]);
   
   const handleYearChange = (year: string) => {
+    console.log('Year changed to:', year);
+    console.log('Current testFilter:', testFilter);
+    console.log('Available years:', sortedYears.map(y => y.year));
+    console.log('Total papers before filter:', allPapers.length);
     setSelectedYear(year);
   };
 
@@ -176,8 +203,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
     checkMembershipStatus();
   };
 
-
-  const getYearStats = (year: string) => {
+  const getYearStats = useCallback((year: string) => {
     const yearData = sortedYears.find(y => y.year === year);
     if (!yearData) return { total: 0, completed: 0 };
     
@@ -187,143 +213,129 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
     ).length;
 
     return { total, completed };
-  };
+  }, [sortedYears, completedTests]);
 
   return (
-    <div className={`space-y-6 ${className}`}>
-      {/* Year Tabs */}
-      <div className="flex flex-wrap gap-2 justify-center">
-        {/* Individual Year Options */}
-        {sortedYears.map((yearData) => {
-          const stats = getYearStats(yearData.year);
-          const isSelected = selectedYear === yearData.year;
-          
-          // Hide year if filter is 'attempted' and no completed tests
-          if (testFilter === 'attempted' && stats.completed === 0) {
-            return null;
-          }
-          
-          return (
-            <Button
-              key={yearData.year}
-              variant={isSelected ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleYearChange(yearData.year)}
-              className={`relative transition-all duration-200 ${
-                isSelected 
-                  ? 'bg-primary text-primary-foreground shadow-lg' 
-                  : 'hover:bg-muted'
-              }`}
-            >
-              <div className="flex items-center space-x-2">
-                <Calendar className="w-4 h-4" />
-                <span className="font-medium">{yearData.year}</span>
-                <Badge 
-                  variant="secondary" 
-                  className={`text-xs ${
-                    isSelected 
-                      ? 'bg-primary-foreground/20 text-primary-foreground' 
-                      : 'bg-muted-foreground/20'
-                  }`}
-                >
-                  {stats.completed}/{stats.total}
-                </Badge>
-              </div>
-            </Button>
-          );
-        })}
-      </div>
-
-      {/* Section Message */}
-      {sectionMessage && (
-        <div className={`p-4 rounded-lg border ${
-          sectionMessage.type === 'info' ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200' :
-          sectionMessage.type === 'success' ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200' :
-          'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200'
-        }`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="text-2xl">{sectionMessage.icon}</div>
-              <p className={`font-medium ${
-                sectionMessage.type === 'info' ? 'text-blue-700' :
-                sectionMessage.type === 'success' ? 'text-green-700' :
-                'text-yellow-700'
-              }`}>
-                {sectionMessage.message}
-              </p>
-            </div>
-            <Button
-              onClick={() => onMessageAction?.(sectionMessage.actionType)}
-              className={`${
-                sectionMessage.type === 'info' ? 'bg-blue-600 hover:bg-blue-700' :
-                sectionMessage.type === 'success' ? 'bg-green-600 hover:bg-green-700' :
-                'bg-yellow-600 hover:bg-yellow-700'
-              } text-white`}
-              size="sm"
-            >
-              {sectionMessage.actionText}
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Selected Year Content */}
-      {(selectedYear === 'all' || sortedYears.find(y => y.year === selectedYear)) && (
-        <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-orange-50 to-red-50">
-          <CardHeader className="pb-4 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-t-lg">
-            <CardTitle className="flex items-center justify-between">
+    <div className={`space-y-0 ${className}`}>
+      {/* PYQ Cards Container */}
+      <Card className="gradient-card border-0 shadow-lg h-[420px] flex flex-col">
+        <CardHeader className="pb-4 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-t-lg">
+          <CardTitle className="flex flex-col space-y-4">
+            {/* Main Header - Top */}
+            <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-white/20 rounded-lg">
                   <FileText className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold">SSC CGL {selectedYear === 'all' ? 'All Years' : selectedYear}</h3>
+                  <h3 className="text-xl font-bold">SSC CGL {selectedYear === '' ? 'All Years' : selectedYear}</h3>
                   <p className="text-sm text-orange-100">
-                    {selectedYear === 'all' 
+                    {selectedYear === ''
                       ? `${sortedYears.reduce((total, yearData) => total + yearData.papers.length, 0)} Previous Year Papers`
                       : `${sortedYears.find(y => y.year === selectedYear)?.papers.length || 0} Previous Year Papers`
                     }
                   </p>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-white">
-                  {selectedYear === 'all' 
-                    ? sortedYears.reduce((total, yearData) => total + getYearStats(yearData.year).completed, 0)
-                    : getYearStats(selectedYear).completed
-                  }
+              
+              {/* Year Filter Tabs - Same line as header */}
+              <div className="flex flex-wrap gap-2">
+              {/* All Years Option */}
+              <Button
+                variant={selectedYear === '' ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleYearChange('')}
+                className={`transition-all duration-200 ${
+                  selectedYear === ''
+                    ? 'bg-white/20 text-white border-white/30' 
+                    : 'bg-white/10 text-white/80 border-white/20 hover:bg-white/20'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Calendar className="w-4 h-4" />
+                  <span className="font-medium">All Years</span>
+                  <div className="flex items-center space-x-1">
+                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/20 text-white text-xs font-bold">
+                      {sortedYears.reduce((total, yearData) => total + yearData.papers.length, 0)}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-sm text-orange-100">Completed</div>
+              </Button>
+              
+              {/* Individual Year Options */}
+              {sortedYears
+                .filter((yearData) => {
+                  const stats = getYearStats(yearData.year);
+                  // Show year if not in 'attempted' filter or if it has completed tests
+                  return testFilter !== 'attempted' || stats.completed > 0;
+                })
+                .map((yearData) => {
+                  const stats = getYearStats(yearData.year);
+                  const isSelected = selectedYear === yearData.year;
+                  
+                  return (
+                    <Button
+                      key={yearData.year}
+                      variant={isSelected ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handleYearChange(yearData.year)}
+                      className={`transition-all duration-200 ${
+                        isSelected 
+                          ? 'bg-white/20 text-white border-white/30' 
+                          : 'bg-white/10 text-white/80 border-white/20 hover:bg-white/20'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="w-4 h-4" />
+                        <span className="font-medium">{yearData.year}</span>
+                        <div className="flex items-center space-x-1">
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/20 text-white text-xs font-bold">
+                            {stats.completed}
+                          </span>
+                          <span className="text-white/80">/</span>
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/10 text-white/80 text-xs font-bold">
+                            {stats.total}
+                          </span>
+                        </div>
+                      </div>
+                    </Button>
+                  );
+                })}
               </div>
-            </CardTitle>
-          </CardHeader>
+            </div>
+          </CardTitle>
+        </CardHeader>
 
-          <CardContent className="pt-6">
-            {/* Papers Grid */}
-            <ResponsiveScrollContainer
-              cardCount={filteredPapers.length}
-              className="mb-6"
-            >
-              {filteredPapers.map((paper) => {
-                const isCompleted = completedTests.has(`pyq-${paper.id}`);
-                const testScore = testScores.get(`pyq-${paper.id}`);
-                
-                // Debug logging (simplified)
-                if (isCompleted && !testScore) {
-                  console.log(`⚠️ [YearWiseTabs] Paper ${paper.id} is completed but no score found`);
-                }
+        <CardContent className="p-4 flex-1 overflow-hidden">
+          {/* Papers Grid */}
+          <ResponsiveScrollContainer
+            cardCount={filteredPapers.length}
+            className="mb-6"
+          >
+            {filteredPapers.map((paper) => {
+              const isCompleted = completedTests.has(`pyq-${paper.id}`);
+              const testScore = testScores.get(`pyq-${paper.id}`);
+              
+              // Debug logging (simplified)
+              if (isCompleted && !testScore) {
+                console.log(`⚠️ [YearWiseTabs] Paper ${paper.id} is completed but no score found`);
+              }
 
-                return (
-                  <div key={paper.id} className="w-full">
-                    <Card
-          className={`relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.03] hover:border-primary/40 h-72 group ${
-            isCompleted ? 'border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg' : 'border-border bg-gradient-to-br from-white to-slate-50'
-          } ${paper.isPremium && !hasAccess.get(paper.id) ? 'cursor-pointer' : ''}`}
-          onClick={() => handleCardClick(paper)}
-        >
-                    <CardContent className="p-4 h-full flex flex-col">
+              return (
+                <div key={paper.id} className="w-full">
+                  <Card
+                    className={`relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.03] hover:border-primary/40 h-72 group ${
+                      isCompleted 
+                        ? 'border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg' 
+                        : paper.isPremium 
+                          ? 'border-gradient-to-r from-yellow-200 to-orange-200 bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 shadow-lg ring-2 ring-yellow-200/50' 
+                          : 'border-border bg-gradient-to-br from-white to-slate-50'
+                    } ${paper.isPremium && !hasAccess.get(paper.id) ? 'cursor-pointer' : ''}`}
+                    onClick={() => handleCardClick(paper)}
+                  >
+                    <CardContent className="p-3 sm:p-4 h-full flex flex-col">
                       {/* Header */}
-                      <div className="mb-4 flex-1">
+                      <div className="mb-2 sm:mb-4 flex-1">
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="font-semibold text-foreground text-sm line-clamp-2 flex-1 group-hover:text-primary transition-colors duration-300">
                             {paper.name}
@@ -331,7 +343,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                           <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
                             <Badge className={`text-xs px-2 py-1 ${
                               paper.isPremium 
-                                ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white animate-pulse' 
+                                ? 'bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-white animate-pulse shadow-lg border-2 border-yellow-300' 
                                 : 'bg-gradient-to-r from-green-400 to-emerald-500 text-white animate-pulse border-2 border-green-300 shadow-lg'
                             }`}>
                               {paper.isPremium ? (
@@ -352,171 +364,122 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                             )}
                           </div>
                         </div>
+                      </div>
 
-                        {/* Paper Details */}
-                        <div className="space-y-2 mb-3">
-                          <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                            {/* <div className="flex items-center space-x-1">
-                              <Calendar className="w-3 h-3" />
-                              <span>{(paper as any).metadata?.date ? new Date((paper as any).metadata.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : (paper as any).date || 'Date TBDs  '}</span>
-                            </div> */}
-                            <div className="flex items-center space-x-1">
-                              <Clock className="w-3 h-3" />
-                              <span>{paper.duration} min</span>
+                      {/* Score Display */}
+                      {isCompleted && testScore ? (
+                        <div className="mb-2 sm:mb-4 p-2 sm:p-3 bg-green-50 rounded-lg border border-green-200">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                              <Star className="w-4 h-4 text-green-600" />
+                              <span className="text-sm font-medium text-green-800">Score</span>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-green-800">{testScore.score}</div>
+                              <div className="text-xs text-green-600">Rank: #{testScore.rank}</div>
                             </div>
                           </div>
-                          
-                          {/* Shift Information */}
-                          {(paper as any).metadata?.shift && (
-                            <div className="flex items-center space-x-1">
-                              <Badge variant="outline" className="text-xs">
-                                Shift {(paper as any).metadata.shift}
-                              </Badge>
-                            </div>
-                          )}
-                          
-                          <div className="flex items-center space-x-1">
-                            <FileText className="w-3 h-3 text-blue-500" />
-                            <span className="text-xs text-muted-foreground">{paper.questions} questions</span>
+                        </div>
+                      ) : (
+                        <div className="mb-2 sm:mb-4 p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="flex items-center space-x-2">
+                            <Target className="w-4 h-4 text-gray-600" />
+                            <span className="text-sm text-gray-600">Complete to see score & rank</span>
                           </div>
-                          
-                          {paper.isPremium && !hasAccess.get(paper.id) && (
-                            <div className="text-xs text-orange-600 font-medium text-center bg-gradient-to-r from-orange-50 to-yellow-50 p-2 rounded border border-orange-200 animate-pulse">
-                              👆 Click to unlock Premium content
-                            </div>
-                          )}
+                        </div>
+                      )}
+
+                      {/* Test Details */}
+                      <div className="mb-2 sm:mb-4 space-y-1 sm:space-y-2">
+                        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                          <Clock className="w-4 h-4" />
+                          <span>180 min</span>
+                        </div>
+                        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                          <FileText className="w-4 h-4" />
+                          <span>100 questions</span>
                         </div>
                       </div>
-                      
-                      {/* Score Display */}
-                      <div className="mb-4 min-h-[60px] flex items-center justify-center">
-                        {testScore && isCompleted ? (
-                          <div className="w-full p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="text-center">
-                                <div className="text-lg font-bold text-blue-600">{testScore.score}</div>
-                                <div className="text-xs text-blue-500 font-medium">Score</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-lg font-bold text-purple-600">#{testScore.rank}</div>
-                                <div className="text-xs text-purple-500 font-medium">Rank</div>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <div className="text-center text-muted-foreground">
-                              <div className="text-xs">Complete to see</div>
-                              <div className="text-xs">score & rank</div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Action Buttons */}
-                      <div className="flex flex-col space-y-2 mt-auto">
+
+                      {/* Action Button */}
+                      <div className="mt-auto">
                         {isCompleted ? (
-                          <div className="flex space-x-2">
+                          <div className="flex flex-col sm:flex-row gap-2">
                             <Button
-                              size="sm"
-                              variant="outline"
-                              className="flex-1 h-8 text-xs hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 hover:scale-105 hover:shadow-md"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onViewSolutions(paper.id);
                               }}
+                              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm"
+                              size="sm"
                             >
-                              <Eye className="w-3 h-3 mr-1" />
-                              Solutions
+                              <span className="hidden sm:inline">View Solutions</span>
+                              <span className="sm:hidden">View</span>
                             </Button>
                             <Button
-                              size="sm"
-                              variant="default"
-                              className="flex-1 h-8 text-xs bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105 hover:shadow-md"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onRetry(paper.id);
                               }}
+                              variant="outline"
+                              size="sm"
+                              className="flex-1 text-xs sm:text-sm"
                             >
-                              <RotateCcw className="w-3 h-3 mr-1" />
                               Retry
                             </Button>
                           </div>
                         ) : (
                           <Button
-                            size="sm"
-                            variant="default"
-                            className="w-full h-8 text-xs bg-primary hover:bg-primary/90 transition-all duration-300 hover:scale-105 hover:shadow-md"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleStartTest(paper);
                             }}
-                            disabled={paper.isPremium && !hasAccess.get(paper.id)}
+                            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 text-xs sm:text-sm"
+                            size="sm"
                           >
-                            {paper.isPremium && !hasAccess.get(paper.id) ? (
-                              <>
-                                <Lock className="w-3 h-3 mr-1" />
-                                Unlock Premium
-                              </>
-                            ) : (
-                              <>
-                                <Play className="w-3 h-3 mr-1" />
-                                Start Test
-                              </>
-                            )}
+                            <span className="hidden sm:inline">Start Test</span>
+                            <span className="sm:hidden">Start</span>
                           </Button>
                         )}
                       </div>
-
-                      {/* Premium Overlay */}
-                      {paper.isPremium && !hasAccess.get(paper.id) && (
-                        <div className="absolute inset-0 bg-gradient-to-br from-black/30 via-yellow-500/20 to-orange-500/30 backdrop-blur-sm rounded-lg flex items-center justify-center">
-                          <div className="text-center text-white">
-                            <div className="w-12 h-12 mx-auto mb-2 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center animate-pulse">
-                              <Crown className="w-6 h-6 text-white" />
-                            </div>
-                            <p className="text-sm font-bold mb-1">Premium Content</p>
-                            <p className="text-xs opacity-90">Click to unlock</p>
-                            <div className="mt-1 flex items-center justify-center space-x-1">
-                              <Star className="w-2 h-2 text-yellow-400" />
-                              <Star className="w-2 h-2 text-yellow-400" />
-                              <Star className="w-2 h-2 text-yellow-400" />
-                            </div>
-                          </div>
-                        </div>
-                      )}
                     </CardContent>
-                    </Card>
-                  </div>
-                );
-              })}
-            </ResponsiveScrollContainer>
-
-            {/* Scroller - No pagination needed */}
-          </CardContent>
-        </Card>
-      )}
+                  </Card>
+                </div>
+              );
+            })}
+          </ResponsiveScrollContainer>
+        </CardContent>
+      </Card>
 
       {/* Membership Plans Modal */}
       {showMembershipPlans && (
         <MembershipPlans
           onSelectPlan={handlePlanSelection}
           onClose={() => setShowMembershipPlans(false)}
-          currentPlan={userMembership?.plan_id}
         />
       )}
 
       {/* Test Start Modal */}
-      {selectedTestForStart && (
+      {showTestStartModal && selectedTestForStart && (
         <TestStartModal
           isOpen={showTestStartModal}
-          onClose={() => setShowTestStartModal(false)}
-          onStart={handleStartWithLanguage}
-          test={selectedTestForStart}
+          test={{
+            name: selectedTestForStart.name,
+            duration: selectedTestForStart.duration,
+            questions: selectedTestForStart.questions.length,
+            subjects: selectedTestForStart.subjects || ['General'],
+            difficulty: selectedTestForStart.difficulty || 'Medium',
+            isPremium: selectedTestForStart.isPremium || false,
+            price: selectedTestForStart.price
+          }}
           testType="pyq"
           examId={examId}
+          onStart={handleStartWithLanguage}
+          onClose={() => setShowTestStartModal(false)}
         />
       )}
     </div>
   );
 };
+
+export default YearWiseTabs;

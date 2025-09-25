@@ -7,6 +7,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import MobileBackButtonHandler from "@/components/MobileBackButtonHandler";
 import MobileAppStateManager from "@/components/MobileAppStateManager";
 import MobileStatusBarHandler from "@/components/MobileStatusBarHandler";
+import MobileKeyboardHandler from "@/components/MobileKeyboardHandler";
 import PullToRefresh from "@/components/PullToRefresh";
 import SwipeToGoBack from "@/components/SwipeToGoBack";
 import Index from "./pages/Index";
@@ -52,6 +53,7 @@ const App = () => {
           <MobileBackButtonHandler />
           <MobileAppStateManager />
           <MobileStatusBarHandler />
+          <MobileKeyboardHandler>
           <SwipeToGoBack>
             <Routes>
             <Route path="/auth" element={<AuthWrapper />} />
@@ -128,6 +130,7 @@ const App = () => {
             } />
             </Routes>
           </SwipeToGoBack>
+          </MobileKeyboardHandler>
         </BrowserRouter>
         {/* <DebugInfo /> */}
         <GlobalMembershipModal />

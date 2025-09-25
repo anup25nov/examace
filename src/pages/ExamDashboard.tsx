@@ -781,7 +781,7 @@ const ExamDashboard = () => {
               <div className="w-10 h-10 md:w-16 md:h-16 mx-auto mb-2 md:mb-4 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">
                 <Trophy className="w-5 h-5 md:w-8 md:h-8 text-white" />
               </div>
-              <p className="text-xl md:text-3xl font-bold text-foreground mb-1 md:mb-2">{userStats.bestScore}%</p>
+              <p className="text-xl md:text-3xl font-bold text-foreground mb-1 md:mb-2">{userStats.bestScore}</p>
               <p className="text-xs md:text-sm text-muted-foreground font-medium">Best</p>
             </CardContent>
           </Card>
@@ -901,7 +901,9 @@ const ExamDashboard = () => {
               >
                 <span className="hidden sm:inline">All Tests</span>
                 <span className="sm:hidden">All</span>
-                <span className="ml-1">({availableTests.mock.length + availableTests.pyq.reduce((sum, year) => sum + year.papers.length, 0)})</span>
+                <span className="ml-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                  {availableTests.mock.length + availableTests.pyq.reduce((sum, year) => sum + year.papers.length, 0)}
+                </span>
               </Button>
               <Button
                 variant={testFilter === 'attempted' ? 'default' : 'outline'}
@@ -911,7 +913,9 @@ const ExamDashboard = () => {
               >
                 <span className="hidden sm:inline">Completed</span>
                 <span className="sm:hidden">Done</span>
-                <span className="ml-1">({completedCount})</span>
+                <span className="ml-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-600 text-white text-xs font-bold">
+                  {completedCount}
+                </span>
               </Button>
               <Button
                 variant={testFilter === 'not-attempted' ? 'default' : 'outline'}
@@ -921,7 +925,9 @@ const ExamDashboard = () => {
               >
                 <span className="hidden sm:inline">Not Attempted</span>
                 <span className="sm:hidden">New</span>
-                <span className="ml-1">({notAttemptedCount})</span>
+                <span className="ml-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-orange-600 text-white text-xs font-bold">
+                  {notAttemptedCount}
+                </span>
               </Button>
             </div>
           </div>

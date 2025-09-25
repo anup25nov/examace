@@ -143,9 +143,9 @@ class ComprehensiveStatsService {
 
     const totalTests = testAttempts.length;
     const scores = testAttempts.map(attempt => attempt.score);
-    const bestScore = Math.max(...scores);
+    const bestScore = scores.length > 0 ? Math.max(...scores) : 0;
     const totalScore = scores.reduce((sum, score) => sum + score, 0);
-    const averageScore = totalScore / totalTests;
+    const averageScore = totalTests > 0 ? totalScore / totalTests : 0;
 
     // Calculate last 10 average
     const last10Attempts = sortedAttempts.slice(0, 10);

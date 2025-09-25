@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, CheckCircle, Play, RotateCcw, BookOpen } from 'lucide-react';
-import { ResponsiveScrollContainer } from '@/components/ResponsiveScrollContainer';
+import { Star, CheckCircle, Play, RotateCcw, BookOpen, Clock, Target } from 'lucide-react';
+import ResponsiveScrollContainer from '@/components/ResponsiveScrollContainer';
 
 interface MockTestSelectorProps {
   mockTests: any[];
@@ -37,24 +37,28 @@ export const MockTestSelector: React.FC<MockTestSelectorProps> = ({
   const stats = getCompletionStats();
 
   return (
-    <div className="space-y-4">
-      {/* Mock Test Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-        <div className="flex items-center space-x-3">
-          <Star className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold text-foreground">Mock Tests</h3>
-        </div>
-        <div className="flex justify-center sm:justify-end">
-          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-            <CheckCircle className="w-3 h-3 mr-1" />
-            {stats.completed}/{stats.total} Completed
-          </Badge>
-        </div>
-      </div>
-
+    <div className="space-y-0">
       {/* Mock Test Cards Container */}
-      <Card className="gradient-card border-0 shadow-lg">
-        <CardContent className="p-4">
+      <Card className="gradient-card border-0 shadow-lg h-[420px] flex flex-col">
+        <CardHeader className="pb-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-t-lg">
+          <CardTitle className="flex flex-col space-y-4">
+            {/* Main Header - Top */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <Star className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Mock Tests</h3>
+                  <p className="text-sm text-blue-100">
+                    {stats.total} Practice Tests Available
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 flex-1 overflow-hidden">
           {/* Test Cards Grid with Scroller */}
           <ResponsiveScrollContainer cardCount={mockTests.length}>
             {mockTests.map((test) => {
@@ -64,21 +68,54 @@ export const MockTestSelector: React.FC<MockTestSelectorProps> = ({
               return (
                 <Card 
                   key={test.id} 
-                  className={`relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${
-                    isCompleted ? 'border-green-200 bg-green-50/50 shadow-md' : 'border-border hover:border-primary/20'
+                  className={`relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.05] hover:border-primary/40 h-72 group ${
+                    isCompleted 
+                      ? 'border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg' 
+                      : test.isPremium
+                        ? 'border-2 border-yellow-400 bg-white shadow-xl ring-4 ring-yellow-200/60 hover:ring-yellow-300/80'
+                        : 'border-border bg-gradient-to-br from-white to-slate-50 shadow-lg hover:shadow-xl'
                   }`}
                 >
-                  <CardContent className="p-4 h-full flex flex-col">
+                  <CardContent className="p-3 sm:p-4 h-full flex flex-col relative">
+                    {/* Premium glow effect */}
+                    {test.isPremium && (
+                      <div className="absolute inset-0 bg-gradient-to-br from-yellow-100/30 to-orange-100/20 rounded-lg opacity-50"></div>
+                    )}
+                    
                     {/* Header */}
-                    <div className="mb-4 flex-1">
+                    <div className="mb-2 sm:mb-4 flex-1 relative z-10">
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold text-foreground text-sm sm:text-base line-clamp-2 flex-1">
-                          {test.name}
-                        </h3>
+                        <div className="flex items-center space-x-2 flex-1">
+                          {test.isPremium && (
+                            <div className="flex-shrink-0 p-1.5 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full shadow-lg">
+                              <span className="text-white text-sm">👑</span>
+                            </div>
+                          )}
+                          <h3 className={`font-bold text-sm line-clamp-2 flex-1 group-hover:text-primary transition-colors duration-300 ${
+                            test.isPremium ? 'text-orange-900' : 'text-foreground'
+                          }`}>
+                            {test.name}
+                          </h3>
+                        </div>
                         <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
-                          <span className="text-xs bg-gradient-to-r from-green-400 to-emerald-500 text-white px-3 py-1 rounded-full font-bold shadow-md animate-pulse border-2 border-green-300 shadow-lg">
-                            FREE
-                          </span>
+                          <Badge className={`text-xs px-3 py-1.5 font-bold shadow-lg ${
+                            test.isPremium 
+                              ? 'bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-white animate-pulse border-2 border-yellow-300 hover:scale-105 transition-transform' 
+                              : 'bg-gradient-to-r from-green-400 to-emerald-500 text-white border-2 border-green-300'
+                          }`}>
+                            {test.isPremium ? (
+                              <div className="flex items-center space-x-1">
+                                <span className="text-sm">👑</span>
+                                <span>PREMIUM</span>
+                                <span className="text-xs">✨</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center space-x-1">
+                                <span className="text-sm">⭐</span>
+                                <span>FREE</span>
+                              </div>
+                            )}
+                          </Badge>
                           {isCompleted && (
                             <div className="flex items-center space-x-1">
                               <CheckCircle className="w-4 h-4 text-green-500" />
@@ -90,69 +127,88 @@ export const MockTestSelector: React.FC<MockTestSelectorProps> = ({
                     </div>
 
                     {/* Score Display */}
-                    <div className="mb-4 min-h-[80px] flex items-center justify-center">
-                      {testScore && isCompleted ? (
-                        <div className="w-full p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="text-center">
-                              <div className="text-xl font-bold text-blue-600">{testScore.score}</div>
-                              <div className="text-sm text-blue-500 font-medium">Score</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-xl font-bold text-purple-600">#{testScore.rank}</div>
-                              <div className="text-sm text-purple-500 font-medium">Rank</div>
-                            </div>
+                    {testScore && isCompleted ? (
+                      <div className="mb-2 sm:mb-4 p-2 sm:p-3 bg-green-50 rounded-lg border border-green-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-2">
+                            <Star className="w-4 h-4 text-green-600" />
+                            <span className="text-sm font-medium text-green-800">Score</span>
                           </div>
-                          {testScore.totalParticipants > 0 && (
-                            <div className="text-center mt-3">
-                              <span className="text-sm text-muted-foreground">
-                                out of {testScore.totalParticipants} participants
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <div className="text-center text-muted-foreground">
-                            <div className="text-sm">Complete test to see</div>
-                            <div className="text-xs">your score & rank</div>
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-green-800">{testScore.score}</div>
+                            <div className="text-xs text-green-600">Rank: #{testScore.rank}</div>
                           </div>
                         </div>
-                      )}
+                      </div>
+                    ) : (
+                      <div className="mb-2 sm:mb-4 p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex items-center space-x-2">
+                          <Target className="w-4 h-4 text-gray-600" />
+                          <span className="text-sm text-gray-600">Complete to see score & rank</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Test Details */}
+                    <div className="mb-2 sm:mb-4 space-y-1 sm:space-y-2">
+                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                        <Clock className="w-4 h-4" />
+                        <span>{test.duration} min</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                        <BookOpen className="w-4 h-4" />
+                        <span>{test.questions.length} questions</span>
+                      </div>
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex flex-col space-y-3 mt-auto">
+                    <div className="mt-auto relative z-10">
                       {isCompleted ? (
-                        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <Button
                             size="sm"
                             variant="outline"
-                            className="flex-1 h-10 text-sm hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                            className="flex-1 text-xs sm:text-sm bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border-blue-300 hover:border-blue-400 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-105"
                             onClick={() => onViewSolutions(test.id)}
                           >
-                            <BookOpen className="w-4 h-4 mr-2" />
-                            View Solutions
+                            <BookOpen className="w-4 h-4 mr-1 sm:mr-2 text-blue-600" />
+                            <span className="hidden sm:inline">View Solutions</span>
+                            <span className="sm:hidden">View</span>
                           </Button>
                           <Button
                             size="sm"
                             variant="default"
-                            className="flex-1 h-10 text-sm bg-primary hover:bg-primary/90 transition-colors"
+                            className="flex-1 text-xs sm:text-sm bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
                             onClick={() => onRetryTest(test.id)}
                           >
-                            <RotateCcw className="w-4 h-4 mr-2" />
+                            <RotateCcw className="w-4 h-4 mr-1 sm:mr-2" />
                             Retry
                           </Button>
                         </div>
                       ) : (
                         <Button
                           size="sm"
-                          variant="default"
-                          className="w-full h-10 text-sm bg-primary hover:bg-primary/90 transition-colors"
+                          className={`w-full text-sm font-bold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 ${
+                            test.isPremium 
+                              ? 'bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 hover:from-yellow-500 hover:via-orange-600 hover:to-red-600 text-white border-2 border-yellow-300 animate-pulse' 
+                              : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
+                          }`}
                           onClick={() => onTestSelect(test.id)}
                         >
                           <Play className="w-4 h-4 mr-2" />
-                          Start Test
+                          {test.isPremium ? (
+                            <div className="flex items-center space-x-1">
+                              <span className="hidden sm:inline">🚀 Start Premium Test</span>
+                              <span className="sm:hidden">🚀 Start Premium</span>
+                              <span>⭐</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center space-x-1">
+                              <span className="hidden sm:inline">Start Practice Test</span>
+                              <span className="sm:hidden">Start Test</span>
+                              <span>🎯</span>
+                            </div>
+                          )}
                         </Button>
                       )}
                     </div>
