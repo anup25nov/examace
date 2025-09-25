@@ -12,7 +12,7 @@ interface SwipeToGoBackProps {
 
 export const SwipeToGoBack: React.FC<SwipeToGoBackProps> = ({
   children,
-  threshold = 80,
+  threshold = 30,
   disabled = false,
   onSwipeStart,
   onSwipeEnd
@@ -34,15 +34,24 @@ export const SwipeToGoBack: React.FC<SwipeToGoBackProps> = ({
   console.log('SwipeToGoBack: Current path:', location.pathname, 'Can go back:', canGoBack, 'History length:', window.history.length);
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
-    if (disabled || isGoingBack || !canGoBack) return;
+    if (disabled || isGoingBack || !canGoBack) {
+      console.log('SwipeToGoBack: Touch start blocked', { disabled, isGoingBack, canGoBack });
+      return;
+    }
     
-    // Only start swipe from the left edge of the screen (first 50px)
+    // Only start swipe from the left edge of the screen (first 100px for better mobile experience)
     const touch = e.touches[0];
-    if (touch.clientX > 50) return;
+    console.log('SwipeToGoBack: Touch start', { clientX: touch.clientX, clientY: touch.clientY });
+    
+    if (touch.clientX > 100) {
+      console.log('SwipeToGoBack: Touch too far from left edge');
+      return;
+    }
     
     startX.current = touch.clientX;
     startY.current = touch.clientY;
     setIsSwipeActive(true);
+    console.log('SwipeToGoBack: Swipe started');
     onSwipeStart?.();
   }, [disabled, isGoingBack, canGoBack, onSwipeStart]);
 
@@ -53,6 +62,8 @@ export const SwipeToGoBack: React.FC<SwipeToGoBackProps> = ({
     const deltaX = touch.clientX - startX.current;
     const deltaY = touch.clientY - startY.current;
     
+    console.log('SwipeToGoBack: Touch move', { deltaX, deltaY, isHorizontal: Math.abs(deltaX) > Math.abs(deltaY) });
+    
     // Only allow horizontal swipes (more horizontal than vertical movement)
     // And only allow right swipes (going back)
     if (Math.abs(deltaX) > Math.abs(deltaY) && deltaX > 0) {
@@ -60,8 +71,10 @@ export const SwipeToGoBack: React.FC<SwipeToGoBackProps> = ({
       e.stopPropagation();
       currentX.current = touch.clientX;
       setSwipeDistance(Math.min(deltaX, threshold * 2));
+      console.log('SwipeToGoBack: Swipe distance updated', Math.min(deltaX, threshold * 2));
     } else if (Math.abs(deltaY) > Math.abs(deltaX)) {
       // If it's more vertical than horizontal, cancel the swipe
+      console.log('SwipeToGoBack: Swipe cancelled - too vertical');
       setIsSwipeActive(false);
       setSwipeDistance(0);
     }
