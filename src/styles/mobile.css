@@ -42,6 +42,27 @@ button, a, [role="button"] {
   justify-content: center;
 }
 
+/* Enhanced touch targets for test cards */
+.test-card-button {
+  min-height: 48px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Better card interactions on mobile */
+.test-card {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Improved badge spacing on mobile */
+.mobile-badge {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Prevent pull-to-refresh on mobile browsers */
 body {
   overscroll-behavior-y: contain;

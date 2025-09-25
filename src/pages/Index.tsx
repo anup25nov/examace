@@ -212,18 +212,6 @@ const Index = () => {
         </div>
       </header>
 
-          {/* Daily Accolades - Show first on opening screen */}
-          {showDailyAccolades && (
-            <div className="mb-6">
-              <DailyAccolades
-                isFirstVisit={isFirstDailyVisit}
-                onClose={() => {
-                  setShowDailyAccolades(false);
-                  setIsFirstDailyVisit(false);
-                }}
-              />
-            </div>
-          )}
 
           {/* Hero Section with Streak */}
       <section className="gradient-hero text-white py-16">
@@ -536,6 +524,17 @@ const Index = () => {
 
       <Footer />
       </div>
+      
+      {/* Daily Accolades - Fixed overlay, centered on screen */}
+      {showDailyAccolades && (
+        <DailyAccolades
+          isFirstVisit={isFirstDailyVisit}
+          onClose={() => {
+            setShowDailyAccolades(false);
+            setIsFirstDailyVisit(false);
+          }}
+        />
+      )}
     </PullToRefresh>
   );
 };

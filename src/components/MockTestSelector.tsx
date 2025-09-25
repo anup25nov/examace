@@ -68,7 +68,7 @@ export const MockTestSelector: React.FC<MockTestSelectorProps> = ({
               return (
                 <Card 
                   key={test.id} 
-                  className={`relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.05] hover:border-primary/40 h-72 group ${
+                  className={`test-card relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.05] hover:border-primary/40 h-72 group ${
                     isCompleted 
                       ? 'border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg' 
                       : test.isPremium
@@ -84,8 +84,8 @@ export const MockTestSelector: React.FC<MockTestSelectorProps> = ({
                     
                     {/* Header */}
                     <div className="mb-2 sm:mb-4 flex-1 relative z-10">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2 flex-1">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-2">
+                        <div className="flex items-start sm:items-center space-x-2 flex-1">
                           {test.isPremium && (
                             <div className="flex-shrink-0 p-1.5 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full shadow-lg">
                               <span className="text-white text-sm">👑</span>
@@ -97,29 +97,30 @@ export const MockTestSelector: React.FC<MockTestSelectorProps> = ({
                             {test.name}
                           </h3>
                         </div>
-                        <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
-                          <Badge className={`text-xs px-3 py-1.5 font-bold shadow-lg ${
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-2 flex-shrink-0 sm:ml-2">
+                          <Badge className={`mobile-badge text-xs px-2 sm:px-3 py-1 sm:py-1.5 font-bold shadow-lg ${
                             test.isPremium 
                               ? 'bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-white animate-pulse border-2 border-yellow-300 hover:scale-105 transition-transform' 
                               : 'bg-gradient-to-r from-green-400 to-emerald-500 text-white border-2 border-green-300'
                           }`}>
                             {test.isPremium ? (
                               <div className="flex items-center space-x-1">
-                                <span className="text-sm">👑</span>
-                                <span>PREMIUM</span>
+                                <span className="text-xs sm:text-sm">👑</span>
+                                <span className="hidden xs:inline">PREMIUM</span>
+                                <span className="xs:hidden">PREMIUM</span>
                                 <span className="text-xs">✨</span>
                               </div>
                             ) : (
                               <div className="flex items-center space-x-1">
-                                <span className="text-sm">⭐</span>
+                                <span className="text-xs sm:text-sm">⭐</span>
                                 <span>FREE</span>
                               </div>
                             )}
                           </Badge>
                           {isCompleted && (
                             <div className="flex items-center space-x-1">
-                              <CheckCircle className="w-4 h-4 text-green-500" />
-                              <span className="text-xs text-green-600 font-medium hidden sm:inline">Completed</span>
+                              <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
+                              <span className="text-xs text-green-600 font-medium">Completed</span>
                             </div>
                           )}
                         </div>
@@ -164,31 +165,30 @@ export const MockTestSelector: React.FC<MockTestSelectorProps> = ({
                     {/* Action Buttons */}
                     <div className="mt-auto relative z-10">
                       {isCompleted ? (
-                        <div className="flex flex-col sm:flex-row gap-2">
+                        <div className="flex flex-col gap-2">
                           <Button
                             size="sm"
                             variant="outline"
-                            className="flex-1 text-xs sm:text-sm bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border-blue-300 hover:border-blue-400 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-105"
+                            className="w-full text-xs sm:text-sm bg-gradient-to-r from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border-blue-300 hover:border-blue-400 transition-all duration-300 shadow-sm hover:shadow-md hover:scale-105 min-h-[44px]"
                             onClick={() => onViewSolutions(test.id)}
                           >
-                            <BookOpen className="w-4 h-4 mr-1 sm:mr-2 text-blue-600" />
-                            <span className="hidden sm:inline">View Solutions</span>
-                            <span className="sm:hidden">View</span>
+                            <BookOpen className="w-4 h-4 mr-2 text-blue-600" />
+                            <span>View Solutions</span>
                           </Button>
                           <Button
                             size="sm"
                             variant="default"
-                            className="flex-1 text-xs sm:text-sm bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+                            className="w-full text-xs sm:text-sm bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 min-h-[44px]"
                             onClick={() => onRetryTest(test.id)}
                           >
-                            <RotateCcw className="w-4 h-4 mr-1 sm:mr-2" />
-                            Retry
+                            <RotateCcw className="w-4 h-4 mr-2" />
+                            Retry Test
                           </Button>
                         </div>
                       ) : (
                         <Button
                           size="sm"
-                          className={`w-full text-sm font-bold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 ${
+                          className={`w-full text-sm font-bold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 min-h-[44px] ${
                             test.isPremium 
                               ? 'bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 hover:from-yellow-500 hover:via-orange-600 hover:to-red-600 text-white border-2 border-yellow-300 animate-pulse' 
                               : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
@@ -198,14 +198,12 @@ export const MockTestSelector: React.FC<MockTestSelectorProps> = ({
                           <Play className="w-4 h-4 mr-2" />
                           {test.isPremium ? (
                             <div className="flex items-center space-x-1">
-                              <span className="hidden sm:inline">🚀 Start Premium Test</span>
-                              <span className="sm:hidden">🚀 Start Premium</span>
+                              <span>🚀 Start Premium Test</span>
                               <span>⭐</span>
                             </div>
                           ) : (
                             <div className="flex items-center space-x-1">
-                              <span className="hidden sm:inline">Start Practice Test</span>
-                              <span className="sm:hidden">Start Test</span>
+                              <span>Start Practice Test</span>
                               <span>🎯</span>
                             </div>
                           )}
