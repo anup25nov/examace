@@ -26,10 +26,20 @@ export const DailyAccolades: React.FC<DailyAccoladesProps> = ({ isFirstVisit, on
   return (
     <div
       className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      style={{
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        paddingLeft: 'env(safe-area-inset-left)',
+        paddingRight: 'env(safe-area-inset-right)',
+      }}
       onClick={onClose}
     >
       <div
         className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
+        style={{
+          maxHeight: 'calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2rem)',
+          overflowY: 'auto'
+        }}
         onClick={(e) => e.stopPropagation()}
       >
           {/* Celebration Animation */}

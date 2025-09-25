@@ -26,36 +26,74 @@ const OTPInput: React.FC<OTPInputProps> = ({
     setOtp(paddedOtp);
   }, [value, length]);
 
-  // Handle SMS autofill
+  // Handle SMS autofill and OTP auto-detection
   useEffect(() => {
-    const handleSMSAutofill = () => {
-      // Check if there's any SMS autofill data
-      if (inputRefs.current[0]) {
-        const firstInput = inputRefs.current[0];
-        if (firstInput.value && firstInput.value.length > 1) {
-          // Handle SMS autofill
-          const autofillValue = firstInput.value.replace(/\D/g, '');
-          if (autofillValue.length >= length) {
-            const autofillDigits = autofillValue.split('').slice(0, length);
-            setOtp(autofillDigits);
-            onChange(autofillDigits.join(''));
+    const handleSMSAutofill = (event: Event) => {
+      const target = event.target as HTMLInputElement;
+      if (target && target.value) {
+        // Handle SMS autofill - extract digits from the input
+        const autofillValue = target.value.replace(/\D/g, '');
+        if (autofillValue.length >= length) {
+          const autofillDigits = autofillValue.split('').slice(0, length);
+          setOtp(autofillDigits);
+          onChange(autofillDigits.join(''));
+          
+          // Auto-submit if OTP is complete
+          if (autofillDigits.length === length && autofillDigits.every(digit => digit !== '')) {
+            // Trigger form submission after a short delay
+            setTimeout(() => {
+              const form = target.closest('form');
+              if (form) {
+                const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                form.dispatchEvent(submitEvent);
+              }
+            }, 500);
           }
         }
       }
     };
 
-    // Listen for input events that might be from SMS autofill
+    // Enhanced SMS autofill detection
+    const handleInputChange = (event: Event) => {
+      const target = event.target as HTMLInputElement;
+      if (target && target.value) {
+        // Check if this looks like a complete OTP (all digits)
+        const value = target.value.replace(/\D/g, '');
+        if (value.length === length) {
+          const digits = value.split('');
+          setOtp(digits);
+          onChange(digits.join(''));
+          
+          // Auto-submit after a short delay
+          setTimeout(() => {
+            const form = target.closest('form');
+            if (form) {
+              const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+              form.dispatchEvent(submitEvent);
+            }
+          }, 300);
+        }
+      }
+    };
+
+    // Listen for input events on all OTP inputs
     const inputs = inputRefs.current;
     inputs.forEach((input) => {
       if (input) {
-        input.addEventListener('input', handleSMSAutofill);
+        input.addEventListener('input', handleInputChange);
+        input.addEventListener('change', handleSMSAutofill);
+        // Also listen for paste events
+        input.addEventListener('paste', (e) => {
+          setTimeout(() => handleInputChange(e), 10);
+        });
       }
     });
 
     return () => {
       inputs.forEach((input) => {
         if (input) {
-          input.removeEventListener('input', handleSMSAutofill);
+          input.removeEventListener('input', handleInputChange);
+          input.removeEventListener('change', handleSMSAutofill);
         }
       });
     };
@@ -155,6 +193,8 @@ const OTPInput: React.FC<OTPInputProps> = ({
           className="w-12 h-12 text-center text-lg font-semibold border-2 focus:border-primary focus:ring-2 focus:ring-primary/20"
           autoComplete={index === 0 ? "one-time-code" : "off"}
           autoFocus={index === 0}
+          data-testid={`otp-input-${index}`}
+          aria-label={`OTP digit ${index + 1}`}
         />
       ))}
     </div>

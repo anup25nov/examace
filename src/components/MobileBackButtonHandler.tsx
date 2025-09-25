@@ -42,12 +42,18 @@ export const MobileBackButtonHandler: React.FC<MobileBackButtonHandlerProps> = (
         // Handle different routes
         const currentPath = location.pathname;
         
-        // If we're on the home page, minimize the app instead of closing
+        // If we're on the home page, show confirmation before closing
         if (currentPath === '/' || currentPath === '/home') {
+          const shouldClose = window.confirm(
+            'Are you sure you want to exit the app?'
+          );
+          if (!shouldClose) {
+            return;
+          }
           try {
-            await App.minimizeApp();
+            await App.exitApp();
           } catch (error) {
-            console.log('Could not minimize app:', error);
+            console.log('Could not exit app:', error);
           }
           return;
         }

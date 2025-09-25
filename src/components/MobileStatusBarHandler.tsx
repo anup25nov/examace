@@ -10,17 +10,19 @@ const MobileStatusBarHandler = () => {
           if (typeof window !== 'undefined' && (window as any).Capacitor) {
             const { StatusBar } = (window as any).Capacitor.Plugins;
             if (StatusBar) {
-              // Set status bar style
-              await StatusBar.setStyle({ style: 'DARK' });
+              // Set status bar style to LIGHT for better visibility
+              await StatusBar.setStyle({ style: 'LIGHT' });
               
-              // Set status bar background color
+              // Set status bar background color to white
               await StatusBar.setBackgroundColor({ color: '#ffffff' });
               
-              // Ensure status bar doesn't overlay webview
+              // CRITICAL: Ensure status bar doesn't overlay webview
               await StatusBar.setOverlaysWebView({ overlay: false });
               
               // Show status bar
               await StatusBar.show();
+              
+              console.log('Status bar configured successfully');
             }
           }
         } catch (error) {
@@ -29,7 +31,8 @@ const MobileStatusBarHandler = () => {
         }
       };
 
-      initializeStatusBar();
+      // Add a small delay to ensure Capacitor is fully loaded
+      setTimeout(initializeStatusBar, 100);
     }
   }, []);
 

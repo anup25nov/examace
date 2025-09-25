@@ -119,7 +119,7 @@ export class DynamicExamService {
       color: 'blue',
       gradient: 'from-blue-500 to-blue-600',
       logo: '/logos/ssc-cgl-logo.svg',
-      bannerImage: '/logos/alternate_image.png',
+      bannerImage: '/logos/examace-logo.svg',
       stats: { enrolled: '2.5M+', tests: '150+', questions: '5000+' },
       sections: [
         {
@@ -188,7 +188,7 @@ export class DynamicExamService {
       color: 'sky',
       gradient: 'from-sky-500 to-sky-600',
       logo: '/logos/airforce-logo.svg',
-      bannerImage: '/logos/alternate_image.png',
+      bannerImage: '/logos/examace-logo.svg',
       stats: { enrolled: '500K+', tests: '80+', questions: '2000+' },
       sections: [
         {
@@ -257,7 +257,7 @@ export class DynamicExamService {
       color: 'blue',
       gradient: 'from-blue-600 to-blue-700',
       logo: '/logos/navy-logo.svg',
-      bannerImage: '/logos/alternate_image.png',
+      bannerImage: '/logos/examace-logo.svg',
       stats: { enrolled: '300K+', tests: '60+', questions: '1500+' },
       sections: [
         {
@@ -326,7 +326,7 @@ export class DynamicExamService {
       color: 'purple',
       gradient: 'from-purple-500 to-purple-600',
       logo: '/logos/railway-logo.svg',
-      bannerImage: '/logos/alternate_image.png',
+      bannerImage: '/logos/examace-logo.svg',
       stats: { enrolled: '3.0M+', tests: '200+', questions: '4000+' },
       sections: [
         {

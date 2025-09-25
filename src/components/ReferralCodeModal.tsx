@@ -130,8 +130,22 @@ export const ReferralCodeModal: React.FC<ReferralCodeModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-md mx-auto">
+    <div 
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      style={{
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        paddingLeft: 'env(safe-area-inset-left)',
+        paddingRight: 'env(safe-area-inset-right)',
+      }}
+    >
+      <Card 
+        className="w-full max-w-md mx-auto"
+        style={{
+          maxHeight: 'calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2rem)',
+          overflowY: 'auto'
+        }}
+      >
         <CardHeader className="text-center pb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">

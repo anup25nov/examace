@@ -64,7 +64,14 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
   onMessageAction
 }) => {
   const { user } = useAuth();
-  const [selectedYear, setSelectedYear] = useState('all'); // Default to 'all'
+  const [selectedYear, setSelectedYear] = useState(''); // Default to first available year
+  
+  // Set default selected year to first available year
+  useEffect(() => {
+    if (years.length > 0 && !selectedYear) {
+      setSelectedYear(years[0].year);
+    }
+  }, [years, selectedYear]);
   const [showMembershipPlans, setShowMembershipPlans] = useState(false);
   const [showTestStartModal, setShowTestStartModal] = useState(false);
   const [selectedTestForStart, setSelectedTestForStart] = useState<PremiumTest | null>(null);
@@ -101,16 +108,15 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
     }
   };
 
-  // Get papers based on selected year or all years
+  // Get papers based on selected year
   const getPapersForSelectedYear = () => {
-    if (selectedYear === 'all') {
-      // Return all papers from all years
-      return sortedYears.flatMap(yearData => yearData.papers);
-    } else {
-      // Return papers from selected year
-      const selectedYearData = sortedYears.find(year => year.year === selectedYear);
-      return selectedYearData ? selectedYearData.papers : [];
+    if (!selectedYear) {
+      // If no year selected, return empty array
+      return [];
     }
+    // Return papers from selected year
+    const selectedYearData = sortedYears.find(year => year.year === selectedYear);
+    return selectedYearData ? selectedYearData.papers : [];
   };
 
   const allPapers = getPapersForSelectedYear();
@@ -187,40 +193,6 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
     <div className={`space-y-6 ${className}`}>
       {/* Year Tabs */}
       <div className="flex flex-wrap gap-2 justify-center">
-        {/* All Years Option */}
-        <Button
-          key="all"
-          variant={selectedYear === 'all' ? "default" : "outline"}
-          size="sm"
-          onClick={() => handleYearChange('all')}
-          className={`relative transition-all duration-200 ${
-            selectedYear === 'all'
-              ? 'bg-primary text-primary-foreground shadow-lg' 
-              : 'hover:bg-muted'
-          }`}
-        >
-          <div className="flex items-center space-x-2">
-            <Calendar className="w-4 h-4" />
-            <span className="font-medium">All Years</span>
-            <Badge 
-              variant="secondary" 
-              className={`text-xs ${
-                selectedYear === 'all'
-                  ? 'bg-primary-foreground/20 text-primary-foreground' 
-                  : 'bg-muted-foreground/20'
-              }`}
-            >
-              {sortedYears.reduce((total, yearData) => {
-                const stats = getYearStats(yearData.year);
-                return total + stats.completed;
-              }, 0)}/{sortedYears.reduce((total, yearData) => {
-                const stats = getYearStats(yearData.year);
-                return total + stats.total;
-              }, 0)}
-            </Badge>
-          </div>
-        </Button>
-
         {/* Individual Year Options */}
         {sortedYears.map((yearData) => {
           const stats = getYearStats(yearData.year);

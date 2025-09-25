@@ -253,79 +253,113 @@ body {
   background: #000;
 }
 
-/* Fix status bar overlap */
-body {
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
+/* Fix status bar overlap - Professional implementation */
+html, body {
   margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow-x: hidden;
 }
 
-/* Fix header overlap with status bar */
-header, .sticky-header {
-  top: env(safe-area-inset-top);
-  padding-top: calc(1rem + env(safe-area-inset-top));
-  margin-top: 0;
-}
-
-/* Ensure root container respects safe areas */
+/* Root container should respect safe areas */
 #root {
+  min-height: 100vh;
+  min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+  position: relative;
 }
 
-/* Mobile-specific header fixes */
+/* Body should not have padding to avoid double padding */
+body {
+  margin: 0;
+  padding: 0;
+  background: #f8fafc;
+}
+
+/* Header positioning - should start below status bar */
+header, .sticky-header {
+  position: relative;
+  top: 0;
+  margin-top: 0;
+  padding-top: 1rem;
+  background: white;
+  z-index: 50;
+}
+
+/* Mobile-specific fixes */
 @media (max-width: 768px) {
-  /* Force status bar spacing on mobile */
+  /* Ensure proper viewport handling */
+  html {
+    height: 100%;
+    overflow-x: hidden;
+  }
+  
   body {
-    padding-top: max(env(safe-area-inset-top), 20px) !important;
-    padding-bottom: max(env(safe-area-inset-bottom), 20px) !important;
+    height: 100%;
+    overflow-x: hidden;
+    /* Remove any conflicting padding */
+    padding: 0 !important;
+    margin: 0 !important;
   }
   
+  /* Root container with proper safe area handling */
   #root {
-    padding-top: max(env(safe-area-inset-top), 20px) !important;
-    padding-bottom: max(env(safe-area-inset-bottom), 20px) !important;
-  }
-  
-  header {
-    padding-top: calc(0.75rem + max(env(safe-area-inset-top), 20px)) !important;
-    margin-top: 0 !important;
+    min-height: 100vh;
+    min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
     position: relative;
-    z-index: 50;
-    background: white;
+    background: #f8fafc;
   }
   
-  /* Ensure header content doesn't overlap with status bar */
+  /* Header positioning */
+  header {
+    position: relative;
+    top: 0;
+    margin-top: 0;
+    padding-top: 1rem;
+    background: white;
+    z-index: 50;
+    width: 100%;
+  }
+  
+  /* Ensure header content doesn't overlap */
   header .container {
     padding-top: 0;
   }
   
   /* Fix any absolute positioned elements */
   .absolute.top-0 {
-    top: max(env(safe-area-inset-top), 20px);
+    top: env(safe-area-inset-top);
   }
   
   /* Fix sticky elements */
   .sticky.top-0 {
-    top: max(env(safe-area-inset-top), 20px);
+    top: env(safe-area-inset-top);
   }
   
-  /* Additional mobile fixes */
+  /* Full screen containers */
   .min-h-screen {
-    min-height: calc(100vh - max(env(safe-area-inset-top), 20px) - max(env(safe-area-inset-bottom), 20px));
+    min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   }
   
-  /* Fix any full-screen containers */
-  .container {
-    padding-top: max(env(safe-area-inset-top), 20px);
-  }
-  
-  /* Ensure main content has proper spacing */
+  /* Main content area */
   main {
-    padding-top: max(env(safe-area-inset-top), 20px);
+    padding-top: 0;
+    position: relative;
+  }
+  
+  /* Fix any modals or overlays */
+  .fixed.inset-0 {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
 }
 
