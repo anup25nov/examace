@@ -267,6 +267,41 @@ header, .sticky-header {
   padding-top: calc(1rem + env(safe-area-inset-top));
 }
 
+/* Mobile-specific header fixes */
+@media (max-width: 768px) {
+  header {
+    padding-top: calc(0.75rem + env(safe-area-inset-top));
+    margin-top: 0;
+    position: relative;
+    z-index: 50;
+  }
+  
+  /* Ensure header content doesn't overlap with status bar */
+  header .container {
+    padding-top: 0;
+  }
+  
+  /* Fix any absolute positioned elements */
+  .absolute.top-0 {
+    top: env(safe-area-inset-top);
+  }
+  
+  /* Fix sticky elements */
+  .sticky.top-0 {
+    top: env(safe-area-inset-top);
+  }
+  
+  /* Additional mobile fixes */
+  .min-h-screen {
+    min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+  
+  /* Fix any full-screen containers */
+  .container {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
 /* Fix full screen app issues */
 .app-container {
   min-height: 100vh;

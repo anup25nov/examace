@@ -649,7 +649,7 @@ const EnhancedExamDashboard = () => {
         </div>
         
         {/* Main Stats Grid - Optimized for mobile */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 mb-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 max-w-6xl mx-auto">
           <Card className="text-center border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 text-white">
             <CardContent className="p-3 md:p-6">
               <div className="w-10 h-10 md:w-16 md:h-16 mx-auto mb-2 md:mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
@@ -665,9 +665,8 @@ const EnhancedExamDashboard = () => {
               <div className="w-10 h-10 md:w-16 md:h-16 mx-auto mb-2 md:mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
                 <Trophy className="w-5 h-5 md:w-8 md:h-8 text-white" />
               </div>
-              <p className="text-xl md:text-3xl font-bold mb-1 md:mb-2">{userStats.bestScore}</p>
+              <p className="text-xl md:text-3xl font-bold mb-1 md:mb-2">{userStats.bestScore}%</p>
               <p className="text-xs md:text-sm text-purple-100 font-medium">Best Score</p>
-
             </CardContent>
           </Card>
           
@@ -676,8 +675,18 @@ const EnhancedExamDashboard = () => {
               <div className="w-10 h-10 md:w-16 md:h-16 mx-auto mb-2 md:mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
                 <Star className="w-5 h-5 md:w-8 md:h-8 text-white" />
               </div>
-              <p className="text-xl md:text-3xl font-bold mb-1 md:mb-2">{userStats.avgScoreLast10}</p>
+              <p className="text-xl md:text-3xl font-bold mb-1 md:mb-2">{userStats.avgScoreLast10}%</p>
               <p className="text-xs md:text-sm text-orange-100 font-medium">Average Score</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="text-center border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-green-500 via-emerald-600 to-teal-600 text-white">
+            <CardContent className="p-3 md:p-6">
+              <div className="w-10 h-10 md:w-16 md:h-16 mx-auto mb-2 md:mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                <Target className="w-5 h-5 md:w-8 md:h-8 text-white" />
+              </div>
+              <p className="text-xl md:text-3xl font-bold mb-1 md:mb-2">{userStats.bestRank || 'N/A'}</p>
+              <p className="text-xs md:text-sm text-green-100 font-medium">Best Rank</p>
             </CardContent>
           </Card>
         </div>
@@ -721,32 +730,39 @@ const EnhancedExamDashboard = () => {
 
           {/* Test Filter */}
           <div className="mb-6">
-            <div className="flex flex-wrap items-center justify-center gap-4">
-              {/* <span className="text-sm font-medium text-muted-foreground mr-2">Filter:</span> */}
-              <Button
-                variant={testFilter === 'all' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setTestFilter('all')}
-                className="text-xs"
-              >
-                All Tests ({completedCount + notAttemptedCount})
-              </Button>
-              <Button
-                variant={testFilter === 'attempted' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setTestFilter('attempted')}
-                className="text-xs"
-              >
-                Completed ({completedCount})
-              </Button>
-              <Button
-                variant={testFilter === 'not-attempted' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setTestFilter('not-attempted')}
-                className="text-xs"
-              >
-                Not Attempted ({notAttemptedCount})
-              </Button>
+            <div className="flex flex-wrap items-center justify-center gap-2 px-2">
+              <div className="flex flex-wrap justify-center gap-2 w-full sm:w-auto">
+                <Button
+                  variant={testFilter === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTestFilter('all')}
+                  className="text-xs flex-1 sm:flex-none min-w-0"
+                >
+                  <span className="hidden sm:inline">All Tests</span>
+                  <span className="sm:hidden">All</span>
+                  <span className="ml-1">({completedCount + notAttemptedCount})</span>
+                </Button>
+                <Button
+                  variant={testFilter === 'attempted' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTestFilter('attempted')}
+                  className="text-xs flex-1 sm:flex-none min-w-0"
+                >
+                  <span className="hidden sm:inline">Completed</span>
+                  <span className="sm:hidden">Done</span>
+                  <span className="ml-1">({completedCount})</span>
+                </Button>
+                <Button
+                  variant={testFilter === 'not-attempted' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTestFilter('not-attempted')}
+                  className="text-xs flex-1 sm:flex-none min-w-0"
+                >
+                  <span className="hidden sm:inline">Not Attempted</span>
+                  <span className="sm:hidden">New</span>
+                  <span className="ml-1">({notAttemptedCount})</span>
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -832,7 +848,7 @@ const EnhancedExamDashboard = () => {
                     const testScore = testScores.get(`mock-${test.id}`) || testScores.get(test.id);
                     
                     return (
-                      <div key={test.id} className="flex-shrink-0 w-80">
+                      <div key={test.id} className="w-full">
                         <EnhancedTestCard
                           test={test}
                           isCompleted={isCompleted}

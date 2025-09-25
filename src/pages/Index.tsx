@@ -251,9 +251,9 @@ const Index = () => {
             </div>
           </div>
           
-          <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-3xl mx-auto animate-slide-up font-medium leading-relaxed">
+          {/* <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-3xl mx-auto animate-slide-up font-medium leading-relaxed">
             Your direct path to government job success. Practice with real exam patterns, track your progress, and achieve your dream job.
-          </p>
+          </p> */}
           <div className="flex flex-wrap justify-center gap-6 animate-scale-in">
             <div className="flex items-center space-x-2">
               <Clock className="w-5 h-5" />

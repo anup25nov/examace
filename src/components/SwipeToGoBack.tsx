@@ -29,11 +29,17 @@ export const SwipeToGoBack: React.FC<SwipeToGoBackProps> = ({
 
   // Check if we can go back
   const canGoBack = location.pathname !== '/' && location.pathname !== '/home' && window.history.length > 1;
+  
+  // Debug logging
+  console.log('SwipeToGoBack: Current path:', location.pathname, 'Can go back:', canGoBack, 'History length:', window.history.length);
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
     if (disabled || isGoingBack || !canGoBack) return;
     
+    // Only start swipe from the left edge of the screen (first 50px)
     const touch = e.touches[0];
+    if (touch.clientX > 50) return;
+    
     startX.current = touch.clientX;
     startY.current = touch.clientY;
     setIsSwipeActive(true);
@@ -48,26 +54,46 @@ export const SwipeToGoBack: React.FC<SwipeToGoBackProps> = ({
     const deltaY = touch.clientY - startY.current;
     
     // Only allow horizontal swipes (more horizontal than vertical movement)
+    // And only allow right swipes (going back)
     if (Math.abs(deltaX) > Math.abs(deltaY) && deltaX > 0) {
       e.preventDefault();
       e.stopPropagation();
       currentX.current = touch.clientX;
       setSwipeDistance(Math.min(deltaX, threshold * 2));
+    } else if (Math.abs(deltaY) > Math.abs(deltaX)) {
+      // If it's more vertical than horizontal, cancel the swipe
+      setIsSwipeActive(false);
+      setSwipeDistance(0);
     }
   }, [disabled, isSwipeActive, isGoingBack, canGoBack, threshold]);
 
   const handleTouchEnd = useCallback(async () => {
     if (disabled || !isSwipeActive || isGoingBack || !canGoBack) return;
 
+    console.log('SwipeToGoBack: Touch end', { swipeDistance, threshold, canGoBack });
+    
     setIsSwipeActive(false);
     onSwipeEnd?.();
     
     if (swipeDistance >= threshold) {
+      console.log('SwipeToGoBack: Navigating back');
       setIsGoingBack(true);
       
       // Add a small delay for visual feedback
       setTimeout(() => {
-        navigate(-1);
+        try {
+          // Check if we can still go back
+          if (window.history.length > 1) {
+            navigate(-1);
+          } else {
+            // Fallback: go to home page
+            navigate('/');
+          }
+        } catch (error) {
+          console.error('Navigation error:', error);
+          // Fallback: go to home page
+          navigate('/');
+        }
         setIsGoingBack(false);
         setSwipeDistance(0);
       }, 200);

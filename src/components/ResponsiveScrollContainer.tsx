@@ -1,6 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import React, { useEffect, useState } from 'react';
 
 interface ResponsiveScrollContainerProps {
   children: React.ReactNode;
@@ -15,13 +13,12 @@ export const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps>
   className = '',
   showScrollButtons = true
 }) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
   // Check if we should enable scrolling
-  const shouldEnableScrolling = isMobile ? cardCount > 7 : cardCount > 3;
+  // Mobile: 1 card per row, scroll when >7 rows (>7 cards)
+  // Desktop: 4 cards per row, scroll when >3 rows (>12 cards)
+  const shouldEnableScrolling = isMobile ? cardCount > 7 : cardCount > 12;
 
   // Check if device is mobile
   useEffect(() => {
@@ -34,60 +31,18 @@ export const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps>
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
 
-  // Check scroll position
-  const checkScrollPosition = () => {
-    if (!scrollRef.current) return;
-    
-    const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-    setCanScrollLeft(scrollLeft > 0);
-    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
-  };
-
-  // Scroll functions
-  const scrollLeft = () => {
-    if (scrollRef.current) {
-      const cardWidth = scrollRef.current.scrollWidth / cardCount;
-      scrollRef.current.scrollBy({
-        left: -cardWidth * 2, // Scroll by 2 cards
-        behavior: 'smooth'
-      });
-    }
-  };
-
-  const scrollRight = () => {
-    if (scrollRef.current) {
-      const cardWidth = scrollRef.current.scrollWidth / cardCount;
-      scrollRef.current.scrollBy({
-        left: cardWidth * 2, // Scroll by 2 cards
-        behavior: 'smooth'
-      });
-    }
-  };
-
-  // Set up scroll listener
-  useEffect(() => {
-    const scrollElement = scrollRef.current;
-    if (!scrollElement) return;
-
-    checkScrollPosition();
-    scrollElement.addEventListener('scroll', checkScrollPosition);
-    
-    return () => {
-      scrollElement.removeEventListener('scroll', checkScrollPosition);
-    };
-  }, [cardCount]);
-
   if (!shouldEnableScrolling) {
     // Regular grid layout when scrolling is not needed
+    // Mobile: 1 card per row, Desktop: 4 cards per row
     return (
-      <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${className}`}>
+      <div className={`grid grid-cols-1 md:grid-cols-4 gap-4 ${className}`}>
         {children}
       </div>
     );
   }
 
   if (isMobile) {
-    // Mobile: Vertical scrolling
+    // Mobile: 1 card per row, vertical scrolling when >7 cards
     return (
       <div className={`space-y-4 max-h-96 overflow-y-auto ${className}`}>
         {children}
@@ -95,53 +50,12 @@ export const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps>
     );
   }
 
-  // Desktop: Horizontal scrolling
+  // Desktop: 4 cards per row, vertical scrolling when >12 cards
   return (
-    <div className={`relative ${className}`}>
-      {/* Scroll buttons */}
-      {showScrollButtons && (
-        <>
-          <Button
-            variant="outline"
-            size="sm"
-            className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-lg ${
-              !canScrollLeft ? 'opacity-0 pointer-events-none' : ''
-            }`}
-            onClick={scrollLeft}
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-lg ${
-              !canScrollRight ? 'opacity-0 pointer-events-none' : ''
-            }`}
-            onClick={scrollRight}
-          >
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-        </>
-      )}
-
-      {/* Scrollable container */}
-      <div
-        ref={scrollRef}
-        className="flex gap-4 overflow-x-auto scrollbar-hide pb-2"
-        style={{
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none'
-        }}
-      >
+    <div className={`space-y-4 max-h-96 overflow-y-auto ${className}`}>
+      <div className="grid grid-cols-4 gap-4">
         {children}
       </div>
-
-      {/* Custom scrollbar styles */}
-      <style>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
     </div>
   );
 };

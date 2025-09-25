@@ -65,13 +65,11 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
 }) => {
   const { user } = useAuth();
   const [selectedYear, setSelectedYear] = useState('all'); // Default to 'all'
-  const [currentPage, setCurrentPage] = useState(0);
   const [showMembershipPlans, setShowMembershipPlans] = useState(false);
   const [showTestStartModal, setShowTestStartModal] = useState(false);
   const [selectedTestForStart, setSelectedTestForStart] = useState<PremiumTest | null>(null);
   const [userMembership, setUserMembership] = useState<any>(null);
   const [hasAccess, setHasAccess] = useState<Map<string, boolean>>(new Map());
-  const papersPerPage = 6;
 
   // Sort years in descending order (newest first)
   const sortedYears = [...years].sort((a, b) => parseInt(b.year) - parseInt(a.year));
@@ -126,20 +124,8 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
     return true; // Show all for 'all' filter
   });
   
-  const totalPages = Math.ceil(filteredPapers.length / papersPerPage);
-  const currentPapers = filteredPapers.slice(currentPage * papersPerPage, (currentPage + 1) * papersPerPage);
-
   const handleYearChange = (year: string) => {
     setSelectedYear(year);
-    setCurrentPage(0);
-  };
-
-  const handlePreviousPage = () => {
-    setCurrentPage(prev => Math.max(0, prev - 1));
-  };
-
-  const handleNextPage = () => {
-    setCurrentPage(prev => Math.min(totalPages - 1, prev + 1));
   };
 
   const handleStartTest = (paper: PremiumTest) => {
@@ -343,10 +329,10 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
           <CardContent className="pt-6">
             {/* Papers Grid */}
             <ResponsiveScrollContainer
-              cardCount={currentPapers.length}
+              cardCount={filteredPapers.length}
               className="mb-6"
             >
-              {currentPapers.map((paper) => {
+              {filteredPapers.map((paper) => {
                 const isCompleted = completedTests.has(`pyq-${paper.id}`);
                 const testScore = testScores.get(`pyq-${paper.id}`);
                 
@@ -356,7 +342,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                 }
 
                 return (
-                  <div key={paper.id} className="flex-shrink-0 w-80">
+                  <div key={paper.id} className="w-full">
                     <Card
           className={`relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.03] hover:border-primary/40 h-72 group ${
             isCompleted ? 'border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg' : 'border-border bg-gradient-to-br from-white to-slate-50'
@@ -534,46 +520,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
               })}
             </ResponsiveScrollContainer>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handlePreviousPage}
-                  disabled={currentPage === 0}
-                  className="flex items-center space-x-2"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  <span>Previous</span>
-                </Button>
-                
-                <div className="flex items-center space-x-2">
-                  {Array.from({ length: totalPages }, (_, i) => (
-                    <Button
-                      key={i}
-                      variant={currentPage === i ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCurrentPage(i)}
-                      className="w-8 h-8 p-0"
-                    >
-                      {i + 1}
-                    </Button>
-                  ))}
-                </div>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleNextPage}
-                  disabled={currentPage === totalPages - 1}
-                  className="flex items-center space-x-2"
-                >
-                  <span>Next</span>
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
-            )}
+            {/* Scroller - No pagination needed */}
           </CardContent>
         </Card>
       )}

@@ -120,7 +120,17 @@ class TestAvailabilityService {
         { id: 'mock-test-2', name: 'SSC CGL Mock Test 2', duration: 180, questions: Array(100).fill(null), breakdown: 'Complete mock test covering all subjects', isPremium: false },
         { id: 'mock-test-3', name: 'SSC CGL Mock Test 3', duration: 180, questions: Array(100).fill(null), breakdown: 'Complete mock test covering all subjects', isPremium: true },
         { id: 'mock-test-4', name: 'SSC CGL Premium Mock Test 1', duration: 180, questions: Array(100).fill(null), breakdown: 'Advanced mock test covering all subjects', isPremium: true },
-        { id: 'mock-test-5', name: 'SSC CGL Premium Mock Test 2', duration: 180, questions: Array(100).fill(null), breakdown: 'Advanced mock test covering all subjects', isPremium: true }
+        { id: 'mock-test-5', name: 'SSC CGL Premium Mock Test 2', duration: 180, questions: Array(100).fill(null), breakdown: 'Advanced mock test covering all subjects', isPremium: true },
+        { id: 'mock-test-6', name: 'SSC CGL Mock Test 6', duration: 180, questions: Array(100).fill(null), breakdown: 'Complete mock test covering all subjects', isPremium: false },
+        { id: 'mock-test-7', name: 'SSC CGL Mock Test 7', duration: 180, questions: Array(100).fill(null), breakdown: 'Complete mock test covering all subjects', isPremium: false },
+        { id: 'mock-test-8', name: 'SSC CGL Mock Test 8', duration: 180, questions: Array(100).fill(null), breakdown: 'Complete mock test covering all subjects', isPremium: true },
+        { id: 'mock-test-9', name: 'SSC CGL Mock Test 9', duration: 180, questions: Array(100).fill(null), breakdown: 'Complete mock test covering all subjects', isPremium: true },
+        { id: 'mock-test-10', name: 'SSC CGL Mock Test 10', duration: 180, questions: Array(100).fill(null), breakdown: 'Complete mock test covering all subjects', isPremium: false },
+        { id: 'mock-test-11', name: 'SSC CGL Mock Test 11', duration: 180, questions: Array(100).fill(null), breakdown: 'Complete mock test covering all subjects', isPremium: false },
+        { id: 'mock-test-12', name: 'SSC CGL Mock Test 12', duration: 180, questions: Array(100).fill(null), breakdown: 'Complete mock test covering all subjects', isPremium: true },
+        { id: 'mock-test-13', name: 'SSC CGL Mock Test 13', duration: 180, questions: Array(100).fill(null), breakdown: 'Complete mock test covering all subjects', isPremium: true },
+        { id: 'mock-test-14', name: 'SSC CGL Mock Test 14', duration: 180, questions: Array(100).fill(null), breakdown: 'Complete mock test covering all subjects', isPremium: false },
+        { id: 'mock-test-15', name: 'SSC CGL Mock Test 15', duration: 180, questions: Array(100).fill(null), breakdown: 'Complete mock test covering all subjects', isPremium: true }
       ],
       pyq: [
         {
@@ -128,13 +138,29 @@ class TestAvailabilityService {
           papers: [
             { id: '2024-set-1', name: 'SSC CGL 2024 Set 1', duration: 180, questions: Array(100).fill(null), breakdown: 'Previous Year Questions 2024 Set 1', isPremium: false },
             { id: '2024-set-2', name: 'SSC CGL 2024 Set 2', duration: 180, questions: Array(100).fill(null), breakdown: 'Previous Year Questions 2024 Set 2', isPremium: false },
-            { id: '2021-set-1', name: 'SSC CGL 2021 27 June Set 1', duration: 180, questions: Array(100).fill(null), breakdown: 'Previous Year Questions 2021 Set 1', isPremium: false }
+            { id: '2024-set-3', name: 'SSC CGL 2024 Set 3', duration: 180, questions: Array(100).fill(null), breakdown: 'Previous Year Questions 2024 Set 3', isPremium: false },
+            { id: '2024-set-4', name: 'SSC CGL 2024 Set 4', duration: 180, questions: Array(100).fill(null), breakdown: 'Previous Year Questions 2024 Set 4', isPremium: false },
+            { id: '2024-set-5', name: 'SSC CGL 2024 Set 5', duration: 180, questions: Array(100).fill(null), breakdown: 'Previous Year Questions 2024 Set 5', isPremium: false }
           ]
         },
         {
           year: '2023',
           papers: [
-            { id: '2023-set-1', name: 'SSC CGL 2023 Set 1', duration: 180, questions: Array(100).fill(null), breakdown: 'Previous Year Questions 2023 Set 1', isPremium: false }
+            { id: '2023-set-1', name: 'SSC CGL 2023 Set 1', duration: 180, questions: Array(100).fill(null), breakdown: 'Previous Year Questions 2023 Set 1', isPremium: false },
+            { id: '2023-set-2', name: 'SSC CGL 2023 Set 2', duration: 180, questions: Array(100).fill(null), breakdown: 'Previous Year Questions 2023 Set 2', isPremium: false },
+            { id: '2023-set-3', name: 'SSC CGL 2023 Set 3', duration: 180, questions: Array(100).fill(null), breakdown: 'Previous Year Questions 2023 Set 3', isPremium: false },
+            { id: '2023-set-4', name: 'SSC CGL 2023 Set 4', duration: 180, questions: Array(100).fill(null), breakdown: 'Previous Year Questions 2023 Set 4', isPremium: false },
+            { id: '2023-set-5', name: 'SSC CGL 2023 Set 5', duration: 180, questions: Array(100).fill(null), breakdown: 'Previous Year Questions 2023 Set 5', isPremium: false }
+          ]
+        },
+        {
+          year: '2022',
+          papers: [
+            { id: '2022-set-1', name: 'SSC CGL 2022 Set 1', duration: 180, questions: Array(100).fill(null), breakdown: 'Previous Year Questions 2022 Set 1', isPremium: false },
+            { id: '2022-set-2', name: 'SSC CGL 2022 Set 2', duration: 180, questions: Array(100).fill(null), breakdown: 'Previous Year Questions 2022 Set 2', isPremium: false },
+            { id: '2022-set-3', name: 'SSC CGL 2022 Set 3', duration: 180, questions: Array(100).fill(null), breakdown: 'Previous Year Questions 2022 Set 3', isPremium: false },
+            { id: '2022-set-4', name: 'SSC CGL 2022 Set 4', duration: 180, questions: Array(100).fill(null), breakdown: 'Previous Year Questions 2022 Set 4', isPremium: false },
+            { id: '2022-set-5', name: 'SSC CGL 2022 Set 5', duration: 180, questions: Array(100).fill(null), breakdown: 'Previous Year Questions 2022 Set 5', isPremium: false }
           ]
         }
       ],

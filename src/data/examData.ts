@@ -166,15 +166,136 @@ class ExamDataService {
         metadata: { type: 'mock', difficulty: 'mixed' }
       },
       {
+        id: 'mock-paper-4',
+        name: 'SSC CGL Mock Test 4',
+        description: 'Advanced mock test for SSC CGL preparation',
+        duration: 120,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: true,
+        price: 0,
+        metadata: { type: 'mock', difficulty: 'mixed' }
+      },
+      {
+        id: 'mock-paper-5',
+        name: 'SSC CGL Mock Test 5',
+        description: 'Premium mock test for SSC CGL preparation',
+        duration: 120,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: true,
+        price: 0,
+        metadata: { type: 'mock', difficulty: 'mixed' }
+      },
+      {
+        id: 'mock-paper-6',
+        name: 'SSC CGL Mock Test 6',
+        description: 'Complete mock test covering all subjects',
+        duration: 120,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: false,
+        price: 0,
+        metadata: { type: 'mock', difficulty: 'mixed' }
+      },
+      {
+        id: 'mock-paper-7',
+        name: 'SSC CGL Mock Test 7',
+        description: 'Complete mock test covering all subjects',
+        duration: 120,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: false,
+        price: 0,
+        metadata: { type: 'mock', difficulty: 'mixed' }
+      },
+      {
+        id: 'mock-paper-8',
+        name: 'SSC CGL Mock Test 8',
+        description: 'Complete mock test covering all subjects',
+        duration: 120,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: true,
+        price: 0,
+        metadata: { type: 'mock', difficulty: 'mixed' }
+      },
+      {
         id: 'mock-paper-9',
         name: 'SSC CGL Mock Test 9',
         description: 'Comprehensive Mock Test with Visual Questions - Includes diagrams, charts, and images',
         duration: 180,
         questions: 100,
         subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
-        isPremium: false,
+        isPremium: true,
         price: 0,
         metadata: { type: 'mock', difficulty: 'mixed', hasImages: true }
+      },
+      {
+        id: 'mock-paper-10',
+        name: 'SSC CGL Mock Test 10',
+        description: 'Complete mock test covering all subjects',
+        duration: 120,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: false,
+        price: 0,
+        metadata: { type: 'mock', difficulty: 'mixed' }
+      },
+      {
+        id: 'mock-paper-11',
+        name: 'SSC CGL Mock Test 11',
+        description: 'Complete mock test covering all subjects',
+        duration: 120,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: false,
+        price: 0,
+        metadata: { type: 'mock', difficulty: 'mixed' }
+      },
+      {
+        id: 'mock-paper-12',
+        name: 'SSC CGL Mock Test 12',
+        description: 'Complete mock test covering all subjects',
+        duration: 120,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: true,
+        price: 0,
+        metadata: { type: 'mock', difficulty: 'mixed' }
+      },
+      {
+        id: 'mock-paper-13',
+        name: 'SSC CGL Mock Test 13',
+        description: 'Complete mock test covering all subjects',
+        duration: 120,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: true,
+        price: 0,
+        metadata: { type: 'mock', difficulty: 'mixed' }
+      },
+      {
+        id: 'mock-paper-14',
+        name: 'SSC CGL Mock Test 14',
+        description: 'Complete mock test covering all subjects',
+        duration: 120,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: false,
+        price: 0,
+        metadata: { type: 'mock', difficulty: 'mixed' }
+      },
+      {
+        id: 'mock-paper-15',
+        name: 'SSC CGL Mock Test 15',
+        description: 'Complete mock test covering all subjects',
+        duration: 120,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: true,
+        price: 0,
+        metadata: { type: 'mock', difficulty: 'mixed' }
       }
     ]);
 
@@ -245,6 +366,149 @@ class ExamDataService {
         isPremium: true,
         price: 0, // Individual test pricing removed - use membership plans
         metadata: { year: '2024', paper: 5, date: '2024-01-15' }
+      },
+      {
+        id: '2024-paper-6',
+        name: 'SSC CGL 2024 Paper 6',
+        description: 'Previous Year Questions 2024 Day 2 Shift 2',
+        duration: 180,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: false,
+        price: 0,
+        metadata: { year: '2024', day: 2, shift: 2, paper: 6, date: '2024-01-16' }
+      },
+      {
+        id: '2024-paper-7',
+        name: 'SSC CGL 2024 Paper 7',
+        description: 'Previous Year Questions 2024 Day 2 Shift 3',
+        duration: 180,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: false,
+        price: 0,
+        metadata: { year: '2024', day: 2, shift: 3, paper: 7, date: '2024-01-16' }
+      },
+      {
+        id: '2023-paper-2',
+        name: 'SSC CGL 2023 Paper 2',
+        description: 'Previous Year Questions 2023 Day 1 Shift 2',
+        duration: 180,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: false,
+        price: 0,
+        metadata: { year: '2023', day: 1, shift: 2, paper: 2, date: '2023-01-15' }
+      },
+      {
+        id: '2023-paper-3',
+        name: 'SSC CGL 2023 Paper 3',
+        description: 'Previous Year Questions 2023 Day 1 Shift 3',
+        duration: 180,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: false,
+        price: 0,
+        metadata: { year: '2023', day: 1, shift: 3, paper: 3, date: '2023-01-15' }
+      },
+      {
+        id: '2023-paper-4',
+        name: 'SSC CGL 2023 Paper 4',
+        description: 'Previous Year Questions 2023 Day 2 Shift 1',
+        duration: 180,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: false,
+        price: 0,
+        metadata: { year: '2023', day: 2, shift: 1, paper: 4, date: '2023-01-16' }
+      },
+      {
+        id: '2023-paper-5',
+        name: 'SSC CGL 2023 Paper 5',
+        description: 'Previous Year Questions 2023 Day 2 Shift 2',
+        duration: 180,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: false,
+        price: 0,
+        metadata: { year: '2023', day: 2, shift: 2, paper: 5, date: '2023-01-16' }
+      },
+      {
+        id: '2022-paper-1',
+        name: 'SSC CGL 2022 Paper 1',
+        description: 'Previous Year Questions 2022 Day 1 Shift 1',
+        duration: 180,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: false,
+        price: 0,
+        metadata: { year: '2022', day: 1, shift: 1, paper: 1, date: '2022-01-15' }
+      },
+      {
+        id: '2022-paper-2',
+        name: 'SSC CGL 2022 Paper 2',
+        description: 'Previous Year Questions 2022 Day 1 Shift 2',
+        duration: 180,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: false,
+        price: 0,
+        metadata: { year: '2022', day: 1, shift: 2, paper: 2, date: '2022-01-15' }
+      },
+      {
+        id: '2022-paper-3',
+        name: 'SSC CGL 2022 Paper 3',
+        description: 'Previous Year Questions 2022 Day 1 Shift 3',
+        duration: 180,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: false,
+        price: 0,
+        metadata: { year: '2022', day: 1, shift: 3, paper: 3, date: '2022-01-15' }
+      },
+      {
+        id: '2022-paper-4',
+        name: 'SSC CGL 2022 Paper 4',
+        description: 'Previous Year Questions 2022 Day 2 Shift 1',
+        duration: 180,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: false,
+        price: 0,
+        metadata: { year: '2022', day: 2, shift: 1, paper: 4, date: '2022-01-16' }
+      },
+      {
+        id: '2022-paper-5',
+        name: 'SSC CGL 2022 Paper 5',
+        description: 'Previous Year Questions 2022 Day 2 Shift 2',
+        duration: 180,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: false,
+        price: 0,
+        metadata: { year: '2022', day: 2, shift: 2, paper: 5, date: '2022-01-16' }
+      },
+      {
+        id: '2021-paper-1',
+        name: 'SSC CGL 2021 Paper 1',
+        description: 'Previous Year Questions 2021 Day 1 Shift 1',
+        duration: 180,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: false,
+        price: 0,
+        metadata: { year: '2021', day: 1, shift: 1, paper: 1, date: '2021-01-15' }
+      },
+      {
+        id: '2021-paper-2',
+        name: 'SSC CGL 2021 Paper 2',
+        description: 'Previous Year Questions 2021 Day 1 Shift 2',
+        duration: 180,
+        questions: 100,
+        subjects: ['General Intelligence', 'English Language', 'Quantitative Aptitude', 'General Awareness'],
+        isPremium: false,
+        price: 0,
+        metadata: { year: '2021', day: 1, shift: 2, paper: 2, date: '2021-01-15' }
       }
     ]);
 

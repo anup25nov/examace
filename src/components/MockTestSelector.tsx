@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, Star, CheckCircle, Play, RotateCcw, BookOpen } from 'lucide-react';
+import { Star, CheckCircle, Play, RotateCcw, BookOpen } from 'lucide-react';
+import { ResponsiveScrollContainer } from '@/components/ResponsiveScrollContainer';
 
 interface MockTestSelectorProps {
   mockTests: any[];
@@ -21,26 +22,7 @@ export const MockTestSelector: React.FC<MockTestSelectorProps> = ({
   completedTests,
   testScores
 }) => {
-  const [currentPage, setCurrentPage] = useState(0);
-  const testsPerPage = 3; // Show 3 tests per page for better mobile experience
-  const totalPages = Math.ceil(mockTests.length / testsPerPage);
-
-  const handlePreviousPage = () => {
-    if (currentPage > 0) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
-  const handleNextPage = () => {
-    if (currentPage < totalPages - 1) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
-  const getCurrentPageTests = () => {
-    const startIndex = currentPage * testsPerPage;
-    return mockTests.slice(startIndex, startIndex + testsPerPage);
-  };
+  // Removed pagination - using scroller instead
 
   const getCompletionStats = () => {
     const total = mockTests.length;
@@ -73,34 +55,9 @@ export const MockTestSelector: React.FC<MockTestSelectorProps> = ({
       {/* Mock Test Cards Container */}
       <Card className="gradient-card border-0 shadow-lg">
         <CardContent className="p-4">
-          {/* Navigation Controls */}
-          <div className="flex items-center justify-between mb-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handlePreviousPage}
-              disabled={currentPage === 0}
-              className="p-2 flex-shrink-0"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <span className="text-sm text-muted-foreground text-center flex-1">
-              Page {currentPage + 1} of {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleNextPage}
-              disabled={currentPage === totalPages - 1}
-              className="p-2 flex-shrink-0"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-
-          {/* Test Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {getCurrentPageTests().map((test) => {
+          {/* Test Cards Grid with Scroller */}
+          <ResponsiveScrollContainer cardCount={mockTests.length}>
+            {mockTests.map((test) => {
               const isCompleted = completedTests.has(`mock-${test.id}`);
               const testScore = testScores.get(`mock-${test.id}`);
 
@@ -203,22 +160,7 @@ export const MockTestSelector: React.FC<MockTestSelectorProps> = ({
                 </Card>
               );
             })}
-          </div>
-
-          {/* Page Indicators */}
-          {totalPages > 1 && (
-            <div className="flex justify-center space-x-2 mt-4">
-              {Array.from({ length: totalPages }, (_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentPage(index)}
-                  className={`w-2 h-2 rounded-full transition-colors ${
-                    index === currentPage ? 'bg-primary' : 'bg-gray-300'
-                  }`}
-                />
-              ))}
-            </div>
-          )}
+          </ResponsiveScrollContainer>
         </CardContent>
       </Card>
     </div>

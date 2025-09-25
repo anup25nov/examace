@@ -890,32 +890,40 @@ const ExamDashboard = () => {
 
         {/* Test Filter */}
         <div className="mb-6">
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <span className="text-sm font-medium text-muted-foreground mr-2">Filter:</span>
-            <Button
-              variant={testFilter === 'all' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => handleFilterChange('all')}
-              className="text-xs"
-            >
-              All Tests ({availableTests.mock.length + availableTests.pyq.reduce((sum, year) => sum + year.papers.length, 0)})
-            </Button>
-            <Button
-              variant={testFilter === 'attempted' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => handleFilterChange('attempted')}
-              className="text-xs"
-            >
-              Completed ({completedCount})
-            </Button>
-            <Button
-              variant={testFilter === 'not-attempted' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => handleFilterChange('not-attempted')}
-              className="text-xs"
-            >
-              Not Attempted ({notAttemptedCount})
-            </Button>
+          <div className="flex flex-wrap items-center justify-center gap-2 px-2">
+            <span className="text-sm font-medium text-muted-foreground mr-2 hidden sm:inline">Filter:</span>
+            <div className="flex flex-wrap justify-center gap-2 w-full sm:w-auto">
+              <Button
+                variant={testFilter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleFilterChange('all')}
+                className="text-xs flex-1 sm:flex-none min-w-0"
+              >
+                <span className="hidden sm:inline">All Tests</span>
+                <span className="sm:hidden">All</span>
+                <span className="ml-1">({availableTests.mock.length + availableTests.pyq.reduce((sum, year) => sum + year.papers.length, 0)})</span>
+              </Button>
+              <Button
+                variant={testFilter === 'attempted' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleFilterChange('attempted')}
+                className="text-xs flex-1 sm:flex-none min-w-0"
+              >
+                <span className="hidden sm:inline">Completed</span>
+                <span className="sm:hidden">Done</span>
+                <span className="ml-1">({completedCount})</span>
+              </Button>
+              <Button
+                variant={testFilter === 'not-attempted' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleFilterChange('not-attempted')}
+                className="text-xs flex-1 sm:flex-none min-w-0"
+              >
+                <span className="hidden sm:inline">Not Attempted</span>
+                <span className="sm:hidden">New</span>
+                <span className="ml-1">({notAttemptedCount})</span>
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -971,7 +979,7 @@ const ExamDashboard = () => {
                         className="gap-3 md:gap-4"
                       >
                         {availableTests.mock.map((test) => (
-                          <div key={test.id} className="flex-shrink-0 w-80">
+                          <div key={test.id} className="w-full">
                             {createTestButton(
                               test.id,
                               test.name, // Use the name from JSON
@@ -1007,7 +1015,7 @@ const ExamDashboard = () => {
                                 className="gap-3 md:gap-4"
                               >
                                 {filteredPapers.map((paper) => (
-                                  <div key={paper.id} className="flex-shrink-0 w-80">
+                                  <div key={paper.id} className="w-full">
                                     {createTestButton(
                                       paper.id,
                                       paper.name,
@@ -1030,7 +1038,7 @@ const ExamDashboard = () => {
                         className="gap-4"
                       >
                         {availableTests.practice.map((test) => (
-                          <div key={test.id} className="flex-shrink-0 w-80">
+                          <div key={test.id} className="w-full">
                             {createTestButton(
                               test.id,
                               test.name, // Use the name from JSON
