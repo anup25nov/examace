@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import MobileBackButtonHandler from "@/components/MobileBackButtonHandler";
 import MobileAppStateManager from "@/components/MobileAppStateManager";
+import MobileStatusBarHandler from "@/components/MobileStatusBarHandler";
 import PullToRefresh from "@/components/PullToRefresh";
 import SwipeToGoBack from "@/components/SwipeToGoBack";
 import Index from "./pages/Index";
@@ -50,6 +51,7 @@ const App = () => {
           <BrowserRouter>
           <MobileBackButtonHandler />
           <MobileAppStateManager />
+          <MobileStatusBarHandler />
           <SwipeToGoBack>
             <Routes>
             <Route path="/auth" element={<AuthWrapper />} />

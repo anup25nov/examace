@@ -37,6 +37,7 @@ import { ProfessionalSectionHeader } from "@/components/ProfessionalSectionHeade
 import { ReferralBanner } from "@/components/ReferralBanner";
 import Footer from "@/components/Footer";
 import { bulkTestService } from "@/lib/bulkTestService";
+import ResponsiveScrollContainer from "@/components/ResponsiveScrollContainer";
 
 // Icon mapping for dynamic loading
 const iconMap: { [key: string]: any } = {
@@ -965,78 +966,80 @@ const ExamDashboard = () => {
                   <CardContent>
                     {/* Mock Tests */}
                     {section.id === 'mock' && availableTests.mock.length > 0 && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-                        {availableTests.mock.map((test) => 
-                          createTestButton(
-                            test.id,
-                            test.name, // Use the name from JSON
-                            'mock',
-                            null // Mock tests don't have topicId
-                          )
-                        )}
-                      </div>
+                      <ResponsiveScrollContainer
+                        cardCount={availableTests.mock.length}
+                        className="gap-3 md:gap-4"
+                      >
+                        {availableTests.mock.map((test) => (
+                          <div key={test.id} className="flex-shrink-0 w-80">
+                            {createTestButton(
+                              test.id,
+                              test.name, // Use the name from JSON
+                              'mock',
+                              null // Mock tests don't have topicId
+                            )}
+                          </div>
+                        ))}
+                      </ResponsiveScrollContainer>
                     )}
 
                     {/* Previous Year Questions */}
                     {section.id === 'pyq' && availableTests.pyq.length > 0 && (
                       <div className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
-                          {availableTests.pyq.map((yearData) => {
-                            // Filter papers based on current filter
-                            const filteredPapers = yearData.papers.filter(paper => {
-                              const completionKey = `pyq-${paper.id}`;
-                              const isCompleted = completedTests.has(completionKey);
-                              
-                              if (testFilter === 'attempted') return isCompleted;
-                              if (testFilter === 'not-attempted') return !isCompleted;
-                              return true; // Show all for 'all' filter
-                            });
+                        {availableTests.pyq.map((yearData) => {
+                          // Filter papers based on current filter
+                          const filteredPapers = yearData.papers.filter(paper => {
+                            const completionKey = `pyq-${paper.id}`;
+                            const isCompleted = completedTests.has(completionKey);
                             
-                            // Don't render year card if no papers match the filter
-                            if (filteredPapers.length === 0) return null;
-                            
-                            return (
-                              <Card key={yearData.year} className="gradient-card border-0 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group">
-                                <CardContent className="p-4">
-                                  <div className="text-center mb-4">
-                                    <h4 className="text-lg font-bold text-foreground mb-2 group-hover:text-primary transition-colors">{yearData.year}</h4>
-                                    <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
-                                      {filteredPapers.length} {filteredPapers.length === 1 ? 'Paper' : 'Papers'}
-                                    </p>
-                                  </div>
-                                  <div className="max-h-96 overflow-y-auto space-y-2 pr-2">
-                                    {filteredPapers.map((paper) => 
-                                      createTestButton(
-                                        paper.id,
-                                        paper.name,
-                                        'pyq',
-                                        null,
-                                        paper
-                                      )
+                            if (testFilter === 'attempted') return isCompleted;
+                            if (testFilter === 'not-attempted') return !isCompleted;
+                            return true; // Show all for 'all' filter
+                          });
+
+                          if (filteredPapers.length === 0) return null;
+
+                          return (
+                            <div key={yearData.year} className="space-y-4">
+                              <h4 className="text-lg font-semibold text-foreground">{yearData.year} Papers</h4>
+                              <ResponsiveScrollContainer
+                                cardCount={filteredPapers.length}
+                                className="gap-3 md:gap-4"
+                              >
+                                {filteredPapers.map((paper) => (
+                                  <div key={paper.id} className="flex-shrink-0 w-80">
+                                    {createTestButton(
+                                      paper.id,
+                                      paper.name,
+                                      'pyq',
+                                      null
                                     )}
                                   </div>
-                                </CardContent>
-                              </Card>
-                            );
-                          })}
-                        </div>
+                                ))}
+                              </ResponsiveScrollContainer>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
 
                     {/* Practice Sets */}
                     {section.id === 'practice' && availableTests.practice.length > 0 && (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {availableTests.practice.map((test) => 
-                            createTestButton(
+                      <ResponsiveScrollContainer
+                        cardCount={availableTests.practice.length}
+                        className="gap-4"
+                      >
+                        {availableTests.practice.map((test) => (
+                          <div key={test.id} className="flex-shrink-0 w-80">
+                            {createTestButton(
                               test.id,
                               test.name, // Use the name from JSON
                               'practice',
                               test.id
-                            )
-                          )}
-                        </div>
-                      </div>
+                            )}
+                          </div>
+                        ))}
+                      </ResponsiveScrollContainer>
                     )}
                   </CardContent>
                 </CollapsibleContent>

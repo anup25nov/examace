@@ -23,6 +23,7 @@ import { TestStartModal } from './TestStartModal';
 import { MembershipPlans } from './MembershipPlans';
 import { unifiedPaymentService } from '@/lib/unifiedPaymentService';
 import { useAuth } from '@/hooks/useAuth';
+import ResponsiveScrollContainer from './ResponsiveScrollContainer';
 
 interface YearData {
   year: string;
@@ -341,7 +342,10 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
 
           <CardContent className="pt-6">
             {/* Papers Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <ResponsiveScrollContainer
+              cardCount={currentPapers.length}
+              className="mb-6"
+            >
               {currentPapers.map((paper) => {
                 const isCompleted = completedTests.has(`pyq-${paper.id}`);
                 const testScore = testScores.get(`pyq-${paper.id}`);
@@ -352,8 +356,8 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                 }
 
                 return (
-        <Card
-          key={paper.id}
+                  <div key={paper.id} className="flex-shrink-0 w-80">
+                    <Card
           className={`relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.03] hover:border-primary/40 h-72 group ${
             isCompleted ? 'border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg' : 'border-border bg-gradient-to-br from-white to-slate-50'
           } ${paper.isPremium && !hasAccess.get(paper.id) ? 'cursor-pointer' : ''}`}
@@ -524,10 +528,11 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                         </div>
                       )}
                     </CardContent>
-                  </Card>
+                    </Card>
+                  </div>
                 );
               })}
-            </div>
+            </ResponsiveScrollContainer>
 
             {/* Pagination */}
             {totalPages > 1 && (

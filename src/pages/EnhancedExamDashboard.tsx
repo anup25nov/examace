@@ -38,6 +38,8 @@ import { premiumService, PremiumTest } from "@/lib/premiumService";
 import { supabase } from "@/integrations/supabase/client";
 import Footer from "@/components/Footer";
 import { bulkTestService } from "@/lib/bulkTestService";
+import PullToRefresh from "@/components/PullToRefresh";
+import ResponsiveScrollContainer from "@/components/ResponsiveScrollContainer";
 
 // Icon mapping for dynamic loading
 const iconMap: { [key: string]: any } = {
@@ -79,6 +81,49 @@ const EnhancedExamDashboard = () => {
   const [pyqData, setPyqData] = useState<any[]>([]);
   const [practiceData, setPracticeData] = useState<any[]>([]);
   const [userMembership, setUserMembership] = useState(membership || premiumService.getUserMembership());
+
+  // Refresh function for pull-to-refresh
+  const handleRefresh = async () => {
+    try {
+      // Refresh all stats and data
+      await loadAllStats();
+      await refreshStats();
+      
+      // Reload exam data
+      if (examId) {
+        const exam = dynamicExamService.getExamConfig(examId);
+        if (exam) {
+          // Reload mock tests using dynamicTestDataLoader
+          const { dynamicTestDataLoader } = await import('@/lib/dynamicTestDataLoader');
+          const mockData = await dynamicTestDataLoader.getMockTests(examId);
+          const convertedMockData = mockData.map(test => ({
+            id: test.id,
+            name: test.name,
+            duration: test.duration,
+            questions: test.questions.length,
+            subjects: test.subjects || [],
+            difficulty: 'medium',
+            description: test.description || '',
+            isPremium: test.isPremium || false,
+            price: test.isPremium ? 99 : 0,
+            benefits: test.isPremium ? ['Advanced questions', 'Detailed solutions'] : [],
+            questionData: test.questions
+          }));
+          setMockTests({ free: convertedMockData.filter(t => !t.isPremium), premium: convertedMockData.filter(t => t.isPremium) });
+          
+          // Reload PYQ data
+          const pyqData = await dynamicTestDataLoader.getPYQData(examId);
+          setPyqData(pyqData);
+          
+          // Reload practice data
+          const practiceData = await dynamicTestDataLoader.getPracticeData(examId);
+          setPracticeData(practiceData);
+        }
+      }
+    } catch (error) {
+      console.error('Refresh failed:', error);
+    }
+  };
   
   // Check for last visited section on component mount
   useEffect(() => {
@@ -557,7 +602,8 @@ const EnhancedExamDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       {/* Header */}
       <header className="border-b border-border bg-gradient-to-r from-white/95 via-blue-50/95 to-indigo-50/95 backdrop-blur-md sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto px-4 py-4">
@@ -765,7 +811,15 @@ const EnhancedExamDashboard = () => {
                     </div>
                   ) : null;
                 })()}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <ResponsiveScrollContainer
+                  cardCount={[...mockTests.free, ...mockTests.premium].filter(test => {
+                    const isCompleted = completedTests.has(`mock-${test.id}`) || completedTests.has(test.id);
+                    if (testFilter === 'attempted') return isCompleted;
+                    if (testFilter === 'not-attempted') return !isCompleted;
+                    return true;
+                  }).length}
+                  className="min-w-0"
+                >
                   {[...mockTests.free, ...mockTests.premium]
                     .filter(test => {
                       const isCompleted = completedTests.has(`mock-${test.id}`) || completedTests.has(test.id);
@@ -778,19 +832,20 @@ const EnhancedExamDashboard = () => {
                     const testScore = testScores.get(`mock-${test.id}`) || testScores.get(test.id);
                     
                     return (
-                      <EnhancedTestCard
-                        key={test.id}
-                        test={test}
-                        isCompleted={isCompleted}
-                        testScore={testScore}
-                        onStartTest={(language) => handleTestStart('mock', test.id, undefined, language)}
-                        onViewSolutions={() => handleViewSolutions('mock', test.id)}
-                        onRetry={() => handleTestStart('mock', test.id)}
-                        testType="mock"
-                      />
+                      <div key={test.id} className="flex-shrink-0 w-80">
+                        <EnhancedTestCard
+                          test={test}
+                          isCompleted={isCompleted}
+                          testScore={testScore}
+                          onStartTest={(language) => handleTestStart('mock', test.id, undefined, language)}
+                          onViewSolutions={() => handleViewSolutions('mock', test.id)}
+                          onRetry={() => handleTestStart('mock', test.id)}
+                          testType="mock"
+                        />
+                      </div>
                     );
                   })}
-                </div>
+                </ResponsiveScrollContainer>
               </CardContent>
             </Card>
           </TabsContent>
@@ -865,7 +920,8 @@ const EnhancedExamDashboard = () => {
       </div>
       <Footer />
 
-    </div>
+      </div>
+    </PullToRefresh>
   );
 };
 

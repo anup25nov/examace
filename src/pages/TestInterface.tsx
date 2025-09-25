@@ -12,6 +12,7 @@ import {
   Flag,
   RefreshCw
 } from "lucide-react";
+import PullToRefresh from "@/components/PullToRefresh";
 // Removed unused imports: getQuestionsForTest, getTestDuration
 // Removed useExamStats import - using testSubmissionService instead
 import { testSubmissionService } from "@/lib/testSubmissionService";
@@ -115,6 +116,29 @@ const TestInterface = () => {
   }>>([]);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [filteredQuestions, setFilteredQuestions] = useState<QuestionWithProps[]>([]);
+
+  // Refresh function for pull-to-refresh
+  const handleRefresh = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Reload test data
+      if (examId && sectionId && testType) {
+        const data = await secureDynamicQuestionLoader.loadQuestions(examId, sectionId, testType, topic);
+        setTestData(data);
+        setQuestions(data.questions);
+        setFilteredQuestions(data.questions);
+        setTimeLeft(data.examInfo.duration * 60);
+        setSubjectDistribution(analyzeSubjectDistribution(data.questions));
+      }
+    } catch (err) {
+      console.error('Refresh failed:', err);
+      setError('Failed to refresh test data');
+    } finally {
+      setLoading(false);
+    }
+  };
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [autoSaveInterval, setAutoSaveInterval] = useState<NodeJS.Timeout | null>(null);
   const questionGridRef = useRef<HTMLDivElement>(null);
@@ -1025,7 +1049,8 @@ const TestInterface = () => {
 
   return (
     <ContentProtection enableProtection={true}>
-      <div className="min-h-screen bg-background">
+      <PullToRefresh onRefresh={handleRefresh}>
+        <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-3">
@@ -1478,7 +1503,8 @@ const TestInterface = () => {
           message={planLimitsService.getUpgradeMessage(planLimits)}
         />
       )}
-      </div>
+        </div>
+      </PullToRefresh>
     </ContentProtection>
   );
 };
