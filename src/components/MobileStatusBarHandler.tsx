@@ -12,8 +12,6 @@ const MobileStatusBarHandler = () => {
             if (StatusBar) {
               // Hide status bar completely
               await StatusBar.hide();
-              
-              console.log('Status bar hidden successfully');
             }
           }
         } catch (error) {

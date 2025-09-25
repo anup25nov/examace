@@ -87,10 +87,7 @@ const EnhancedExamDashboard = () => {
   // Enhanced refresh function with better error handling
   const handleRefresh = async () => {
     try {
-      console.log('🔄 Starting refresh...');
-      
       // Refresh all stats and data
-      console.log('📊 Refreshing stats...');
       await Promise.all([
         loadAllStats(),
         refreshStats()
@@ -98,15 +95,12 @@ const EnhancedExamDashboard = () => {
       
       // Reload exam data
       if (examId) {
-        console.log('📚 Reloading exam data for:', examId);
         const exam = dynamicExamService.getExamConfig(examId);
         if (exam) {
           // Reload mock tests using dynamicTestDataLoader
           const { dynamicTestDataLoader } = await import('@/lib/dynamicTestDataLoader');
           
-          console.log('🧪 Loading mock tests...');
           const mockData = await dynamicTestDataLoader.getMockTests(examId);
-          console.log('📊 Raw mock data received:', mockData?.length || 0);
           
           if (mockData && mockData.length > 0) {
             const convertedMockData = mockData.map(test => ({
@@ -127,31 +121,20 @@ const EnhancedExamDashboard = () => {
             const premiumTests = convertedMockData.filter(t => t.isPremium);
             
             setMockTests({ free: freeTests, premium: premiumTests });
-            console.log('✅ Mock tests loaded:', convertedMockData.length, '(Free:', freeTests.length, 'Premium:', premiumTests.length, ')');
           } else {
-            console.warn('⚠️ No mock tests data received');
             setMockTests({ free: [], premium: [] });
           }
           
           // Reload PYQ data
-          console.log('📄 Loading PYQ data...');
           const pyqData = await dynamicTestDataLoader.getPYQData(examId);
           setPyqData(pyqData || []);
-          console.log('✅ PYQ data loaded:', pyqData?.length || 0, 'years');
           
           // Reload practice data
-          console.log('💪 Loading practice data...');
           const practiceData = await dynamicTestDataLoader.getPracticeData(examId);
           setPracticeData(practiceData || []);
-          console.log('✅ Practice data loaded:', practiceData?.length || 0);
-        } else {
-          console.error('❌ No exam config found for:', examId);
         }
       }
-      
-      console.log('✅ Refresh completed successfully');
     } catch (error) {
-      console.error('❌ Refresh failed:', error);
       // Show user-friendly error message
       alert('Refresh failed. Please try again.');
     }
@@ -647,24 +630,24 @@ const EnhancedExamDashboard = () => {
       <header className="border-b border-border bg-gradient-to-r from-white/95 via-blue-50/95 to-indigo-50/95 backdrop-blur-md sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => navigate("/")}
-                className="p-1 sm:p-2 min-w-[32px] min-h-[32px]"
-              >
-                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-              </Button>
-              <div className="flex items-center space-x-2 sm:space-x-3">
-                <img 
-                  src="/logos/alternate_image.png" 
-                  alt="Step2Sarkari Logo" 
-                  className="h-6 w-auto sm:h-8"
-                />
-                <h1 className="text-lg sm:text-xl font-bold text-foreground uppercase">S2S</h1>
-              </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate("/")}
+              className="p-1 sm:p-2 min-w-[32px] min-h-[32px]"
+            >
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+            </Button>
+            
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <img 
+                src="/logos/alternate_image.png" 
+                alt="Step2Sarkari Logo" 
+                className="h-6 w-auto sm:h-8"
+              />
+              <h1 className="text-lg sm:text-xl font-bold text-foreground uppercase">S2S</h1>
             </div>
+            
             <div className="flex items-center space-x-1 sm:space-x-2">
               <div className="text-right">
                 <div className="flex items-center space-x-1 sm:space-x-2">
@@ -684,10 +667,6 @@ const EnhancedExamDashboard = () => {
           <div className="flex items-center justify-center space-x-2 mb-2">
             <Trophy className="w-5 h-5 text-primary animate-pulse" />
             <h3 className="text-lg font-bold text-foreground">Performance Statistics</h3>
-          </div>
-          {/* Debug info */}
-          <div className="text-xs text-gray-500 mt-2">
-            Debug: Tests: {userStats.totalTests}, Best: {userStats.bestScore}, Avg: {userStats.avgScoreLast10}
           </div>
         </div>
         
@@ -780,7 +759,6 @@ const EnhancedExamDashboard = () => {
                   variant={testFilter === 'all' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => {
-                    console.log('Test filter changed to: all');
                     setTestFilter('all');
                   }}
                   className="text-xs flex-1 sm:flex-none min-w-0 min-h-[36px]"
@@ -797,7 +775,6 @@ const EnhancedExamDashboard = () => {
                   variant={testFilter === 'attempted' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => {
-                    console.log('Test filter changed to: attempted');
                     setTestFilter('attempted');
                   }}
                   className="text-xs flex-1 sm:flex-none min-w-0 min-h-[36px]"
@@ -812,7 +789,6 @@ const EnhancedExamDashboard = () => {
                   variant={testFilter === 'not-attempted' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => {
-                    console.log('Test filter changed to: not-attempted');
                     setTestFilter('not-attempted');
                   }}
                   className="text-xs flex-1 sm:flex-none min-w-0 min-h-[36px]"
@@ -828,7 +804,7 @@ const EnhancedExamDashboard = () => {
           </div>
 
           {/* PYQ Tab - First */}
-          <TabsContent value="pyq" className="space-y-0">
+          <TabsContent value="pyq" className="space-y-0 h-[520px]">
             <YearWiseTabs
               years={pyqData}
               completedTests={completedTests}

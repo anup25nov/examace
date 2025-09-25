@@ -67,8 +67,6 @@ const Index = () => {
       
       // Force a small delay to show the refresh animation
       await new Promise(resolve => setTimeout(resolve, 500));
-      
-      console.log('Dashboard refreshed successfully');
     } catch (error) {
       console.error('Refresh failed:', error);
       // Don't throw the error, just log it to prevent the UI from breaking
@@ -126,7 +124,6 @@ const Index = () => {
     setAppliedReferralCode(code);
     setShowReferralCodeInput(false);
     // Show success message
-    console.log('Referral code applied:', code);
   };
 
 
@@ -186,18 +183,6 @@ const Index = () => {
       <header className="border-b border-border bg-white/95 backdrop-blur-md sticky top-0 z-50 shadow-lg header-with-status-bar">
         <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 sm:space-x-3">
-              <img 
-                src="/logos/alternate_image.png"
-                alt="S2S Logo" 
-                className="h-6 w-auto sm:h-8"
-              />
-              <div>
-                <h1 className="text-lg sm:text-xl font-bold text-gray-900">S2S</h1>
-                {/* <p className="text-xs text-gray-600 hidden sm:block">Seedha Selection</p> */}
-              </div>
-            </div>
-            
             {isAuthenticated ? (
               <div className="flex items-center space-x-1 sm:space-x-2">
                 <UserMessages />
@@ -216,6 +201,18 @@ const Index = () => {
                 <span className="sm:hidden">Login</span>
               </Button>
             )}
+            
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <img 
+                src="/logos/alternate_image.png"
+                alt="S2S Logo" 
+                className="h-6 w-auto sm:h-8"
+              />
+              <div>
+                <h1 className="text-lg sm:text-xl font-bold text-gray-900">S2S</h1>
+                {/* <p className="text-xs text-gray-600 hidden sm:block">Seedha Selection</p> */}
+              </div>
+            </div>
           </div>
         </div>
       </header>

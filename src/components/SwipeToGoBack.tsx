@@ -83,14 +83,11 @@ export const SwipeToGoBack: React.FC<SwipeToGoBackProps> = ({
 
   const handleTouchEnd = useCallback(async () => {
     if (disabled || !isSwipeActive || isGoingBack) return;
-
-    console.log('SwipeToGoBack: Touch end', { swipeDistance, threshold, canGoBack });
     
     setIsSwipeActive(false);
     onSwipeEnd?.();
     
     if (swipeDistance >= threshold) {
-      console.log('SwipeToGoBack: Navigating back');
       setIsGoingBack(true);
       
       // Add a small delay for visual feedback
@@ -105,15 +102,12 @@ export const SwipeToGoBack: React.FC<SwipeToGoBackProps> = ({
             if (window.history.length > 1 && canGoBack) {
               // Use replace instead of push to maintain state
               navigate(-1);
-              console.log('SwipeToGoBack: Navigated back successfully');
             } else {
               // Fallback: go to home page instead of closing app
-              console.log('SwipeToGoBack: No history to go back, navigating to home');
               navigate('/', { replace: true });
             }
           }, 100);
         } catch (error) {
-          console.error('Navigation error:', error);
           // Fallback: go to home page instead of closing app
           navigate('/', { replace: true });
         }

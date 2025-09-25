@@ -120,9 +120,6 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
   
   // Filter papers based on selected year first, then test filter
   const filteredPapers = useMemo(() => {
-    console.log('Filtering papers - selectedYear:', selectedYear, 'testFilter:', testFilter);
-    console.log('Completed tests set:', Array.from(completedTests));
-    
     // First filter by year
     let yearFilteredPapers = allPapers;
     if (selectedYear !== '' && selectedYear !== 'all') {
@@ -132,9 +129,6 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
           yearData.papers.some(p => p.id === paper.id)
         );
       });
-      console.log(`Papers after year filter (${selectedYear}):`, yearFilteredPapers.length);
-    } else {
-      console.log('Showing all papers (no year filter)');
     }
     
     // Then filter by test status
@@ -142,22 +136,15 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
       const testKey = `pyq-${paper.id}`;
       const isCompleted = completedTests.has(testKey);
       
-      console.log(`Paper ${paper.id}: key="${testKey}", isCompleted=${isCompleted}`);
-      
       if (testFilter === 'attempted') return isCompleted;
       if (testFilter === 'not-attempted') return !isCompleted;
       return true; // Show all for 'all' filter
     });
     
-    console.log('Final filtered papers count:', finalPapers.length);
     return finalPapers;
   }, [allPapers, selectedYear, sortedYears, completedTests, testFilter]);
   
   const handleYearChange = (year: string) => {
-    console.log('Year changed to:', year);
-    console.log('Current testFilter:', testFilter);
-    console.log('Available years:', sortedYears.map(y => y.year));
-    console.log('Total papers before filter:', allPapers.length);
     setSelectedYear(year);
   };
 
@@ -317,10 +304,6 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
               const isCompleted = completedTests.has(`pyq-${paper.id}`);
               const testScore = testScores.get(`pyq-${paper.id}`);
               
-              // Debug logging (simplified)
-              if (isCompleted && !testScore) {
-                console.log(`⚠️ [YearWiseTabs] Paper ${paper.id} is completed but no score found`);
-              }
 
               return (
                 <div key={paper.id} className="w-full">

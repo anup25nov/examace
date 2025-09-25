@@ -92,17 +92,22 @@ button, a, [role="button"] {
   justify-content: center;
 }
 
-/* Remove status bar padding to eliminate white space */
+/* Status bar handling for mobile */
 body {
   overscroll-behavior: auto;
   padding-top: 0;
   margin-top: 0;
 }
 
-/* Status bar safe area for headers - remove extra padding */
+/* Status bar safe area for headers */
 .header-with-status-bar {
-  padding-top: 0;
+  padding-top: env(safe-area-inset-top, 0);
   margin-top: 0;
+}
+
+/* Ensure headers start from the very top */
+header {
+  padding-top: env(safe-area-inset-top, 0);
 }
 
 /* Better mobile navigation */

@@ -11,7 +11,7 @@ import { mobileDebugger } from './lib/mobileDebugger'
 async function initializeApp() {
   try {
     // Initialize mobile debugger first
-    mobileDebugger.info('🚀 App Initialization Started');
+    mobileDebugger.info('App Initialization Started');
     
     // Validate environment variables first
     validateEnvironment();
@@ -25,7 +25,6 @@ async function initializeApp() {
     // Initialize production monitoring
     if (process.env.NODE_ENV === 'production') {
       await initMonitoring();
-      console.log('✅ Production monitoring initialized');
     }
     
     // Log performance metrics

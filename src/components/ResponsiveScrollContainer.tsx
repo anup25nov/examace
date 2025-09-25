@@ -19,20 +19,9 @@ const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps> = ({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollDown, setCanScrollDown] = useState(false);
 
-  // Check if we should enable scrolling
-  // Enable scrolling when any cards appear in the next row
-  // Mobile: 1 card per row, scroll when >1 card (any card in row 2)
-  // Tablet: 2 cards per row, scroll when >2 cards (any card in row 2)
-  // Desktop: 4 cards per row, scroll when >4 cards (any card in row 2)
-  const getCardsPerRow = () => {
-    if (window.innerWidth < 640) return 1; // sm: 1 card
-    if (window.innerWidth < 1024) return 2; // md: 2 cards
-    return 4; // lg+: 4 cards
-  };
-  
-  const cardsPerRow = getCardsPerRow();
-  // Enable scrolling when more than 1 complete row (any cards in next row)
-  const shouldEnableScrolling = cardCount > cardsPerRow;
+  // Always enable scrolling for better UX
+  // This ensures both PYQ and Mock sections have consistent scrolling behavior
+  const shouldEnableScrolling = true;
 
   const checkScrollButton = () => {
     if (scrollRef.current) {

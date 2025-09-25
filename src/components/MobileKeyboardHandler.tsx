@@ -12,7 +12,6 @@ export const MobileKeyboardHandler: React.FC<MobileKeyboardHandlerProps> = ({ ch
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
       const handleKeyboardWillShow = (info: any) => {
-        console.log('Keyboard will show:', info);
         setKeyboardHeight(info.keyboardHeight);
         setIsKeyboardVisible(true);
         
@@ -21,7 +20,6 @@ export const MobileKeyboardHandler: React.FC<MobileKeyboardHandlerProps> = ({ ch
       };
 
       const handleKeyboardWillHide = () => {
-        console.log('Keyboard will hide');
         setKeyboardHeight(0);
         setIsKeyboardVisible(false);
         
@@ -30,13 +28,11 @@ export const MobileKeyboardHandler: React.FC<MobileKeyboardHandlerProps> = ({ ch
       };
 
       const handleKeyboardDidShow = (info: any) => {
-        console.log('Keyboard did show:', info);
         setKeyboardHeight(info.keyboardHeight);
         setIsKeyboardVisible(true);
       };
 
       const handleKeyboardDidHide = () => {
-        console.log('Keyboard did hide');
         setKeyboardHeight(0);
         setIsKeyboardVisible(false);
       };

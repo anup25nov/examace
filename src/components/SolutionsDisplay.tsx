@@ -124,7 +124,6 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
           text: 'Check out this amazing platform for government exam preparation!',
           url: referralUrl
         }).catch((error) => {
-          console.log('Error sharing:', error);
           // Fallback to copy
           navigator.clipboard.writeText(referralUrl).then(() => {
             setReferralCopied(true);
