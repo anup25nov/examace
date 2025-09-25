@@ -8,6 +8,7 @@ import MobileBackButtonHandler from "@/components/MobileBackButtonHandler";
 import MobileAppStateManager from "@/components/MobileAppStateManager";
 import MobileStatusBarHandler from "@/components/MobileStatusBarHandler";
 import MobileKeyboardHandler from "@/components/MobileKeyboardHandler";
+import MobileDebugPanel from "@/components/MobileDebugPanel";
 import PullToRefresh from "@/components/PullToRefresh";
 import SwipeToGoBack from "@/components/SwipeToGoBack";
 import Index from "./pages/Index";
@@ -134,6 +135,7 @@ const App = () => {
         </BrowserRouter>
         {/* <DebugInfo /> */}
         <GlobalMembershipModal />
+        <MobileDebugPanel />
           </DashboardDataProvider>
         </MembershipProvider>
       </TooltipProvider>

@@ -18,12 +18,14 @@ import {
   ChevronRight,
   ChevronDown,
   CheckCircle,
+  RefreshCw,
   BarChart3,
   Star,
   Medal,
   Crown,
   Lock,
-  Users
+  Users,
+  History
 } from "lucide-react";
 import { dynamicExamService } from "@/lib/dynamicExamService";
 import { useExamStats } from "@/hooks/useExamStats";
@@ -82,46 +84,76 @@ const EnhancedExamDashboard = () => {
   const [practiceData, setPracticeData] = useState<any[]>([]);
   const [userMembership, setUserMembership] = useState(membership || premiumService.getUserMembership());
 
-  // Refresh function for pull-to-refresh
+  // Enhanced refresh function with better error handling
   const handleRefresh = async () => {
     try {
+      console.log('🔄 Starting refresh...');
+      
       // Refresh all stats and data
-      await loadAllStats();
-      await refreshStats();
+      console.log('📊 Refreshing stats...');
+      await Promise.all([
+        loadAllStats(),
+        refreshStats()
+      ]);
       
       // Reload exam data
       if (examId) {
+        console.log('📚 Reloading exam data for:', examId);
         const exam = dynamicExamService.getExamConfig(examId);
         if (exam) {
           // Reload mock tests using dynamicTestDataLoader
           const { dynamicTestDataLoader } = await import('@/lib/dynamicTestDataLoader');
+          
+          console.log('🧪 Loading mock tests...');
           const mockData = await dynamicTestDataLoader.getMockTests(examId);
-          const convertedMockData = mockData.map(test => ({
-            id: test.id,
-            name: test.name,
-            duration: test.duration,
-            questions: test.questions.length,
-            subjects: test.subjects || [],
-            difficulty: 'medium',
-            description: test.description || '',
-            isPremium: test.isPremium || false,
-            price: test.isPremium ? 99 : 0,
-            benefits: test.isPremium ? ['Advanced questions', 'Detailed solutions'] : [],
-            questionData: test.questions
-          }));
-          setMockTests({ free: convertedMockData.filter(t => !t.isPremium), premium: convertedMockData.filter(t => t.isPremium) });
+          console.log('📊 Raw mock data received:', mockData?.length || 0);
+          
+          if (mockData && mockData.length > 0) {
+            const convertedMockData = mockData.map(test => ({
+              id: test.id,
+              name: test.name,
+              duration: test.duration,
+              questions: test.questions?.length || 0,
+              subjects: test.subjects || [],
+              difficulty: 'medium',
+              description: test.description || '',
+              isPremium: test.isPremium || false,
+              price: test.isPremium ? 99 : 0,
+              benefits: test.isPremium ? ['Advanced questions', 'Detailed solutions'] : [],
+              questionData: test.questions || []
+            }));
+            
+            const freeTests = convertedMockData.filter(t => !t.isPremium);
+            const premiumTests = convertedMockData.filter(t => t.isPremium);
+            
+            setMockTests({ free: freeTests, premium: premiumTests });
+            console.log('✅ Mock tests loaded:', convertedMockData.length, '(Free:', freeTests.length, 'Premium:', premiumTests.length, ')');
+          } else {
+            console.warn('⚠️ No mock tests data received');
+            setMockTests({ free: [], premium: [] });
+          }
           
           // Reload PYQ data
+          console.log('📄 Loading PYQ data...');
           const pyqData = await dynamicTestDataLoader.getPYQData(examId);
-          setPyqData(pyqData);
+          setPyqData(pyqData || []);
+          console.log('✅ PYQ data loaded:', pyqData?.length || 0, 'years');
           
           // Reload practice data
+          console.log('💪 Loading practice data...');
           const practiceData = await dynamicTestDataLoader.getPracticeData(examId);
-          setPracticeData(practiceData);
+          setPracticeData(practiceData || []);
+          console.log('✅ Practice data loaded:', practiceData?.length || 0);
+        } else {
+          console.error('❌ No exam config found for:', examId);
         }
       }
+      
+      console.log('✅ Refresh completed successfully');
     } catch (error) {
-      console.error('Refresh failed:', error);
+      console.error('❌ Refresh failed:', error);
+      // Show user-friendly error message
+      alert('Refresh failed. Please try again.');
     }
   };
   
@@ -609,34 +641,34 @@ const EnhancedExamDashboard = () => {
   };
 
   return (
-    <PullToRefresh onRefresh={handleRefresh}>
+    <PullToRefresh onRefresh={handleRefresh} enablePullToRefresh={false}>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      {/* Header */}
+      {/* Header - Mobile Optimized */}
       <header className="border-b border-border bg-gradient-to-r from-white/95 via-blue-50/95 to-indigo-50/95 backdrop-blur-md sticky top-0 z-50 shadow-lg">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <Button 
                 variant="ghost" 
                 size="sm" 
                 onClick={() => navigate("/")}
-                className="p-2"
+                className="p-1 sm:p-2 min-w-[32px] min-h-[32px]"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2 sm:space-x-3">
                 <img 
                   src="/logos/alternate_image.png" 
                   alt="Step2Sarkari Logo" 
-                  className="h-8 w-auto"
+                  className="h-6 w-auto sm:h-8"
                 />
-                <h1 className="text-xl font-bold text-foreground uppercase">S2S</h1>
+                <h1 className="text-lg sm:text-xl font-bold text-foreground uppercase">S2S</h1>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-1 sm:space-x-2">
               <div className="text-right">
-                <div className="flex items-center space-x-2 justify-end">
-                  <p className="text-sm font-medium text-foreground">{displayName}!</p>
+                <div className="flex items-center space-x-1 sm:space-x-2">
+                  <p className="text-xs sm:text-sm font-medium text-foreground truncate max-w-[120px] sm:max-w-none">{displayName}!</p>
                   {/* {getMembershipBadge()} */}
                 </div>
               </div>
@@ -645,7 +677,7 @@ const EnhancedExamDashboard = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 lg:py-8 pt-8 sm:pt-12">
 
         {/* Stats Overview */}
         <div className="mb-6 text-center">
@@ -653,54 +685,58 @@ const EnhancedExamDashboard = () => {
             <Trophy className="w-5 h-5 text-primary animate-pulse" />
             <h3 className="text-lg font-bold text-foreground">Performance Statistics</h3>
           </div>
+          {/* Debug info */}
+          <div className="text-xs text-gray-500 mt-2">
+            Debug: Tests: {userStats.totalTests}, Best: {userStats.bestScore}, Avg: {userStats.avgScoreLast10}
+          </div>
         </div>
         
-        {/* Main Stats Grid - Optimized for mobile */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6 max-w-6xl mx-auto">
+        {/* Main Stats Grid - Mobile First Design */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 max-w-6xl mx-auto">
           <Card className="text-center border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 text-white">
-            <CardContent className="p-3 md:p-6">
-              <div className="w-10 h-10 md:w-16 md:h-16 mx-auto mb-2 md:mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                <BarChart3 className="w-5 h-5 md:w-8 md:h-8 text-white" />
+            <CardContent className="p-3 sm:p-4 lg:p-6">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-16 lg:h-16 mx-auto mb-2 sm:mb-3 lg:mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 lg:w-8 lg:h-8 text-white" />
               </div>
-              <p className="text-xl md:text-3xl font-bold mb-1 md:mb-2">{userStats.totalTests}</p>
-              <p className="text-xs md:text-sm text-blue-100 font-medium">Test Attempted</p>
+              <p className="text-lg sm:text-xl lg:text-3xl font-bold mb-1 sm:mb-2">{userStats.totalTests}</p>
+              <p className="text-xs sm:text-sm lg:text-sm text-blue-100 font-medium leading-tight">Tests Attempted</p>
             </CardContent>
           </Card>
           
           <Card className="text-center border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-purple-500 via-violet-600 to-fuchsia-600 text-white">
-            <CardContent className="p-3 md:p-6">
-              <div className="w-10 h-10 md:w-16 md:h-16 mx-auto mb-2 md:mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                <Trophy className="w-5 h-5 md:w-8 md:h-8 text-white" />
+            <CardContent className="p-3 sm:p-4 lg:p-6">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-16 lg:h-16 mx-auto mb-2 sm:mb-3 lg:mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                <Trophy className="w-4 h-4 sm:w-5 sm:h-5 lg:w-8 lg:h-8 text-white" />
               </div>
-              <p className="text-xl md:text-3xl font-bold mb-1 md:mb-2">{userStats.bestScore}</p>
-              <p className="text-xs md:text-sm text-purple-100 font-medium">Best Score</p>
+              <p className="text-lg sm:text-xl lg:text-3xl font-bold mb-1 sm:mb-2">{userStats.bestScore}</p>
+              <p className="text-xs sm:text-sm lg:text-sm text-purple-100 font-medium leading-tight">Best Score</p>
             </CardContent>
           </Card>
           
           <Card className="text-center border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-orange-500 via-red-600 to-pink-600 text-white">
-            <CardContent className="p-3 md:p-6">
-              <div className="w-10 h-10 md:w-16 md:h-16 mx-auto mb-2 md:mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                <Star className="w-5 h-5 md:w-8 md:h-8 text-white" />
+            <CardContent className="p-3 sm:p-4 lg:p-6">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-16 lg:h-16 mx-auto mb-2 sm:mb-3 lg:mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                <Star className="w-4 h-4 sm:w-5 sm:h-5 lg:w-8 lg:h-8 text-white" />
               </div>
-              <p className="text-xl md:text-3xl font-bold mb-1 md:mb-2">{userStats.avgScoreLast10}</p>
-              <p className="text-xs md:text-sm text-orange-100 font-medium">Average Score</p>
+              <p className="text-lg sm:text-xl lg:text-3xl font-bold mb-1 sm:mb-2">{userStats.avgScoreLast10}</p>
+              <p className="text-xs sm:text-sm lg:text-sm text-orange-100 font-medium leading-tight">Average Score</p>
             </CardContent>
           </Card>
           
           <Card className="text-center border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-br from-green-500 via-emerald-600 to-teal-600 text-white">
-            <CardContent className="p-3 md:p-6">
-              <div className="w-10 h-10 md:w-16 md:h-16 mx-auto mb-2 md:mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
-                <Target className="w-5 h-5 md:w-8 md:h-8 text-white" />
+            <CardContent className="p-3 sm:p-4 lg:p-6">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-16 lg:h-16 mx-auto mb-2 sm:mb-3 lg:mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                <Target className="w-4 h-4 sm:w-5 sm:h-5 lg:w-8 lg:h-8 text-white" />
               </div>
-              <p className="text-xl md:text-3xl font-bold mb-1 md:mb-2">{userStats.bestRank || 'N/A'}</p>
-              <p className="text-xs md:text-sm text-green-100 font-medium">Best Rank</p>
+              <p className="text-lg sm:text-xl lg:text-3xl font-bold mb-1 sm:mb-2">{userStats.bestRank || 'N/A'}</p>
+              <p className="text-xs sm:text-sm lg:text-sm text-green-100 font-medium leading-tight">Best Rank</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="pyq" value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 bg-gradient-to-r from-slate-100 via-blue-50 to-indigo-100 p-1 rounded-xl shadow-lg border border-white/50">
+        <Tabs defaultValue="pyq" value={activeTab} onValueChange={handleTabChange} className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-2 bg-gradient-to-r from-slate-100 via-blue-50 to-indigo-100 p-1 rounded-lg sm:rounded-xl shadow-lg border border-white/50">
             {exam?.sections.map((section) => {
               // Hide practice section for now
               if (section.id === 'practice') return null;
@@ -709,7 +745,7 @@ const EnhancedExamDashboard = () => {
               if (!isEnabled) return null;
 
               const tabConfig = {
-                pyq: { icon: FileText, label: 'Previous Year' },
+                pyq: { icon: History, label: 'Previous Year' },
                 mock: { icon: Trophy, label: 'Mock Tests' },
                 practice: { icon: BookOpen, label: 'Practice' }
               };
@@ -726,19 +762,20 @@ const EnhancedExamDashboard = () => {
                 <TabsTrigger 
                   key={section.id}
                   value={section.id} 
-                  className={`flex items-center space-x-2 ${tabGradients[section.id as keyof typeof tabGradients]} data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-lg font-medium`}
+                  className={`flex items-center justify-center space-x-1 sm:space-x-2 ${tabGradients[section.id as keyof typeof tabGradients]} data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-300 rounded-md sm:rounded-lg font-medium text-xs sm:text-sm py-2 px-2 sm:px-3`}
                 >
-                  <Icon className="w-4 h-4" />
-                  <span>{label}</span>
+                  <Icon className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="hidden xs:inline">{label}</span>
+                  <span className="xs:hidden">{section.id === 'pyq' ? 'PYQ' : 'Mock'}</span>
                 </TabsTrigger>
               );
             })}
           </TabsList>
 
-          {/* Test Filter */}
-          <div className="mb-6">
-            <div className="flex flex-wrap items-center justify-center gap-2 px-2">
-              <div className="flex flex-wrap justify-center gap-2 w-full sm:w-auto">
+          {/* Test Filter - Mobile Optimized */}
+          <div className="mb-4 sm:mb-6">
+            <div className="flex flex-wrap items-center justify-center gap-2 px-1">
+              <div className="flex flex-wrap justify-center gap-2 w-full">
                 <Button
                   variant={testFilter === 'all' ? 'default' : 'outline'}
                   size="sm"
@@ -746,11 +783,11 @@ const EnhancedExamDashboard = () => {
                     console.log('Test filter changed to: all');
                     setTestFilter('all');
                   }}
-                  className="text-xs flex-1 sm:flex-none min-w-0"
+                  className="text-xs flex-1 sm:flex-none min-w-0 min-h-[36px]"
                 >
                   <span className="hidden sm:inline">All Tests</span>
                   <span className="sm:hidden">All</span>
-                  <span className={`ml-1 inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold ${
+                  <span className={`ml-1 inline-flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full text-xs font-bold ${
                     testFilter === 'all' ? 'bg-white text-primary' : 'bg-primary text-primary-foreground'
                   }`}>
                     {completedCount + notAttemptedCount}
@@ -763,11 +800,11 @@ const EnhancedExamDashboard = () => {
                     console.log('Test filter changed to: attempted');
                     setTestFilter('attempted');
                   }}
-                  className="text-xs flex-1 sm:flex-none min-w-0"
+                  className="text-xs flex-1 sm:flex-none min-w-0 min-h-[36px]"
                 >
                   <span className="hidden sm:inline">Completed</span>
                   <span className="sm:hidden">Done</span>
-                  <span className="ml-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-600 text-white text-xs font-bold">
+                  <span className="ml-1 inline-flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-green-600 text-white text-xs font-bold">
                     {completedCount}
                   </span>
                 </Button>
@@ -778,11 +815,11 @@ const EnhancedExamDashboard = () => {
                     console.log('Test filter changed to: not-attempted');
                     setTestFilter('not-attempted');
                   }}
-                  className="text-xs flex-1 sm:flex-none min-w-0"
+                  className="text-xs flex-1 sm:flex-none min-w-0 min-h-[36px]"
                 >
                   <span className="hidden sm:inline">Not Attempted</span>
                   <span className="sm:hidden">New</span>
-                  <span className="ml-1 inline-flex items-center justify-center w-5 h-5 rounded-full bg-orange-600 text-white text-xs font-bold">
+                  <span className="ml-1 inline-flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-orange-600 text-white text-xs font-bold">
                     {notAttemptedCount}
                   </span>
                 </Button>

@@ -140,7 +140,14 @@ const Index = () => {
       setIsNavigating(true);
       // Optimize route transition
       optimizeRouteTransition('/', `/exam/${examId}`);
-      navigate(`/exam/${examId}`);
+      
+      // Scroll to top before navigation
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      // Small delay to ensure scroll happens before navigation
+      setTimeout(() => {
+        navigate(`/exam/${examId}`);
+      }, 100);
     }
   };
 
@@ -173,11 +180,11 @@ const Index = () => {
   }
 
   return (
-    <PullToRefresh onRefresh={handleRefresh}>
+    <PullToRefresh onRefresh={handleRefresh} enablePullToRefresh={false}>
       <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-white/95 backdrop-blur-md sticky top-0 z-50 shadow-lg">
-        <div className="container mx-auto px-4 py-3 sm:py-4">
+      {/* Header - Mobile Optimized */}
+      <header className="border-b border-border bg-white/95 backdrop-blur-md sticky top-0 z-50 shadow-lg header-with-status-bar">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 sm:space-x-3">
               <img 
@@ -192,7 +199,7 @@ const Index = () => {
             </div>
             
             {isAuthenticated ? (
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1 sm:space-x-2">
                 <UserMessages />
                 <ProfileDropdown
                   onLogout={handleLogout}
@@ -203,9 +210,10 @@ const Index = () => {
             ) : (
               <Button 
                 onClick={() => navigate('/auth')} 
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 px-4 py-2 text-sm sm:text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 px-3 sm:px-4 py-2 text-sm sm:text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 min-w-[60px] min-h-[36px]"
               >
-                Login
+                <span className="hidden sm:inline">Login</span>
+                <span className="sm:hidden">Login</span>
               </Button>
             )}
           </div>
@@ -214,8 +222,8 @@ const Index = () => {
 
 
           {/* Hero Section with Streak */}
-      <section className="gradient-hero text-white py-16">
-        <div className="container mx-auto px-4 text-center">
+      <section className="gradient-hero text-white py-16 pt-20 sm:pt-24">
+        <div className="container mx-auto px-3 sm:px-4 text-center">
           {/* Streak Display - Only show when authenticated */}
           {isAuthenticated && streak && (
             <div className="mb-6">
@@ -277,7 +285,7 @@ const Index = () => {
 
       {/* Exams Grid */}
       <section className="py-12 sm:py-16">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-3 sm:px-4">
           <div className="text-center mb-8 sm:mb-12">
             <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
               Choose Your <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Exam</span>
@@ -378,7 +386,7 @@ const Index = () => {
 
       {/* Features Section */}
       <section className="py-20 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-3 sm:px-4">
           <div className="text-center mb-16">
             <h3 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
               Why Choose <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">S2S</span>?
@@ -418,7 +426,7 @@ const Index = () => {
 
       {/* Mobile App Download Section */}
       <section className="py-20 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 text-white">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-3 sm:px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left Side - Content */}
             <div className="text-center lg:text-left">
@@ -525,15 +533,17 @@ const Index = () => {
       <Footer />
       </div>
       
-      {/* Daily Accolades - Fixed overlay, centered on screen */}
+      {/* Daily Accolades - Show at top of dashboard */}
       {showDailyAccolades && (
-        <DailyAccolades
-          isFirstVisit={isFirstDailyVisit}
-          onClose={() => {
-            setShowDailyAccolades(false);
-            setIsFirstDailyVisit(false);
-          }}
-        />
+        <div className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-border shadow-lg">
+          <DailyAccolades
+            isFirstVisit={isFirstDailyVisit}
+            onClose={() => {
+              setShowDailyAccolades(false);
+              setIsFirstDailyVisit(false);
+            }}
+          />
+        </div>
       )}
     </PullToRefresh>
   );

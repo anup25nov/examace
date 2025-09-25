@@ -96,16 +96,22 @@ export const SwipeToGoBack: React.FC<SwipeToGoBackProps> = ({
       // Add a small delay for visual feedback
       setTimeout(() => {
         try {
-          // Check if we can still go back and prevent app closing
-          if (window.history.length > 1 && canGoBack) {
-            // Use replace instead of push to maintain state
-            navigate(-1);
-            console.log('SwipeToGoBack: Navigated back successfully');
-          } else {
-            // Fallback: go to home page instead of closing app
-            console.log('SwipeToGoBack: No history to go back, navigating to home');
-            navigate('/', { replace: true });
-          }
+          // Scroll to top before navigation
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          
+          // Small delay to ensure scroll happens before navigation
+          setTimeout(() => {
+            // Check if we can still go back and prevent app closing
+            if (window.history.length > 1 && canGoBack) {
+              // Use replace instead of push to maintain state
+              navigate(-1);
+              console.log('SwipeToGoBack: Navigated back successfully');
+            } else {
+              // Fallback: go to home page instead of closing app
+              console.log('SwipeToGoBack: No history to go back, navigating to home');
+              navigate('/', { replace: true });
+            }
+          }, 100);
         } catch (error) {
           console.error('Navigation error:', error);
           // Fallback: go to home page instead of closing app

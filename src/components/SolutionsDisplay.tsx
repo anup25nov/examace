@@ -19,7 +19,8 @@ import {
   AlertTriangle,
   Gift,
   Copy,
-  Check
+  Check,
+  Share
 } from 'lucide-react';
 import ImageDisplay from '@/components/ImageDisplay';
 import { QuestionReportModal } from './QuestionReportModal';
@@ -115,10 +116,28 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
   const handleDirectRefer = () => {
     if (referralCode) {
       const referralUrl = `${window.location.origin}/auth?ref=${referralCode}`;
-      navigator.clipboard.writeText(referralUrl).then(() => {
-        setReferralCopied(true);
-        setTimeout(() => setReferralCopied(false), 2000);
-      });
+      
+      // Try to use Web Share API first, fallback to copy
+      if (navigator.share) {
+        navigator.share({
+          title: 'Join S2S - Government Exam Preparation',
+          text: 'Check out this amazing platform for government exam preparation!',
+          url: referralUrl
+        }).catch((error) => {
+          console.log('Error sharing:', error);
+          // Fallback to copy
+          navigator.clipboard.writeText(referralUrl).then(() => {
+            setReferralCopied(true);
+            setTimeout(() => setReferralCopied(false), 2000);
+          });
+        });
+      } else {
+        // Fallback to copy
+        navigator.clipboard.writeText(referralUrl).then(() => {
+          setReferralCopied(true);
+          setTimeout(() => setReferralCopied(false), 2000);
+        });
+      }
     }
   };
 
@@ -390,8 +409,8 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                       </>
                     ) : (
                       <>
-                        <Copy className="w-4 h-4 mr-1" />
-                        Refer Now
+                        <Share className="w-4 h-4 mr-1" />
+                        Share & Earn
                       </>
                     )}
                   </Button>

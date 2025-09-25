@@ -39,7 +39,7 @@ export const MockTestSelector: React.FC<MockTestSelectorProps> = ({
   return (
     <div className="space-y-0">
       {/* Mock Test Cards Container */}
-      <Card className="gradient-card border-0 shadow-lg h-[420px] flex flex-col">
+      <Card className="gradient-card border-0 shadow-lg h-[520px] flex flex-col">
         <CardHeader className="pb-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-t-lg">
           <CardTitle className="flex flex-col space-y-4">
             {/* Main Header - Top */}

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Calendar, Clock, CheckCircle, Star, Crown, Target } from 'lucide-react';
+import { FileText, Calendar, Clock, CheckCircle, Star, Crown, Target, History } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { unifiedPaymentService } from '@/lib/unifiedPaymentService';
 import { MembershipPlans } from '@/components/MembershipPlans';
@@ -218,18 +218,18 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
   return (
     <div className={`space-y-0 ${className}`}>
       {/* PYQ Cards Container */}
-      <Card className="gradient-card border-0 shadow-lg h-[420px] flex flex-col">
-        <CardHeader className="pb-4 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-t-lg">
-          <CardTitle className="flex flex-col space-y-4">
-            {/* Main Header - Top */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-white/20 rounded-lg">
-                  <FileText className="w-6 h-6 text-white" />
+      <Card className="gradient-card border-0 shadow-lg h-[520px] flex flex-col">
+        <CardHeader className="pb-3 sm:pb-4 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-t-lg">
+          <CardTitle className="flex flex-col space-y-3 sm:space-y-4">
+            {/* Main Header - Mobile Optimized */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-3 sm:space-y-0">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="p-1.5 sm:p-2 bg-white/20 rounded-lg">
+                  <History className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold">SSC CGL {selectedYear === '' ? 'All Years' : selectedYear}</h3>
-                  <p className="text-sm text-orange-100">
+                  <h3 className="text-lg sm:text-xl font-bold">SSC CGL {selectedYear === '' ? 'All Years' : selectedYear}</h3>
+                  <p className="text-xs sm:text-sm text-orange-100">
                     {selectedYear === ''
                       ? `${sortedYears.reduce((total, yearData) => total + yearData.papers.length, 0)} Previous Year Papers`
                       : `${sortedYears.find(y => y.year === selectedYear)?.papers.length || 0} Previous Year Papers`
@@ -238,24 +238,25 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                 </div>
               </div>
               
-              {/* Year Filter Tabs - Same line as header */}
-              <div className="flex flex-wrap gap-2">
+              {/* Year Filter Tabs - Mobile Optimized */}
+              <div className="flex flex-wrap gap-1 sm:gap-2 overflow-x-auto pb-1">
               {/* All Years Option */}
               <Button
                 variant={selectedYear === '' ? "default" : "outline"}
                 size="sm"
                 onClick={() => handleYearChange('')}
-                className={`transition-all duration-200 ${
+                className={`transition-all duration-200 text-xs sm:text-sm ${
                   selectedYear === ''
                     ? 'bg-white/20 text-white border-white/30' 
                     : 'bg-white/10 text-white/80 border-white/20 hover:bg-white/20'
                 }`}
               >
-                <div className="flex items-center space-x-2">
-                  <Calendar className="w-4 h-4" />
-                  <span className="font-medium">All Years</span>
+                <div className="flex items-center space-x-1 sm:space-x-2">
+                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="font-medium hidden xs:inline">All Years</span>
+                  <span className="font-medium xs:hidden">All</span>
                   <div className="flex items-center space-x-1">
-                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/20 text-white text-xs font-bold">
+                    <span className="inline-flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-white/20 text-white text-xs font-bold">
                       {sortedYears.reduce((total, yearData) => total + yearData.papers.length, 0)}
                     </span>
                   </div>
@@ -279,21 +280,21 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                       variant={isSelected ? "default" : "outline"}
                       size="sm"
                       onClick={() => handleYearChange(yearData.year)}
-                      className={`transition-all duration-200 ${
+                      className={`transition-all duration-200 text-xs sm:text-sm ${
                         isSelected 
                           ? 'bg-white/20 text-white border-white/30' 
                           : 'bg-white/10 text-white/80 border-white/20 hover:bg-white/20'
                       }`}
                     >
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="w-4 h-4" />
+                      <div className="flex items-center space-x-1 sm:space-x-2">
+                        <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
                         <span className="font-medium">{yearData.year}</span>
                         <div className="flex items-center space-x-1">
-                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/20 text-white text-xs font-bold">
+                          <span className="inline-flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-white/20 text-white text-xs font-bold">
                             {stats.completed}
                           </span>
-                          <span className="text-white/80">/</span>
-                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/10 text-white/80 text-xs font-bold">
+                          <span className="text-white/80 hidden sm:inline">/</span>
+                          <span className="inline-flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-white/10 text-white/80 text-xs font-bold">
                             {stats.total}
                           </span>
                         </div>

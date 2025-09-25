@@ -5,10 +5,14 @@ import { initPerformanceOptimizations } from './lib/performance'
 import { initNavigationOptimizations } from './lib/navigationOptimizer'
 import { validateEnvironment } from './lib/envValidation'
 import { initMonitoring } from './lib/monitoring'
+import { mobileDebugger } from './lib/mobileDebugger'
 
 // Initialize application
 async function initializeApp() {
   try {
+    // Initialize mobile debugger first
+    mobileDebugger.info('🚀 App Initialization Started');
+    
     // Validate environment variables first
     validateEnvironment();
     
@@ -23,6 +27,9 @@ async function initializeApp() {
       await initMonitoring();
       console.log('✅ Production monitoring initialized');
     }
+    
+    // Log performance metrics
+    mobileDebugger.logPerformance();
     
     // Ensure root element exists before creating React root
     const rootElement = document.getElementById("root");

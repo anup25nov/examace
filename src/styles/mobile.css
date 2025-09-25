@@ -16,10 +16,39 @@ input, textarea, [contenteditable] {
   user-select: text;
 }
 
-/* Smooth scrolling for mobile */
+/* Enhanced smooth scrolling for mobile */
 html {
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
+  scroll-padding-top: 0;
+}
+
+/* Fix scroll issues on mobile */
+body {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: auto;
+  touch-action: pan-y;
+  scroll-behavior: smooth;
+  /* Enhanced momentum scrolling */
+  -webkit-overflow-scrolling: touch;
+  /* Reduce scroll jank */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  /* Hardware acceleration */
+  will-change: scroll-position;
+}
+
+/* Improve scrolling performance */
+* {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Smooth scrolling for all scrollable containers */
+.scroll-container {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
 }
 
 /* Prevent zoom on input focus */
@@ -63,9 +92,17 @@ button, a, [role="button"] {
   justify-content: center;
 }
 
-/* Prevent pull-to-refresh on mobile browsers */
+/* Remove status bar padding to eliminate white space */
 body {
-  overscroll-behavior-y: contain;
+  overscroll-behavior: auto;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+/* Status bar safe area for headers - remove extra padding */
+.header-with-status-bar {
+  padding-top: 0;
+  margin-top: 0;
 }
 
 /* Better mobile navigation */

@@ -92,7 +92,7 @@ const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps> = ({
         <div 
           ref={scrollRef}
           className="space-y-4 overflow-y-auto scrollbar-hide" 
-          style={{ height: '320px', scrollBehavior: 'smooth' }}
+          style={{ height: '500px', scrollBehavior: 'smooth' }}
         >
           {children}
         </div>
@@ -116,11 +116,11 @@ const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps> = ({
   return (
     <div className={`relative ${className}`}>
       {/* Scrollable container with vertical scroll */}
-      <div 
-        ref={scrollRef}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 overflow-y-auto scrollbar-hide" 
-        style={{ height: '320px', scrollBehavior: 'smooth' }}
-      >
+        <div 
+          ref={scrollRef}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 overflow-y-auto scrollbar-hide" 
+          style={{ height: '500px', scrollBehavior: 'smooth' }}
+        >
         {children}
       </div>
       

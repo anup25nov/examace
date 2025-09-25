@@ -6,13 +6,15 @@ interface PullToRefreshProps {
   children: React.ReactNode;
   threshold?: number;
   disabled?: boolean;
+  enablePullToRefresh?: boolean; // New prop to enable/disable
 }
 
 export const PullToRefresh: React.FC<PullToRefreshProps> = ({
   onRefresh,
   children,
   threshold = 80,
-  disabled = false
+  disabled = false,
+  enablePullToRefresh = false // Default to disabled
 }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
@@ -20,25 +22,35 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const startY = useRef(0);
   const currentY = useRef(0);
+  const touchStartedAtTop = useRef(false);
+
+  // If pull-to-refresh is disabled, just render children
+  if (!enablePullToRefresh) {
+    return <>{children}</>;
+  }
 
   const handleTouchStart = (e: TouchEvent) => {
     if (disabled || isRefreshing) return;
     
-    // Only trigger if we're at the top of the page or very close to it
-    if (window.scrollY <= 10) {
+    // More precise check for being at the top
+    const isAtTop = window.scrollY <= 5 && document.documentElement.scrollTop <= 5;
+    touchStartedAtTop.current = isAtTop;
+    
+    if (isAtTop) {
       startY.current = e.touches[0].clientY;
       setIsPulling(true);
     }
   };
 
   const handleTouchMove = (e: TouchEvent) => {
-    if (disabled || isRefreshing || !isPulling) return;
+    if (disabled || isRefreshing || !isPulling || !touchStartedAtTop.current) return;
 
     currentY.current = e.touches[0].clientY;
     const distance = Math.max(0, currentY.current - startY.current);
     
-    if (distance > 0) {
-      e.preventDefault(); // Prevent default scroll behavior
+    // Only prevent default if we're actually pulling down significantly
+    if (distance > 20 && window.scrollY <= 5) {
+      e.preventDefault();
       setPullDistance(Math.min(distance, threshold * 1.5));
     }
   };
@@ -47,6 +59,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
     if (disabled || isRefreshing || !isPulling) return;
 
     setIsPulling(false);
+    touchStartedAtTop.current = false;
     
     if (pullDistance >= threshold) {
       setIsRefreshing(true);
@@ -65,11 +78,11 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container || !enablePullToRefresh) return;
 
-    // Add event listeners with proper options
-    container.addEventListener('touchstart', handleTouchStart, { passive: false });
-    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    // Use passive listeners to avoid scroll conflicts
+    container.addEventListener('touchstart', handleTouchStart, { passive: true });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false }); // Only this one needs to be non-passive
     container.addEventListener('touchend', handleTouchEnd, { passive: true });
 
     return () => {
@@ -77,7 +90,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
       container.removeEventListener('touchmove', handleTouchMove);
       container.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [pullDistance, isPulling, isRefreshing, disabled, threshold]);
+  }, [pullDistance, isPulling, isRefreshing, disabled, threshold, enablePullToRefresh]);
 
   const refreshIndicatorStyle = {
     transform: `translateY(${Math.min(pullDistance, threshold)}px)`,
@@ -85,7 +98,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
   };
 
   const contentStyle = {
-    transform: `translateY(${Math.min(pullDistance * 0.5, threshold * 0.5)}px)`,
+    transform: `translateY(${Math.min(pullDistance * 0.3, threshold * 0.3)}px)`, // Reduced transform
   };
 
   return (
