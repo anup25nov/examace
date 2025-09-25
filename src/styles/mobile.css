@@ -1,0 +1,254 @@
+/* Mobile-specific styles for better native app feel */
+
+/* Prevent text selection on mobile */
+* {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Allow text selection in input fields */
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+/* Smooth scrolling for mobile */
+html {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Prevent zoom on input focus */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="number"],
+textarea,
+select {
+  font-size: 16px;
+}
+
+/* Better touch targets */
+button, a, [role="button"] {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Prevent pull-to-refresh on mobile browsers */
+body {
+  overscroll-behavior-y: contain;
+}
+
+/* Better mobile navigation */
+.mobile-nav {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Swipe gesture feedback */
+.swipe-feedback {
+  transition: transform 0.1s ease-out;
+}
+
+/* Pull-to-refresh indicator */
+.pull-refresh-indicator {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile-specific animations */
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutToRight {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.slide-in-right {
+  animation: slideInFromRight 0.3s ease-out;
+}
+
+.slide-out-right {
+  animation: slideOutToRight 0.3s ease-out;
+}
+
+/* Mobile header improvements */
+.mobile-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile card improvements */
+.mobile-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+}
+
+.mobile-card:active {
+  transform: scale(0.98);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile button improvements */
+.mobile-button {
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s ease-out;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-button:active {
+  transform: scale(0.95);
+}
+
+/* Mobile input improvements */
+.mobile-input {
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  padding: 12px 16px;
+  font-size: 16px;
+  transition: border-color 0.2s ease-out;
+}
+
+.mobile-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Mobile modal improvements */
+.mobile-modal {
+  border-radius: 16px 16px 0 0;
+  max-height: 90vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Mobile list improvements */
+.mobile-list {
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-list-item {
+  border-bottom: 1px solid #f3f4f6;
+  padding: 16px;
+  transition: background-color 0.2s ease-out;
+}
+
+.mobile-list-item:active {
+  background-color: #f9fafb;
+}
+
+/* Mobile text improvements */
+.mobile-text {
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Mobile spacing improvements */
+.mobile-spacing {
+  padding: 16px;
+}
+
+.mobile-spacing-sm {
+  padding: 8px;
+}
+
+.mobile-spacing-lg {
+  padding: 24px;
+}
+
+/* Mobile responsive text */
+.mobile-text-xs {
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.mobile-text-sm {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.mobile-text-base {
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.mobile-text-lg {
+  font-size: 18px;
+  line-height: 28px;
+}
+
+.mobile-text-xl {
+  font-size: 20px;
+  line-height: 28px;
+}
+
+.mobile-text-2xl {
+  font-size: 24px;
+  line-height: 32px;
+}
+
+.mobile-text-3xl {
+  font-size: 30px;
+  line-height: 36px;
+}
+
+/* Mobile safe area support */
+.mobile-safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.mobile-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.mobile-safe-left {
+  padding-left: env(safe-area-inset-left);
+}
+
+.mobile-safe-right {
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Mobile status bar */
+.mobile-status-bar {
+  height: env(safe-area-inset-top);
+  background: #000;
+}
+
+/* Mobile home indicator */
+.mobile-home-indicator {
+  height: env(safe-area-inset-bottom);
+  background: #000;
+}

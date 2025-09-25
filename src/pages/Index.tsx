@@ -17,6 +17,7 @@ import { PhoneUpdateModal } from "@/components/PhoneUpdateModal";
 import { ReferralSystem } from "@/components/ReferralSystem";
 import { ReferralCodeInput } from "@/components/ReferralCodeInput";
 import { DailyAccolades } from "@/components/DailyAccolades";
+import PullToRefresh from "@/components/PullToRefresh";
 // Removed referral code modal from login flow - now handled during OTP verification
 import Footer from "@/components/Footer";
 
@@ -51,6 +52,25 @@ const Index = () => {
   const [appliedReferralCode, setAppliedReferralCode] = useState<string | null>(null);
   const [showDailyAccolades, setShowDailyAccolades] = useState(false);
   const [isFirstDailyVisit, setIsFirstDailyVisit] = useState(false);
+
+  // Refresh function for pull-to-refresh
+  const handleRefresh = async () => {
+    try {
+      // Refresh user profile data
+      if (profile) {
+        // Trigger a re-fetch of profile data
+        window.location.reload();
+      }
+      
+      // Refresh streak data
+      await refreshStreak();
+      
+      // Add any other data refresh logic here
+      console.log('Dashboard refreshed');
+    } catch (error) {
+      console.error('Refresh failed:', error);
+    }
+  };
 
   // Track page view and check daily visit
   useEffect(() => {
@@ -150,7 +170,8 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-white/95 backdrop-blur-md sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto px-4 py-3 sm:py-4">
@@ -219,7 +240,7 @@ const Index = () => {
           
           {/* Brand Name - Glorified */}
           <div className="mb-8 animate-fade-in">
-            <h1 className="text-6xl md:text-7xl lg:text-8xl font-black text-white drop-shadow-2xl mb-4 tracking-tight">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black text-white drop-shadow-2xl mb-4 tracking-tight whitespace-nowrap">
               Step 2 Sarkari
             </h1>
             <div className="text-center">
@@ -506,7 +527,8 @@ const Index = () => {
       {/* Referral Code Collection removed - now handled during OTP verification for new users only */}
 
       <Footer />
-    </div>
+      </div>
+    </PullToRefresh>
   );
 };
 

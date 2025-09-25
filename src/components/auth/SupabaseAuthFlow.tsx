@@ -375,7 +375,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold text-center">🎉 Welcome!</CardTitle>
         <CardDescription className="text-center">
-          You're a new user. Do you have a referral code?
+          Do you have a referral code?
         </CardDescription>
       </CardHeader>
       <CardContent>
