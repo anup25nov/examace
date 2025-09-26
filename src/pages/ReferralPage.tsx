@@ -257,10 +257,11 @@ const ReferralPage = () => {
                     
                     <Button
                       onClick={shareReferralLink}
-                      className="bg-white/20 text-white border-white hover:bg-white/30"
+                      className="bg-white/20 text-white border-white hover:bg-white/30 whitespace-nowrap min-w-fit px-3"
                     >
                       <Share2 className="w-4 h-4 mr-2" />
-                      Share
+                      <span className="hidden sm:inline">Share</span>
+                      <span className="sm:hidden">Share</span>
                     </Button>
                   </div>
                 </div>

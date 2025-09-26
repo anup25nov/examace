@@ -140,8 +140,13 @@ const EnhancedExamDashboard = () => {
     }
   };
   
-  // Check for last visited section on component mount
+  // Check for last visited section on component mount and scroll to top
   useEffect(() => {
+    // Force scroll to absolute top when component mounts
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    
     const lastVisitedSection = localStorage.getItem('lastVisitedSection');
     if (lastVisitedSection && ['pyq', 'mock', 'practice'].includes(lastVisitedSection)) {
       setActiveTab(lastVisitedSection);
@@ -168,92 +173,111 @@ const EnhancedExamDashboard = () => {
   const cleanedPhone = userPhone?.replace(/^\+91/, "");
   const displayName = userName || (cleanedPhone ? `Hi, ${cleanedPhone}` : "User");
 
-  // Load test data dynamically
+  // Load test data dynamically with optimization
   useEffect(() => {
     const loadDynamicTestData = async () => {
       if (examId) {
         try {
+          // Check if data is already cached
+          const cacheKey = `exam-data-${examId}`;
+          const cachedData = localStorage.getItem(cacheKey);
+          const cacheTimestamp = localStorage.getItem(`${cacheKey}-timestamp`);
+          const now = Date.now();
+          const cacheExpiry = 5 * 60 * 1000; // 5 minutes
+          
+          if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < cacheExpiry) {
+            // Use cached data
+            const { mock, pyq, practice } = JSON.parse(cachedData);
+            processTestData(mock, pyq, practice);
+            return;
+          }
+          
+          // Load fresh data
           const { mock, pyq, practice } = await secureTestDataLoader.getAllTestData(examId);
           
-          // Process mock tests
-          const freeTests = mock.filter(test => !test.isPremium);
-          const premiumTests = mock.filter(test => test.isPremium);
+          // Cache the data
+          localStorage.setItem(cacheKey, JSON.stringify({ mock, pyq, practice }));
+          localStorage.setItem(`${cacheKey}-timestamp`, now.toString());
           
-          setMockTests({
-            free: freeTests.map(test => ({
-              id: test.id,
-              name: test.name,
-              duration: test.duration,
-              questions: test.questions, // questions is already a number
-              breakdown: test.description,
-              subjects: test.subjects,
-              difficulty: test.difficulty,
-              description: test.description,
-              isPremium: test.isPremium,
-              price: test.price
-            })),
-            premium: premiumTests.map(test => ({
-              id: test.id,
-              name: test.name,
-              duration: test.duration,
-              questions: test.questions, // questions is already a number
-              breakdown: test.description,
-              subjects: test.subjects,
-              difficulty: test.difficulty,
-              description: test.description,
-              isPremium: test.isPremium,
-              price: test.price
-            }))
-          });
-
-          // Process PYQ data - group by year
-          const pyqByYear = pyq.reduce((acc, test) => {
-            const year = test.year || test.metadata?.year || '2024';
-            if (!acc[year]) {
-              acc[year] = [];
-            }
-            acc[year].push({
-              id: test.id,
-              name: test.name,
-              duration: test.duration,
-              questions: test.questions, // questions is already a number
-              breakdown: test.description,
-              subjects: test.subjects,
-              difficulty: test.difficulty,
-              description: test.description,
-              isPremium: test.isPremium,
-              price: test.price
-            });
-            return acc;
-          }, {} as Record<string, any[]>);
-
-          const pyqData = Object.entries(pyqByYear).map(([year, papers]) => ({
-            year,
-            papers
-          }));
-
-          setPyqData(pyqData);
-
-          // Process practice data
-          setPracticeData(practice.map(test => ({
-            id: test.id,
-            name: test.name,
-            duration: test.duration,
-            questions: test.questions, // questions is already a number
-            breakdown: test.description,
-            isPremium: test.isPremium,
-            price: test.price
-          })));
+          processTestData(mock, pyq, practice);
         } catch (error) {
-          console.error('❌ [EnhancedExamDashboard] Error loading test data:', error);
-          // Fallback to empty data
-          setMockTests({ free: [], premium: [] });
-          setPyqData([]);
-          setPracticeData([]);
+          console.error('Error loading test data:', error);
         }
       }
     };
+    
+    const processTestData = (mock: any[], pyq: any[], practice: any[]) => {
+      // Process mock tests
+      const freeTests = mock.filter(test => !test.isPremium);
+      const premiumTests = mock.filter(test => test.isPremium);
+      
+      setMockTests({
+        free: freeTests.map(test => ({
+          id: test.id,
+          name: test.name,
+          duration: test.duration,
+          questions: test.questions, // questions is already a number
+          breakdown: test.description,
+          subjects: test.subjects,
+          difficulty: test.difficulty,
+          description: test.description,
+          isPremium: test.isPremium,
+          price: test.price
+        })),
+        premium: premiumTests.map(test => ({
+          id: test.id,
+          name: test.name,
+          duration: test.duration,
+          questions: test.questions, // questions is already a number
+          breakdown: test.description,
+          subjects: test.subjects,
+          difficulty: test.difficulty,
+          description: test.description,
+          isPremium: test.isPremium,
+          price: test.price
+        }))
+      });
 
+      // Process PYQ data - group by year
+      const pyqByYear = pyq.reduce((acc, test) => {
+        const year = test.year || test.metadata?.year || '2024';
+        if (!acc[year]) {
+          acc[year] = [];
+        }
+        acc[year].push({
+          id: test.id,
+          name: test.name,
+          duration: test.duration,
+          questions: test.questions, // questions is already a number
+          breakdown: test.description,
+          subjects: test.subjects,
+          difficulty: test.difficulty,
+          description: test.description,
+          isPremium: test.isPremium,
+          price: test.price
+        });
+        return acc;
+      }, {} as Record<string, any[]>);
+
+      const pyqData = Object.entries(pyqByYear).map(([year, papers]) => ({
+        year,
+        papers
+      }));
+
+      setPyqData(pyqData);
+
+      // Process practice data
+      setPracticeData(practice.map(test => ({
+        id: test.id,
+        name: test.name,
+        duration: test.duration,
+        questions: test.questions, // questions is already a number
+        breakdown: test.description,
+        isPremium: test.isPremium,
+        price: test.price
+      })));
+    };
+    
     loadDynamicTestData();
   }, [examId]);
 
@@ -630,24 +654,25 @@ const EnhancedExamDashboard = () => {
       <header className="border-b border-border bg-gradient-to-r from-white/95 via-blue-50/95 to-indigo-50/95 backdrop-blur-md sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => navigate("/")}
-              className="p-1 sm:p-2 min-w-[32px] min-h-[32px]"
-            >
-              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-            </Button>
-            
+            {/* Logo and App Name - Left Aligned */}
             <div className="flex items-center space-x-2 sm:space-x-3">
               <img 
-                src="/logos/alternate_image.png" 
+                src="/logos/logo.jpeg" 
                 alt="Step2Sarkari Logo" 
-                className="h-6 w-auto sm:h-8"
+                className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg object-cover border-2 border-gray-200"
+                style={{ objectFit: 'cover', objectPosition: 'center' }}
+                onError={(e) => {
+                  e.currentTarget.src = '/logos/alternate_image.png';
+                }}
+                loading="eager"
               />
-              <h1 className="text-lg sm:text-xl font-bold text-foreground uppercase">S2S</h1>
+              <div>
+                <h1 className="text-lg sm:text-xl font-bold text-foreground uppercase">S2S</h1>
+                <p className="text-xs text-gray-600 hidden sm:block">Seedha Selection</p>
+              </div>
             </div>
             
+            {/* User Info - Right Aligned */}
             <div className="flex items-center space-x-1 sm:space-x-2">
               <div className="text-right">
                 <div className="flex items-center space-x-1 sm:space-x-2">
@@ -666,7 +691,7 @@ const EnhancedExamDashboard = () => {
         <div className="mb-6 text-center">
           <div className="flex items-center justify-center space-x-2 mb-2">
             <Trophy className="w-5 h-5 text-primary animate-pulse" />
-            <h3 className="text-lg font-bold text-foreground">Performance Statistics</h3>
+            <h3 className="text-xl sm:text-lg font-bold text-foreground">Performance Statistics</h3>
           </div>
         </div>
         
@@ -677,8 +702,8 @@ const EnhancedExamDashboard = () => {
               <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-16 lg:h-16 mx-auto mb-2 sm:mb-3 lg:mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
                 <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 lg:w-8 lg:h-8 text-white" />
               </div>
-              <p className="text-lg sm:text-xl lg:text-3xl font-bold mb-1 sm:mb-2">{userStats.totalTests}</p>
-              <p className="text-xs sm:text-sm lg:text-sm text-blue-100 font-medium leading-tight">Tests Attempted</p>
+              <p className="text-xl sm:text-xl lg:text-3xl font-bold mb-1 sm:mb-2">{userStats.totalTests}</p>
+              <p className="text-sm sm:text-sm lg:text-sm text-blue-100 font-medium leading-tight">Tests Attempted</p>
             </CardContent>
           </Card>
           
@@ -687,8 +712,8 @@ const EnhancedExamDashboard = () => {
               <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-16 lg:h-16 mx-auto mb-2 sm:mb-3 lg:mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
                 <Trophy className="w-4 h-4 sm:w-5 sm:h-5 lg:w-8 lg:h-8 text-white" />
               </div>
-              <p className="text-lg sm:text-xl lg:text-3xl font-bold mb-1 sm:mb-2">{userStats.bestScore}</p>
-              <p className="text-xs sm:text-sm lg:text-sm text-purple-100 font-medium leading-tight">Best Score</p>
+              <p className="text-xl sm:text-xl lg:text-3xl font-bold mb-1 sm:mb-2">{userStats.bestScore}</p>
+              <p className="text-sm sm:text-sm lg:text-sm text-purple-100 font-medium leading-tight">Best Score</p>
             </CardContent>
           </Card>
           
@@ -697,8 +722,8 @@ const EnhancedExamDashboard = () => {
               <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-16 lg:h-16 mx-auto mb-2 sm:mb-3 lg:mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
                 <Star className="w-4 h-4 sm:w-5 sm:h-5 lg:w-8 lg:h-8 text-white" />
               </div>
-              <p className="text-lg sm:text-xl lg:text-3xl font-bold mb-1 sm:mb-2">{userStats.avgScoreLast10}</p>
-              <p className="text-xs sm:text-sm lg:text-sm text-orange-100 font-medium leading-tight">Average Score</p>
+              <p className="text-xl sm:text-xl lg:text-3xl font-bold mb-1 sm:mb-2">{userStats.avgScoreLast10}</p>
+              <p className="text-sm sm:text-sm lg:text-sm text-orange-100 font-medium leading-tight">Average Score</p>
             </CardContent>
           </Card>
           
@@ -707,8 +732,8 @@ const EnhancedExamDashboard = () => {
               <div className="w-8 h-8 sm:w-10 sm:h-10 lg:w-16 lg:h-16 mx-auto mb-2 sm:mb-3 lg:mb-4 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
                 <Target className="w-4 h-4 sm:w-5 sm:h-5 lg:w-8 lg:h-8 text-white" />
               </div>
-              <p className="text-lg sm:text-xl lg:text-3xl font-bold mb-1 sm:mb-2">{userStats.bestRank || 'N/A'}</p>
-              <p className="text-xs sm:text-sm lg:text-sm text-green-100 font-medium leading-tight">Best Rank</p>
+              <p className="text-xl sm:text-xl lg:text-3xl font-bold mb-1 sm:mb-2">{userStats.bestRank || 'N/A'}</p>
+              <p className="text-sm sm:text-sm lg:text-sm text-green-100 font-medium leading-tight">Best Rank</p>
             </CardContent>
           </Card>
         </div>

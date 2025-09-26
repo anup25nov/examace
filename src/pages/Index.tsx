@@ -138,13 +138,15 @@ const Index = () => {
       // Optimize route transition
       optimizeRouteTransition('/', `/exam/${examId}`);
       
-      // Scroll to top before navigation
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Force scroll to absolute top before navigation
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
       
       // Small delay to ensure scroll happens before navigation
       setTimeout(() => {
         navigate(`/exam/${examId}`);
-      }, 100);
+      }, 50);
     }
   };
 
@@ -183,6 +185,25 @@ const Index = () => {
       <header className="border-b border-border bg-white/95 backdrop-blur-md sticky top-0 z-50 shadow-lg header-with-status-bar">
         <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
+            {/* Logo - Left Aligned */}
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <img 
+                src="/logos/logo.jpeg"
+                alt="S2S Logo" 
+                className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg object-cover border-2 border-gray-200"
+                style={{ objectFit: 'cover', objectPosition: 'center' }}
+                onError={(e) => {
+                  e.currentTarget.src = '/logos/alternate_image.png';
+                }}
+                loading="eager"
+              />
+              <div>
+                <h1 className="text-lg sm:text-xl font-bold text-gray-900">S2S</h1>
+                <p className="text-xs text-gray-600 hidden sm:block">Seedha Selection</p>
+              </div>
+            </div>
+            
+            {/* Notification and Profile - Right Aligned */}
             {isAuthenticated ? (
               <div className="flex items-center space-x-1 sm:space-x-2">
                 <UserMessages />
@@ -201,18 +222,6 @@ const Index = () => {
                 <span className="sm:hidden">Login</span>
               </Button>
             )}
-            
-            <div className="flex items-center space-x-2 sm:space-x-3">
-              <img 
-                src="/logos/alternate_image.png"
-                alt="S2S Logo" 
-                className="h-6 w-auto sm:h-8"
-              />
-              <div>
-                <h1 className="text-lg sm:text-xl font-bold text-gray-900">S2S</h1>
-                {/* <p className="text-xs text-gray-600 hidden sm:block">Seedha Selection</p> */}
-              </div>
-            </div>
           </div>
         </div>
       </header>
@@ -530,16 +539,18 @@ const Index = () => {
       <Footer />
       </div>
       
-      {/* Daily Accolades - Show at top of dashboard */}
+      {/* Daily Accolades - Show at center of splash screen */}
       {showDailyAccolades && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-border shadow-lg">
-          <DailyAccolades
-            isFirstVisit={isFirstDailyVisit}
-            onClose={() => {
-              setShowDailyAccolades(false);
-              setIsFirstDailyVisit(false);
-            }}
-          />
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4">
+            <DailyAccolades
+              isFirstVisit={isFirstDailyVisit}
+              onClose={() => {
+                setShowDailyAccolades(false);
+                setIsFirstDailyVisit(false);
+              }}
+            />
+          </div>
         </div>
       )}
     </PullToRefresh>

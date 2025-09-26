@@ -47,7 +47,19 @@ const Auth = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <div className="relative">
+            <img 
+              src="/logos/logo.jpeg"
+              alt="S2S Logo" 
+              className="w-12 h-12 mx-auto rounded-lg object-cover border-2 border-gray-200 animate-pulse"
+              style={{ objectFit: 'cover', objectPosition: 'center' }}
+              onError={(e) => {
+                e.currentTarget.src = '/logos/alternate_image.png';
+              }}
+              loading="eager"
+            />
+            <div className="absolute inset-0 w-12 h-12 mx-auto animate-spin rounded-full border-b-2 border-primary"></div>
+          </div>
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>

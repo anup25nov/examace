@@ -92,27 +92,106 @@ button, a, [role="button"] {
   justify-content: center;
 }
 
-/* Status bar handling for mobile */
+/* Full screen mobile experience - no status bar */
 body {
   overscroll-behavior: auto;
   padding-top: 0;
   margin-top: 0;
+  /* Full screen height */
+  height: 100vh;
+  height: 100dvh; /* Dynamic viewport height for mobile */
+  /* Ensure no status bar space */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Remove any safe area insets */
+  padding-top: 0 !important;
+  margin-top: 0 !important;
 }
 
-/* Status bar safe area for headers */
+/* Headers without status bar padding */
 .header-with-status-bar {
-  padding-top: env(safe-area-inset-top, 0);
+  padding-top: 0;
   margin-top: 0;
+  /* Full width header */
+  width: 100%;
+  /* Ensure header starts from absolute top */
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
 
-/* Ensure headers start from the very top */
+/* Headers start from absolute top */
 header {
-  padding-top: env(safe-area-inset-top, 0);
+  padding-top: 0;
+  margin-top: 0;
+  /* Full width and height */
+  width: 100%;
+  /* Ensure no gap at top */
+  position: relative;
+  top: 0;
 }
 
 /* Better mobile navigation */
 .mobile-nav {
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Enhanced scrolling for ResponsiveScrollContainer */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
+
+/* Smooth scrolling for all scrollable containers */
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch; /* iOS momentum scrolling */
+  scroll-behavior: smooth;
+}
+
+/* Better scroll container styling */
+.responsive-scroll-container {
+  scroll-snap-type: y mandatory;
+}
+
+.responsive-scroll-container > * {
+  scroll-snap-align: start;
+}
+
+/* Enhanced ResponsiveScrollContainer styling */
+.responsive-scroll-container {
+  /* Smooth scrolling */
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  
+  /* Custom scrollbar for webkit browsers */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59, 130, 246, 0.3) transparent;
+}
+
+.responsive-scroll-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.responsive-scroll-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.responsive-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.5);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.responsive-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.7);
 }
 
 /* Swipe gesture feedback */

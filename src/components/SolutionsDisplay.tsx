@@ -393,23 +393,25 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                   <div className="flex items-center space-x-2">
                     <Gift className="w-5 h-5 text-green-600" />
                     <span className="text-sm font-medium text-green-800">
-                      Share with friends and earn rewards!
+                      Share and earn rewards!
                     </span>
                   </div>
                   <Button
                     onClick={handleDirectRefer}
                     size="sm"
-                    className="bg-green-600 hover:bg-green-700 text-white"
+                    className="bg-green-600 hover:bg-green-700 text-white whitespace-nowrap min-w-fit px-3"
                   >
                     {referralCopied ? (
                       <>
                         <Check className="w-4 h-4 mr-1" />
-                        Copied!
+                        <span className="hidden sm:inline">Copied!</span>
+                        <span className="sm:hidden">✓</span>
                       </>
                     ) : (
                       <>
                         <Share className="w-4 h-4 mr-1" />
-                        Share & Earn
+                        <span className="hidden sm:inline">Share & Earn</span>
+                        <span className="sm:hidden">Share</span>
                       </>
                     )}
                   </Button>

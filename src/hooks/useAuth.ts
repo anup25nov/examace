@@ -25,15 +25,36 @@ export const useAuth = () => {
         
         if (sessionError) {
           console.warn('Session error (likely invalid refresh token):', sessionError.message);
-          // Clear invalid session data
-          localStorage.removeItem('userId');
-          localStorage.removeItem('userEmail');
-          localStorage.removeItem('isAuthenticated');
-          localStorage.removeItem('lastVisitDate');
-          setIsAuthenticated(false);
-          setUser(null);
-          setLoading(false);
-          return;
+          // Try to refresh the session before giving up
+          try {
+            const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+            if (refreshError) {
+              console.warn('Session refresh failed:', refreshError.message);
+              // Clear invalid session data
+              localStorage.removeItem('userId');
+              localStorage.removeItem('userEmail');
+              localStorage.removeItem('isAuthenticated');
+              localStorage.removeItem('lastVisitDate');
+              setIsAuthenticated(false);
+              setUser(null);
+              setLoading(false);
+              return;
+            } else if (refreshData.session) {
+              console.log('Session refreshed successfully');
+              // Continue with the refreshed session
+            }
+          } catch (refreshErr) {
+            console.warn('Session refresh error:', refreshErr);
+            // Clear invalid session data
+            localStorage.removeItem('userId');
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('isAuthenticated');
+            localStorage.removeItem('lastVisitDate');
+            setIsAuthenticated(false);
+            setUser(null);
+            setLoading(false);
+            return;
+          }
         }
         
         const isAuth = isUserAuthenticated();
@@ -102,7 +123,23 @@ export const useAuth = () => {
 
     checkAuthStatus();
     
-    return () => clearTimeout(timeoutId);
+    // Set up session refresh interval for persistent login
+    const refreshInterval = setInterval(async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          // Refresh session every 30 minutes to maintain login
+          await supabase.auth.refreshSession();
+        }
+      } catch (error) {
+        console.warn('Session refresh failed:', error);
+      }
+    }, 30 * 60 * 1000); // 30 minutes
+    
+    return () => {
+      clearTimeout(timeoutId);
+      clearInterval(refreshInterval);
+    };
   }, []);
 
   const logout = async () => {

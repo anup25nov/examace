@@ -237,7 +237,19 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
 
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+              <div className="relative">
+                <img 
+                  src="/logos/logo.jpeg"
+                  alt="S2S Logo" 
+                  className="w-8 h-8 rounded-lg object-cover border-2 border-gray-200 animate-pulse"
+                  style={{ objectFit: 'cover', objectPosition: 'center' }}
+                  onError={(e) => {
+                    e.currentTarget.src = '/logos/alternate_image.png';
+                  }}
+                  loading="eager"
+                />
+                <Loader2 className="absolute inset-0 w-8 h-8 animate-spin text-blue-600" />
+              </div>
               <span className="ml-2 text-gray-600">Loading plans...</span>
             </div>
           ) : error ? (

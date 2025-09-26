@@ -154,8 +154,8 @@ export const UserMessages: React.FC = () => {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="relative">
-          <Bell className="w-4 h-4 mr-2" />
-          Messages
+          <Bell className="w-4 h-4 sm:mr-2" />
+          <span className="hidden sm:inline">Messages</span>
           {unreadCount > 0 && (
             <Badge 
               variant="destructive" 

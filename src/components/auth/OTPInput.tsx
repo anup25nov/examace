@@ -177,17 +177,21 @@ const OTPInput: React.FC<OTPInputProps> = ({
 
   return (
     <div className={`flex space-x-2 justify-center ${className}`}>
-      {/* Hidden input for SMS autofill */}
+      {/* Hidden input for SMS autofill - Enhanced for mobile */}
       <input
         type="text"
         inputMode="numeric"
         pattern="[0-9]*"
         autoComplete="one-time-code"
+        name="otp"
+        id="otp-autofill"
         style={{
           position: 'absolute',
           left: '-9999px',
           opacity: 0,
-          pointerEvents: 'none'
+          pointerEvents: 'none',
+          width: '1px',
+          height: '1px'
         }}
         onChange={(e) => {
           const value = e.target.value.replace(/\D/g, '');

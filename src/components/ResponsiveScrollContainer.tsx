@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 interface ResponsiveScrollContainerProps {
   children: React.ReactNode;
@@ -19,140 +18,130 @@ const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps> = ({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollDown, setCanScrollDown] = useState(false);
 
-  // Always enable scrolling for better UX
-  // This ensures both PYQ and Mock sections have consistent scrolling behavior
-  const shouldEnableScrolling = true;
+  // Check if device is mobile
+  const checkDeviceType = () => {
+    const width = window.innerWidth;
+    setIsMobile(width < 768); // md breakpoint
+  };
+
+  // Calculate responsive requirements based on wireframe
+  const getResponsiveConfig = () => {
+    if (isMobile) {
+      return {
+        cardsPerRow: 1,
+        maxVisibleCards: 3,
+        shouldEnableScrolling: cardCount > 3,
+        containerClass: "space-y-4"
+      };
+    } else {
+      // Desktop: 4 cards per row, 3 rows = 12 cards total
+      return {
+        cardsPerRow: 4,
+        maxVisibleCards: 12,
+        shouldEnableScrolling: cardCount > 12,
+        containerClass: "grid grid-cols-4 gap-4"
+      };
+    }
+  };
+
+  const config = getResponsiveConfig();
+  const shouldEnableScrolling = config.shouldEnableScrolling;
 
   const checkScrollButton = () => {
-    if (scrollRef.current) {
+    if (scrollRef.current && shouldEnableScrolling) {
       const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-      // More precise scroll detection
-      const hasMoreContent = scrollHeight > clientHeight + 10; // 10px tolerance
+      const hasMoreContent = scrollHeight > clientHeight + 10;
       const isNotAtBottom = scrollTop < scrollHeight - clientHeight - 10;
-      const shouldShowButton = hasMoreContent && isNotAtBottom;
-      setCanScrollDown(shouldShowButton);
+      setCanScrollDown(hasMoreContent && isNotAtBottom);
+    } else {
+      setCanScrollDown(false);
     }
   };
 
   const scrollDown = () => {
     if (scrollRef.current) {
-      scrollRef.current.scrollBy({ top: 200, behavior: 'smooth' });
+      const scrollAmount = 300; // One card height + gap
+      scrollRef.current.scrollBy({ top: scrollAmount, behavior: 'smooth' });
     }
   };
 
-  // Check if device is mobile
+  // Check device type on mount and resize
   useEffect(() => {
-    const checkIsMobile = () => {
-      setIsMobile(window.innerWidth < 768); // md breakpoint
-    };
-    checkIsMobile();
-    window.addEventListener('resize', checkIsMobile);
-    return () => window.removeEventListener('resize', checkIsMobile);
+    checkDeviceType();
+    window.addEventListener('resize', checkDeviceType);
+    return () => window.removeEventListener('resize', checkDeviceType);
   }, []);
 
-  // Set up scroll listeners when scrolling is enabled
+  // Set up scroll listeners
   useEffect(() => {
-    if (shouldEnableScrolling) {
-      const scrollContainer = scrollRef.current;
-      if (scrollContainer) {
-        // Initial check with a small delay to ensure DOM is ready
-        const timeoutId = setTimeout(() => {
-          checkScrollButton();
-        }, 100);
-        
-        scrollContainer.addEventListener('scroll', checkScrollButton);
-        window.addEventListener('resize', checkScrollButton);
-        
-        return () => {
-          clearTimeout(timeoutId);
-          scrollContainer.removeEventListener('scroll', checkScrollButton);
-          window.removeEventListener('resize', checkScrollButton);
-        };
-      }
+    const scrollContainer = scrollRef.current;
+    if (scrollContainer && shouldEnableScrolling) {
+      // Initial check
+      const timeoutId = setTimeout(checkScrollButton, 100);
+      
+      scrollContainer.addEventListener('scroll', checkScrollButton, { passive: true });
+      window.addEventListener('resize', checkScrollButton);
+      
+      return () => {
+        clearTimeout(timeoutId);
+        scrollContainer.removeEventListener('scroll', checkScrollButton);
+        window.removeEventListener('resize', checkScrollButton);
+      };
     }
-  }, [shouldEnableScrolling, cardCount]); // Add cardCount dependency
+  }, [shouldEnableScrolling, cardCount, isMobile]);
 
-  // Additional effect to check scroll button when content changes
+  // Re-check scroll button when content changes
   useEffect(() => {
     if (shouldEnableScrolling && cardCount > 0) {
-      const timeoutId = setTimeout(() => {
-        checkScrollButton();
-      }, 200);
-      
+      const timeoutId = setTimeout(checkScrollButton, 300);
       return () => clearTimeout(timeoutId);
     }
   }, [cardCount, shouldEnableScrolling]);
 
+  // If no scrolling needed, show all cards in responsive grid
   if (!shouldEnableScrolling) {
-    // Regular grid layout when scrolling is not needed
-    // Responsive: 1 card on mobile, 2 on tablet, 4 on desktop
     return (
-      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 ${className}`}>
+      <div className={`${config.containerClass} ${className}`}>
         {children}
       </div>
     );
   }
 
-  if (isMobile) {
-    // Mobile: 1 card per row, show 4-5 cards (4.5 cards visible)
-    const cardHeight = 288; // h-72 = 18rem = 288px
-    const gap = 16; // gap-4 = 1rem = 16px
-    const visibleCards = 4.5;
-    const containerHeight = (cardHeight + gap) * visibleCards;
-    
-    return (
-      <div className={`relative ${className}`}>
-        {/* Scrollable container with vertical scroll */}
-        <div 
-          ref={scrollRef}
-          className="space-y-4 overflow-y-auto scrollbar-hide" 
-          style={{ height: `${containerHeight}px`, scrollBehavior: 'smooth' }}
-        >
-          {children}
-        </div>
-        
-        {/* Down scroll button */}
-        {showScrollButtons && canScrollDown && (
-          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 z-10">
-            <button
-              onClick={scrollDown}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-full p-3 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110"
-              title="Scroll down"
-            >
-              <ChevronDown className="w-5 h-5" />
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  }
+  // Calculate dynamic height based on wireframe layout
+  const getContainerHeight = () => {
+    if (isMobile) {
+      // Mobile: Show 3 cards vertically (1x3), each ~300px (288px card + 16px gap)
+      return '900px'; // 3 * 300px
+    } else {
+      // Desktop: Show 12 cards in 3x4 grid, each ~300px (288px card + 16px gap)
+      return '900px'; // 3 rows * 300px
+    }
+  };
 
-  // Desktop/Tablet: Show 4-5 cards (2 rows with 2-4 cards per row)
-  const cardHeight = 288; // h-72 = 18rem = 288px
-  const gap = 16; // gap-4 = 1rem = 16px
-  const rows = 2;
-  const containerHeight = (cardHeight + gap) * rows;
-  
   return (
     <div className={`relative ${className}`}>
-      {/* Scrollable container with vertical scroll */}
+      {/* Scrollable container */}
       <div 
         ref={scrollRef}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 overflow-y-auto scrollbar-hide" 
-        style={{ height: `${containerHeight}px`, scrollBehavior: 'smooth' }}
+        className={`${config.containerClass} overflow-y-auto responsive-scroll-container`}
+        style={{ 
+          height: getContainerHeight(),
+          scrollBehavior: 'smooth',
+          maxHeight: '90vh' // Prevent overflow on small screens
+        }}
       >
         {children}
       </div>
       
-      {/* Down scroll button */}
+      {/* Scroll down button */}
       {showScrollButtons && canScrollDown && (
-        <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 z-10">
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
           <button
             onClick={scrollDown}
-            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-full p-3 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110"
-            title="Scroll down"
+            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-full p-3 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110 backdrop-blur-sm border-2 border-white/20"
+            title={`Scroll down to see more (${cardCount - config.maxVisibleCards} more cards)`}
           >
-            <ChevronDown className="w-5 h-5" />
+            <ChevronDown className="w-5 h-5 animate-bounce" />
           </button>
         </div>
       )}
