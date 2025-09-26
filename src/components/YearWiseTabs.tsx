@@ -306,8 +306,8 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
               
 
               return (
-                <div key={paper.id} className="w-full">
-                  <Card
+                <Card
+                  key={paper.id}
                     className={`relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.03] hover:border-primary/40 h-72 group ${
                       isCompleted 
                         ? 'border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg' 
@@ -427,8 +427,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                         )}
                       </div>
                     </CardContent>
-                  </Card>
-                </div>
+                </Card>
               );
             })}
           </ResponsiveScrollContainer>

@@ -819,8 +819,8 @@ const EnhancedExamDashboard = () => {
           </TabsContent>
 
           {/* Mock Tests Tab - Second */}
-          <TabsContent value="mock" className="space-y-0">
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-emerald-50 to-green-50">
+          <TabsContent value="mock" className="space-y-0 h-[520px]">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-emerald-50 to-green-50 h-full flex flex-col">
               <CardHeader className="bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-t-lg">
                 <CardTitle className="flex items-center space-x-3">
                   <div className="p-2 bg-white/20 rounded-lg">
@@ -829,7 +829,7 @@ const EnhancedExamDashboard = () => {
                   <span>Full Mock Tests</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-6">
+              <CardContent className="pt-6 flex-1 overflow-hidden">
                 {(() => {
                   const message = getSectionMessage('mock');
                   return message ? (

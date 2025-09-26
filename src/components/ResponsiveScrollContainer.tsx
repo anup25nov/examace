@@ -26,7 +26,11 @@ const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps> = ({
   const checkScrollButton = () => {
     if (scrollRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-      setCanScrollDown(scrollTop < scrollHeight - clientHeight - 1);
+      // More precise scroll detection
+      const hasMoreContent = scrollHeight > clientHeight + 10; // 10px tolerance
+      const isNotAtBottom = scrollTop < scrollHeight - clientHeight - 10;
+      const shouldShowButton = hasMoreContent && isNotAtBottom;
+      setCanScrollDown(shouldShowButton);
     }
   };
 
@@ -51,17 +55,33 @@ const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps> = ({
     if (shouldEnableScrolling) {
       const scrollContainer = scrollRef.current;
       if (scrollContainer) {
-        checkScrollButton();
+        // Initial check with a small delay to ensure DOM is ready
+        const timeoutId = setTimeout(() => {
+          checkScrollButton();
+        }, 100);
+        
         scrollContainer.addEventListener('scroll', checkScrollButton);
         window.addEventListener('resize', checkScrollButton);
         
         return () => {
+          clearTimeout(timeoutId);
           scrollContainer.removeEventListener('scroll', checkScrollButton);
           window.removeEventListener('resize', checkScrollButton);
         };
       }
     }
-  }, [shouldEnableScrolling]);
+  }, [shouldEnableScrolling, cardCount]); // Add cardCount dependency
+
+  // Additional effect to check scroll button when content changes
+  useEffect(() => {
+    if (shouldEnableScrolling && cardCount > 0) {
+      const timeoutId = setTimeout(() => {
+        checkScrollButton();
+      }, 200);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [cardCount, shouldEnableScrolling]);
 
   if (!shouldEnableScrolling) {
     // Regular grid layout when scrolling is not needed
@@ -74,14 +94,19 @@ const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps> = ({
   }
 
   if (isMobile) {
-    // Mobile: 1 card per row × 5-8 rows, then vertical scroll
+    // Mobile: 1 card per row, show 4-5 cards (4.5 cards visible)
+    const cardHeight = 288; // h-72 = 18rem = 288px
+    const gap = 16; // gap-4 = 1rem = 16px
+    const visibleCards = 4.5;
+    const containerHeight = (cardHeight + gap) * visibleCards;
+    
     return (
       <div className={`relative ${className}`}>
         {/* Scrollable container with vertical scroll */}
         <div 
           ref={scrollRef}
           className="space-y-4 overflow-y-auto scrollbar-hide" 
-          style={{ height: '500px', scrollBehavior: 'smooth' }}
+          style={{ height: `${containerHeight}px`, scrollBehavior: 'smooth' }}
         >
           {children}
         </div>
@@ -92,6 +117,7 @@ const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps> = ({
             <button
               onClick={scrollDown}
               className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-full p-3 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110"
+              title="Scroll down"
             >
               <ChevronDown className="w-5 h-5" />
             </button>
@@ -101,15 +127,20 @@ const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps> = ({
     );
   }
 
-  // Desktop/Tablet: 2-4 cards per row × 2 rows, then vertical scroll
+  // Desktop/Tablet: Show 4-5 cards (2 rows with 2-4 cards per row)
+  const cardHeight = 288; // h-72 = 18rem = 288px
+  const gap = 16; // gap-4 = 1rem = 16px
+  const rows = 2;
+  const containerHeight = (cardHeight + gap) * rows;
+  
   return (
     <div className={`relative ${className}`}>
       {/* Scrollable container with vertical scroll */}
-        <div 
-          ref={scrollRef}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 overflow-y-auto scrollbar-hide" 
-          style={{ height: '500px', scrollBehavior: 'smooth' }}
-        >
+      <div 
+        ref={scrollRef}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 overflow-y-auto scrollbar-hide" 
+        style={{ height: `${containerHeight}px`, scrollBehavior: 'smooth' }}
+      >
         {children}
       </div>
       
@@ -119,6 +150,7 @@ const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps> = ({
           <button
             onClick={scrollDown}
             className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-full p-3 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110"
+            title="Scroll down"
           >
             <ChevronDown className="w-5 h-5" />
           </button>
