@@ -20,16 +20,7 @@ const config: CapacitorConfig = {
     StatusBar: {
       style: 'dark',
       backgroundColor: '#ffffff',
-      overlaysWebView: true,
-      androidOverlaysWebView: true
-    },
-    Keyboard: {
-      resize: 'body',
-      style: 'dark',
-      resizeOnFullScreen: true
-    },
-    App: {
-      launchUrl: 'https://examace-smoky.vercel.app'
+      overlaysWebView: true
     }
   },
   android: {

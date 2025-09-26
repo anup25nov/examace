@@ -984,16 +984,14 @@ const ExamDashboard = () => {
                         cardCount={availableTests.mock.length}
                         className="gap-3 md:gap-4"
                       >
-                        {availableTests.mock.map((test) => (
-                          <div key={test.id} className="w-full">
-                            {createTestButton(
-                              test.id,
-                              test.name, // Use the name from JSON
-                              'mock',
-                              null // Mock tests don't have topicId
-                            )}
-                          </div>
-                        ))}
+                        {availableTests.mock.map((test) => 
+                          createTestButton(
+                            test.id,
+                            test.name, // Use the name from JSON
+                            'mock',
+                            null // Mock tests don't have topicId
+                          )
+                        )}
                       </ResponsiveScrollContainer>
                     )}
 

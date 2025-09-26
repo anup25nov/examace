@@ -42,6 +42,7 @@ import Footer from "@/components/Footer";
 import { bulkTestService } from "@/lib/bulkTestService";
 import PullToRefresh from "@/components/PullToRefresh";
 import ResponsiveScrollContainer from "@/components/ResponsiveScrollContainer";
+import CachedImage from "@/components/CachedImage";
 
 // Icon mapping for dynamic loading
 const iconMap: { [key: string]: any } = {
@@ -50,6 +51,42 @@ const iconMap: { [key: string]: any } = {
   FileText,
   Brain,
   Target
+};
+
+// Debug logging function - moved outside component to avoid hooks issues
+const debugLog = (message: string, data?: any) => {
+  console.log(`[EnhancedExamDashboard] ${message}`, data || '');
+  
+  // Mobile-specific logging - also log to localStorage for persistence
+  const logEntry = {
+    timestamp: new Date().toISOString(),
+    message,
+    data: data || null,
+    userAgent: navigator.userAgent,
+    screenSize: `${window.innerWidth}x${window.innerHeight}`,
+    isMobile: window.innerWidth < 768
+  };
+  
+  // Store in localStorage for mobile debugging
+  try {
+    const existingLogs = JSON.parse(localStorage.getItem('mobileDebugLogs') || '[]');
+    existingLogs.push(logEntry);
+    
+    // Keep only last 100 logs to prevent storage overflow
+    if (existingLogs.length > 100) {
+      existingLogs.splice(0, existingLogs.length - 100);
+    }
+    
+    localStorage.setItem('mobileDebugLogs', JSON.stringify(existingLogs));
+  } catch (error) {
+    console.warn('Failed to store mobile debug log:', error);
+  }
+  
+  // Also log to window for easy access
+  if (typeof window !== 'undefined') {
+    (window as any).mobileDebugLogs = (window as any).mobileDebugLogs || [];
+    (window as any).mobileDebugLogs.push(logEntry);
+  }
 };
 
 const EnhancedExamDashboard = () => {
@@ -87,6 +124,7 @@ const EnhancedExamDashboard = () => {
   // Enhanced refresh function with better error handling
   const handleRefresh = async () => {
     try {
+      debugLog('Starting refresh...');
       // Refresh all stats and data
       await Promise.all([
         loadAllStats(),
@@ -166,6 +204,45 @@ const EnhancedExamDashboard = () => {
     }
   }, [membership]);
 
+  // Debug layout and footer issues
+  useEffect(() => {
+    const checkLayout = () => {
+      const container = document.querySelector('.container');
+      const footer = document.querySelector('footer');
+      const scrollContainer = document.querySelector('.responsive-scroll-container');
+      
+      // debugLog('Layout check:', {
+      //   containerHeight: container?.clientHeight,
+      //   footerHeight: footer?.clientHeight,
+      //   scrollContainerHeight: scrollContainer?.clientHeight,
+      //   windowHeight: window.innerHeight,
+      //   documentHeight: document.documentElement.scrollHeight
+      // });
+    };
+    
+    // Check layout after component mounts and when data loads
+    const timeoutId = setTimeout(checkLayout, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [mockTests, pyqData]);
+
+  // Debug mock tests container
+  useEffect(() => {
+    const filteredTests = [...mockTests.free, ...mockTests.premium].filter(test => {
+      const isCompleted = completedTests.has(`mock-${test.id}`) || completedTests.has(test.id);
+      if (testFilter === 'attempted') return isCompleted;
+      if (testFilter === 'not-attempted') return !isCompleted;
+      return true;
+    });
+    
+    debugLog('Mock tests container:', {
+      totalTests: [...mockTests.free, ...mockTests.premium].length,
+      filteredTests: filteredTests.length,
+      testFilter,
+      completedTests: completedTests.size,
+      containerHeight: '520px'
+    });
+  }, [mockTests, completedTests, testFilter]);
+
   const exam = dynamicExamService.getExamConfig(examId as string);
   // Using dynamic exam service instead of examConfigService
   const userPhone = (profile as any)?.phone || localStorage.getItem("userPhone");
@@ -177,6 +254,7 @@ const EnhancedExamDashboard = () => {
   useEffect(() => {
     const loadDynamicTestData = async () => {
       if (examId) {
+        debugLog(`Loading test data for exam: ${examId}`);
         try {
           // Check if data is already cached
           const cacheKey = `exam-data-${examId}`;
@@ -187,6 +265,7 @@ const EnhancedExamDashboard = () => {
           
           if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < cacheExpiry) {
             // Use cached data
+            debugLog('Using cached data');
             const { mock, pyq, practice } = JSON.parse(cachedData);
             processTestData(mock, pyq, practice);
             return;
@@ -207,9 +286,20 @@ const EnhancedExamDashboard = () => {
     };
     
     const processTestData = (mock: any[], pyq: any[], practice: any[]) => {
+      debugLog('Processing test data:', { 
+        mockCount: mock.length, 
+        pyqCount: pyq.length, 
+        practiceCount: practice.length 
+      });
+      
       // Process mock tests
       const freeTests = mock.filter(test => !test.isPremium);
       const premiumTests = mock.filter(test => test.isPremium);
+      
+      debugLog('Mock tests processed:', { 
+        freeCount: freeTests.length, 
+        premiumCount: premiumTests.length 
+      });
       
       setMockTests({
         free: freeTests.map(test => ({
@@ -647,6 +737,13 @@ const EnhancedExamDashboard = () => {
     return null;
   };
 
+  // Mobile debug panel - only show in development
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
+  
+  const toggleDebugPanel = () => {
+    setShowDebugPanel(!showDebugPanel);
+  };
+
   return (
     <PullToRefresh onRefresh={handleRefresh} enablePullToRefresh={false}>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
@@ -656,14 +753,12 @@ const EnhancedExamDashboard = () => {
           <div className="flex items-center justify-between">
             {/* Logo and App Name - Left Aligned */}
             <div className="flex items-center space-x-2 sm:space-x-3">
-              <img 
+              <CachedImage 
                 src="/logos/logo.jpeg" 
                 alt="Step2Sarkari Logo" 
                 className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg object-cover border-2 border-gray-200"
                 style={{ objectFit: 'cover', objectPosition: 'center' }}
-                onError={(e) => {
-                  e.currentTarget.src = '/logos/alternate_image.png';
-                }}
+                fallback="/logos/alternate_image.png"
                 loading="eager"
               />
               <div>
@@ -829,7 +924,7 @@ const EnhancedExamDashboard = () => {
           </div>
 
           {/* PYQ Tab - First */}
-          <TabsContent value="pyq" className="space-y-0 h-[520px]">
+          <TabsContent value="pyq" className="space-y-0 h-[1000px] min-h-[1000px]">
             <YearWiseTabs
               years={pyqData}
               completedTests={completedTests}
@@ -844,7 +939,7 @@ const EnhancedExamDashboard = () => {
           </TabsContent>
 
           {/* Mock Tests Tab - Second */}
-          <TabsContent value="mock" className="space-y-0 h-[520px]">
+          <TabsContent value="mock" className="space-y-0 h-[1000px] min-h-[1000px]">
             <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-emerald-50 to-green-50 h-full flex flex-col">
               <CardHeader className="bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-t-lg">
                 <CardTitle className="flex items-center space-x-3">
@@ -906,12 +1001,18 @@ const EnhancedExamDashboard = () => {
                       return true;
                     })
                     .map((test) => {
-                    const isCompleted = completedTests.has(`mock-${test.id}`) || completedTests.has(test.id);
-                    const testScore = testScores.get(`mock-${test.id}`) || testScores.get(test.id);
-                    
-                    return (
-                      <div key={test.id} className="w-full">
+                      const isCompleted = completedTests.has(`mock-${test.id}`) || completedTests.has(test.id);
+                      const testScore = testScores.get(`mock-${test.id}`) || testScores.get(test.id);
+                      
+                      // debugLog(`Rendering test card: ${test.name}`, {
+                      //   isCompleted,
+                      //   testScore,
+                      //   testId: test.id
+                      // });
+                      
+                      return (
                         <EnhancedTestCard
+                          key={test.id}
                           test={test}
                           isCompleted={isCompleted}
                           testScore={testScore}
@@ -920,9 +1021,8 @@ const EnhancedExamDashboard = () => {
                           onRetry={() => handleTestStart('mock', test.id)}
                           testType="mock"
                         />
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                 </ResponsiveScrollContainer>
               </CardContent>
             </Card>
@@ -996,7 +1096,76 @@ const EnhancedExamDashboard = () => {
           </TabsContent> */}
         </Tabs>
       </div>
-      <Footer />
+      
+      {/* Footer with proper spacing */}
+      <div className="mt-8">
+        <Footer />
+      </div>
+
+      {/* Mobile Debug Panel - Only in development */}
+      {process.env.NODE_ENV === 'development' && (
+        <>
+          {/* Debug Toggle Button */}
+          <button
+            onClick={toggleDebugPanel}
+            className="fixed bottom-4 right-4 z-50 bg-red-500 text-white p-3 rounded-full shadow-lg hover:bg-red-600 transition-colors"
+            style={{ fontSize: '12px' }}
+          >
+            {showDebugPanel ? 'Hide' : 'Debug'}
+          </button>
+
+          {/* Debug Panel */}
+          {showDebugPanel && (
+            <div className="fixed inset-0 z-40 bg-black bg-opacity-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-lg max-w-4xl w-full max-h-96 overflow-hidden">
+                <div className="flex justify-between items-center p-4 border-b">
+                  <h3 className="text-lg font-bold">Mobile Debug Logs</h3>
+                  <button
+                    onClick={toggleDebugPanel}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="p-4 overflow-y-auto max-h-80">
+                  <div className="space-y-2 text-xs">
+                    {(() => {
+                      const logs = JSON.parse(localStorage.getItem('mobileDebugLogs') || '[]');
+                      return logs.slice(-20).map((log: any, index: number) => (
+                        <div key={index} className="border-b pb-2">
+                          <div className="font-mono text-gray-600">
+                            {new Date(log.timestamp).toLocaleTimeString()}
+                          </div>
+                          <div className="font-semibold">{log.message}</div>
+                          {log.data && (
+                            <pre className="text-gray-500 overflow-x-auto">
+                              {JSON.stringify(log.data, null, 2)}
+                            </pre>
+                          )}
+                          <div className="text-gray-400">
+                            {log.screenSize} | {log.isMobile ? 'Mobile' : 'Desktop'}
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+                <div className="p-4 border-t bg-gray-50">
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem('mobileDebugLogs');
+                      window.location.reload();
+                    }}
+                    className="bg-red-500 text-white px-4 py-2 rounded text-sm"
+                  >
+                    Clear Logs
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       </div>
     </PullToRefresh>

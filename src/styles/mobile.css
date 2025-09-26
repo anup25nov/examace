@@ -164,7 +164,7 @@ header {
   scroll-snap-align: start;
 }
 
-/* Enhanced ResponsiveScrollContainer styling */
+/* Enhanced ResponsiveScrollContainer styling - matches wireframe design */
 .responsive-scroll-container {
   /* Smooth scrolling */
   scroll-behavior: smooth;
@@ -173,6 +173,78 @@ header {
   /* Custom scrollbar for webkit browsers */
   scrollbar-width: thin;
   scrollbar-color: rgba(59, 130, 246, 0.3) transparent;
+  
+  /* Ensure proper spacing for wireframe layout */
+  padding: 0.5rem;
+}
+
+/* Mobile: Single column vertical stack (1x3) - fixed height for 3 cards */
+@media (max-width: 767px) {
+  .responsive-scroll-container {
+    /* Single column layout for mobile */
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    /* Fixed height to show exactly 3 cards */
+    height: 900px; /* 3 * 300px = 900px */
+    min-height: 900px;
+    max-height: 900px;
+  }
+  
+  .responsive-scroll-container > * {
+    width: 100%;
+    flex-shrink: 0;
+    /* Each card should be ~300px (288px + 16px gap) */
+    min-height: 288px;
+  }
+}
+
+/* Desktop: 4-column grid (4.5x4) - responsive height */
+@media (min-width: 768px) {
+  .responsive-scroll-container {
+    /* Grid layout for desktop */
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    /* Use viewport height instead of fixed height */
+    min-height: calc(100vh - 300px);
+    max-height: calc(100vh - 200px);
+  }
+}
+
+/* Tablet: 2-column grid for medium screens - increased height */
+@media (min-width: 640px) and (max-width: 767px) {
+  .responsive-scroll-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    /* Increased height to show more cards */
+    min-height: 1200px;
+  }
+  
+  .responsive-scroll-container > * {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+/* Large desktop: 4-column grid with more spacing */
+@media (min-width: 1024px) {
+  .responsive-scroll-container {
+    gap: 1.5rem;
+  }
+}
+
+/* Ensure grid layout works with wrapped children */
+.responsive-scroll-container.grid > * {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Mobile vertical layout */
+.responsive-scroll-container.space-y-4 > * {
+  width: 100%;
+  min-width: 0;
 }
 
 .responsive-scroll-container::-webkit-scrollbar {

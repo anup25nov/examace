@@ -20,6 +20,7 @@ import { DailyAccolades } from "@/components/DailyAccolades";
 import PullToRefresh from "@/components/PullToRefresh";
 // Removed referral code modal from login flow - now handled during OTP verification
 import Footer from "@/components/Footer";
+import CachedImage from "@/components/CachedImage";
 
 // Icon mapping for dynamic loading
 const iconMap: { [key: string]: any } = {
@@ -187,14 +188,12 @@ const Index = () => {
           <div className="flex items-center justify-between">
             {/* Logo - Left Aligned */}
             <div className="flex items-center space-x-2 sm:space-x-3">
-              <img 
+              <CachedImage 
                 src="/logos/logo.jpeg"
                 alt="S2S Logo" 
                 className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg object-cover border-2 border-gray-200"
                 style={{ objectFit: 'cover', objectPosition: 'center' }}
-                onError={(e) => {
-                  e.currentTarget.src = '/logos/alternate_image.png';
-                }}
+                fallback="/logos/alternate_image.png"
                 loading="eager"
               />
               <div>

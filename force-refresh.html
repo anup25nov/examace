@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Force Refresh - Clear Cache</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 5px;
+            background: #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Force Refresh - Clear Cache</h1>
+        <p>This page will help you clear the browser cache and force reload the main application.</p>
+        
+        <div class="status" id="status">
+            Ready to clear cache...
+        </div>
+        
+        <button class="button" onclick="clearCacheAndReload()">
+            🗑️ Clear Cache & Reload
+        </button>
+        
+        <button class="button" onclick="hardReload()">
+            🔄 Hard Reload
+        </button>
+        
+        <button class="button" onclick="goToApp()">
+            🚀 Go to App
+        </button>
+        
+        <div style="margin-top: 30px;">
+            <h3>Manual Steps:</h3>
+            <ol>
+                <li>Press <strong>Ctrl+Shift+R</strong> (or <strong>Cmd+Shift+R</strong> on Mac)</li>
+                <li>Or open DevTools (F12) → Right-click refresh button → "Empty Cache and Hard Reload"</li>
+                <li>Or go to Application tab → Storage → Clear storage</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+        
+        function clearCacheAndReload() {
+            updateStatus('Clearing cache...');
+            
+            // Clear localStorage
+            try {
+                localStorage.clear();
+                updateStatus('✅ localStorage cleared');
+            } catch (e) {
+                updateStatus('❌ Failed to clear localStorage: ' + e.message);
+            }
+            
+            // Clear sessionStorage
+            try {
+                sessionStorage.clear();
+                updateStatus('✅ sessionStorage cleared');
+            } catch (e) {
+                updateStatus('❌ Failed to clear sessionStorage: ' + e.message);
+            }
+            
+            // Clear caches
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    for (let name of names) {
+                        caches.delete(name);
+                    }
+                    updateStatus('✅ Service worker caches cleared');
+                }).catch(function(e) {
+                    updateStatus('❌ Failed to clear caches: ' + e.message);
+                });
+            }
+            
+            // Force reload after a delay
+            setTimeout(() => {
+                updateStatus('🔄 Reloading page...');
+                window.location.reload(true);
+            }, 1000);
+        }
+        
+        function hardReload() {
+            updateStatus('🔄 Performing hard reload...');
+            window.location.reload(true);
+        }
+        
+        function goToApp() {
+            updateStatus('🚀 Redirecting to app...');
+            window.location.href = '/';
+        }
+        
+        // Auto-clear cache on page load
+        window.addEventListener('load', function() {
+            updateStatus('Page loaded. Click "Clear Cache & Reload" to force refresh.');
+        });
+    </script>
+</body>
+</html>

@@ -717,16 +717,6 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
             </Button>
           </div>
           
-          {/* Debug Info for Payment Button */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="text-xs text-gray-500 mt-2 text-center">
-              Debug: selectedPlan={selectedPlan ? 'true' : 'false'}, 
-              razorpayLoaded={razorpayLoaded ? 'true' : 'false'}, 
-              razorpayLoading={razorpayLoading ? 'true' : 'false'},
-              razorpayError={razorpayError ? 'true' : 'false'},
-              selectedPlanDetails={selectedPlanDetails ? 'true' : 'false'}
-            </div>
-          )}
 
           {/* Security Note */}
           <div className="text-center text-sm text-muted-foreground">

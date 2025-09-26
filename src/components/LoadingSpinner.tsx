@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
+import CachedImage from '@/components/CachedImage';
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
@@ -30,7 +31,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     <div className="flex flex-col items-center justify-center space-y-3">
       {showLogo ? (
         <div className="relative">
-          <img 
+          <CachedImage 
             src="/logos/logo.jpeg"
             alt="S2S Logo" 
             className={cn(
@@ -38,9 +39,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
               logoSizeClasses[size]
             )}
             style={{ objectFit: 'cover', objectPosition: 'center' }}
-            onError={(e) => {
-              e.currentTarget.src = '/logos/alternate_image.png';
-            }}
+            fallback="/logos/alternate_image.png"
             loading="eager"
           />
           <div 
