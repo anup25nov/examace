@@ -34,37 +34,5 @@
     "client_mode": "focus-existing"
   },
   "handle_links": "preferred",
-  "capture_links": "new-client",
-  "file_handlers": [
-    {
-      "action": "/import",
-      "accept": {
-        "text/csv": [".csv"],
-        "application/vnd.ms-excel": [".xls"],
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"]
-      }
-    }
-  ],
-  "protocol_handlers": [
-    {
-      "protocol": "web+examace",
-      "url": "/exam?code=%s"
-    }
-  ],
-  "share_target": {
-    "action": "/share",
-    "method": "POST",
-    "enctype": "multipart/form-data",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url",
-      "files": [
-        {
-          "name": "file",
-          "accept": ["image/*", "text/*"]
-        }
-      ]
-    }
-  }
+  "capture_links": "new-client"
 }
