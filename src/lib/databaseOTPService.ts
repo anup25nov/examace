@@ -110,15 +110,15 @@ export class DatabaseOTPService {
         if (responseText.trim()) {
           try {
             const result = JSON.parse(responseText);
-            console.log(`✅ Expired ${result.length} existing OTPs for phone: ${phone}`);
+            // OTPs expired successfully
           } catch (parseError) {
-            console.log(`✅ Expired existing OTPs for phone: ${phone} (response was not JSON)`);
+            // OTPs expired successfully (non-JSON response)
           }
         } else {
-          console.log(`✅ No existing OTPs to expire for phone: ${phone}`);
+          // No existing OTPs to expire
         }
       } else {
-        console.log(`⚠️ Could not expire existing OTPs for phone: ${phone} (${response.status})`);
+        console.error(`⚠️ Could not expire existing OTPs for phone: ${phone} (${response.status})`);
       }
     } catch (error) {
       console.error(`❌ Error expiring existing OTPs for phone ${phone}:`, error);
@@ -130,7 +130,6 @@ export class DatabaseOTPService {
    */
   private async storeOTP(phone: string, otp: string, provider: string, messageId?: string): Promise<string> {
     // First, expire all existing OTPs for this phone number
-    console.log(`🔄 Expiring existing OTPs for phone: ${phone}`);
     await this.expireExistingOTPs(phone);
     
     const expiresAt = new Date(Date.now() + this.config.otpExpiryMinutes * 60 * 1000);
@@ -163,7 +162,7 @@ export class DatabaseOTPService {
     }
 
     const result = await response.json();
-    console.log(`✅ New OTP stored with ID: ${result[0].id}`);
+      // OTP stored successfully
     return result[0].id;
   }
 
@@ -172,18 +171,12 @@ export class DatabaseOTPService {
    */
   async sendOTP(phone: string): Promise<OTPResult> {
     const startTime = Date.now();
-    console.log(`🚀 Starting OTP send process for phone: ${phone}`);
-    
     try {
       // Check rate limiting
-      console.log(`🔍 Checking rate limit for phone: ${phone}`);
       if (await this.isRateLimited(phone)) {
         console.error(`❌ Rate limit exceeded for phone: ${phone}`);
         return { success: false, error: 'Rate limit exceeded. Please wait before requesting another OTP.' };
       }
-
-      // Call the send-sms function which will generate and store OTP
-      console.log(`📱 Calling send-sms function for phone: ${phone}`);
       const response = await fetch(`${this.supabaseUrl}/functions/v1/send-sms`, {
         method: 'POST',
         headers: {
@@ -205,11 +198,9 @@ export class DatabaseOTPService {
       }
 
       const result = await response.json();
-      console.log('📱 Send SMS result:', result);
-      
       if (result.success) {
         const totalDuration = Date.now() - startTime;
-        console.log(`🎉 OTP sent successfully via WhatsApp in ${totalDuration}ms`);
+        // OTP sent successfully
         
         // Update rate limit
         const rateLimitKey = `rate_limit_${phone}`;
