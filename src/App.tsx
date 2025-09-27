@@ -10,7 +10,6 @@ import MobileStatusBarHandler from "@/components/MobileStatusBarHandler";
 import MobileKeyboardHandler from "@/components/MobileKeyboardHandler";
 import PullToRefresh from "@/components/PullToRefresh";
 import SwipeToGoBack from "@/components/SwipeToGoBack";
-import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AboutUs from "./pages/AboutUs";
@@ -55,7 +54,6 @@ const App = () => {
           <MobileStatusBarHandler />
           <MobileKeyboardHandler>
           <SwipeToGoBack>
-            <PWAInstallPrompt />
             <Routes>
             <Route path="/auth" element={<AuthWrapper />} />
             <Route path="/" element={
