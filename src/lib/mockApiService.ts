@@ -35,6 +35,26 @@ export class MockApiService {
     return MockApiService.instance;
   }
 
+  // Available test files mapping
+  private readonly AVAILABLE_TESTS: Record<string, Record<string, string[]>> = {
+    'ssc-cgl': {
+      'pyq': ['2024-paper-1', '2024-paper-2', '2024-paper-3', '2024-paper-4', '2024-paper-5', '2023-paper-1'],
+      'mock': ['mock-paper-1', 'mock-paper-2', 'mock-paper-3', 'mock-paper-9'],
+      'practice': ['english-grammar-paper-1', 'general-awareness-paper-1', 'general-intelligence-paper-1', 'maths-algebra-paper-1', 'maths-algebra-paper-2']
+    }
+  };
+
+  // Check if a test file exists
+  private isValidTestId(examId: string, sectionId: string, testId: string): boolean {
+    const examTests = this.AVAILABLE_TESTS[examId];
+    if (!examTests) return false;
+    
+    const sectionTests = examTests[sectionId];
+    if (!sectionTests) return false;
+    
+    return sectionTests.includes(testId);
+  }
+
   // Mock secure questions API
   async getSecureQuestions(
     examId: string,
@@ -67,6 +87,15 @@ export class MockApiService {
         jsonData = jsonModule.default || jsonModule;
       } catch (importError) {
         console.error(`Failed to import JSON file: ${examId}/${sectionId}/${testId}.json`, importError);
+        
+        // Check if this is a missing file error
+        if (importError.message?.includes('Unknown variable dynamic import') || 
+            importError.message?.includes('Failed to resolve module')) {
+          console.warn(`📁 [MockApiService] File not found: ${examId}/${sectionId}/${testId}.json`);
+          console.warn(`📁 [MockApiService] Available files in ${examId}/${sectionId}/:`, 
+            '2024-paper-1.json, 2024-paper-2.json, 2024-paper-3.json, 2024-paper-4.json, 2024-paper-5.json, 2023-paper-1.json');
+        }
+        
         return null;
       }
       

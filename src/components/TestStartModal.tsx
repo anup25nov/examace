@@ -143,10 +143,19 @@ export const TestStartModal: React.FC<TestStartModalProps> = ({
   const testInfo = getTestTypeInfo();
   const IconComponent = testInfo.icon;
 
+  // Debug logging for modal positioning
+  console.log('🔍 [TestStartModal] Modal state:', {
+    isOpen,
+    testName: test.name,
+    testType,
+    examId,
+    timestamp: new Date().toISOString()
+  });
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full mx-4 sm:mx-0">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-3">
               <div className={`p-2 bg-gradient-to-r ${testInfo.color} rounded-lg text-white`}>

@@ -69,35 +69,16 @@ export class PaymentService {
       const paymentId = `PAY_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       console.log('🆔 Generated payment ID:', paymentId);
       
-      // Create payment record in database
-      console.log('💾 Creating payment record in database...');
-      const { data: paymentRecord, error: dbError } = await supabase
-        .from('payments')
-        .insert({
-          payment_id: paymentId,
-          user_id: userId,
-          plan_id: plan.id,
-          amount: plan.price,
-          payment_method: 'razorpay',
-          status: 'pending'
-        } as any)
-        .select()
-        .single();
-
-      if (dbError) {
-        console.error('❌ Database error creating payment:', dbError);
-        // Continue with fallback payment ID
-        console.warn('⚠️ Continuing with fallback payment ID');
-      } else {
-        console.log('✅ Database insert successful:', paymentRecord);
-      }
+      // Note: Payment record will be created by the Edge Function
+      // No need to insert from frontend due to RLS policies
+      console.log('💾 Payment record will be created by Edge Function');
       
       // Create order data for Razorpay
       console.log('🔧 Creating order data...');
       const orderData = {
         amount: plan.price * 100, // Convert to paise
         currency: 'INR',
-        receipt: paymentRecord?.payment_id || paymentId,
+        receipt: paymentId,
         notes: {
           user_id: userId,
           plan_id: plan.id,
@@ -108,7 +89,7 @@ export class PaymentService {
 
       const response = {
         success: true,
-        paymentId: paymentRecord?.payment_id || paymentId,
+        paymentId: paymentId,
         orderId: null, // No pre-created order - Razorpay will create dynamically
         amount: plan.price,
         currency: 'INR'

@@ -526,9 +526,9 @@ serve(async (req) => {
           const referralCheckResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/referral_codes?user_id=eq.${userId}&select=id`, {
             headers: {
               // @ts-ignore: Deno.env is available in Supabase Edge Functions
-              'apikey': Deno.env.get('SUPABASE_ANON_KEY') || '',
+              'apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
               // @ts-ignore: Deno.env is available in Supabase Edge Functions
-              'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') || ''}`,
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''}`,
               'Content-Type': 'application/json'
             }
           })
@@ -546,9 +546,9 @@ serve(async (req) => {
                 method: 'POST',
                 headers: {
                   // @ts-ignore: Deno.env is available in Supabase Edge Functions
-                  'apikey': Deno.env.get('SUPABASE_ANON_KEY') || '',
+                  'apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
                   // @ts-ignore: Deno.env is available in Supabase Edge Functions
-                  'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') || ''}`,
+                  'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''}`,
                   'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -587,9 +587,9 @@ serve(async (req) => {
             method: 'POST',
             headers: {
               // @ts-ignore: Deno.env is available in Supabase Edge Functions
-              'apikey': Deno.env.get('SUPABASE_ANON_KEY') || '',
+              'apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
               // @ts-ignore: Deno.env is available in Supabase Edge Functions
-              'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') || ''}`,
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({

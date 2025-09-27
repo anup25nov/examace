@@ -133,7 +133,7 @@ const App = () => {
           </MobileKeyboardHandler>
         </BrowserRouter>
         <GlobalMembershipModal />
-        <AuthDebugger enabled={true} />
+        <AuthDebugger enabled={false} />
           </DashboardDataProvider>
         </MembershipProvider>
       </TooltipProvider>

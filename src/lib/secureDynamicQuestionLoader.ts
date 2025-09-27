@@ -156,6 +156,10 @@ export class SecureDynamicQuestionLoader {
       
       if (!apiData) {
         console.error('Failed to load from mock API service');
+        console.warn(`📁 [SecureDynamicQuestionLoader] No data found for: ${examId}/${sectionId}/${testId}`);
+        console.warn(`📁 [SecureDynamicQuestionLoader] This might be because the test file doesn't exist.`);
+        console.warn(`📁 [SecureDynamicQuestionLoader] Available tests: 2024-paper-1, 2024-paper-2, 2024-paper-3, 2024-paper-4, 2024-paper-5, 2023-paper-1`);
+        
         // Try fallback to JSON loading as last resort
         console.log('🔄 Falling back to JSON loading...');
         return await this.loadQuestionsFromJson(examId, sectionId, testId);

@@ -1,42 +1,30 @@
-// @ts-ignore - Deno global is available in Supabase Edge Functions
+// @ts-ignore: Deno imports are available in Supabase Edge Functions
 const serve = (handler: (req: Request) => Response | Promise<Response>) => {
   // @ts-ignore: Deno.serve is available in Deno runtime
   return Deno.serve(handler);
 }
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Content-Type': 'application/json'
-}
-
-interface RequestBody {
-  user_id: string;
-  plan: 'pro' | 'pro_plus' | 'premium';
-}
-
-const RZP_KEY_ID = Deno.env.get('RAZORPAY_KEY_ID') || '';
-const RZP_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET') || '';
-
-// Centralized pricing configuration - SINGLE SOURCE OF TRUTH
-// This should match the pricing in src/config/pricingConfig.ts
-const PLAN_PRICES: Record<string, number> = {
-  pro: 1, // Pro plan: ₹999 (production price)
-  pro_plus: 2, // Pro+ plan: ₹1999 (production price)
-  premium: 1, // Premium plan: ₹999 (alias for pro)
-};
-
 serve(async (req: Request) => {
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Content-Type': 'application/json'
+  }
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
+
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: corsHeaders })
   }
 
+  // Skip authentication for now to test the function
+  console.log('Function called with method:', req.method);
+
   try {
-    const body: RequestBody = await req.json()
+    const body = await req.json()
     
     // Validate required fields
     if (!body.user_id || !body.plan) {
@@ -45,6 +33,13 @@ serve(async (req: Request) => {
         { status: 400, headers: corsHeaders }
       )
     }
+
+    // Centralized pricing configuration - SINGLE SOURCE OF TRUTH
+    const PLAN_PRICES: Record<string, number> = {
+      pro: 1, // Pro plan: ₹999 (production price)
+      pro_plus: 2, // Pro+ plan: ₹1999 (production price)
+      premium: 1, // Premium plan: ₹999 (alias for pro)
+    };
 
     // Validate plan type
     if (!(body.plan in PLAN_PRICES)) {
@@ -64,6 +59,10 @@ serve(async (req: Request) => {
         { status: 500, headers: corsHeaders }
       )
     }
+
+    // Get Razorpay credentials
+    const RZP_KEY_ID = Deno.env.get('RAZORPAY_KEY_ID') || '';
+    const RZP_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET') || '';
 
     // Validate Razorpay credentials
     if (!RZP_KEY_ID || !RZP_KEY_SECRET) {
@@ -159,6 +158,12 @@ serve(async (req: Request) => {
       { status: 200, headers: corsHeaders }
     )
   } catch (e) {
-    return new Response(JSON.stringify({ success: false, error: e instanceof Error ? e.message : 'Unknown error' }), { status: 500, headers: corsHeaders })
+    console.error('Edge Function error:', e);
+    console.error('Error stack:', e instanceof Error ? e.stack : 'No stack trace');
+    return new Response(JSON.stringify({ 
+      success: false, 
+      error: e instanceof Error ? e.message : 'Unknown error',
+      details: e instanceof Error ? e.stack : undefined
+    }), { status: 500, headers: corsHeaders })
   }
 })

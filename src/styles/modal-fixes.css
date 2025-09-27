@@ -1,0 +1,230 @@
+/* =====================================================
+   MODAL POSITIONING FIXES
+   =====================================================
+   This file contains comprehensive fixes for modal
+   positioning issues across all devices and screen sizes
+*/
+
+/* Base modal container fixes */
+.modal-container {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: max(env(safe-area-inset-top), 1rem) 
+           max(env(safe-area-inset-right), 1rem) 
+           max(env(safe-area-inset-bottom), 1rem) 
+           max(env(safe-area-inset-left), 1rem) !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+/* Modal content fixes */
+.modal-content {
+  position: relative !important;
+  width: 100% !important;
+  max-width: 90vw !important;
+  max-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2rem) !important;
+  background-color: white !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Prevent body scroll when modal is open */
+body.modal-open {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Mobile-specific fixes */
+@media (max-width: 768px) {
+  .modal-container {
+    padding: max(env(safe-area-inset-top), 0.5rem) 
+             max(env(safe-area-inset-right), 0.5rem) 
+             max(env(safe-area-inset-bottom), 0.5rem) 
+             max(env(safe-area-inset-left), 0.5rem) !important;
+  }
+  
+  .modal-content {
+    max-width: 95vw !important;
+    max-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1rem) !important;
+    border-radius: 0.5rem !important;
+  }
+}
+
+/* Small screens (phones in portrait) */
+@media (max-width: 480px) {
+  .modal-content {
+    max-width: 100vw !important;
+    border-radius: 0 !important;
+    max-height: 100vh !important;
+  }
+}
+
+/* Large screens */
+@media (min-width: 1024px) {
+  .modal-content {
+    max-width: 80vw !important;
+  }
+}
+
+/* Extra large screens */
+@media (min-width: 1280px) {
+  .modal-content {
+    max-width: 70vw !important;
+  }
+}
+
+/* Modal header fixes */
+.modal-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+  background-color: white !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  padding: 1rem 1.5rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+/* Modal body fixes */
+.modal-body {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding: 1.5rem !important;
+}
+
+/* Modal footer fixes */
+.modal-footer {
+  position: sticky !important;
+  bottom: 0 !important;
+  z-index: 10 !important;
+  background-color: white !important;
+  border-top: 1px solid #e5e7eb !important;
+  padding: 1rem 1.5rem !important;
+}
+
+/* Close button fixes */
+.modal-close {
+  position: absolute !important;
+  top: 1rem !important;
+  right: 1rem !important;
+  z-index: 20 !important;
+  width: 2rem !important;
+  height: 2rem !important;
+  border-radius: 50% !important;
+  background-color: rgba(0, 0, 0, 0.1) !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s !important;
+}
+
+.modal-close:hover {
+  background-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Animation fixes */
+.modal-enter {
+  opacity: 0 !important;
+  transform: scale(0.95) !important;
+}
+
+.modal-enter-active {
+  opacity: 1 !important;
+  transform: scale(1) !important;
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out !important;
+}
+
+.modal-exit {
+  opacity: 1 !important;
+  transform: scale(1) !important;
+}
+
+.modal-exit-active {
+  opacity: 0 !important;
+  transform: scale(0.95) !important;
+  transition: opacity 0.2s ease-in, transform 0.2s ease-in !important;
+}
+
+/* Specific component fixes */
+.membership-modal {
+  max-width: 4xl !important;
+}
+
+.payment-modal {
+  max-width: 2xl !important;
+}
+
+.referral-modal {
+  max-width: 2xl !important;
+}
+
+.admin-modal {
+  max-width: 6xl !important;
+}
+
+/* Fix for modals that go outside viewport */
+.modal-content.overflow-fix {
+  max-height: calc(100vh - 2rem) !important;
+  overflow-y: auto !important;
+}
+
+/* Fix for iOS Safari viewport issues */
+@supports (-webkit-touch-callout: none) {
+  .modal-container {
+    height: -webkit-fill-available !important;
+  }
+  
+  .modal-content {
+    max-height: calc(-webkit-fill-available - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2rem) !important;
+  }
+}
+
+/* Fix for Android Chrome viewport issues */
+@supports (height: 100dvh) {
+  .modal-content {
+    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2rem) !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .modal-content {
+    border: 2px solid !important;
+  }
+  
+  .modal-close {
+    border: 1px solid !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .modal-enter,
+  .modal-enter-active,
+  .modal-exit,
+  .modal-exit-active {
+    transition: none !important;
+  }
+}
+
+/* Print styles - hide modals when printing */
+@media print {
+  .modal-container {
+    display: none !important;
+  }
+}

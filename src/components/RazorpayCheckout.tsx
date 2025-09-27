@@ -98,11 +98,6 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
   }, []);
 
   const handlePayment = async () => {
-    if (!user) {
-      messagingService.error('Please log in to make a payment.');
-      return;
-    }
-    
     if (!razorpayLoaded) {
       messagingService.warning('Payment system is loading. Please wait a moment and try again.');
       return;
@@ -121,7 +116,7 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
         planName: plan.name,
         amount: plan.price,
         currency: plan.currency,
-        userId: user.id,
+        userId: '', // Will be set by the payment service from localStorage
         userEmail: '',
         userName: (profile as any)?.name || '',
       };
@@ -247,7 +242,13 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
 
   if (paymentStep === 'processing') {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div 
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+        style={{
+          paddingTop: 'max(env(safe-area-inset-top), 1rem)',
+          paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)',
+        }}
+      >
         <Card className="w-full max-w-md">
           <CardContent className="p-8 text-center">
             <Loader2 className="w-12 h-12 animate-spin mx-auto mb-4 text-blue-600" />
@@ -261,7 +262,13 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
 
   if (paymentStep === 'success') {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div 
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+        style={{
+          paddingTop: 'max(env(safe-area-inset-top), 1rem)',
+          paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)',
+        }}
+      >
         <Card className="w-full max-w-md">
           <CardContent className="p-8 text-center">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -282,7 +289,13 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
 
   if (paymentStep === 'failed') {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div 
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+        style={{
+          paddingTop: 'max(env(safe-area-inset-top), 1rem)',
+          paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)',
+        }}
+      >
         <Card className="w-full max-w-md">
           <CardContent className="p-8 text-center">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -307,8 +320,14 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-2xl">
+    <div 
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+      style={{
+        paddingTop: 'max(env(safe-area-inset-top), 1rem)',
+        paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)',
+      }}
+    >
+      <Card className="w-full max-w-2xl max-h-[calc(100vh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-2rem)] overflow-y-auto">
         <CardHeader>
           <CardTitle className="text-center">Complete Your Payment</CardTitle>
         </CardHeader>

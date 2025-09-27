@@ -9,6 +9,21 @@ export const useUserStreak = () => {
   const [loading, setLoading] = useState(true);
   const { user, isAuthenticated } = useAuth();
 
+  // Immediate load from cache on mount
+  useEffect(() => {
+    if (user && isAuthenticated) {
+      const streakData = localStorage.getItem(`streak_${user.id}`);
+      if (streakData) {
+        const { current_streak, longest_streak } = JSON.parse(streakData);
+        setStreak({
+          current_streak: current_streak || 0,
+          longest_streak: longest_streak || 0
+        });
+        console.log('🔍 [useUserStreak] Immediate load from cache:', { current_streak, longest_streak });
+      }
+    }
+  }, [user, isAuthenticated]);
+
   useEffect(() => {
     const fetchStreak = async () => {
       if (!isAuthenticated || !user) {
@@ -24,9 +39,18 @@ export const useUserStreak = () => {
         const lastVisit = localStorage.getItem(lastVisitKey);
         
         // Check if we need to call API (cache until midnight)
-        const cacheKey = `streak_cache_${user.id}`;
+        const cacheKey = `streak_${user.id}`;
         const cachedStreak = localStorage.getItem(cacheKey);
         const cacheTimestamp = localStorage.getItem(`${cacheKey}_timestamp`);
+        
+        // Debug: Log all streak-related localStorage keys
+        console.log('🔍 [useUserStreak] Debug - All streak keys:', {
+          cacheKey,
+          cachedStreak,
+          cacheTimestamp,
+          mainStreakKey: `streak_${user.id}`,
+          mainStreakData: localStorage.getItem(`streak_${user.id}`)
+        });
         
         let currentStreak = 0;
         let longestStreak = 0;
@@ -37,12 +61,21 @@ export const useUserStreak = () => {
         midnight.setHours(23, 59, 59, 999);
         const isCacheValid = cacheTimestamp && new Date(cacheTimestamp) < midnight;
         
-        if (cachedStreak && isCacheValid) {
-          // Use cached data
+        if (cachedStreak) {
+          // Use cached data (always use if available, since it's updated daily)
           const { current_streak, longest_streak } = JSON.parse(cachedStreak);
           currentStreak = current_streak || 0;
           longestStreak = longest_streak || 0;
-          console.log('🔍 [useUserStreak] Using cached streak data');
+          console.log('🔍 [useUserStreak] Using cached streak data:', { currentStreak, longestStreak });
+        } else if (localStorage.getItem(`streak_${user.id}`)) {
+          // Fallback: use the main streak data if cache is not available
+          const streakData = localStorage.getItem(`streak_${user.id}`);
+          if (streakData) {
+            const { current_streak, longest_streak } = JSON.parse(streakData);
+            currentStreak = current_streak || 0;
+            longestStreak = longest_streak || 0;
+            console.log('🔍 [useUserStreak] Using fallback streak data:', { currentStreak, longestStreak });
+          }
         } else {
           // Call API to get fresh data
           console.log('🔍 [useUserStreak] Calling API for fresh streak data');
@@ -84,6 +117,7 @@ export const useUserStreak = () => {
                 current_streak: currentStreak,
                 longest_streak: longestStreak
               }));
+              localStorage.setItem(`${cacheKey}_timestamp`, new Date().toISOString());
               
               // Record today's visit in IST
               localStorage.setItem(lastVisitKey, todayIST);
@@ -94,7 +128,7 @@ export const useUserStreak = () => {
             longestStreak = apiStreak.longest_streak || 0;
             
             // Cache the API data until midnight
-            localStorage.setItem(cacheKey, JSON.stringify({
+            localStorage.setItem(`streak_${user.id}`, JSON.stringify({
               current_streak: currentStreak,
               longest_streak: longestStreak
             }));
@@ -140,5 +174,19 @@ export const useUserStreak = () => {
     }
   };
 
-  return { streak, loading, refreshStreak };
+  const forceRefreshFromCache = () => {
+    if (user) {
+      const streakData = localStorage.getItem(`streak_${user.id}`);
+      if (streakData) {
+        const { current_streak, longest_streak } = JSON.parse(streakData);
+        setStreak({
+          current_streak: current_streak || 0,
+          longest_streak: longest_streak || 0
+        });
+        console.log('🔍 [useUserStreak] Force refreshed from cache:', { current_streak, longest_streak });
+      }
+    }
+  };
+
+  return { streak, loading, refreshStreak, forceRefreshFromCache };
 };

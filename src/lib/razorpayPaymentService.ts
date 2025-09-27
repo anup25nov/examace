@@ -38,34 +38,32 @@ export class RazorpayPaymentService {
    */
   async createRazorpayPayment(paymentRequest: RazorpayPaymentRequest): Promise<RazorpayPaymentResult> {
     try {
+      // Get current user from localStorage (phone-based auth)
+      const { getCurrentUserId } = await import('@/lib/supabaseAuth');
+      const userId = getCurrentUserId();
+      
+      if (!userId) {
+        console.error('User not authenticated - no user ID found');
+        return {
+          success: false,
+          error: 'User not authenticated. Please log in again.',
+        };
+      }
+
+      // Use the authenticated user's ID instead of the one from paymentRequest
+      console.log('Creating payment for user:', userId, 'plan:', paymentRequest.planId);
+
       // Create order via Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('create_razorpay_order' as any, {
-        body: { user_id: paymentRequest.userId, plan: paymentRequest.planId }
+        body: { user_id: userId, plan: paymentRequest.planId }
       } as any);
       if (error || !data?.success) {
         throw new Error(error?.message || data?.error || 'Failed to create order');
       }
 
-      // Insert pending payment record (new payments schema)
-      try {
-        // Get plan name from plan_id
-        const planName = paymentRequest.planId === 'pro' ? 'Pro Plan' : 
-                        paymentRequest.planId === 'pro_plus' ? 'Pro Plus Plan' : 
-                        paymentRequest.planId;
-        
-        await supabase.from('payments' as any).insert({
-          payment_id: `PAY_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          user_id: paymentRequest.userId,
-          plan_id: paymentRequest.planId,
-          plan_name: planName,
-          amount: data.amount, // Use amount from Edge Function
-          razorpay_order_id: data.order_id,
-          payment_method: 'razorpay',
-          status: 'pending'
-        } as any);
-      } catch (e) {
-        console.warn('Failed to insert pending payment (non-fatal):', e);
-      }
+      // Note: Payment record will be created by the Edge Function
+      // No need to insert from frontend due to RLS policies
+      console.log('Payment order created via Edge Function:', data.order_id);
 
       // Return order id as the tracking id for client
       return { success: true, orderId: data.order_id, paymentId: data.order_id, amount: data.amount, currency: data.currency || 'INR', keyId: data.key_id };
@@ -92,10 +90,24 @@ export class RazorpayPaymentService {
     referralCode?: string
   ): Promise<RazorpayPaymentResponse> {
     try {
+      // Get current user from localStorage (phone-based auth)
+      const { getCurrentUserId } = await import('@/lib/supabaseAuth');
+      const userId = getCurrentUserId();
+      
+      if (!userId) {
+        console.error('User not authenticated - no user ID found');
+        return { 
+          success: false, 
+          error: 'User not authenticated. Please log in again.' 
+        } as any;
+      }
+
+      console.log('Verifying payment for user:', userId);
+
       // Verify via Supabase Edge Function, which also activates membership
       const { data, error } = await supabase.functions.invoke('verify_razorpay_payment' as any, {
         body: {
-          user_id: (await supabase.auth.getUser()).data.user?.id,
+          user_id: userId,
           plan: planId,
           order_id: razorpayPaymentData.razorpay_order_id,
           payment_id: razorpayPaymentData.razorpay_payment_id,
@@ -103,7 +115,9 @@ export class RazorpayPaymentService {
           referral_code: referralCode
         }
       } as any);
+      
       if (error || !data?.success) {
+        console.error('Payment verification error:', error || data?.error);
         return { success: false, error: error?.message || data?.error || 'Verification failed' } as any;
       }
 

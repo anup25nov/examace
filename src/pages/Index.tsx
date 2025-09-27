@@ -40,7 +40,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, loading, logout } = useAuth();
   const { profile } = useOptimizedUserProfile();
-  const { streak, refreshStreak } = useUserStreak();
+  const { streak, refreshStreak, forceRefreshFromCache } = useUserStreak();
   const [isNavigating, setIsNavigating] = useState(false);
   
   // Referral code collection removed - now handled during OTP verification for new users only
@@ -217,26 +217,42 @@ const Index = () => {
             
             {/* Notification and Profile - Right Aligned */}
             <div className="flex items-center space-x-1 sm:space-x-2">
-              {loading ? (
-                <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
-              ) : isAuthenticated ? (
-                <>
-                  <UserMessages />
-                  <ProfileDropdown
-                    onLogout={handleLogout}
-                    onMembershipClick={handleMembershipClick}
-                    onReferralClick={handleReferralClick}
-                  />
-                </>
-              ) : (
-                <Button 
-                  onClick={() => navigate('/auth')} 
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 px-3 sm:px-4 py-2 text-sm sm:text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 min-w-[60px] min-h-[36px]"
-                >
-                  <span className="hidden sm:inline">Login</span>
-                  <span className="sm:hidden">Login</span>
-                </Button>
-              )}
+              {(() => {
+                console.log('🔍 [Index] Header profile render state:', {
+                  loading,
+                  isAuthenticated,
+                  user: user ? { id: user.id } : null,
+                  timestamp: new Date().toISOString()
+                });
+                
+                if (loading) {
+                  console.log('🔍 [Index] Showing loading state');
+                  return <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>;
+                } else if (isAuthenticated) {
+                  console.log('🔍 [Index] Showing authenticated state with ProfileDropdown');
+                  return (
+                    <>
+                      <UserMessages />
+                      <ProfileDropdown
+                        onLogout={handleLogout}
+                        onMembershipClick={handleMembershipClick}
+                        onReferralClick={handleReferralClick}
+                      />
+                    </>
+                  );
+                } else {
+                  console.log('🔍 [Index] Showing login button');
+                  return (
+                    <Button 
+                      onClick={() => navigate('/auth')} 
+                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 px-3 sm:px-4 py-2 text-sm sm:text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 min-w-[60px] min-h-[36px]"
+                    >
+                      <span className="hidden sm:inline">Login</span>
+                      <span className="sm:hidden">Login</span>
+                    </Button>
+                  );
+                }
+              })()}
             </div>
           </div>
         </div>
@@ -246,13 +262,13 @@ const Index = () => {
       <section className="gradient-hero text-white py-16 pt-20 sm:pt-24">
         <div className="container mx-auto px-3 sm:px-4 text-center">
           {/* Streak Display - Only show when authenticated */}
-          {isAuthenticated && streak && (
+          {isAuthenticated && (
             <div className="mb-6">
               <div className="inline-flex items-center justify-center space-x-4 bg-white/15 backdrop-blur-sm border border-white/30 rounded-full px-8 py-4 shadow-xl">
                 <Flame className="w-7 h-7 text-orange-400 animate-pulse" />
                 <div className="text-center">
                   <div className="text-3xl font-bold text-white drop-shadow-lg">
-                    {streak.current_streak || 0}
+                    {streak?.current_streak || 0}
                   </div>
                   <div className="text-sm text-white/90 font-semibold">
                     Day Streak 🔥
@@ -261,7 +277,7 @@ const Index = () => {
                 <div className="w-px h-10 bg-white/30"></div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-white drop-shadow-lg">
-                    {streak.longest_streak || 0}
+                    {streak?.longest_streak || 0}
                   </div>
                   <div className="text-sm text-white/90 font-semibold">
                     Best Streak

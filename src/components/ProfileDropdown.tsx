@@ -62,6 +62,15 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     rewarded_referrals: 0
   });
 
+  // Debug logging for profile visibility
+  console.log('🔍 [ProfileDropdown] Render state:', {
+    isAuthenticated,
+    user: user ? { id: user.id, email: (user as any)?.email } : null,
+    profileLoading,
+    profile: profile ? { id: profile.id, phone: (profile as any)?.phone, name: (profile as any)?.name } : null,
+    timestamp: new Date().toISOString()
+  });
+
   // Fetch referral stats and admin status - ALWAYS call hooks before any early returns
   useEffect(() => {
     const fetchData = async () => {
@@ -103,6 +112,24 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
       <div className="flex items-center space-x-3 p-2">
         <div className="w-8 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
         <div className="w-20 h-4 bg-gray-200 rounded animate-pulse"></div>
+      </div>
+    );
+  }
+
+  // If no profile data, show a fallback
+  if (!profile) {
+    return (
+      <div className="flex items-center space-x-3 p-2">
+        <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg flex items-center justify-center">
+          <span className="text-white font-semibold text-sm">
+            {(user as any)?.email?.charAt(0).toUpperCase() || 'U'}
+          </span>
+        </div>
+        <div className="text-left">
+          <p className="text-sm font-semibold text-gray-900">
+            {isMobile ? 'Profile' : (user as any)?.email || 'User'}
+          </p>
+        </div>
       </div>
     );
   }

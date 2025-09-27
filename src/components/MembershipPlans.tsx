@@ -179,17 +179,26 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
       messagingService.membershipPurchased(selectedPlanForPayment.name);
     }
     
-    // Auto-refresh to show updated plan in profile
-    setTimeout(() => {
-      window.location.reload();
-    }, 2000); // Wait 2 seconds to show success message, then refresh
+    // Close the modal and let the parent handle refresh
+    onClose();
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2">
-      <div className={`bg-white rounded-xl shadow-xl w-full max-h-[90vh] overflow-y-auto ${
-        isMobile ? 'max-w-sm mx-1' : 'max-w-4xl'
-      }`}>
+    <div 
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+      style={{
+        paddingTop: 'max(env(safe-area-inset-top), 1rem)',
+        paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)',
+        paddingLeft: 'max(env(safe-area-inset-left), 1rem)',
+        paddingRight: 'max(env(safe-area-inset-right), 1rem)',
+      }}
+    >
+      <div 
+        className={`bg-white rounded-xl shadow-2xl w-full max-h-[calc(100vh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-2rem)] overflow-y-auto ${
+          isMobile ? 'max-w-sm' : 'max-w-4xl'
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Enhanced Header */}
         <div className="relative p-6 bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-200">
           <Button
