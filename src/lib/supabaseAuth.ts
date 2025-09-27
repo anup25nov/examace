@@ -520,14 +520,67 @@ export const signOutUser = async () => {
   try {
     console.log('Signing out user');
     
-    // For phone-based auth, we only need to clear localStorage
-    // No need to call Supabase auth.signOut() as we don't use sessions
+    // Clear all authentication-related data from localStorage
+    const keysToRemove = [
+      'userId',
+      'userPhone', 
+      'isAuthenticated',
+      'supabase.auth.token',
+      'sb-access-token',
+      'sb-refresh-token'
+    ];
+    
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key);
+    });
+    
+    // Clear any Supabase-related keys
+    Object.keys(localStorage).forEach(key => {
+      if (key.includes('supabase') || key.includes('sb-') || key.startsWith('user_status_')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Clear all localStorage as fallback
     localStorage.clear();
     
     return { success: true };
   } catch (error: any) {
     console.error('Error signing out:', error);
     return { success: false, error: error.message || 'Failed to sign out' };
+  }
+};
+
+// Clear refresh tokens and handle auth errors
+export const clearRefreshTokens = () => {
+  try {
+    console.log('Clearing refresh tokens and auth data');
+    
+    // Clear all Supabase-related tokens
+    const tokenKeys = [
+      'supabase.auth.token',
+      'sb-access-token',
+      'sb-refresh-token',
+      'supabase.auth.refresh_token',
+      'supabase.auth.access_token'
+    ];
+    
+    tokenKeys.forEach(key => {
+      localStorage.removeItem(key);
+    });
+    
+    // Clear any keys that might contain tokens
+    Object.keys(localStorage).forEach(key => {
+      if (key.includes('token') || key.includes('refresh') || key.includes('auth')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    console.log('Refresh tokens cleared successfully');
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error clearing refresh tokens:', error);
+    return { success: false, error: error.message };
   }
 };
 
@@ -553,6 +606,13 @@ export const refreshUser = async () => {
     return { success: false, error: 'No user found' };
   } catch (error: any) {
     console.error('Error refreshing user:', error);
+    
+    // If it's a refresh token error, clear tokens and retry
+    if (error.message && error.message.includes('Refresh Token')) {
+      console.log('Refresh token error detected, clearing tokens');
+      clearRefreshTokens();
+    }
+    
     return { success: false, error: error.message };
   }
 };

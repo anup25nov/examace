@@ -43,6 +43,10 @@ import { bulkTestService } from "@/lib/bulkTestService";
 import PullToRefresh from "@/components/PullToRefresh";
 import ResponsiveScrollContainer from "@/components/ResponsiveScrollContainer";
 import CachedImage from "@/components/CachedImage";
+import { ProfileDropdown } from "@/components/ProfileDropdown";
+import UserMessages from "@/components/UserMessages";
+import { MembershipPlans } from "@/components/MembershipPlans";
+import ReferralPage from "@/pages/ReferralPage";
 
 // Icon mapping for dynamic loading
 const iconMap: { [key: string]: any } = {
@@ -120,6 +124,28 @@ const EnhancedExamDashboard = () => {
   const [pyqData, setPyqData] = useState<any[]>([]);
   const [practiceData, setPracticeData] = useState<any[]>([]);
   const [userMembership, setUserMembership] = useState(membership || premiumService.getUserMembership());
+  
+  // Mobile debug panel - only show in development
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
+
+  // Modal states
+  const [showMembershipPlans, setShowMembershipPlans] = useState(false);
+  const [showReferralPage, setShowReferralPage] = useState(false);
+
+  // Handler functions for ProfileDropdown
+  const { logout } = useAuth();
+  
+  const handleLogout = async () => {
+    await logout();
+  };
+
+  const handleMembershipClick = () => {
+    setShowMembershipPlans(true);
+  };
+
+  const handleReferralClick = () => {
+    setShowReferralPage(true);
+  };
 
   // Enhanced refresh function with better error handling
   const handleRefresh = async () => {
@@ -737,9 +763,6 @@ const EnhancedExamDashboard = () => {
     return null;
   };
 
-  // Mobile debug panel - only show in development
-  const [showDebugPanel, setShowDebugPanel] = useState(false);
-  
   const toggleDebugPanel = () => {
     setShowDebugPanel(!showDebugPanel);
   };
@@ -775,6 +798,12 @@ const EnhancedExamDashboard = () => {
                   {/* {getMembershipBadge()} */}
                 </div>
               </div>
+              <UserMessages />
+              <ProfileDropdown
+                onLogout={handleLogout}
+                onMembershipClick={handleMembershipClick}
+                onReferralClick={handleReferralClick}
+              />
             </div>
           </div>
         </div>
@@ -1168,6 +1197,34 @@ const EnhancedExamDashboard = () => {
       )}
 
       </div>
+
+      {/* Modals */}
+      {showMembershipPlans && (
+        <MembershipPlans 
+          onClose={() => setShowMembershipPlans(false)}
+          onSelectPlan={(plan) => {
+            console.log('Selected plan:', plan);
+            setShowMembershipPlans(false);
+          }}
+        />
+      )}
+      
+      {showReferralPage && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h2 className="text-lg font-semibold">Referral Program</h2>
+              <button
+                onClick={() => setShowReferralPage(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <ReferralPage />
+          </div>
+        </div>
+      )}
     </PullToRefresh>
   );
 };

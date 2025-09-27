@@ -4,6 +4,7 @@ import {
   getCurrentUserId, 
   isUserAuthenticated, 
   signOutUser,
+  clearRefreshTokens,
   AuthUser
 } from '@/lib/supabaseAuth';
 import { supabaseStatsService } from '@/lib/supabaseStats';
@@ -83,8 +84,15 @@ export const useAuth = () => {
           setIsAuthenticated(false);
           setUser(null);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error checking auth status:', error);
+        
+        // Handle refresh token errors specifically
+        if (error?.message && error.message.includes('Refresh Token')) {
+          console.log('Refresh token error detected, clearing tokens');
+          clearRefreshTokens();
+        }
+        
         // Don't auto-logout on error, just set as not authenticated
         setIsAuthenticated(false);
         setUser(null);

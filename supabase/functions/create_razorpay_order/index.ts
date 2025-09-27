@@ -1,4 +1,8 @@
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
+// @ts-ignore - Deno global is available in Supabase Edge Functions
+const serve = (handler: (req: Request) => Response | Promise<Response>) => {
+  // @ts-ignore: Deno.serve is available in Deno runtime
+  return Deno.serve(handler);
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,7 +13,7 @@ const corsHeaders = {
 
 interface RequestBody {
   user_id: string;
-  plan: 'pro' | 'pro_plus';
+  plan: 'pro' | 'pro_plus' | 'premium';
 }
 
 const RZP_KEY_ID = Deno.env.get('RAZORPAY_KEY_ID') || '';
@@ -34,25 +38,34 @@ serve(async (req: Request) => {
   try {
     const body: RequestBody = await req.json()
     
-    // Note: Supabase client not needed for this function as we only create Razorpay orders
-    
-    // Use centralized pricing configuration
-    let amount = PLAN_PRICES[body.plan];
-    console.log('Using centralized pricing for plan', body.plan, ':', amount);
-    console.log('PLAN_PRICES:', PLAN_PRICES);
-    
-    // Final validation - ensure amount is valid
-    if (!amount || amount <= 0) {
-      console.warn('Invalid amount, using fallback price. Amount was:', amount);
-      amount = PLAN_PRICES[body.plan];
-    }
-    
-    console.log('Final amount for plan', body.plan, ':', amount);
-    
-    if (!amount) {
-      return new Response(JSON.stringify({ success: false, error: 'Invalid plan' }), { status: 400, headers: corsHeaders })
+    // Validate required fields
+    if (!body.user_id || !body.plan) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Missing required fields: user_id and plan are required' }), 
+        { status: 400, headers: corsHeaders }
+      )
     }
 
+    // Validate plan type
+    if (!(body.plan in PLAN_PRICES)) {
+      return new Response(
+        JSON.stringify({ success: false, error: `Invalid plan. Supported plans: ${Object.keys(PLAN_PRICES).join(', ')}` }), 
+        { status: 400, headers: corsHeaders }
+      )
+    }
+    
+    // Get amount from centralized pricing configuration
+    const amount = PLAN_PRICES[body.plan];
+    console.log('Using centralized pricing for plan', body.plan, ':', amount);
+    
+    if (!amount || amount <= 0) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid pricing configuration' }), 
+        { status: 500, headers: corsHeaders }
+      )
+    }
+
+    // Validate Razorpay credentials
     if (!RZP_KEY_ID || !RZP_KEY_SECRET) {
       return new Response(
         JSON.stringify({ success: false, error: 'Razorpay credentials missing. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in Function secrets.' }),
@@ -60,34 +73,86 @@ serve(async (req: Request) => {
       )
     }
 
-    const receipt = `PAY_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+    // Validate API key format (Razorpay key IDs typically start with 'rzp_')
+    if (!RZP_KEY_ID.startsWith('rzp_')) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid Razorpay key ID format' }),
+        { status: 500, headers: corsHeaders }
+      )
+    }
+
+    // Generate unique receipt ID
+    const receipt = `PAY_${body.user_id}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 
     // Create Razorpay order via REST
     const auth = btoa(`${RZP_KEY_ID}:${RZP_KEY_SECRET}`)
     const razorpayAmount = amount * 100; // Convert to paise
     console.log('Creating Razorpay order with amount:', amount, 'paise:', razorpayAmount);
     
-    const r = await fetch('https://api.razorpay.com/v1/orders', {
+    // Create Razorpay order
+    const orderResponse = await fetch('https://api.razorpay.com/v1/orders', {
       method: 'POST',
-      headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/json' },
+      headers: { 
+        'Authorization': `Basic ${auth}`, 
+        'Content-Type': 'application/json' 
+      },
       body: JSON.stringify({
         amount: razorpayAmount,
         currency: 'INR',
         receipt,
-        notes: { user_id: body.user_id, plan: body.plan },
+        notes: { 
+          user_id: body.user_id, 
+          plan: body.plan,
+          created_at: new Date().toISOString()
+        },
       }),
     })
     
-    if (!r.ok) {
-      const t = await r.text()
-      return new Response(JSON.stringify({ success: false, error: `Razorpay error: ${t}` }), { status: 500, headers: corsHeaders })
+    if (!orderResponse.ok) {
+      const errorText = await orderResponse.text()
+      console.error('Razorpay API error:', orderResponse.status, errorText)
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `Razorpay API error: ${orderResponse.status} - ${errorText}` 
+        }), 
+        { status: 500, headers: corsHeaders }
+      )
     }
     
-    const order = await r.json()
+    const order = await orderResponse.json()
 
-    // Return minimal data; client will store payment via existing flow
-    console.log('Order created successfully:', { order_id: order.id, amount, currency: 'INR' });
-    return new Response(JSON.stringify({ success: true, order_id: order.id, amount, currency: 'INR', key_id: RZP_KEY_ID, receipt }), { status: 200, headers: corsHeaders })
+    // Validate order response
+    if (!order.id) {
+      console.error('Invalid order response:', order)
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid order response from Razorpay' }),
+        { status: 500, headers: corsHeaders }
+      )
+    }
+
+    // Return order details
+    console.log('Order created successfully:', { 
+      order_id: order.id, 
+      amount, 
+      currency: 'INR',
+      receipt,
+      user_id: body.user_id,
+      plan: body.plan
+    });
+    
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        order_id: order.id, 
+        amount, 
+        currency: 'INR', 
+        key_id: RZP_KEY_ID, 
+        receipt,
+        plan: body.plan
+      }), 
+      { status: 200, headers: corsHeaders }
+    )
   } catch (e) {
     return new Response(JSON.stringify({ success: false, error: e instanceof Error ? e.message : 'Unknown error' }), { status: 500, headers: corsHeaders })
   }

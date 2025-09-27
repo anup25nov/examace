@@ -7,6 +7,7 @@ import { validateEnvironment } from './lib/envValidation'
 import { initMonitoring } from './lib/monitoring'
 import { mobileDebugger } from './lib/mobileDebugger'
 import { cacheService } from './lib/cacheService'
+import './lib/clearRefreshTokens' // Import to make clearAllTokens available globally
 
 // Register PWA service worker in production
 async function registerServiceWorker() {
