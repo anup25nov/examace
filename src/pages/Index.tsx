@@ -217,7 +217,9 @@ const Index = () => {
             
             {/* Notification and Profile - Right Aligned */}
             <div className="flex items-center space-x-1 sm:space-x-2">
-              {isAuthenticated ? (
+              {loading ? (
+                <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+              ) : isAuthenticated ? (
                 <>
                   <UserMessages />
                   <ProfileDropdown

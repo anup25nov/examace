@@ -46,7 +46,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
 }) => {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const { profile } = useOptimizedUserProfile();
+  const { profile, loading: profileLoading } = useOptimizedUserProfile();
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
   const [showProfileUpdate, setShowProfileUpdate] = useState(false);
@@ -92,9 +92,19 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     }
   }, [isAuthenticated, user]);
 
-  // Early return AFTER all hooks
+  // Show loading state while profile is loading
   if (!isAuthenticated || !user) {
     return null;
+  }
+
+  // Show loading placeholder while profile is loading
+  if (profileLoading) {
+    return (
+      <div className="flex items-center space-x-3 p-2">
+        <div className="w-8 h-8 bg-gray-200 rounded-lg animate-pulse"></div>
+        <div className="w-20 h-4 bg-gray-200 rounded animate-pulse"></div>
+      </div>
+    );
   }
 
   const userPhone = (profile as any)?.phone || localStorage.getItem("userPhone") || null;

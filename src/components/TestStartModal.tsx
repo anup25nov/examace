@@ -214,22 +214,22 @@ export const TestStartModal: React.FC<TestStartModalProps> = ({
             <CardContent>
               <RadioGroup value={selectedLanguage} onValueChange={setSelectedLanguage}>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="en" id="en" />
-                  <Label htmlFor="en" className="flex items-center space-x-2 cursor-pointer">
+                  <RadioGroupItem value="en" id="en" className="w-4 h-4" />
+                  <Label htmlFor="en" className="flex items-center space-x-2 cursor-pointer text-sm">
                     <span>English</span>
                     <Badge variant="outline" className="text-xs">Default</Badge>
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="hi" id="hi" />
-                  <Label htmlFor="hi" className="flex items-center space-x-2 cursor-pointer">
+                  <RadioGroupItem value="hi" id="hi" className="w-4 h-4" />
+                  <Label htmlFor="hi" className="flex items-center space-x-2 cursor-pointer text-sm">
                     <span>हिंदी</span>
                     <Badge variant="outline" className="text-xs">Hindi</Badge>
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="both" id="both" />
-                  <Label htmlFor="both" className="flex items-center space-x-2 cursor-pointer">
+                  <RadioGroupItem value="both" id="both" className="w-4 h-4" />
+                  <Label htmlFor="both" className="flex items-center space-x-2 cursor-pointer text-sm">
                     <span>Both Languages</span>
                     <Badge variant="outline" className="text-xs">Recommended</Badge>
                   </Label>
@@ -299,12 +299,12 @@ export const TestStartModal: React.FC<TestStartModalProps> = ({
           {/* Consent Checkbox */}
           <Card className="border-0 shadow-lg">
             <CardContent className="pt-6">
-              <div className="flex items-start space-x-3">
+              <div className="flex items-start space-x-2">
                 <Checkbox
                   id="consent"
                   checked={hasReadInstructions}
                   onCheckedChange={(checked) => setHasReadInstructions(checked as boolean)}
-                  className="mt-1"
+                  className="mt-1 w-4 h-4"
                 />
                 <Label htmlFor="consent" className="text-sm leading-relaxed cursor-pointer">
                   I have read and understood all the instructions above. I am ready to start the test and understand that:

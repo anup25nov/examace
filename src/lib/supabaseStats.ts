@@ -547,7 +547,7 @@ class SupabaseStatsService {
     if (!user) return { data: null, error: 'User not authenticated' };
 
     try {
-      const { data, error } = await (supabase as any).rpc('get_or_create_user_streak', {
+      const { data, error } = await (supabase as any).rpc('get_user_streak', {
         user_uuid: user.id
       });
 
@@ -747,6 +747,7 @@ class SupabaseStatsService {
         return { data: null, error: 'User ID is required' };
       }
 
+      // First try the RPC function
       const { data, error } = await supabase.rpc('get_test_rank_and_highest_score' as any, {
         p_exam_id: examId,
         p_test_type: testType,
@@ -759,7 +760,65 @@ class SupabaseStatsService {
         return { data: null, error };
       }
 
-      return { data: data && Array.isArray(data) && data.length > 0 ? data[0] : null, error: null };
+      const result = data && Array.isArray(data) && data.length > 0 ? data[0] : null;
+      
+      // If the RPC function returns null values, try to get data directly from test_attempts
+      if (!result || (result.user_rank === null && result.total_participants === null)) {
+        console.log('RPC function returned null values, trying direct query...');
+        
+        // Get user's score from test_attempts
+        const { data: userAttempts, error: userError } = await supabase
+          .from('test_attempts')
+          .select('score')
+          .eq('user_id', userId)
+          .eq('exam_id', examId)
+          .eq('test_type', testType)
+          .eq('test_id', testId)
+          .eq('status', 'completed')
+          .order('completed_at', { ascending: false })
+          .limit(1);
+
+        if (userError || !userAttempts || userAttempts.length === 0) {
+          console.log('No completed test attempt found for user');
+          return { data: null, error: null };
+        }
+
+        const userAttempt = userAttempts[0];
+
+        // Get all scores for this test to calculate rank and highest score
+        const { data: allAttempts, error: allError } = await supabase
+          .from('test_attempts')
+          .select('score, user_id')
+          .eq('exam_id', examId)
+          .eq('test_type', testType)
+          .eq('test_id', testId)
+          .eq('status', 'completed')
+          .order('score', { ascending: false });
+
+        if (allError || !allAttempts || allAttempts.length === 0) {
+          console.log('No completed attempts found for this test');
+          return { data: null, error: null };
+        }
+
+        const userScore = userAttempt.score;
+        const highestScore = allAttempts[0].score;
+        const totalParticipants = allAttempts.length;
+        
+        // Calculate user's rank (1-based)
+        const userRank = allAttempts.findIndex(attempt => attempt.user_id === userId) + 1;
+
+        return {
+          data: {
+            user_rank: userRank,
+            total_participants: totalParticipants,
+            highest_score: highestScore,
+            user_score: userScore
+          },
+          error: null
+        };
+      }
+
+      return { data: result, error: null };
     } catch (error) {
       console.error('Error in getTestRankAndHighestScore:', error);
       return { data: null, error };
@@ -789,12 +848,12 @@ class SupabaseStatsService {
   }
 
   // Update daily visit streak
-  async updateDailyVisit(): Promise<{ success: boolean; error?: any }> {
+  async updateDailyVisit(): Promise<{ success: boolean; data?: any; error?: any }> {
     const user = await this.getCurrentUser();
     if (!user) return { success: false, error: 'User not authenticated' };
 
     try {
-      const { error } = await (supabase as any).rpc('update_daily_visit', {
+      const { data, error } = await (supabase as any).rpc('update_daily_visit', {
         user_uuid: user.id
       });
 
@@ -803,7 +862,7 @@ class SupabaseStatsService {
         return { success: false, error };
       }
 
-      return { success: true };
+      return { success: true, data };
     } catch (error) {
       console.error('Error in updateDailyVisit:', error);
       return { success: false, error };

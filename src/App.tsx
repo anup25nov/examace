@@ -10,6 +10,7 @@ import MobileStatusBarHandler from "@/components/MobileStatusBarHandler";
 import MobileKeyboardHandler from "@/components/MobileKeyboardHandler";
 import PullToRefresh from "@/components/PullToRefresh";
 import SwipeToGoBack from "@/components/SwipeToGoBack";
+import { AuthDebugger } from "@/components/AuthDebugger";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AboutUs from "./pages/AboutUs";
@@ -132,6 +133,7 @@ const App = () => {
           </MobileKeyboardHandler>
         </BrowserRouter>
         <GlobalMembershipModal />
+        <AuthDebugger enabled={true} />
           </DashboardDataProvider>
         </MembershipProvider>
       </TooltipProvider>

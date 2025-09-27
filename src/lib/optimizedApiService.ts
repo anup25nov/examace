@@ -164,8 +164,8 @@ class OptimizedApiServiceImpl implements OptimizedApiService {
 
       // Load performance stats
       const { data: performanceData } = await supabase.rpc('get_user_performance_stats' as any, {
-        user_uuid: userId,
-        exam_name: examId
+        exam_name: examId,
+        user_uuid: userId
       });
 
       const result = {

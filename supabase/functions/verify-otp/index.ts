@@ -516,6 +516,98 @@ serve(async (req) => {
         }
       }
 
+      // Create referral code for new users
+      if (isNewUser) {
+        try {
+          console.log('🔍 [verify-otp] Creating referral code for new user:', userId)
+          
+          // Check if referral code already exists
+          // @ts-ignore: Deno.env is available in Supabase Edge Functions
+          const referralCheckResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/referral_codes?user_id=eq.${userId}&select=id`, {
+            headers: {
+              // @ts-ignore: Deno.env is available in Supabase Edge Functions
+              'apikey': Deno.env.get('SUPABASE_ANON_KEY') || '',
+              // @ts-ignore: Deno.env is available in Supabase Edge Functions
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') || ''}`,
+              'Content-Type': 'application/json'
+            }
+          })
+
+          if (referralCheckResponse.ok) {
+            const referralCheckData = await referralCheckResponse.json()
+            
+            if (!referralCheckData || referralCheckData.length === 0) {
+              // Generate referral code from user ID
+              const referralCode = userId.substring(0, 8).toUpperCase()
+              
+              // Create referral code
+              // @ts-ignore: Deno.env is available in Supabase Edge Functions
+              const referralCreateResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/referral_codes`, {
+                method: 'POST',
+                headers: {
+                  // @ts-ignore: Deno.env is available in Supabase Edge Functions
+                  'apikey': Deno.env.get('SUPABASE_ANON_KEY') || '',
+                  // @ts-ignore: Deno.env is available in Supabase Edge Functions
+                  'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') || ''}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  user_id: userId,
+                  code: referralCode,
+                  total_referrals: 0,
+                  total_earnings: 0.00,
+                  is_active: true,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                })
+              })
+
+              if (referralCreateResponse.ok) {
+                console.log('✅ Referral code created successfully:', referralCode)
+              } else {
+                const referralErrorText = await referralCreateResponse.text()
+                console.error('❌ Failed to create referral code:', referralErrorText)
+              }
+            } else {
+              console.log('✅ Referral code already exists for user')
+            }
+          } else {
+            console.error('❌ Failed to check existing referral code')
+          }
+        } catch (referralError) {
+          console.error('❌ Error creating referral code for new user:', referralError)
+        }
+        
+        // Create default exam stats for new users
+        try {
+          console.log('🔍 [verify-otp] Creating default exam stats for new user:', userId)
+          
+          // @ts-ignore: Deno.env is available in Supabase Edge Functions
+          const statsResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/create_all_default_exam_stats`, {
+            method: 'POST',
+            headers: {
+              // @ts-ignore: Deno.env is available in Supabase Edge Functions
+              'apikey': Deno.env.get('SUPABASE_ANON_KEY') || '',
+              // @ts-ignore: Deno.env is available in Supabase Edge Functions
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') || ''}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              p_user_id: userId
+            })
+          })
+
+          if (statsResponse.ok) {
+            console.log('✅ Default exam stats created successfully')
+          } else {
+            const statsErrorText = await statsResponse.text()
+            console.error('❌ Failed to create exam stats:', statsErrorText)
+          }
+        } catch (statsError) {
+          console.error('❌ Error creating exam stats for new user:', statsError)
+        }
+      }
+
       // Return success without exposing OTP
       return new Response(
         JSON.stringify({

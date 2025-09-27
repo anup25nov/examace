@@ -2,7 +2,7 @@
 -- These functions handle OTP verification server-side only
 
 -- Function to get active OTP for a phone number
-CREATE OR REPLACE FUNCTION get_active_otp(phone_number TEXT)
+CREATE OR REPLACE FUNCTION get_active_otp(p_phone_number TEXT)
 RETURNS TABLE (
   id UUID,
   phone_number TEXT,
@@ -26,7 +26,7 @@ BEGIN
     otp.max_attempts,
     otp.verified
   FROM otp_codes otp
-  WHERE otp.phone_number = get_active_otp.phone_number
+  WHERE otp.phone_number = p_phone_number
     AND otp.verified = false
     AND otp.expires_at > NOW()
   ORDER BY otp.created_at DESC

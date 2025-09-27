@@ -309,25 +309,31 @@ export class PlanLimitsService {
 
       // Create new test attempt (for new tests or if no existing completed attempt found)
       console.log('🆕 [planLimitsService] Creating new test attempt...');
-      const { error } = await supabase
-        .from('test_attempts' as any)
-        .insert({
-          user_id: userId,
-          exam_id: examId,
-          test_type: testType,
-          test_id: testId,
-          score: 0, // Initialize with 0 score
-          total_questions: totalQuestions, // Required field
-          correct_answers: 0, // Required field - initialize with 0
-          time_taken: 0, // Optional field - initialize with 0
-          started_at: new Date().toISOString()
+      const { data: attemptData, error } = await supabase
+        .rpc('insert_test_attempt' as any, {
+          p_user_id: userId,
+          p_exam_id: examId,
+          p_test_type: testType,
+          p_test_id: testId,
+          p_score: 0, // Initialize with 0 score
+          p_total_questions: totalQuestions, // Required field
+          p_correct_answers: 0, // Required field - initialize with 0
+          p_time_taken: 0, // Optional field - initialize with 0
+          p_answers: null
         });
 
-      console.log('📝 [planLimitsService] Create attempt result:', { error });
+      console.log('📝 [planLimitsService] Create attempt result:', { attemptData, error });
 
       if (error) {
         console.error('❌ [planLimitsService] Error recording test attempt:', error);
         return { success: false, error: error.message };
+      }
+
+      // RPC function returns an array with success/message/attempt_id
+      const result = Array.isArray(attemptData) ? attemptData[0] : attemptData;
+      if (!result || !(result as any).success) {
+        console.error('❌ [planLimitsService] Test attempt creation failed:', (result as any)?.message);
+        return { success: false, error: (result as any)?.message || 'Failed to create test attempt' };
       }
 
       console.log('✅ [planLimitsService] Successfully created new test attempt');

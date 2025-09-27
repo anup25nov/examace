@@ -10,6 +10,12 @@ import {
 import { supabaseStatsService } from '@/lib/supabaseStats';
 import { supabase } from '@/integrations/supabase/client';
 import { getCurrentISTDate, isTodayIST, isYesterdayIST } from '@/lib/timeUtils';
+import { 
+  clearAllAuthData, 
+  isAuthCheckInProgress, 
+  setAuthCheckInProgress,
+  debounce 
+} from '@/lib/authUtils';
 
 export const useAuth = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -19,17 +25,18 @@ export const useAuth = () => {
 
   useEffect(() => {
     // Prevent multiple simultaneous auth checks
-    if ((window as any).authCheckInProgress || authChecked) {
-      console.log('Auth check already in progress or completed, skipping...');
-      // Force loading to false if auth is already checked
-      if (authChecked && loading) {
-        console.log('🔍 [useAuth] Force setting loading to false (auth already checked)');
-        setLoading(false);
-      }
+    if (isAuthCheckInProgress()) {
+      console.log('Auth check already in progress, skipping...');
       return;
     }
     
-    (window as any).authCheckInProgress = true;
+    // If auth is already checked, don't run again
+    if (authChecked) {
+      console.log('Auth already checked, skipping...');
+      return;
+    }
+    
+    setAuthCheckInProgress(true);
     
     const checkAuthStatus = async () => {
       try {
@@ -69,6 +76,16 @@ export const useAuth = () => {
                 
                 const result = await supabaseStatsService.updateDailyVisit();
                 console.log('Daily visit update result:', result);
+                
+                if (result.success && result.data) {
+                  // Update streak data in localStorage
+                  localStorage.setItem(`streak_${authUser.id}`, JSON.stringify({
+                    current_streak: result.data.current_streak || 0,
+                    longest_streak: result.data.longest_streak || 0
+                  }));
+                  console.log('Streak data updated from daily visit:', result.data);
+                }
+                
                 localStorage.setItem('lastVisitDate', todayIST);
                 console.log('Daily visit updated for IST:', todayIST);
               } else {
@@ -94,8 +111,8 @@ export const useAuth = () => {
         
         // Handle refresh token errors specifically
         if (error?.message && error.message.includes('Refresh Token')) {
-          console.log('Refresh token error detected, clearing tokens');
-          clearRefreshTokens();
+          console.log('Refresh token error detected, clearing all auth data');
+          clearAllAuthData();
         }
         
         // Don't auto-logout on error, just set as not authenticated
@@ -105,19 +122,19 @@ export const useAuth = () => {
         console.log('🔍 [useAuth] Auth check completed, setting loading to false');
         setLoading(false);
         setAuthChecked(true);
-        (window as any).authCheckInProgress = false; // Reset the flag
+        setAuthCheckInProgress(false); // Reset the flag
       }
     };
 
-    // Add timeout to prevent infinite loading (increased to 10 seconds)
+    // Add timeout to prevent infinite loading (reduced to 5 seconds)
     const timeoutId = setTimeout(() => {
       if (loading) {
         console.warn('Auth check timeout, setting loading to false');
         setLoading(false);
         setAuthChecked(true);
-        (window as any).authCheckInProgress = false;
+        setAuthCheckInProgress(false);
       }
-    }, 10000);
+    }, 5000);
 
     checkAuthStatus();
     
@@ -125,10 +142,10 @@ export const useAuth = () => {
     // Phone-based auth doesn't use Supabase sessions, so no refresh needed
     
     return () => {
-      (window as any).authCheckInProgress = false; // Reset the flag
+      setAuthCheckInProgress(false); // Reset the flag
       clearTimeout(timeoutId);
     };
-  }, [authChecked, loading]);
+  }, []); // Remove dependencies to prevent infinite loops
 
   // Additional safety mechanism - force loading to false after 5 seconds
   useEffect(() => {
@@ -167,10 +184,24 @@ export const useAuth = () => {
       if (isUserAuthenticated()) {
         const authUser = await getCurrentAuthUser();
         setUser(authUser);
+        setIsAuthenticated(!!authUser);
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
       }
     } catch (error) {
       console.error('Error refreshing user:', error);
+      setUser(null);
+      setIsAuthenticated(false);
     }
+  };
+
+  const resetAuth = () => {
+    setAuthChecked(false);
+    setUser(null);
+    setIsAuthenticated(false);
+    setLoading(true);
+    setAuthCheckInProgress(false);
   };
 
   return {
@@ -179,6 +210,7 @@ export const useAuth = () => {
     isAuthenticated,
     logout,
     getUserId,
-    refreshUser
+    refreshUser,
+    resetAuth
   };
 };

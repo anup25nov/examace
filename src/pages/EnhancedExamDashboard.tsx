@@ -440,8 +440,8 @@ const EnhancedExamDashboard = () => {
     
     try {
       const { data, error } = await supabase.rpc('get_user_performance_stats' as any, {
-        user_uuid: user.id,
-        exam_name: examId
+        exam_name: examId,
+        user_uuid: user.id
       });
       
       if (!error && data && Array.isArray(data) && data.length > 0) {
@@ -803,7 +803,9 @@ const EnhancedExamDashboard = () => {
             
             {/* Notification and Profile - Right Aligned */}
             <div className="flex items-center space-x-1 sm:space-x-2">
-              {isAuthenticated ? (
+              {loading ? (
+                <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+              ) : isAuthenticated ? (
                 <>
                   <UserMessages />
                   <ProfileDropdown

@@ -22,9 +22,9 @@ const RZP_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET') || '';
 // Centralized pricing configuration - SINGLE SOURCE OF TRUTH
 // This should match the pricing in src/config/pricingConfig.ts
 const PLAN_PRICES: Record<string, number> = {
-  pro: 999, // Pro plan: ₹999 (production price)
-  pro_plus: 1999, // Pro+ plan: ₹1999 (production price)
-  premium: 999, // Premium plan: ₹999 (alias for pro)
+  pro: 1, // Pro plan: ₹999 (production price)
+  pro_plus: 2, // Pro+ plan: ₹1999 (production price)
+  premium: 1, // Premium plan: ₹999 (alias for pro)
 };
 
 serve(async (req: Request) => {
@@ -81,8 +81,13 @@ serve(async (req: Request) => {
       )
     }
 
-    // Generate unique receipt ID
-    const receipt = `PAY_${body.user_id}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+    // Generate unique receipt ID (max 40 characters for Razorpay)
+    // Format: PAY_<timestamp>_<random6chars> (total: 4 + 10 + 1 + 6 = 21 chars)
+    const timestamp = Date.now().toString().slice(-10); // Use last 10 digits
+    const randomSuffix = Math.random().toString(36).slice(2, 8);
+    const receipt = `PAY_${timestamp}_${randomSuffix}`;
+    
+    console.log('Generated receipt:', receipt, 'Length:', receipt.length);
 
     // Create Razorpay order via REST
     const auth = btoa(`${RZP_KEY_ID}:${RZP_KEY_SECRET}`)

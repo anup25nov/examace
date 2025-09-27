@@ -5,10 +5,49 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 // Centralized pricing configuration - SINGLE SOURCE OF TRUTH
 const PLAN_PRICES: Record<string, number> = {
-  pro: 999, // Pro plan: ₹999 (production price)
-  pro_plus: 1999, // Pro+ plan: ₹1999 (production price)
-  premium: 999, // Premium plan: ₹999 (alias for pro)
+  pro: 1, // Pro plan: ₹999 (production price)
+  pro_plus: 2, // Pro+ plan: ₹1999 (production price)
+  premium: 1, // Premium plan: ₹999 (alias for pro)
 };
+
+// Helper function to get commission configuration
+async function getCommissionConfig() {
+  try {
+    // @ts-ignore: Deno.env is available in Supabase Edge Functions
+    const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/get_commission_config`, {
+      headers: {
+        // @ts-ignore: Deno.env is available in Supabase Edge Functions
+        'apikey': Deno.env.get('SUPABASE_ANON_KEY') || '',
+        // @ts-ignore: Deno.env is available in Supabase Edge Functions
+        'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') || ''}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data.length > 0) {
+        return data[0];
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching commission config:', error);
+  }
+
+  // Fallback configuration
+  return {
+    commission_percentage: 12,
+    minimum_withdrawal: 100,
+    maximum_withdrawal: 10000,
+    processing_fee: 0,
+    tax_deduction: 0,
+    first_time_bonus: 0,
+    max_daily_withdrawals: 5,
+    withdrawal_processing_days: 3,
+    referral_code_length: 8,
+    referral_code_prefix: 'S2S'
+  };
+}
 
 /**
  * Initiate refund for failed payments
@@ -307,6 +346,11 @@ serve(async (req) => {
       console.log('Plan:', body.plan)
       console.log('Amount:', planAmount)
 
+      // Get commission configuration
+      const commissionConfig = await getCommissionConfig();
+      const commissionRate = commissionConfig.commission_percentage / 100;
+      const commissionAmount = planAmount * commissionRate;
+
       try {
         // 1. Find the referrer by referral code
         const { data: referrerData, error: referrerError } = await supabase
@@ -342,7 +386,7 @@ serve(async (req) => {
                 amount: planAmount,
                 transaction_type: 'referral',
                 status: 'completed',
-                commission_amount: planAmount * 0.15,
+                commission_amount: commissionAmount,
                 commission_status: 'pending',
                 membership_purchased: true
               })
@@ -361,8 +405,8 @@ serve(async (req) => {
                   payment_id: paymentId,
                   membership_plan: body.plan,
                   membership_amount: planAmount,
-                  commission_rate: 0.15,
-                  commission_amount: planAmount * 0.15,
+                  commission_rate: commissionRate,
+                  commission_amount: commissionAmount,
                   status: 'pending'
                 })
 
@@ -375,7 +419,7 @@ serve(async (req) => {
                 const { error: updateError } = await supabase
                   .from('referral_codes')
                   .update({
-                    total_earnings: supabase.raw('COALESCE(total_earnings, 0) + ?', [planAmount * 0.15]),
+                    total_earnings: supabase.raw('COALESCE(total_earnings, 0) + ?', [commissionAmount]),
                     total_referrals: supabase.raw('COALESCE(total_referrals, 0) + 1')
                   })
                   .eq('user_id', referrerId)
@@ -400,7 +444,7 @@ serve(async (req) => {
                 .update({
                   membership_purchased: true,
                   amount: planAmount,
-                  commission_amount: planAmount * 0.15,
+                  commission_amount: commissionAmount,
                   status: 'completed',
                   commission_status: 'pending'
                 })
@@ -421,8 +465,8 @@ serve(async (req) => {
                     payment_id: paymentId,
                     membership_plan: body.plan,
                     membership_amount: planAmount,
-                    commission_rate: 0.15,
-                    commission_amount: planAmount * 0.15,
+                    commission_rate: commissionRate,
+                    commission_amount: commissionAmount,
                     status: 'pending'
                   })
 
@@ -435,7 +479,7 @@ serve(async (req) => {
                   const { error: updateError } = await supabase
                     .from('referral_codes')
                     .update({
-                      total_earnings: supabase.raw('COALESCE(total_earnings, 0) + ?', [planAmount * 0.15]),
+                      total_earnings: supabase.raw('COALESCE(total_earnings, 0) + ?', [commissionAmount]),
                       total_referrals: supabase.raw('COALESCE(total_referrals, 0) + 1')
                     })
                     .eq('user_id', existingReferral[0].referrer_id)

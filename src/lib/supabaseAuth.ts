@@ -442,7 +442,7 @@ export const getCurrentAuthUser = async (): Promise<AuthUser | null> => {
       
       // Add timeout to prevent hanging
       const timeoutPromise = new Promise<null>((_, reject) => {
-        setTimeout(() => reject(new Error('Database query timeout')), 5000);
+        setTimeout(() => reject(new Error('Database query timeout')), 3000);
       });
       
       const dbQueryPromise = supabase
@@ -451,10 +451,12 @@ export const getCurrentAuthUser = async (): Promise<AuthUser | null> => {
         .eq('id', userId)
         .maybeSingle();
       
-      const { data: userProfile, error } = await Promise.race([
+      const result = await Promise.race([
         dbQueryPromise,
         timeoutPromise
       ]) as any;
+      
+      const { data: userProfile, error } = result;
       
       if (userProfile && !error) {
         console.log('User profile found:', userProfile);
@@ -474,6 +476,13 @@ export const getCurrentAuthUser = async (): Promise<AuthUser | null> => {
         return authUser;
       } else if (error) {
         console.log('User profile not found or error:', error.message);
+        
+        // Handle specific error types
+        if (error.message && error.message.includes('Refresh Token')) {
+          console.log('Refresh token error detected, clearing auth data');
+          clearRefreshTokens();
+        }
+        
         // Cache null result to prevent repeated calls
         userProfileCache[cacheKey] = {
           data: null,

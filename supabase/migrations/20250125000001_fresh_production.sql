@@ -1454,18 +1454,23 @@ ALTER FUNCTION "public"."get_bulk_test_completions"("user_uuid" "uuid", "exam_na
 CREATE OR REPLACE FUNCTION "public"."get_commission_constants"() RETURNS json
     LANGUAGE "plpgsql"
     AS $$
+DECLARE
+  config_result RECORD;
 BEGIN
+  -- Get centralized commission configuration
+  SELECT * INTO config_result FROM get_commission_config();
+  
   RETURN json_build_object(
-    'commission_percentage', 50.00,
-    'minimum_withdrawal', 100.00,
-    'maximum_withdrawal', 10000.00,
-    'processing_fee', 0.00,
-    'tax_deduction', 0.00,
-    'first_time_bonus', 0.00,
-    'max_daily_withdrawals', 5,
-    'withdrawal_processing_days', 3,
-    'referral_code_length', 8,
-    'referral_code_prefix', 'S2S'
+    'commission_percentage', config_result.commission_percentage,
+    'minimum_withdrawal', config_result.minimum_withdrawal,
+    'maximum_withdrawal', config_result.maximum_withdrawal,
+    'processing_fee', config_result.processing_fee,
+    'tax_deduction', config_result.tax_deduction,
+    'first_time_bonus', config_result.first_time_bonus,
+    'max_daily_withdrawals', config_result.max_daily_withdrawals,
+    'withdrawal_processing_days', config_result.withdrawal_processing_days,
+    'referral_code_length', config_result.referral_code_length,
+    'referral_code_prefix', config_result.referral_code_prefix
   );
 END;
 $$;
@@ -2091,8 +2096,9 @@ DECLARE
   total_participants_val INTEGER;
   user_rank_val INTEGER;
   highest_score_val INTEGER;
+  score_source TEXT;
 BEGIN
-  -- Get user's score
+  -- First try to get user's score from individual_test_scores
   SELECT score INTO user_score_val
   FROM individual_test_scores
   WHERE user_id = p_user_id 
@@ -2101,32 +2107,72 @@ BEGIN
     AND test_id = p_test_id
   LIMIT 1;
 
-  -- If no user score found, return null values
+  -- If not found in individual_test_scores, try test_attempts
+  IF user_score_val IS NULL THEN
+    SELECT score INTO user_score_val
+    FROM test_attempts
+    WHERE user_id = p_user_id 
+      AND exam_id = p_exam_id 
+      AND test_type = p_test_type 
+      AND test_id = p_test_id
+      AND status = 'completed'
+    ORDER BY completed_at DESC
+    LIMIT 1;
+    
+    score_source := 'test_attempts';
+  ELSE
+    score_source := 'individual_test_scores';
+  END IF;
+
+  -- If still no user score found, return null values
   IF user_score_val IS NULL THEN
     RETURN QUERY SELECT NULL::INTEGER, NULL::INTEGER, NULL::INTEGER, NULL::INTEGER;
     RETURN;
   END IF;
 
   -- Get total participants and highest score for this test
-  SELECT 
-    COUNT(*)::INTEGER,
-    MAX(score)::INTEGER
-  INTO total_participants_val, highest_score_val
-  FROM individual_test_scores
-  WHERE exam_id = p_exam_id 
-    AND test_type = p_test_type 
-    AND test_id = p_test_id;
+  IF score_source = 'individual_test_scores' THEN
+    SELECT 
+      COUNT(*)::INTEGER,
+      MAX(score)::INTEGER
+    INTO total_participants_val, highest_score_val
+    FROM individual_test_scores
+    WHERE exam_id = p_exam_id 
+      AND test_type = p_test_type 
+      AND test_id = p_test_id;
 
-  -- Calculate user's rank (1-based ranking)
-  SELECT COUNT(*) + 1
-  INTO user_rank_val
-  FROM individual_test_scores
-  WHERE exam_id = p_exam_id 
-    AND test_type = p_test_type 
-    AND test_id = p_test_id
-    AND score > user_score_val;
+    -- Calculate user's rank (1-based ranking)
+    SELECT COUNT(*) + 1
+    INTO user_rank_val
+    FROM individual_test_scores
+    WHERE exam_id = p_exam_id 
+      AND test_type = p_test_type 
+      AND test_id = p_test_id
+      AND score > user_score_val;
+  ELSE
+    -- Use test_attempts data
+    SELECT 
+      COUNT(*)::INTEGER,
+      MAX(score)::INTEGER
+    INTO total_participants_val, highest_score_val
+    FROM test_attempts
+    WHERE exam_id = p_exam_id 
+      AND test_type = p_test_type 
+      AND test_id = p_test_id
+      AND status = 'completed';
 
-  -- Update the individual_test_scores record with calculated rank and total_participants
+    -- Calculate user's rank (1-based ranking)
+    SELECT COUNT(*) + 1
+    INTO user_rank_val
+    FROM test_attempts
+    WHERE exam_id = p_exam_id 
+      AND test_type = p_test_type 
+      AND test_id = p_test_id
+      AND status = 'completed'
+      AND score > user_score_val;
+  END IF;
+
+  -- Update the individual_test_scores record with calculated rank and total_participants if it exists
   UPDATE individual_test_scores
   SET 
     rank = user_rank_val,
@@ -3507,7 +3553,8 @@ BEGIN
   
   -- Set commission details
   membership_plan_val := payment_record.plan;
-  commission_percentage_val := 50.00; -- 50% commission rate
+  -- Get commission percentage from centralized config
+  SELECT commission_percentage INTO commission_percentage_val FROM get_commission_config();
   
   -- Create commission record
   commission_id := gen_random_uuid();
@@ -3566,8 +3613,11 @@ CREATE OR REPLACE FUNCTION "public"."process_membership_commission"("p_user_id" 
 DECLARE
   referral_record RECORD;
   commission_amount DECIMAL(10,2) := 0.00;
-  commission_percentage DECIMAL(5,2) := 50.00; -- 50% commission as specified
+  commission_percentage DECIMAL(5,2);
 BEGIN
+  -- Get commission percentage from centralized config
+  SELECT commission_percentage INTO commission_percentage FROM get_commission_config();
+  
   -- Find the referral transaction for this user
   SELECT * INTO referral_record
   FROM referral_transactions
@@ -3823,8 +3873,11 @@ CREATE OR REPLACE FUNCTION "public"."process_referral_commission"("p_user_id" "u
 DECLARE
   referral_record RECORD;
   commission_amount DECIMAL(10,2) := 0.00;
-  commission_percentage DECIMAL(5,2) := 50.00; -- 50% commission
+  commission_percentage DECIMAL(5,2);
 BEGIN
+  -- Get commission percentage from centralized config
+  SELECT commission_percentage INTO commission_percentage FROM get_commission_config();
+  
   -- Find the referral relationship for this user
   SELECT * INTO referral_record
   FROM referral_transactions
@@ -3909,9 +3962,14 @@ CREATE OR REPLACE FUNCTION "public"."process_referral_commission"("p_user_id" "u
 DECLARE
   referral_record RECORD;
   commission_amount DECIMAL(10,2) := 0.00;
-  commission_percentage DECIMAL(5,2) := 50.00; -- 50% commission constant
-  minimum_withdrawal DECIMAL(10,2) := 100.00; -- Minimum withdrawal constant
+  commission_percentage DECIMAL(5,2);
+  minimum_withdrawal DECIMAL(10,2);
 BEGIN
+  -- Get commission configuration from centralized config
+  SELECT commission_percentage, minimum_withdrawal 
+  INTO commission_percentage, minimum_withdrawal 
+  FROM get_commission_config();
+  
   -- Debug: Log the input parameters
   RAISE NOTICE 'Processing commission for user: %, payment: %, plan: %, amount: %', 
     p_user_id, p_payment_id, p_membership_plan, p_membership_amount;
@@ -5027,35 +5085,82 @@ $$;
 ALTER FUNCTION "public"."update_all_test_ranks"("p_exam_id" character varying, "p_test_type" character varying, "p_test_id" character varying) OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."update_daily_visit"("user_uuid" "uuid") RETURNS "void"
+CREATE OR REPLACE FUNCTION "public"."update_daily_visit"("user_uuid" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
+DECLARE
+  v_result JSONB;
+  v_current_streak INTEGER;
+  v_longest_streak INTEGER;
+  v_last_activity_date DATE;
+  v_today DATE;
+  v_days_diff INTEGER;
 BEGIN
-  -- Update user streak for daily visit
-  INSERT INTO user_streaks (user_id, last_visit_date, current_streak, longest_streak)
-  VALUES (user_uuid, CURRENT_DATE, 1, 1)
-  ON CONFLICT (user_id)
+  -- Use UTC date for consistency
+  v_today := CURRENT_DATE AT TIME ZONE 'UTC';
+  
+  -- Get current streak data
+  SELECT 
+    us.current_streak,
+    us.longest_streak,
+    us.last_activity_date
+  INTO v_current_streak, v_longest_streak, v_last_activity_date
+  FROM user_streaks us
+  WHERE us.user_id = user_uuid;
+
+  -- If no existing record, create new one
+  IF v_current_streak IS NULL THEN
+    v_current_streak := 1;
+    v_longest_streak := 1;
+    v_last_activity_date := v_today;
+  ELSE
+    -- Calculate days difference
+    v_days_diff := v_today - COALESCE(v_last_activity_date, v_today - 1);
+    
+    -- Update streak based on days difference
+    IF v_days_diff = 0 THEN
+      -- Same day, no change to streak
+      NULL;
+    ELSIF v_days_diff = 1 THEN
+      -- Consecutive day, increment streak
+      v_current_streak := v_current_streak + 1;
+      v_longest_streak := GREATEST(v_longest_streak, v_current_streak);
+      v_last_activity_date := v_today;
+    ELSE
+      -- More than 1 day gap, reset streak
+      v_current_streak := 1;
+      v_longest_streak := GREATEST(v_longest_streak, 1);
+      v_last_activity_date := v_today;
+    END IF;
+  END IF;
+
+  -- Insert or update user streak
+  INSERT INTO user_streaks (
+    user_id, current_streak, longest_streak, total_tests_taken, last_activity_date, created_at, updated_at
+  )
+  VALUES (
+    user_uuid, v_current_streak, v_longest_streak, 1, v_last_activity_date, now(), now()
+  )
+  ON CONFLICT (user_id) 
   DO UPDATE SET
-    last_visit_date = CURRENT_DATE,
-    current_streak = CASE 
-      WHEN user_streaks.last_visit_date = CURRENT_DATE - INTERVAL '1 day' 
-      THEN user_streaks.current_streak + 1
-      WHEN user_streaks.last_visit_date = CURRENT_DATE 
-      THEN user_streaks.current_streak
-      ELSE 1
-    END,
-    longest_streak = GREATEST(
-      user_streaks.longest_streak,
-      CASE 
-        WHEN user_streaks.last_visit_date = CURRENT_DATE - INTERVAL '1 day' 
-        THEN user_streaks.current_streak + 1
-        WHEN user_streaks.last_visit_date = CURRENT_DATE 
-        THEN user_streaks.current_streak
-        ELSE 1
-      END
-    ),
-    updated_at = NOW();
+    current_streak = EXCLUDED.current_streak,
+    longest_streak = EXCLUDED.longest_streak,
+    total_tests_taken = user_streaks.total_tests_taken + 1,
+    last_activity_date = EXCLUDED.last_activity_date,
+    updated_at = now();
+
+  -- Return the updated streak data
+  SELECT 
+    json_build_object(
+      'current_streak', v_current_streak,
+      'longest_streak', v_longest_streak,
+      'last_activity_date', v_last_activity_date,
+      'days_diff', v_days_diff
+    )
+  INTO v_result;
+
+  RETURN v_result;
 END;
 $$;
 

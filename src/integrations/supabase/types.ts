@@ -1009,7 +1009,7 @@ export type Database = {
           user_id: string
         }[]
       }
-      get_or_create_user_streak: {
+      get_user_streak: {
         Args: { user_uuid: string }
         Returns: {
           created_at: string
