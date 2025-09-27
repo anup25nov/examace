@@ -1,5 +1,9 @@
 // @ts-ignore: Deno imports are available in Supabase Edge Functions
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+const serve = (handler: (req: Request) => Response | Promise<Response>) => {
+  // @ts-ignore: Deno.serve is available in Deno runtime
+  return Deno.serve(handler);
+}
+
 // @ts-ignore: Deno imports are available in Supabase Edge Functions
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -110,7 +114,7 @@ const corsHeaders = {
 }
 
 interface VerifyBody {
-  user_id: string;
+  user_id?: string;
   plan: string;
   order_id: string;
   payment_id: string;
@@ -142,6 +146,45 @@ serve(async (req) => {
     // @ts-ignore: Deno.env is available in Supabase Edge Functions
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
+
+    // Get user_id from JWT token if not provided in body
+    let userId = body.user_id;
+    if (!userId) {
+      const authHeader = req.headers.get('Authorization');
+      if (authHeader) {
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+        if (authError || !user) {
+          console.error('Authentication error:', authError);
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: 'Authentication failed' 
+          }), { status: 401, headers: corsHeaders });
+        }
+        userId = user.id;
+        console.log('Got user_id from JWT token:', userId);
+      } else {
+        console.error('No user_id in body and no auth token provided');
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'User ID is required' 
+        }), { status: 400, headers: corsHeaders });
+      }
+    }
+
+    // Update body with the resolved user_id
+    body.user_id = userId;
+
+    // Validate user_id is not null or empty
+    if (!userId || userId.trim() === '') {
+      console.error('Invalid user_id:', userId);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Invalid user ID' 
+      }), { status: 400, headers: corsHeaders });
+    }
+
+    console.log('Using user_id:', userId);
 
     // Verify Razorpay signature
     // @ts-ignore: Deno.env is available in Supabase Edge Functions
