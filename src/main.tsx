@@ -8,36 +8,65 @@ import { initMonitoring } from './lib/monitoring'
 import { mobileDebugger } from './lib/mobileDebugger'
 import { cacheService } from './lib/cacheService'
 
+// Register PWA service worker in production
+async function registerServiceWorker() {
+  if ('serviceWorker' in navigator && import.meta.env.PROD) {
+    try {
+      const registration = await navigator.serviceWorker.register('/sw-enhanced.js');
+      console.log('✅ PWA Service Worker registered:', registration);
+      
+      // Handle updates
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New content available, prompt user to refresh
+              if (confirm('New version available! Refresh to update?')) {
+                window.location.reload();
+              }
+            }
+          });
+        }
+      });
+    } catch (error) {
+      console.error('❌ Service Worker registration failed:', error);
+    }
+  }
+}
+
 // Force disable service worker in development
 async function forceDisableServiceWorker() {
-  try {
-    mobileDebugger.info('Force disabling service worker...');
-    
-    // Unregister all service workers
-    if ('serviceWorker' in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      mobileDebugger.info('Found service worker registrations:', registrations.length);
+  if (import.meta.env.DEV) {
+    try {
+      mobileDebugger.info('Force disabling service worker...');
       
-      for (let registration of registrations) {
-        const unregistered = await registration.unregister();
-        mobileDebugger.info('Unregistered service worker:', unregistered);
+      // Unregister all service workers
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        mobileDebugger.info('Found service worker registrations:', registrations.length);
+        
+        for (let registration of registrations) {
+          const unregistered = await registration.unregister();
+          mobileDebugger.info('Unregistered service worker:', unregistered);
+        }
       }
-    }
-    
-    // Clear all caches
-    if ('caches' in window) {
-      const cacheNames = await caches.keys();
-      mobileDebugger.info('Found caches:', cacheNames);
       
-      for (let cacheName of cacheNames) {
-        await caches.delete(cacheName);
-        mobileDebugger.info('Deleted cache:', cacheName);
+      // Clear all caches
+      if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        mobileDebugger.info('Found caches:', cacheNames);
+      
+        for (let cacheName of cacheNames) {
+          await caches.delete(cacheName);
+          mobileDebugger.info('Deleted cache:', cacheName);
+        }
       }
+      
+      mobileDebugger.info('Service worker completely disabled');
+    } catch (error) {
+      mobileDebugger.error('Failed to disable service worker:', error);
     }
-    
-    mobileDebugger.info('Service worker completely disabled');
-  } catch (error) {
-    mobileDebugger.error('Failed to disable service worker:', error);
   }
 }
 
@@ -159,6 +188,9 @@ async function initializeApp() {
     if (process.env.NODE_ENV === 'production') {
       await initMonitoring();
     }
+    
+    // Register PWA service worker
+    await registerServiceWorker();
     
     // Initialize caching
     await initializeCaching();

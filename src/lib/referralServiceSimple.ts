@@ -2,6 +2,7 @@
 // This is a temporary implementation until the referral database schema is set up
 
 import { defaultConfig } from '@/config/appConfig';
+import { referralNotificationService } from './referralNotificationService';
 
 export interface ReferralStats {
   totalReferrals: number;
@@ -43,13 +44,21 @@ class ReferralServiceSimple {
     try {
       // For now, just log the referral
       const commissionPercentage = this.getCommissionPercentage();
+      const commissionAmount = Math.round((purchaseAmount * commissionPercentage) / 100);
+      
       console.log('Referral processed:', {
         refereeId,
         referralCode,
         purchaseAmount,
         purchaseId,
-        commission: (purchaseAmount * commissionPercentage) / 100
+        commissionPercentage,
+        commissionAmount
       });
+
+      // Send notification to referrer (if we can identify them)
+      // This would need the referrer's user ID, which we'd get from the referral code
+      // For now, we'll just log that a notification should be sent
+      console.log('📧 Should send referral purchase notification to referrer');
       
       return { success: true };
     } catch (error: any) {

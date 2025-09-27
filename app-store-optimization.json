@@ -1,0 +1,230 @@
+{
+  "app_info": {
+    "name": "ExamAce - Step2Sarkari",
+    "package_name": "com.examace.step2sarkari",
+    "version": "1.0.0",
+    "version_code": 1,
+    "min_sdk": 21,
+    "target_sdk": 34,
+    "compile_sdk": 34
+  },
+  "store_listings": {
+    "play_store": {
+      "title": "ExamAce - Step2Sarkari: Government Job Preparation",
+      "short_description": "Comprehensive exam prep for SSC, Railway, Banking & more. Practice tests, mock exams, and study materials.",
+      "full_description": "ExamAce - Step2Sarkari is your ultimate companion for government job preparation. Whether you're preparing for SSC, Railway, Banking, or any other competitive exam, we provide comprehensive study materials, practice tests, and mock exams to help you succeed.\n\n🎯 Key Features:\n• 1000+ Practice Questions\n• Mock Tests & Previous Year Papers\n• Real-time Performance Analytics\n• Offline Study Mode\n• Referral Program to Earn Money\n• WhatsApp OTP Login\n• Mobile-First Design\n\n📚 Exam Categories:\n• SSC (CGL, CHSL, MTS, CPO)\n• Railway (RRB NTPC, Group D)\n• Banking (IBPS, SBI, RBI)\n• Defence (NDA, CDS, AFCAT)\n• State PSC Exams\n• Teaching Exams (CTET, UGC NET)\n\n💡 Why Choose ExamAce?\n• Expert-curated content\n• Adaptive learning system\n• Detailed solutions and explanations\n• Performance tracking and analytics\n• Regular updates with latest patterns\n• 24/7 customer support\n\nStart your government job preparation journey today with ExamAce!",
+      "keywords": [
+        "government jobs",
+        "ssc exam",
+        "railway exam",
+        "banking exam",
+        "competitive exams",
+        "practice tests",
+        "mock exams",
+        "study materials",
+        "previous year papers",
+        "exam preparation",
+        "step2sarkari",
+        "examace",
+        "ssc cgl",
+        "ssc chsl",
+        "rrb ntpc",
+        "ibps",
+        "sbi po",
+        "nda",
+        "cds",
+        "ctet"
+      ],
+      "category": "EDUCATION",
+      "content_rating": "EVERYONE",
+      "privacy_policy_url": "https://examace.com/privacy-policy",
+      "website_url": "https://examace.com",
+      "support_email": "support@examace.com"
+    },
+    "app_store": {
+      "name": "ExamAce - Step2Sarkari",
+      "subtitle": "Government Job Preparation Made Easy",
+      "description": "ExamAce - Step2Sarkari is your ultimate companion for government job preparation. Whether you're preparing for SSC, Railway, Banking, or any other competitive exam, we provide comprehensive study materials, practice tests, and mock exams to help you succeed.\n\n🎯 Key Features:\n• 1000+ Practice Questions\n• Mock Tests & Previous Year Papers\n• Real-time Performance Analytics\n• Offline Study Mode\n• Referral Program to Earn Money\n• WhatsApp OTP Login\n• Mobile-First Design\n\n📚 Exam Categories:\n• SSC (CGL, CHSL, MTS, CPO)\n• Railway (RRB NTPC, Group D)\n• Banking (IBPS, SBI, RBI)\n• Defence (NDA, CDS, AFCAT)\n• State PSC Exams\n• Teaching Exams (CTET, UGC NET)\n\n💡 Why Choose ExamAce?\n• Expert-curated content\n• Adaptive learning system\n• Detailed solutions and explanations\n• Performance tracking and analytics\n• Regular updates with latest patterns\n• 24/7 customer support\n\nStart your government job preparation journey today with ExamAce!",
+      "keywords": "government jobs,ssc exam,railway exam,banking exam,competitive exams,practice tests,mock exams,study materials,previous year papers,exam preparation,step2sarkari,examace,ssc cgl,ssc chsl,rrb ntpc,ibps,sbi po,nda,cds,ctet",
+      "category": "EDUCATION",
+      "content_rating": "4+",
+      "privacy_policy_url": "https://examace.com/privacy-policy",
+      "support_url": "https://examace.com/support",
+      "marketing_url": "https://examace.com"
+    }
+  },
+  "screenshots": {
+    "mobile": [
+      {
+        "path": "/logos/screenshot-mobile-1.png",
+        "description": "Exam Dashboard showing available tests and categories",
+        "locale": "en-US"
+      },
+      {
+        "path": "/logos/screenshot-mobile-2.png",
+        "description": "Test interface with questions, timer, and navigation",
+        "locale": "en-US"
+      },
+      {
+        "path": "/logos/screenshot-mobile-3.png",
+        "description": "Results and performance analytics dashboard",
+        "locale": "en-US"
+      },
+      {
+        "path": "/logos/screenshot-mobile-4.png",
+        "description": "Referral program and earnings tracking",
+        "locale": "en-US"
+      },
+      {
+        "path": "/logos/screenshot-mobile-5.png",
+        "description": "Offline study mode and downloaded content",
+        "locale": "en-US"
+      }
+    ],
+    "tablet": [
+      {
+        "path": "/logos/screenshot-tablet-1.png",
+        "description": "Tablet-optimized exam dashboard",
+        "locale": "en-US"
+      },
+      {
+        "path": "/logos/screenshot-tablet-2.png",
+        "description": "Large screen test interface with side panel",
+        "locale": "en-US"
+      }
+    ]
+  },
+  "app_icons": {
+    "android": {
+      "mipmap-ldpi": "36x36",
+      "mipmap-mdpi": "48x48",
+      "mipmap-hdpi": "72x72",
+      "mipmap-xhdpi": "96x96",
+      "mipmap-xxhdpi": "144x144",
+      "mipmap-xxxhdpi": "192x192"
+    },
+    "ios": {
+      "20pt": "20x20",
+      "29pt": "29x29",
+      "40pt": "40x40",
+      "58pt": "58x58",
+      "60pt": "60x60",
+      "76pt": "76x76",
+      "80pt": "80x80",
+      "87pt": "87x87",
+      "120pt": "120x120",
+      "152pt": "152x152",
+      "167pt": "167x167",
+      "180pt": "180x180",
+      "1024pt": "1024x1024"
+    }
+  },
+  "permissions": {
+    "android": [
+      "android.permission.INTERNET",
+      "android.permission.ACCESS_NETWORK_STATE",
+      "android.permission.WAKE_LOCK",
+      "android.permission.VIBRATE",
+      "android.permission.RECEIVE_BOOT_COMPLETED",
+      "android.permission.FOREGROUND_SERVICE"
+    ],
+    "ios": [
+      "NSCameraUsageDescription",
+      "NSPhotoLibraryUsageDescription",
+      "NSMicrophoneUsageDescription"
+    ]
+  },
+  "features": {
+    "offline_support": true,
+    "push_notifications": true,
+    "background_sync": true,
+    "file_sharing": true,
+    "deep_linking": true,
+    "app_shortcuts": true,
+    "widgets": false,
+    "wear_os": false,
+    "android_auto": false,
+    "carplay": false
+  },
+  "analytics": {
+    "google_analytics": {
+      "tracking_id": "G-XXXXXXXXXX",
+      "events": [
+        "app_open",
+        "test_started",
+        "test_completed",
+        "test_abandoned",
+        "referral_shared",
+        "payment_completed",
+        "feature_used"
+      ]
+    },
+    "firebase_analytics": {
+      "project_id": "examace-step2sarkari",
+      "events": [
+        "user_engagement",
+        "test_performance",
+        "referral_conversion",
+        "payment_success",
+        "app_crash"
+      ]
+    }
+  },
+  "monetization": {
+    "in_app_purchases": true,
+    "subscriptions": true,
+    "ads": false,
+    "referral_program": true,
+    "affiliate_marketing": false
+  },
+  "localization": {
+    "default_language": "en",
+    "supported_languages": [
+      "en",
+      "hi",
+      "bn",
+      "te",
+      "ta",
+      "gu",
+      "mr",
+      "kn",
+      "ml",
+      "or",
+      "pa",
+      "as"
+    ]
+  },
+  "seo": {
+    "meta_title": "ExamAce - Step2Sarkari: Government Job Preparation App",
+    "meta_description": "Prepare for SSC, Railway, Banking & more government jobs with ExamAce. Practice tests, mock exams, and study materials. Download now!",
+    "meta_keywords": "government jobs, ssc exam, railway exam, banking exam, competitive exams, practice tests, mock exams, study materials, examace, step2sarkari",
+    "og_title": "ExamAce - Step2Sarkari: Government Job Preparation",
+    "og_description": "Comprehensive exam preparation for government jobs. Practice tests, mock exams, and study materials for SSC, Railway, Banking & more.",
+    "og_image": "https://examace.com/logos/og-image.png",
+    "twitter_card": "summary_large_image",
+    "canonical_url": "https://examace.com"
+  },
+  "performance": {
+    "target_load_time": "< 3 seconds",
+    "target_interactive_time": "< 5 seconds",
+    "target_largest_contentful_paint": "< 2.5 seconds",
+    "target_cumulative_layout_shift": "< 0.1",
+    "target_first_input_delay": "< 100ms"
+  },
+  "testing": {
+    "test_tracks": [
+      "internal",
+      "alpha",
+      "beta",
+      "production"
+    ],
+    "test_users": [
+      "test@examace.com",
+      "admin@examace.com"
+    ],
+    "test_devices": [
+      "emulator-5554",
+      "emulator-5556"
+    ]
+  }
+}

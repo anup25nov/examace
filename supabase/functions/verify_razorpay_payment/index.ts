@@ -1,4 +1,6 @@
+// @ts-ignore: Deno imports are available in Supabase Edge Functions
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+// @ts-ignore: Deno imports are available in Supabase Edge Functions
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 // Centralized pricing configuration - SINGLE SOURCE OF TRUTH
@@ -16,7 +18,9 @@ async function initiateRefund(paymentId: string, amount: number, reason: string)
     console.log('🔄 Initiating refund for payment:', paymentId, 'Amount:', amount, 'Reason:', reason);
     
     // Get Razorpay credentials
+    // @ts-ignore: Deno.env is available in Supabase Edge Functions
     const keyId = Deno.env.get('RAZORPAY_KEY_ID');
+    // @ts-ignore: Deno.env is available in Supabase Edge Functions
     const keySecret = Deno.env.get('RAZORPAY_KEY_SECRET');
     
     if (!keyId || !keySecret) {
@@ -94,12 +98,16 @@ serve(async (req) => {
     })
 
     // Initialize Supabase client
+    // @ts-ignore: Deno.env is available in Supabase Edge Functions
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    // @ts-ignore: Deno.env is available in Supabase Edge Functions
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Verify Razorpay signature
+    // @ts-ignore: Deno.env is available in Supabase Edge Functions
     const keySecret = Deno.env.get('RAZORPAY_KEY_SECRET')
+    // @ts-ignore: Deno.env is available in Supabase Edge Functions
     const webhookSecret = Deno.env.get('RAZORPAY_WEBHOOK_SECRET')
     
     console.log('Environment check:')
@@ -107,6 +115,7 @@ serve(async (req) => {
     console.log('RAZORPAY_WEBHOOK_SECRET present:', !!webhookSecret)
     
     // For development/testing, allow skipping signature verification
+    // @ts-ignore: Deno.env is available in Supabase Edge Functions
     const isTestMode = Deno.env.get('NODE_ENV') === 'development' || Deno.env.get('RAZORPAY_TEST_MODE') === 'true'
     
     if (!keySecret || keySecret.length === 0) {
