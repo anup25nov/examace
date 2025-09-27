@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { comprehensiveStatsService } from './comprehensiveStatsService';
 import { errorHandlingService } from './errorHandlingService';
 import { securityService } from './securityService';
+import { getCurrentUserId } from './supabaseAuth';
 
 export interface TestSubmission {
   examId: string;
@@ -260,14 +261,17 @@ export class TestSystemFixed {
         };
       }
 
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      // Get current user from phone-based auth
+      const userId = getCurrentUserId();
+      if (!userId) {
         return {
           success: false,
           error: 'User not authenticated'
         };
       }
+      
+      // Create a user object for compatibility
+      const user = { id: userId };
 
       // Check if test is still available
       const availability = await this.checkTestAvailability(

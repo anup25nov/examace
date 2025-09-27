@@ -59,8 +59,16 @@ class ComprehensiveStatsService {
   }
 
   private async getCurrentUser() {
-    const { data: { user } } = await supabase.auth.getUser();
-    return user;
+    // Use phone-based authentication from localStorage
+    const userId = localStorage.getItem('userId');
+    const userPhone = localStorage.getItem('userPhone');
+    const isAuthenticated = localStorage.getItem('isAuthenticated');
+    
+    if (!userId || !userPhone || isAuthenticated !== 'true') {
+      return null;
+    }
+    
+    return { id: userId };
   }
 
   /**
