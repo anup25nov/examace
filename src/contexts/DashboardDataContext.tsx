@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { optimizedApiService } from '@/lib/optimizedApiService';
 
@@ -31,7 +31,7 @@ export const DashboardDataProvider: React.FC<DashboardDataProviderProps> = ({ ch
     error: null
   });
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!isAuthenticated || !user) {
       setData({
         profile: null,
@@ -64,25 +64,25 @@ export const DashboardDataProvider: React.FC<DashboardDataProviderProps> = ({ ch
         error: 'Failed to load dashboard data'
       }));
     }
-  };
+  }, [isAuthenticated, user]);
 
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     if (user) {
       // Clear cache and reload
       optimizedApiService.clearProfileCache(user.id);
       await loadData();
     }
-  };
+  }, [user, loadData]);
 
-  const clearCache = () => {
+  const clearCache = useCallback(() => {
     if (user) {
       optimizedApiService.clearProfileCache(user.id);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     loadData();
-  }, [user, isAuthenticated]);
+  }, [loadData]);
 
   return (
     <DashboardDataContext.Provider value={{

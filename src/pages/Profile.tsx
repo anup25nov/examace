@@ -29,7 +29,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useUserProfile } from '@/hooks/useUserProfile';
+import { useDashboardData } from '@/contexts/DashboardDataContext';
 import { unifiedPaymentService } from '@/lib/unifiedPaymentService';
 import { MembershipPlans } from '@/components/MembershipPlans';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,7 +39,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, isAuthenticated } = useAuth();
-  const { profile } = useUserProfile();
+  const { profile } = useDashboardData();
   const [membership, setMembership] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showMembershipPlans, setShowMembershipPlans] = useState(false);

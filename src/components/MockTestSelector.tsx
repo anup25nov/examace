@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, CheckCircle, Play, RotateCcw, BookOpen, Clock, Target } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Star, CheckCircle, Play, RotateCcw, BookOpen, Clock, Target, Lock, AlertTriangle, Crown } from 'lucide-react';
 import ResponsiveScrollContainer from '@/components/ResponsiveScrollContainer';
+import { useAuth } from '@/hooks/useAuth';
+import { planLimitsService } from '@/lib/planLimitsService';
+import { MockTestLimitModal } from '@/components/MockTestLimitModal';
 
 interface MockTestSelectorProps {
   mockTests: any[];
@@ -22,7 +26,40 @@ export const MockTestSelector: React.FC<MockTestSelectorProps> = ({
   completedTests,
   testScores
 }) => {
-  // Removed pagination - using scroller instead
+  const { user } = useAuth();
+  const [planLimits, setPlanLimits] = useState<any>(null);
+  const [isLoadingLimits, setIsLoadingLimits] = useState(true);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+
+  // Load user's plan limits and mock test usage
+  useEffect(() => {
+    const loadPlanLimits = async () => {
+      if (!user?.id) {
+        setIsLoadingLimits(false);
+        return;
+      }
+
+      try {
+        // Get both general plan limits and mock test specific usage
+        const [generalLimits, mockTestUsage] = await Promise.all([
+          planLimitsService.getUserPlanLimits(user.id),
+          planLimitsService.getMockTestUsage(user.id)
+        ]);
+        
+        // Combine the data for display
+        setPlanLimits({
+          ...generalLimits,
+          ...mockTestUsage
+        });
+      } catch (error) {
+        console.error('Error loading plan limits:', error);
+      } finally {
+        setIsLoadingLimits(false);
+      }
+    };
+
+    loadPlanLimits();
+  }, [user?.id]);
 
   const getCompletionStats = () => {
     const total = mockTests.length;
@@ -30,6 +67,31 @@ export const MockTestSelector: React.FC<MockTestSelectorProps> = ({
       completedTests.has(`mock-${test.id}`)
     ).length;
     return { completed, total };
+  };
+
+  const canTakeMockTest = (test: any) => {
+    if (!test.isPremium) return true; // Free tests are always available
+    
+    if (!planLimits) return false;
+    
+    // For premium tests, check if user has remaining mock tests
+    return planLimits.canTakeMockTest && planLimits.remainingMockTests > 0;
+  };
+
+  const handleTestSelect = async (test: any) => {
+    if (!user?.id) return;
+
+    // Check if user can take this mock test
+    if (test.isPremium) {
+      const { canTake } = await planLimitsService.canUserTakeTest(user.id, 'mock', test);
+      if (!canTake) {
+        // Show upgrade modal
+        setShowLimitModal(true);
+        return;
+      }
+    }
+
+    onTestSelect(test.id);
   };
 
   if (mockTests.length === 0) return null;
@@ -56,6 +118,35 @@ export const MockTestSelector: React.FC<MockTestSelectorProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* Plan Information */}
+            {planLimits && !isLoadingLimits && (
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Crown className="w-4 h-4 text-yellow-300" />
+                    <span className="text-sm font-medium">
+                      {planLimits.planType === 'free' ? 'Free Plan' : 
+                       planLimits.planType === 'pro' ? 'Pro Plan' : 'Pro+ Plan'}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-bold">
+                      {planLimits.planType === 'free' ? '0' : planLimits.remainingMockTests} / {planLimits.maxMockTests}
+                    </div>
+                    <div className="text-xs text-blue-100">Mock Tests Left</div>
+                  </div>
+                </div>
+                {planLimits.planType !== 'pro_plus' && (
+                  <div className="mt-2">
+                    <Progress 
+                      value={(planLimits.usedMockTests / planLimits.maxMockTests) * 100} 
+                      className="h-2 bg-white/20"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-4 flex-1 overflow-hidden">
@@ -64,6 +155,8 @@ export const MockTestSelector: React.FC<MockTestSelectorProps> = ({
             {mockTests.map((test) => {
               const isCompleted = completedTests.has(`mock-${test.id}`);
               const testScore = testScores.get(`mock-${test.id}`);
+              const canTakeTest = canTakeMockTest(test);
+              const isLocked = test.isPremium && !canTakeTest;
 
               return (
                 <Card 
@@ -80,6 +173,19 @@ export const MockTestSelector: React.FC<MockTestSelectorProps> = ({
                     {/* Premium glow effect */}
                     {test.isPremium && (
                       <div className="absolute inset-0 bg-gradient-to-br from-yellow-100/30 to-orange-100/20 rounded-lg opacity-50"></div>
+                    )}
+                    
+                    {/* Lock overlay for locked tests */}
+                    {isLocked && (
+                      <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-sm rounded-lg flex items-center justify-center z-20">
+                        <div className="text-center text-white">
+                          <Lock className="w-8 h-8 mx-auto mb-2 opacity-70" />
+                          <p className="text-sm font-medium">Mock Test Limit Reached</p>
+                          <p className="text-xs opacity-70 mt-1">
+                            {planLimits?.usedMockTests || 0} / {planLimits?.maxMockTests || 0} used
+                          </p>
+                        </div>
+                      </div>
                     )}
                     
                     {/* Header */}
@@ -188,21 +294,30 @@ export const MockTestSelector: React.FC<MockTestSelectorProps> = ({
                       ) : (
                         <Button
                           size="sm"
-                          className={`w-full text-sm font-bold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 min-h-[44px] ${
-                            test.isPremium 
-                              ? 'bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 hover:from-yellow-500 hover:via-orange-600 hover:to-red-600 text-white border-2 border-yellow-300 animate-pulse' 
-                              : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
+                          disabled={isLocked}
+                          className={`w-full text-sm font-bold shadow-xl transition-all duration-300 min-h-[44px] ${
+                            isLocked
+                              ? 'bg-gray-400 cursor-not-allowed opacity-60'
+                              : test.isPremium 
+                                ? 'bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 hover:from-yellow-500 hover:via-orange-600 hover:to-red-600 text-white border-2 border-yellow-300 hover:shadow-2xl hover:scale-105 animate-pulse' 
+                                : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white hover:shadow-2xl hover:scale-105'
                           }`}
-                          onClick={() => onTestSelect(test.id)}
+                          onClick={() => handleTestSelect(test)}
                         >
-                          <Play className="w-4 h-4 mr-2" />
-                          {test.isPremium ? (
+                          {isLocked ? (
                             <div className="flex items-center space-x-1">
+                              <Lock className="w-4 h-4 mr-2" />
+                              <span>Limit Reached</span>
+                            </div>
+                          ) : test.isPremium ? (
+                            <div className="flex items-center space-x-1">
+                              <Play className="w-4 h-4 mr-2" />
                               <span>🚀 Start Premium Test</span>
                               <span>⭐</span>
                             </div>
                           ) : (
                             <div className="flex items-center space-x-1">
+                              <Play className="w-4 h-4 mr-2" />
                               <span>Start Practice Test</span>
                               <span>🎯</span>
                             </div>
@@ -217,6 +332,20 @@ export const MockTestSelector: React.FC<MockTestSelectorProps> = ({
           </ResponsiveScrollContainer>
         </CardContent>
       </Card>
+
+      {/* Mock Test Limit Modal */}
+      <MockTestLimitModal
+        isOpen={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        onUpgrade={() => {
+          setShowLimitModal(false);
+          // Navigate to membership plans or show upgrade modal
+          window.location.href = '/membership';
+        }}
+        currentPlan={planLimits?.planType || 'free'}
+        usedTests={planLimits?.usedMockTests || 0}
+        maxTests={planLimits?.maxMockTests || 0}
+      />
     </div>
   );
 };

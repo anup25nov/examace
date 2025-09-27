@@ -74,7 +74,6 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
   // Handle navigation when auth success is triggered
   useEffect(() => {
     if (authSuccess) {
-      console.log('🔍 useEffect: Auth success detected, calling onAuthSuccess...');
       setLoading(false); // Ensure loading is false
       onAuthSuccess();
       setAuthSuccess(false); // Reset the flag
@@ -120,57 +119,36 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
       return;
     }
 
-    console.log('🔍 Setting loading to true...');
     setLoading(true);
     setError('');
 
     try {
-      console.log('🔍 Calling verifyOTPCode with phone:', phone, '(OTP hidden for security)');
       const result = await verifyOTPCode(phone, otp);
-      console.log('🔍 OTP verification result:', result);
-      console.log('🔍 Result success:', result.success);
-      
       if (result.success && 'data' in result && result.data) {
-        console.log('🔍 Result data:', result.data);
-        console.log('🔍 Result isNewUser:', result.isNewUser);
         
         const isNewUser = !!result.isNewUser;
-        console.log('🔍 Is new user:', isNewUser);
-        console.log('🔍 Setting isNewUser state to:', isNewUser);
         setIsNewUser(isNewUser);
         
         // Step 1 Complete: OTP verified successfully
         // Now check if user is new or existing
         if (isNewUser) {
-          console.log('🔍 New user detected - going to referral step');
-          console.log('🔍 Setting step to referral and loading to false');
           setStep('referral');
           setLoading(false); // Reset loading for new users
-          console.log('🔍 Loading should now be false for new user');
         } else {
-          console.log('🔍 Existing user detected - going to dashboard');
-          console.log('🔍 Resetting loading state first...');
           setLoading(false);
-          console.log('🔍 Loading state reset to false');
           
           // Trigger auth success through useEffect
-          console.log('🔍 Setting authSuccess to true...');
           setAuthSuccess(true);
         }
       } else {
         const errorMessage = 'error' in result ? result.error : 'Invalid OTP';
-        console.log('🔍 OTP verification failed:', errorMessage);
-        console.log('🔍 Setting error and loading to false');
         setError(errorMessage);
         setLoading(false);
-        console.log('🔍 Loading should now be false after error');
       }
     } catch (error: any) {
       console.error('🔍 OTP verification error:', error);
-      console.log('🔍 Setting error and loading to false in catch block');
       setError(error.message || 'Failed to verify OTP');
       setLoading(false);
-      console.log('🔍 Loading should now be false after catch error');
     }
   };
 
@@ -190,8 +168,6 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
       }
 
       if (referralCode.trim()) {
-        console.log('Validating referral code:', referralCode);
-        console.log('User ID for referral application:', user.id);
         
         // Use the database function to validate and apply referral code
         const { data, error } = await supabase.rpc('validate_and_apply_referral_code' as any, {
@@ -199,8 +175,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
           p_referral_code: referralCode.trim().toUpperCase()
         });
 
-        console.log('Referral code validation result:', { data, error });
-
+ 
         if (error) {
           console.error('Error applying referral code:', error);
           setReferralInvalid('Failed to apply referral code');
@@ -210,29 +185,24 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
 
         if (data && Array.isArray(data) && data.length > 0) {
           const result = data[0];
-          console.log('Referral code validation result details:', result);
           
           if (result.success) {
-            console.log('Referral code applied successfully:', result.message);
             // Store referral code in localStorage for payment processing
             localStorage.setItem('referralCode', referralCode.trim().toUpperCase());
             // Proceed to dashboard
             onAuthSuccess();
           } else {
-            console.log('Referral code validation failed:', result.message);
             setReferralInvalid('Referral code not found. Try again or skip.');
             setLoading(false);
             return;
           }
         } else {
-          console.log('No data returned from referral code validation');
           setReferralInvalid('Referral code not found. Try again or skip.');
           setLoading(false);
           return;
         }
       } else {
         // No referral code provided, proceed to dashboard
-        console.log('No referral code provided, proceeding to dashboard');
         onAuthSuccess();
       }
     } catch (error: any) {

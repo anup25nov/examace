@@ -36,6 +36,7 @@ import { ProfessionalSectionHeader } from "@/components/ProfessionalSectionHeade
 import { ReferralBanner } from "@/components/ReferralBanner";
 import { PYQYearSelector } from "@/components/PYQYearSelector";
 import { MockTestSelector } from "@/components/MockTestSelector";
+import ResponsiveScrollContainer from "@/components/ResponsiveScrollContainer";
 import Footer from "@/components/Footer";
 
 const ProfessionalExamDashboard = () => {
@@ -538,15 +539,21 @@ const ProfessionalExamDashboard = () => {
               />
               
               {/* PYQ Papers for Selected Year */}
-              {selectedPYQYear && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {availableTests.pyq
-                    .find(year => year.year === selectedPYQYear)
-                    ?.papers.map((paper) =>
-                      createProfessionalTestCard(paper.id, paper.name, 'pyq', undefined, paper.isPremium || false, 'basic')
-                    )}
-                </div>
-              )}
+              {selectedPYQYear && (() => {
+                const yearPapers = availableTests.pyq.find(year => year.year === selectedPYQYear)?.papers || [];
+                return (
+                  <ResponsiveScrollContainer
+                    cardCount={yearPapers.length}
+                    className="gap-4 md:gap-6"
+                  >
+                    {yearPapers.map((paper) => (
+                      <div key={paper.id} className="w-full">
+                        {createProfessionalTestCard(paper.id, paper.name, 'pyq', undefined, paper.isPremium || false, 'basic')}
+                      </div>
+                    ))}
+                  </ResponsiveScrollContainer>
+                );
+              })()}
             </div>
           )}
 

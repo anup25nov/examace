@@ -81,8 +81,7 @@ class ComprehensiveStatsService {
         return { data: cached.data, error: null };
       }
 
-      console.log('Fetching comprehensive stats for exam:', examId, 'user:', user.id);
-
+   
       // Get all test attempts for this exam
       const { data: testAttempts, error: attemptsError } = await supabase
         .from('test_attempts')

@@ -116,24 +116,19 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
       // Filter plans based on current subscription
       let availablePlans: MembershipPlan[] = [];
       
-      console.log('Current user plan:', currentPlan);
       
       if (!currentPlan || currentPlan === 'free') {
         // Show Pro and Pro+ for free users
         availablePlans = allPlans.filter(plan => plan.id !== 'free');
-        console.log('Free user - showing plans:', availablePlans.map(p => p.id));
       } else if (currentPlan === 'pro') {
         // Show only Pro+ for Pro users (upgrade option) - hide Pro plan
         availablePlans = allPlans.filter(plan => plan.id === 'pro_plus');
-        console.log('Pro user - showing upgrade plans:', availablePlans.map(p => p.id));
       } else if (currentPlan === 'pro_plus') {
         // Pro+ users don't need to upgrade - hide all plans
         availablePlans = [];
-        console.log('Pro+ user - no upgrade needed');
       } else {
         // For any other plan status, hide the current plan
         availablePlans = allPlans.filter(plan => plan.id !== currentPlan && plan.id !== 'free');
-        console.log('Other plan user - showing available plans:', availablePlans.map(p => p.id));
       }
       
       setPlans(availablePlans);
@@ -148,11 +143,9 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
   const handleSelectPlan = (plan: MembershipPlan) => {
     // Prevent selecting the same plan user already has
     if (currentPlan === plan.id) {
-      console.log('User already has this plan:', plan.id);
       return;
     }
     
-    console.log('User selected plan:', plan.id, 'Current plan:', currentPlan);
     setSelectedPlan(plan.id);
     onSelectPlan(plan);
   };
@@ -160,12 +153,10 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
   const handleBuyPlan = (plan: MembershipPlan) => {
     // Prevent buying the same plan user already has
     if (currentPlan === plan.id) {
-      console.log('Cannot buy the same plan user already has:', plan.id);
       alert('You already have this plan!');
       return;
     }
     
-    console.log('User buying plan:', plan.id, 'Current plan:', currentPlan);
     setSelectedPlanForPayment(plan);
     setShowPaymentModal(true);
   };
@@ -185,12 +176,9 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999]"
       style={{
-        paddingTop: 'max(env(safe-area-inset-top), 1rem)',
-        paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)',
-        paddingLeft: 'max(env(safe-area-inset-left), 1rem)',
-        paddingRight: 'max(env(safe-area-inset-right), 1rem)',
+        padding: 'max(env(safe-area-inset-top), 1rem) max(env(safe-area-inset-right), 1rem) max(env(safe-area-inset-bottom), 1rem) max(env(safe-area-inset-left), 1rem)',
       }}
     >
       <div 

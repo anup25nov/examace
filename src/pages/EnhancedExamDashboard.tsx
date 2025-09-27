@@ -57,7 +57,10 @@ const iconMap: { [key: string]: any } = {
 
 // Debug logging function - moved outside component to avoid hooks issues
 const debugLog = (message: string, data?: any) => {
-  console.log(`[EnhancedExamDashboard] ${message}`, data || '');
+  // Only log errors and critical info
+  if (message.includes('Error') || message.includes('Critical')) {
+    console.error(`[EnhancedExamDashboard] ${message}`, data || '');
+  }
   
   // Mobile-specific logging - also log to localStorage for persistence
   const logEntry = {
@@ -135,12 +138,10 @@ const EnhancedExamDashboard = () => {
 
   const handleMembershipClick = () => {
     // Navigate to membership page or show modal
-    console.log('Membership clicked');
   };
 
   const handleReferralClick = () => {
     // Navigate to referral page or show modal
-    console.log('Referral clicked');
   };
 
 
@@ -274,7 +275,6 @@ const EnhancedExamDashboard = () => {
   const displayName = userName || (cleanedPhone ? `Hi, ${cleanedPhone}` : "User");
   
   // Debug logging for profile visibility
-  console.log('🔍 [EnhancedExamDashboard] Auth state:', { isAuthenticated, user, displayName });
 
   // Load test data dynamically with optimization
   useEffect(() => {
@@ -400,12 +400,6 @@ const EnhancedExamDashboard = () => {
   // Check test completions using bulk API
   const checkTestCompletions = async () => {
     if (!examId || !exam || !isAuthenticated || !user?.id) {
-      console.log('🔍 [checkTestCompletions] Skipping - missing requirements:', { 
-        examId: !!examId, 
-        exam: !!exam, 
-        isAuthenticated, 
-        userId: !!user?.id 
-      });
       return;
     }
 
@@ -425,7 +419,6 @@ const EnhancedExamDashboard = () => {
       const { completedTests, testScores } = bulkTestService.processBulkCompletionsWithType(allCompletions);
       
       // Minimal logging for debugging
-      console.log('✅ [EnhancedExamDashboard] Loaded test completions:', completedTests.size, 'completed tests');
       
       setCompletedTests(completedTests);
       setTestScores(testScores);
@@ -478,7 +471,7 @@ const EnhancedExamDashboard = () => {
     if (examId && isAuthenticated && user?.id && (mockTests.free.length > 0 || mockTests.premium.length > 0 || pyqData.length > 0)) {
       checkTestCompletions();
     }
-  }, [examId, isAuthenticated, user?.id, mockTests, pyqData]);
+  }, [examId, isAuthenticated, user?.id, mockTests.free.length, mockTests.premium.length, pyqData.length]);
 
   // Update user stats
   useEffect(() => {

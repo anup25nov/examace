@@ -26,10 +26,8 @@ export class PlanLimitsService {
    */
   async getUserPlanLimits(userId: string): Promise<PlanLimits> {
     try {
-      console.log('🔍 [planLimitsService] Getting user plan limits for userId:', userId);
       // Get user's current membership
       const membership = await unifiedPaymentService.getUserMembership(userId);
-      console.log('👤 [planLimitsService] User membership:', membership);
       
       let planType: 'free' | 'pro' | 'pro_plus' = 'free';
       let maxTests = 0;
@@ -43,12 +41,10 @@ export class PlanLimitsService {
 
         // Check if membership is expired
         if (timeUntilExpiry <= 0) {
-          console.log('⚠️ [planLimitsService] Membership expired, downgrading to free plan');
           await this.handleMembershipExpiry(userId, membership);
           planType = 'free';
         } else if (daysUntilExpiry <= 7) {
           // Grace period - show warning but allow access
-          console.log(`⚠️ [planLimitsService] Membership expires in ${Math.ceil(daysUntilExpiry)} days`);
           planType = membership.plan_id as 'pro' | 'pro_plus';
           maxTests = planType === 'pro' ? 11 : 9999;
         } else {
@@ -61,9 +57,7 @@ export class PlanLimitsService {
       // Count used tests for premium users (only premium tests count against limits)
       let usedTests = 0;
       if (planType !== 'free') {
-        console.log('📊 [planLimitsService] Fetching premium test attempts for premium user...');
         const billingStart = this.getBillingPeriodStart(membership);
-        console.log('📅 [planLimitsService] Billing period start:', billingStart);
         
         // Get all completed test attempts and filter premium ones
         const { data: testAttempts, error } = await supabase
@@ -73,7 +67,6 @@ export class PlanLimitsService {
           .eq('status', 'completed')
           .gte('created_at', billingStart);
 
-        console.log('📈 [planLimitsService] Premium test attempts query result:', { testAttempts, error });
 
         if (error) {
           console.error('❌ [planLimitsService] Error fetching test attempts:', error);
@@ -90,13 +83,10 @@ export class PlanLimitsService {
         if (testAttempts && testAttempts.length > 0) {
           const premiumTestCount = await this.countPremiumTestsFromAttempts(testAttempts);
           usedTests = premiumTestCount;
-          console.log('💎 [planLimitsService] Premium tests used:', usedTests, 'out of', testAttempts.length, 'total attempts');
         } else {
           usedTests = 0;
-          console.log('💎 [planLimitsService] No test attempts found');
         }
       } else {
-        console.log('🆓 [planLimitsService] Free user - no test counting needed');
       }
 
       const remainingTests = Math.max(0, maxTests - usedTests);
@@ -110,7 +100,6 @@ export class PlanLimitsService {
         planType
       };
       
-      console.log('✅ [planLimitsService] Final limits result:', result);
       return result;
     } catch (error) {
       console.error('Error getting plan limits:', error);
@@ -128,7 +117,6 @@ export class PlanLimitsService {
    * Check if user can take a test (works for both mock and PYQ tests)
    */
   async canUserTakeTest(userId: string, testType?: string, test?: any): Promise<{ canTake: boolean; reason?: string; limits?: PlanLimits; isRetry?: boolean }> {
-    console.log('🎯 [planLimitsService] canUserTakeTest called with:', { userId, testType, test });
     const limits = await this.getUserPlanLimits(userId);
     
     // If test is not premium, allow access for all users
@@ -149,10 +137,8 @@ export class PlanLimitsService {
     // Check if this is a retry (user has already completed this specific test)
     let isRetry = false;
     if (test && test.id) {
-      console.log('🔄 [planLimitsService] Checking if test is retry for testId:', test.id);
       const hasCompleted = await this.hasUserCompletedTest(userId, test.id, testType || 'mock');
       isRetry = hasCompleted;
-      console.log('🔄 [planLimitsService] Is retry?', isRetry);
     }
     
     // If it's a retry, allow access regardless of limits
@@ -219,11 +205,65 @@ export class PlanLimitsService {
   }
 
   /**
+   * Get mock test specific usage for a user
+   */
+  async getMockTestUsage(userId: string): Promise<{
+    usedMockTests: number;
+    maxMockTests: number;
+    remainingMockTests: number;
+    canTakeMockTest: boolean;
+  }> {
+    try {
+      
+      // Get user's plan limits
+      const planLimits = await this.getUserPlanLimits(userId);
+      
+      // Count only mock test attempts
+      const { data: mockTestAttempts, error } = await supabase
+        .from('test_attempts' as any)
+        .select('id, test_id, test_type')
+        .eq('user_id', userId)
+        .eq('test_type', 'mock')
+        .eq('status', 'completed');
+
+      if (error) {
+        console.error('❌ [planLimitsService] Error fetching mock test attempts:', error);
+        return {
+          usedMockTests: 0,
+          maxMockTests: planLimits.maxTests,
+          remainingMockTests: planLimits.maxTests,
+          canTakeMockTest: planLimits.planType === 'pro_plus'
+        };
+      }
+
+      const usedMockTests = mockTestAttempts?.length || 0;
+      const remainingMockTests = Math.max(0, planLimits.maxTests - usedMockTests);
+      const canTakeMockTest = planLimits.planType === 'free' ? false : 
+                            planLimits.planType === 'pro_plus' ? true : 
+                            remainingMockTests > 0;
+
+      return {
+        usedMockTests,
+        maxMockTests: planLimits.maxTests,
+        remainingMockTests,
+        canTakeMockTest
+      };
+    } catch (error) {
+      console.error('❌ [planLimitsService] Error getting mock test usage:', error);
+      return {
+        usedMockTests: 0,
+        maxMockTests: 0,
+        remainingMockTests: 0,
+        canTakeMockTest: false
+      };
+    }
+  }
+
+  /**
    * Check if user has already completed a specific test
    */
   private async hasUserCompletedTest(userId: string, testId: string, testType: string): Promise<boolean> {
     try {
-      console.log('🔍 [planLimitsService] Checking test completion:', { userId, testId, testType });
       
       const { data, error } = await supabase
         .from('test_attempts' as any)
@@ -234,15 +274,12 @@ export class PlanLimitsService {
         .eq('status', 'completed')
         .limit(1);
 
-      console.log('📊 [planLimitsService] Test completion query result:', { data, error });
-
       if (error) {
         console.error('❌ [planLimitsService] Error checking test completion:', error);
         return false;
       }
 
       const hasCompleted = (data && data.length > 0);
-      console.log('✅ [planLimitsService] Test completion result:', hasCompleted);
       return hasCompleted;
     } catch (error) {
       console.error('❌ [planLimitsService] Error checking test completion:', error);
@@ -255,15 +292,11 @@ export class PlanLimitsService {
    */
   async recordTestAttempt(userId: string, testId: string, examId: string, testType: string = 'mock', totalQuestions: number = 100, isRetry: boolean = false): Promise<{ success: boolean; error?: string }> {
     try {
-      console.log('📝 [planLimitsService] recordTestAttempt called with:', { userId, testId, examId, testType, totalQuestions, isRetry });
-      
       // Check if this test is premium
       const isPremium = await this.isTestPremiumInData(testId, testType);
-      console.log('💎 [planLimitsService] Test premium status:', { testId, testType, isPremium });
       
       // Check if this is a retry and if there's an existing completed attempt
       if (isRetry) {
-        console.log('🔄 [planLimitsService] This is a retry, checking for existing attempt...');
         const { data: existingAttempt, error: fetchError } = await supabase
           .from('test_attempts' as any)
           .select('id, status')
@@ -273,7 +306,6 @@ export class PlanLimitsService {
           .eq('status', 'completed')
           .limit(1);
 
-        console.log('🔍 [planLimitsService] Existing attempt query result:', { existingAttempt, fetchError });
 
         if (fetchError) {
           console.error('❌ [planLimitsService] Error fetching existing attempt:', fetchError);
@@ -282,7 +314,6 @@ export class PlanLimitsService {
 
         // If there's an existing completed attempt, update it to in_progress for retry
         if (existingAttempt && existingAttempt.length > 0) {
-          console.log('🔄 [planLimitsService] Found existing attempt, updating to in_progress...');
           const attemptId = (existingAttempt[0] as any).id;
           const { error: updateError } = await supabase
             .from('test_attempts' as any)
@@ -293,22 +324,18 @@ export class PlanLimitsService {
             })
             .eq('id', attemptId);
 
-          console.log('📝 [planLimitsService] Update attempt result:', { updateError });
 
           if (updateError) {
             console.error('❌ [planLimitsService] Error updating existing attempt:', updateError);
             return { success: false, error: updateError.message };
           }
 
-          console.log('✅ [planLimitsService] Successfully updated existing attempt for retry');
           return { success: true };
         } else {
-          console.log('ℹ️ [planLimitsService] No existing completed attempt found, will create new one');
         }
       }
 
       // Create new test attempt (for new tests or if no existing completed attempt found)
-      console.log('🆕 [planLimitsService] Creating new test attempt...');
       const { data: attemptData, error } = await supabase
         .rpc('insert_test_attempt' as any, {
           p_user_id: userId,
@@ -322,7 +349,6 @@ export class PlanLimitsService {
           p_answers: null
         });
 
-      console.log('📝 [planLimitsService] Create attempt result:', { attemptData, error });
 
       if (error) {
         console.error('❌ [planLimitsService] Error recording test attempt:', error);
@@ -336,7 +362,6 @@ export class PlanLimitsService {
         return { success: false, error: (result as any)?.message || 'Failed to create test attempt' };
       }
 
-      console.log('✅ [planLimitsService] Successfully created new test attempt');
       return { success: true };
     } catch (error) {
       console.error('Error recording test attempt:', error);
@@ -390,7 +415,6 @@ export class PlanLimitsService {
    */
   private async handleMembershipExpiry(userId: string, membership: any): Promise<void> {
     try {
-      console.log('🔄 [planLimitsService] Handling membership expiry for user:', userId);
 
       // Update membership status to expired
       const { error: membershipError } = await supabase
@@ -423,7 +447,6 @@ export class PlanLimitsService {
       // Send expiry notification
       await this.sendExpiryNotification(userId, membership);
 
-      console.log('✅ [planLimitsService] Membership expiry handled successfully');
     } catch (error) {
       console.error('❌ [planLimitsService] Error handling membership expiry:', error);
     }

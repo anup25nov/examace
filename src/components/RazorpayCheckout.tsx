@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Check, X, CreditCard, Smartphone, Globe } from 'lucide-react';
 import { razorpayPaymentService, RazorpayPaymentRequest } from '@/lib/razorpayPaymentService';
 import { useAuth } from '@/hooks/useAuth';
-import { useUserProfile } from '@/hooks/useUserProfile';
+import { useDashboardData } from '@/contexts/DashboardDataContext';
 import { messagingService } from '@/lib/messagingService';
 
 // Declare Razorpay types
@@ -34,7 +34,7 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
   onClose,
 }) => {
   const { user } = useAuth();
-  const { profile } = useUserProfile();
+  const { profile } = useDashboardData();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paymentStep, setPaymentStep] = useState<'init' | 'processing' | 'success' | 'failed'>('init');

@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { dynamicExamService } from "@/lib/dynamicExamService";
 
 import { useAuth } from "@/hooks/useAuth";
-import { useOptimizedUserProfile } from "@/hooks/useOptimizedUserProfile";
+import { useDashboardData } from "@/contexts/DashboardDataContext";
 import { useUserStreak } from "@/hooks/useUserStreak";
 import { analytics } from "@/lib/analytics";
 import { optimizeRouteTransition } from "@/lib/navigationOptimizer";
@@ -39,7 +39,7 @@ const exams = dynamicExamService.getAllExams().map(exam => ({
 const Index = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, loading, logout } = useAuth();
-  const { profile } = useOptimizedUserProfile();
+  const { profile } = useDashboardData();
   const { streak, refreshStreak, forceRefreshFromCache } = useUserStreak();
   const [isNavigating, setIsNavigating] = useState(false);
   
@@ -62,7 +62,7 @@ const Index = () => {
       
       // Refresh user profile data (this will trigger a re-render with fresh data)
       if (profile) {
-        // The useOptimizedUserProfile hook will automatically refresh when needed
+        // The useDashboardData hook will automatically refresh when needed
         // No need to reload the entire page
       }
       

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 interface ResponsiveScrollContainerProps {
@@ -21,16 +21,14 @@ const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps> = ({
   // Version check to ensure updates are applied
   const VERSION = '2.0.2';
   const TIMESTAMP = Date.now();
-  console.log(`🚀 ResponsiveScrollContainer v${VERSION} - Mobile 3-card layout`);
-  console.log('📱 Current timestamp:', new Date().toISOString());
-  console.log('🔧 Card count:', cardCount);
-  console.log('🆔 Component instance ID:', TIMESTAMP);
-  console.log('🔥 FORCE REFRESH - CACHE BUSTING ACTIVE');
 
-  // Debug logging function
-  const debugLog = (message: string, data?: any) => {
-    console.log(`[ResponsiveScrollContainer] ${message}`, data || '');
-  };
+  // Debug logging function - memoized to prevent recreating on every render
+  const debugLog = useCallback((message: string, data?: any) => {
+    // Only log errors and critical info in production
+    if (message.includes('Error') || message.includes('Critical')) {
+      console.error(`[ResponsiveScrollContainer] ${message}`, data || '');
+    }
+  }, []);
 
   // Check if device is mobile
   const checkDeviceType = () => {
@@ -56,9 +54,6 @@ const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps> = ({
         timestamp: Date.now()
       };
       debugLog(`Mobile config (FORCE UPDATED):`, config);
-      console.log('🔧 MOBILE CONFIG FORCE UPDATED:', config);
-      console.log('✅ Mobile maxVisibleCards FORCED to 3');
-      console.log('🔥 CACHE BUSTING: Version 2.0.2');
       return config;
     } else {
       // Desktop: 4 cards per row, 4.5 rows = 18 cards total (increased height)
@@ -162,8 +157,6 @@ const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps> = ({
 
   // Set up scroll listeners
   useEffect(() => {
-    console.log('🔄 useEffect: Setting up scroll listeners - FORCE REFRESH');
-    console.log('🔥 CACHE BUSTING: Scroll listeners with version 2.0.2');
     const scrollContainer = scrollRef.current;
     if (scrollContainer && shouldEnableScrolling) {
       // Initial check with multiple attempts
@@ -207,8 +200,6 @@ const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps> = ({
 
   // If no scrolling needed, show all cards in responsive grid
   if (!shouldEnableScrolling) {
-    console.log('🔄 No scrolling needed - FORCE REFRESH');
-    console.log('🔥 CACHE BUSTING: No scroll mode with version 2.0.2');
     return (
       <div className={`${config.containerClass} ${className}`}>
         {children}
@@ -218,13 +209,10 @@ const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps> = ({
 
   // Calculate dynamic height based on wireframe layout
   const getContainerHeight = () => {
-    console.log('🔄 Calculating container height - FORCE REFRESH');
-    console.log('🔥 CACHE BUSTING: Height calculation with version 2.0.2');
     if (isMobile) {
       // Mobile: Show 3 cards, each ~300px (288px card + 16px gap)
       const height = '900px'; // 3 * 300px = 900px
       debugLog(`Mobile height: ${height}`);
-      console.log('✅ Mobile height set to 900px for 3 cards');
       return height;
     } else {
       // Desktop: Use viewport height instead of fixed height
@@ -236,8 +224,6 @@ const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps> = ({
   };
 
   const containerHeight = getContainerHeight();
-  console.log('🔄 Final rendering - FORCE REFRESH');
-  console.log('🔥 CACHE BUSTING: Final render with version 2.0.2');
   debugLog(`Rendering with:`, {
     shouldEnableScrolling,
     containerHeight,

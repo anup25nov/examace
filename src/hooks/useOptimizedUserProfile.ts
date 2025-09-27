@@ -33,10 +33,8 @@ export const useOptimizedUserProfile = () => {
           console.log('🔍 [useOptimizedUserProfile] Setting profile from API data:', profileData.profile);
           setProfile(profileData.profile);
         } else {
-          console.log('🔍 [useOptimizedUserProfile] No profile data from API, checking localStorage...');
           // Fallback to localStorage email if no profile exists
           const email = localStorage.getItem("userEmail");
-          console.log('🔍 [useOptimizedUserProfile] localStorage email:', email);
           if (email) {
             const fallbackProfile = { 
               id: user.id, 
@@ -44,7 +42,6 @@ export const useOptimizedUserProfile = () => {
               created_at: '', 
               updated_at: ''
             };
-            console.log('🔍 [useOptimizedUserProfile] Setting fallback profile:', fallbackProfile);
             setProfile(fallbackProfile);
           } else {
             console.log('🔍 [useOptimizedUserProfile] No email in localStorage, profile will be null');

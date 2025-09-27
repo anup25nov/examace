@@ -17,7 +17,7 @@ import {
   QrCode
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useUserProfile } from '@/hooks/useUserProfile';
+import { useDashboardData } from '@/contexts/DashboardDataContext';
 import { useProfileManagement } from '@/hooks/useProfileManagement';
 import { profileService } from '@/lib/profileService';
 
@@ -42,7 +42,7 @@ export const ProfileUpdateModal: React.FC<ProfileUpdateModalProps> = ({
   onSuccess
 }) => {
   const { user } = useAuth();
-  const { profile } = useUserProfile();
+  const { profile } = useDashboardData();
   const { updateProfile, sendOTP, verifyOTP, loading } = useProfileManagement();
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');

@@ -13,13 +13,11 @@ export interface AuthUser {
 // Send OTP to phone using our custom database OTP service
 export const sendOTPCode = async (phone: string) => {
   try {
-    console.log('Starting OTP send process for phone:', phone);
     
     // Use our custom database OTP service
     const result = await databaseOTPService.sendOTP(phone);
     
     if (result.success) {
-      console.log('OTP sent successfully via', result.provider);
       return { success: true, data: { provider: result.provider, messageId: result.messageId } };
     } else {
       console.error('Error sending OTP:', result.error);
@@ -48,7 +46,6 @@ export const checkPhoneExists = async (phone: string) => {
     }
     
     const exists = !!data;
-    console.log('Phone existence check:', { phone: formattedPhone, exists });
     
     return { exists, data };
   } catch (error: any) {
@@ -60,11 +57,8 @@ export const checkPhoneExists = async (phone: string) => {
 // Verify OTP code using secure server-side verification
 export const verifyOTPCode = async (phone: string, otp: string) => {
   try {
-    console.log('🔍 [verifyOTPCode] Starting secure OTP verification for phone:', phone);
-    console.log('🔍 [verifyOTPCode] OTP verification initiated (OTP hidden for security)');
     
     // Use secure server-side verification
-    console.log('🔍 [verifyOTPCode] Calling secure server-side verification...');
     
     const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-otp`, {
       method: 'POST',
@@ -86,39 +80,22 @@ export const verifyOTPCode = async (phone: string, otp: string) => {
     }
 
     const result = await response.json();
-    console.log('🔍 [verifyOTPCode] Server verification result:', result);
     
     if (result.success && result.data) {
-      console.log('🔍 [verifyOTPCode] OTP verified successfully via secure server');
       
       const { userId, phone: verifiedPhone, isNewUser } = result.data;
       const formattedPhone = verifiedPhone || (phone.startsWith('+') ? phone : `+91${phone}`);
       
-      console.log('🔍 [verifyOTPCode] Verification data:', {
-        userId,
-        phone: formattedPhone,
-        isNewUser
-      });
-      
       // Store authentication data for persistence
-      console.log('🔍 [verifyOTPCode] Storing authentication data in localStorage...');
       localStorage.setItem('userId', userId);
       localStorage.setItem('userPhone', formattedPhone);
       localStorage.setItem('isAuthenticated', 'true');
-      
-      console.log('🔍 [verifyOTPCode] Authentication data stored:', {
-        userId: userId,
-        phone: formattedPhone,
-        isAuthenticated: 'true',
-        isNewUser
-      });
       
       const returnData = { 
         success: true, 
         data: { id: userId, phone: formattedPhone }, 
         isNewUser 
       };
-      console.log('🔍 [verifyOTPCode] Returning success data:', returnData);
       return returnData;
     } else {
       console.error('🔍 [verifyOTPCode] Server verification failed:', result.error);
@@ -133,7 +110,6 @@ export const verifyOTPCode = async (phone: string, otp: string) => {
 // Create or update user profile in Supabase using direct approach
 export const createOrUpdateUserProfile = async (userId: string, phone: string) => {
   try {
-    console.log('Creating/updating user profile for:', { userId, phone });
     
     // Check if user profile already exists to determine if this is a new user
     let isNewUser = false;
@@ -151,10 +127,8 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string) =
 
       // If no data returned, this is a new user
       if (!existingProfile) {
-        console.log('No existing profile found - this is a NEW user');
         isNewUser = true;
       } else {
-        console.log('Existing profile found - this is an EXISTING user:', existingProfile);
         
         // Additional check: if profile was created very recently (within last 30 seconds), 
         // it might be a new user that was created by a database trigger

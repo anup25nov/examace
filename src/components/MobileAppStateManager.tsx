@@ -16,7 +16,6 @@ if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform()) {
   try {
     App = require('@capacitor/app').App;
   } catch (error) {
-    console.log('Capacitor App plugin not available');
   }
 }
 
@@ -36,14 +35,12 @@ export const MobileAppStateManager: React.FC<MobileAppStateManagerProps> = ({
     }
 
     const handleAppStateChange = async (state: { isActive: boolean }) => {
-      console.log('App state changed:', state);
       
       if (state.isActive) {
         // App became active - refresh user data
         try {
           if (user) {
             await refreshUser();
-            console.log('User data refreshed on app resume');
           }
         } catch (error) {
           console.error('Error refreshing user data:', error);
@@ -57,7 +54,6 @@ export const MobileAppStateManager: React.FC<MobileAppStateManagerProps> = ({
     };
 
     const handleAppPause = async () => {
-      console.log('App paused - saving state');
       // Save any pending data to localStorage
       try {
         const userData = {
@@ -72,7 +68,6 @@ export const MobileAppStateManager: React.FC<MobileAppStateManagerProps> = ({
     };
 
     const handleAppResume = async () => {
-      console.log('App resumed - restoring state');
       // Restore app state and refresh data
       try {
         const savedState = localStorage.getItem('app_state');
@@ -84,7 +79,6 @@ export const MobileAppStateManager: React.FC<MobileAppStateManagerProps> = ({
           if (timeSinceLastActive > 5 * 60 * 1000) {
             if (user) {
               await refreshUser();
-              console.log('User data refreshed after long pause');
             }
           }
         }
@@ -104,7 +98,7 @@ export const MobileAppStateManager: React.FC<MobileAppStateManagerProps> = ({
         App.removeAllListeners();
       };
     }
-  }, [user, refreshUser, onAppStateChange]);
+  }, [user, onAppStateChange]);
 
   // Handle visibility change for web platforms with debouncing
   useEffect(() => {
@@ -118,7 +112,6 @@ export const MobileAppStateManager: React.FC<MobileAppStateManagerProps> = ({
         
         // Debounce: only refresh if enough time has passed since last refresh
         if (now - lastRefreshTime < REFRESH_DEBOUNCE_MS) {
-          console.log('Skipping user data refresh - too soon since last refresh');
           return;
         }
 
@@ -132,7 +125,6 @@ export const MobileAppStateManager: React.FC<MobileAppStateManagerProps> = ({
           try {
             await refreshUser();
             lastRefreshTime = Date.now();
-            console.log('User data refreshed on page visibility change');
           } catch (error) {
             console.error('Error refreshing user data on visibility change:', error);
           }
@@ -148,7 +140,7 @@ export const MobileAppStateManager: React.FC<MobileAppStateManagerProps> = ({
         clearTimeout(refreshTimeout);
       }
     };
-  }, [user, refreshUser]);
+  }, [user]);
 
   return null;
 };

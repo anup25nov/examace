@@ -26,13 +26,11 @@ export const useAuth = () => {
   useEffect(() => {
     // Prevent multiple simultaneous auth checks
     if (isAuthCheckInProgress()) {
-      console.log('Auth check already in progress, skipping...');
       return;
     }
     
     // If auth is already checked, don't run again
     if (authChecked) {
-      console.log('Auth already checked, skipping...');
       return;
     }
     
@@ -40,21 +38,16 @@ export const useAuth = () => {
     
     const checkAuthStatus = async () => {
       try {
-        console.log('🔍 [useAuth] Starting auth status check...');
         
         // For phone-based auth, we primarily rely on localStorage
         // Check localStorage first for faster response
         const isAuth = isUserAuthenticated();
-        console.log('🔍 [useAuth] isUserAuthenticated result:', isAuth);
         
         if (isAuth) {
           // User is authenticated via localStorage, get user data
-          console.log('🔍 [useAuth] User is authenticated, fetching user data...');
           const authUser = await getCurrentAuthUser();
-          console.log('🔍 [useAuth] getCurrentAuthUser result:', authUser);
           
           if (authUser) {
-            console.log('🔍 [useAuth] Setting user and authentication state...');
             setUser(authUser);
             setIsAuthenticated(true);
             
@@ -64,18 +57,15 @@ export const useAuth = () => {
               const todayIST = getCurrentISTDate();
               const lastVisitDate = localStorage.getItem('lastVisitDate');
               
-              console.log('Streak check - Today IST:', todayIST, 'Last visit:', lastVisitDate);
               
               if (!isTodayIST(lastVisitDate || '')) {
                 // Check if streak should be reset (if last visit was not yesterday in IST)
                 if (lastVisitDate && !isYesterdayIST(lastVisitDate)) {
-                  console.log('Streak broken - last visit was not yesterday in IST');
                   // Reset streak in localStorage
                   localStorage.removeItem(`streak_${authUser.id}`);
                 }
                 
                 const result = await supabaseStatsService.updateDailyVisit();
-                console.log('Daily visit update result:', result);
                 
                 if (result.success && result.data) {
                   // Update streak data in localStorage
@@ -83,13 +73,10 @@ export const useAuth = () => {
                     current_streak: result.data.current_streak || 0,
                     longest_streak: result.data.longest_streak || 0
                   }));
-                  console.log('Streak data updated from daily visit:', result.data);
                 }
                 
                 localStorage.setItem('lastVisitDate', todayIST);
-                console.log('Daily visit updated for IST:', todayIST);
               } else {
-                console.log('Daily visit already updated today in IST');
               }
             } catch (error) {
               console.error('Error updating daily visit:', error);
@@ -102,7 +89,6 @@ export const useAuth = () => {
           }
         } else {
           // User not authenticated, clear state
-          console.log('🔍 [useAuth] User not authenticated, clearing state');
           setIsAuthenticated(false);
           setUser(null);
         }
@@ -119,7 +105,6 @@ export const useAuth = () => {
         setIsAuthenticated(false);
         setUser(null);
       } finally {
-        console.log('🔍 [useAuth] Auth check completed, setting loading to false');
         setLoading(false);
         setAuthChecked(true);
         setAuthCheckInProgress(false); // Reset the flag
@@ -150,14 +135,11 @@ export const useAuth = () => {
   // Additional safety mechanism - force loading to false after 5 seconds
   useEffect(() => {
     const forceLoadingFalse = setTimeout(() => {
-      if (loading) {
-        console.warn('🔍 [useAuth] Force setting loading to false after 5 seconds');
-        setLoading(false);
-      }
+      setLoading(false);
     }, 5000);
 
     return () => clearTimeout(forceLoadingFalse);
-  }, [loading]);
+  }, []); // Only run once on mount
 
   const logout = async () => {
     try {
