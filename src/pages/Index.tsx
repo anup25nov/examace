@@ -225,7 +225,6 @@ const Index = () => {
         </div>
       </header>
 
-
           {/* Hero Section with Streak */}
       <section className="gradient-hero text-white py-16 pt-20 sm:pt-24">
         <div className="container mx-auto px-3 sm:px-4 text-center">

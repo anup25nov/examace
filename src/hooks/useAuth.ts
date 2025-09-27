@@ -108,35 +108,19 @@ export const useAuth = () => {
 
     checkAuthStatus();
     
-    // Set up session refresh interval for persistent login
-    const refreshInterval = setInterval(async () => {
-      try {
-        // Only refresh if user is authenticated
-        if (isUserAuthenticated()) {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
-            // Refresh session every 30 minutes to maintain login
-            await supabase.auth.refreshSession();
-          }
-        }
-      } catch (error) {
-        console.warn('Session refresh failed:', error);
-      }
-    }, 30 * 60 * 1000); // 30 minutes
+    // Note: Session refresh removed for phone-based authentication
+    // Phone-based auth doesn't use Supabase sessions, so no refresh needed
     
     return () => {
       (window as any).authCheckInProgress = false; // Reset the flag
       clearTimeout(timeoutId);
-      clearInterval(refreshInterval);
     };
   }, [authChecked]);
 
   const logout = async () => {
     try {
-      // Sign out from Supabase first
-      await supabase.auth.signOut();
-      
-      // Then use the custom signOutUser function
+      // For phone-based auth, we only need to clear localStorage
+      // No need to call Supabase auth.signOut() as we don't use sessions
       await signOutUser();
       
       setUser(null);

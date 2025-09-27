@@ -12,6 +12,25 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Helper function to normalize phone numbers for consistent searching
+function normalizePhoneNumber(phone: string): string[] {
+  // Remove all non-digit characters
+  let cleaned = phone.replace(/\D/g, '')
+  
+  // Remove leading 91 if present (since OTPs are stored without country code)
+  if (cleaned.startsWith('91') && cleaned.length === 12) {
+    cleaned = cleaned.substring(2)
+  }
+  
+  // Return all possible formats for searching
+  return [
+    `+91${cleaned}`,  // +917050959444
+    `91${cleaned}`,   // 917050959444
+    cleaned,          // 7050959444
+    `+91${cleaned}`.replace('+', '')  // 917050959444
+  ]
+}
+
 interface VerifyOTPRequest {
   phone: string;
   otp: string;
@@ -190,25 +209,24 @@ serve(async (req) => {
         })
       })
 
-      // Handle user profile creation/update with proper conflict handling
+      // Handle user profile creation/update with robust UPSERT pattern
       let userId: string
       let isNewUser = false
       
-      // First, try to find existing user with multiple phone number formats
-      console.log('🔍 [verify-otp] Looking for existing user with phone:', `+91${formattedPhone}`)
+      console.log('🔍 [verify-otp] Starting user profile UPSERT for phone:', `+91${formattedPhone}`)
+      console.log('🔍 [verify-otp] Original phone input:', phone)
+      console.log('🔍 [verify-otp] Formatted phone for DB lookup:', formattedPhone)
       
-      const phoneFormats = [
-        `+91${formattedPhone}`,  // +917050959444
-        `91${formattedPhone}`,   // 917050959444
-        formattedPhone,          // 7050959444
-        `+91${formattedPhone}`.replace('+', '')  // 917050959444
-      ]
+      // First, try to find existing user with comprehensive search
+      let existingUser = null
+      
+      // Try exact matches first with all possible phone formats
+      const phoneFormats = normalizePhoneNumber(phone)
       
       console.log('🔍 [verify-otp] Phone formats to try:', phoneFormats)
       
-      let existingUser = null
       for (const phoneFormat of phoneFormats) {
-        console.log(`🔍 [verify-otp] Trying phone format: ${phoneFormat}`)
+        console.log(`🔍 [verify-otp] Trying exact match for: ${phoneFormat}`)
         
         // @ts-ignore: Deno.env is available in Supabase Edge Functions
         const searchResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/user_profiles?phone=eq.${encodeURIComponent(phoneFormat)}&select=id,phone,created_at`, {
@@ -223,14 +241,95 @@ serve(async (req) => {
 
         if (searchResponse.ok) {
           const searchData = await searchResponse.json()
-          console.log(`🔍 [verify-otp] Search result for ${phoneFormat}:`, searchData.length, 'users found')
+          console.log(`🔍 [verify-otp] Exact match result for ${phoneFormat}:`, searchData.length, 'users found')
           if (searchData && searchData.length > 0) {
             existingUser = searchData[0]
-            console.log(`✅ Found existing user with phone format ${phoneFormat}:`, existingUser.id, 'phone:', existingUser.phone)
+            console.log(`✅ Found existing user with exact match ${phoneFormat}:`, existingUser.id, 'phone:', existingUser.phone)
             break
           }
         } else {
-          console.log(`❌ Search failed for ${phoneFormat}:`, searchResponse.status)
+          console.log(`❌ Exact match failed for ${phoneFormat}:`, searchResponse.status)
+        }
+      }
+      
+      // If no exact match found, try pattern matching
+      if (!existingUser) {
+        console.log('🔍 [verify-otp] No exact match found, trying pattern matching...')
+        
+        // @ts-ignore: Deno.env is available in Supabase Edge Functions
+        const patternResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/user_profiles?phone=ilike.*${formattedPhone}*&select=id,phone,created_at`, {
+          headers: {
+            // @ts-ignore: Deno.env is available in Supabase Edge Functions
+            'apikey': Deno.env.get('SUPABASE_ANON_KEY') || '',
+            // @ts-ignore: Deno.env is available in Supabase Edge Functions
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') || ''}`,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (patternResponse.ok) {
+          const patternData = await patternResponse.json()
+          console.log(`🔍 [verify-otp] Pattern match result:`, patternData.length, 'users found')
+          if (patternData && patternData.length > 0) {
+            existingUser = patternData[0]
+            console.log(`✅ Found existing user with pattern match:`, existingUser.id, 'phone:', existingUser.phone)
+          }
+        } else {
+          console.log(`❌ Pattern match failed:`, patternResponse.status)
+        }
+      }
+
+      // Additional fallback: Search for the exact phone format that would be created
+      if (!existingUser) {
+        console.log('🔍 [verify-otp] No pattern match found, trying exact +91 format...')
+        
+        // @ts-ignore: Deno.env is available in Supabase Edge Functions
+        const exactResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/user_profiles?phone=eq.${encodeURIComponent(`+91${formattedPhone}`)}&select=id,phone,created_at`, {
+          headers: {
+            // @ts-ignore: Deno.env is available in Supabase Edge Functions
+            'apikey': Deno.env.get('SUPABASE_ANON_KEY') || '',
+            // @ts-ignore: Deno.env is available in Supabase Edge Functions
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') || ''}`,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (exactResponse.ok) {
+          const exactData = await exactResponse.json()
+          console.log(`🔍 [verify-otp] Exact +91 match result:`, exactData.length, 'users found')
+          if (exactData && exactData.length > 0) {
+            existingUser = exactData[0]
+            console.log(`✅ Found existing user with exact +91 match:`, existingUser.id, 'phone:', existingUser.phone)
+          }
+        } else {
+          console.log(`❌ Exact +91 match failed:`, exactResponse.status)
+        }
+      }
+
+      // Final fallback: Search for any user with the same phone number (any format)
+      if (!existingUser) {
+        console.log('🔍 [verify-otp] No exact match found, trying broad search...')
+        
+        // @ts-ignore: Deno.env is available in Supabase Edge Functions
+        const broadResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/user_profiles?phone=ilike.*${formattedPhone}*&select=id,phone,created_at`, {
+          headers: {
+            // @ts-ignore: Deno.env is available in Supabase Edge Functions
+            'apikey': Deno.env.get('SUPABASE_ANON_KEY') || '',
+            // @ts-ignore: Deno.env is available in Supabase Edge Functions
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') || ''}`,
+            'Content-Type': 'application/json'
+          }
+        })
+
+        if (broadResponse.ok) {
+          const broadData = await broadResponse.json()
+          console.log(`🔍 [verify-otp] Broad search result:`, broadData.length, 'users found')
+          if (broadData && broadData.length > 0) {
+            existingUser = broadData[0]
+            console.log(`✅ Found existing user with broad search:`, existingUser.id, 'phone:', existingUser.phone)
+          }
+        } else {
+          console.log(`❌ Broad search failed:`, broadResponse.status)
         }
       }
 
@@ -270,11 +369,12 @@ serve(async (req) => {
 
         console.log('✅ Existing user updated successfully')
       } else {
-        // No existing user found - create new user
+        // No existing user found - create new user with proper error handling
         userId = crypto.randomUUID()
         isNewUser = true
         console.log('🔍 [verify-otp] Creating new user profile:', userId)
         
+        // Try to create new user
         // @ts-ignore: Deno.env is available in Supabase Edge Functions
         const createResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/user_profiles`, {
           method: 'POST',
@@ -301,74 +401,101 @@ serve(async (req) => {
           const createErrorText = await createResponse.text()
           console.error('❌ Failed to create user profile:', createResponse.status, createErrorText)
           
-          // If creation fails due to duplicate key, try to find the user again
-          if (createResponse.status === 409) {
-            console.log('🔍 [verify-otp] User creation failed due to duplicate, searching again...')
+          // If creation fails due to duplicate key (23505), try to find the user
+          if (createResponse.status === 409 || createErrorText.includes('23505')) {
+            console.log('🔍 [verify-otp] User creation failed due to duplicate phone, searching for existing user...')
             
-            // Try one more time to find the user with a broader search
-            console.log('🔍 [verify-otp] Retry search with ILIKE pattern for:', formattedPhone)
-            // @ts-ignore: Deno.env is available in Supabase Edge Functions
-            const retrySearchResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/user_profiles?phone=ilike.*${formattedPhone}*&select=id,phone,created_at`, {
-              headers: {
-                // @ts-ignore: Deno.env is available in Supabase Edge Functions
-                'apikey': Deno.env.get('SUPABASE_ANON_KEY') || '',
-                // @ts-ignore: Deno.env is available in Supabase Edge Functions
-                'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') || ''}`,
-                'Content-Type': 'application/json'
-              }
-            })
-
-            if (retrySearchResponse.ok) {
-              const retryData = await retrySearchResponse.json()
-              console.log('🔍 [verify-otp] Retry search found:', retryData.length, 'users')
-              if (retryData && retryData.length > 0) {
-                const foundUser = retryData[0]
-                userId = foundUser.id
-                isNewUser = false
-                console.log('✅ Found existing user on retry:', userId, 'phone:', foundUser.phone)
-                
-                // Update the found user
-                // @ts-ignore: Deno.env is available in Supabase Edge Functions
-                const retryUpdateResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/user_profiles?id=eq.${userId}`, {
-                  method: 'PATCH',
-                  headers: {
-                    // @ts-ignore: Deno.env is available in Supabase Edge Functions
-                    'apikey': Deno.env.get('SUPABASE_ANON_KEY') || '',
-                    // @ts-ignore: Deno.env is available in Supabase Edge Functions
-                    'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') || ''}`,
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({
-                    phone_verified: true,
-                    updated_at: new Date().toISOString()
-                  })
-                })
-
-                if (!retryUpdateResponse.ok) {
-                  const retryErrorText = await retryUpdateResponse.text()
-                  console.error('❌ Failed to update user on retry:', retryErrorText)
-                  return new Response(
-                    JSON.stringify({ success: false, error: 'Failed to update existing user: ' + retryErrorText }),
-                    { 
-                      status: 500, 
-                      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-                    }
-                  )
+            // Try to find the existing user that caused the conflict
+            let foundUser = null
+            
+            // Try all phone formats again
+            const retryPhoneFormats = normalizePhoneNumber(phone)
+            for (const retryFormat of retryPhoneFormats) {
+              console.log(`🔍 [verify-otp] Retry exact match for: ${retryFormat}`)
+              
+              // @ts-ignore: Deno.env is available in Supabase Edge Functions
+              const retryExactResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/user_profiles?phone=eq.${encodeURIComponent(retryFormat)}&select=id,phone,created_at`, {
+                headers: {
+                  // @ts-ignore: Deno.env is available in Supabase Edge Functions
+                  'apikey': Deno.env.get('SUPABASE_ANON_KEY') || '',
+                  // @ts-ignore: Deno.env is available in Supabase Edge Functions
+                  'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') || ''}`,
+                  'Content-Type': 'application/json'
                 }
+              })
 
-                console.log('✅ User updated successfully on retry')
-              } else {
+              if (retryExactResponse.ok) {
+                const retryExactData = await retryExactResponse.json()
+                if (retryExactData && retryExactData.length > 0) {
+                  foundUser = retryExactData[0]
+                  console.log(`✅ Found existing user with retry exact match ${retryFormat}:`, foundUser.id, 'phone:', foundUser.phone)
+                  break
+                }
+              }
+            }
+            
+            // If no exact match found, try pattern matching
+            if (!foundUser) {
+              console.log('🔍 [verify-otp] Retry pattern search with ILIKE for:', formattedPhone)
+              // @ts-ignore: Deno.env is available in Supabase Edge Functions
+              const retrySearchResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/user_profiles?phone=ilike.*${formattedPhone}*&select=id,phone,created_at`, {
+                headers: {
+                  // @ts-ignore: Deno.env is available in Supabase Edge Functions
+                  'apikey': Deno.env.get('SUPABASE_ANON_KEY') || '',
+                  // @ts-ignore: Deno.env is available in Supabase Edge Functions
+                  'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') || ''}`,
+                  'Content-Type': 'application/json'
+                }
+              })
+
+              if (retrySearchResponse.ok) {
+                const retryData = await retrySearchResponse.json()
+                console.log('🔍 [verify-otp] Retry pattern search found:', retryData.length, 'users')
+                if (retryData && retryData.length > 0) {
+                  foundUser = retryData[0]
+                  console.log('✅ Found existing user with retry pattern match:', foundUser.id, 'phone:', foundUser.phone)
+                }
+              }
+            }
+
+            if (foundUser) {
+              userId = foundUser.id
+              isNewUser = false
+              console.log('✅ Found existing user on retry:', userId, 'phone:', foundUser.phone)
+                
+              // Update the found user
+              // @ts-ignore: Deno.env is available in Supabase Edge Functions
+              const retryUpdateResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/user_profiles?id=eq.${userId}`, {
+                method: 'PATCH',
+                headers: {
+                  // @ts-ignore: Deno.env is available in Supabase Edge Functions
+                  'apikey': Deno.env.get('SUPABASE_ANON_KEY') || '',
+                  // @ts-ignore: Deno.env is available in Supabase Edge Functions
+                  'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY') || ''}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  phone_verified: true,
+                  updated_at: new Date().toISOString()
+                })
+              })
+
+              if (!retryUpdateResponse.ok) {
+                const retryErrorText = await retryUpdateResponse.text()
+                console.error('❌ Failed to update user on retry:', retryErrorText)
                 return new Response(
-                  JSON.stringify({ success: false, error: 'User creation failed and no existing user found: ' + createErrorText }),
+                  JSON.stringify({ success: false, error: 'Failed to update existing user: ' + retryErrorText }),
                   { 
                     status: 500, 
                     headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
                   }
                 )
               }
+
+              console.log('✅ User updated successfully on retry')
             } else {
               return new Response(
-                JSON.stringify({ success: false, error: 'Failed to create user profile: ' + createErrorText }),
+                JSON.stringify({ success: false, error: 'User creation failed and no existing user found: ' + createErrorText }),
                 { 
                   status: 500, 
                   headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

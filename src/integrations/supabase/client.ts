@@ -28,35 +28,12 @@ if (import.meta.env.VITE_ENV === 'development') {
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     storage: localStorage,
-    persistSession: true,
-    autoRefreshToken: true,
+    persistSession: false, // Disabled for phone-based auth
+    autoRefreshToken: false, // Disabled to prevent refresh token errors
     detectSessionInUrl: false,
     flowType: 'pkce'
   }
 });
 
-// Add global error handler for auth errors
-supabase.auth.onAuthStateChange(async (event, session) => {
-  console.log('Auth state change:', event, session ? 'Session exists' : 'No session');
-  
-  if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
-    console.log('Auth event:', event);
-  }
-  
-  if (event === 'SIGNED_OUT') {
-    // Clear any cached data when user signs out
-    localStorage.removeItem('userId');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('lastVisitDate');
-  }
-  
-  // Handle token refresh errors
-  if (event === 'TOKEN_REFRESHED' && !session) {
-    console.warn('Token refresh failed, clearing session');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('lastVisitDate');
-  }
-});
+// Note: Auth state change listener removed for phone-based authentication
+// Phone-based auth doesn't use Supabase sessions, so no listener needed

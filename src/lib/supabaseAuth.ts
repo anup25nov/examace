@@ -520,10 +520,8 @@ export const signOutUser = async () => {
   try {
     console.log('Signing out user');
     
-    // Sign out from Supabase
-    await supabase.auth.signOut();
-    
-    // Clear localStorage
+    // For phone-based auth, we only need to clear localStorage
+    // No need to call Supabase auth.signOut() as we don't use sessions
     localStorage.clear();
     
     return { success: true };
@@ -536,15 +534,20 @@ export const signOutUser = async () => {
 // Refresh user session (for persistent login)
 export const refreshUser = async () => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    // For phone-based auth, we don't need to refresh sessions
+    // Just return the current user from localStorage
+    const userId = localStorage.getItem('userId');
+    const userPhone = localStorage.getItem('userPhone');
+    const isAuthenticated = localStorage.getItem('isAuthenticated');
     
-    if (user) {
-      // Update localStorage with fresh data
-      localStorage.setItem('userId', user.id);
-      localStorage.setItem('userPhone', user.phone || '');
-      localStorage.setItem('isAuthenticated', 'true');
-      
-      return { success: true, user };
+    if (userId && userPhone && isAuthenticated === 'true') {
+      return { 
+        success: true, 
+        user: { 
+          id: userId, 
+          phone: userPhone 
+        } 
+      };
     }
     
     return { success: false, error: 'No user found' };
