@@ -120,6 +120,9 @@ const EnhancedExamDashboard = () => {
   const [pyqData, setPyqData] = useState<any[]>([]);
   const [practiceData, setPracticeData] = useState<any[]>([]);
   const [userMembership, setUserMembership] = useState(membership || premiumService.getUserMembership());
+  
+  // Mobile debug panel - only show in development
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
 
   // Enhanced refresh function with better error handling
   const handleRefresh = async () => {
@@ -737,9 +740,6 @@ const EnhancedExamDashboard = () => {
     return null;
   };
 
-  // Mobile debug panel - only show in development
-  const [showDebugPanel, setShowDebugPanel] = useState(false);
-  
   const toggleDebugPanel = () => {
     setShowDebugPanel(!showDebugPanel);
   };

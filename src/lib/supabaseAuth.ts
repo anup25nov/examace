@@ -1,5 +1,6 @@
-// Supabase phone authentication service
+// Supabase phone authentication service with custom OTP
 import { supabase } from '@/integrations/supabase/client';
+import { databaseOTPService } from './databaseOTPService';
 
 export interface AuthUser {
   id: string;
@@ -8,40 +9,26 @@ export interface AuthUser {
   updatedAt: string;
 }
 
-// Send OTP to phone using Supabase
+// Send OTP to phone using custom WhatsApp service
 export const sendOTPCode = async (phone: string) => {
   try {
-    console.log('Starting OTP send process for phone:', phone);
+    console.log('Starting custom OTP send process for phone:', phone);
     
     // Ensure phone number is in international format
     const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
     
-    const { data, error } = await supabase.auth.signInWithOtp({
-      phone: formattedPhone,
-      options: {
-        shouldCreateUser: true
-      }
-    });
-
-    if (error) {
-      console.error('Error sending OTP:', error);
-      let errorMessage = 'Failed to send OTP';
-      
-      if (error.message?.includes('Invalid phone')) {
-        errorMessage = 'Invalid phone number format.';
-      } else if (error.message?.includes('too many requests')) {
-        errorMessage = 'Too many requests. Please try again later.';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      return { success: false, error: errorMessage };
+    // Use custom OTP service with WhatsApp integration
+    const result = await databaseOTPService.sendOTP(formattedPhone);
+    
+    if (result.success) {
+      console.log('Custom OTP sent successfully via WhatsApp');
+      return { success: true, data: result };
+    } else {
+      console.error('Error sending custom OTP:', result.error);
+      return { success: false, error: result.error || 'Failed to send OTP' };
     }
-
-    console.log('OTP sent successfully to phone');
-    return { success: true, data };
   } catch (error: any) {
-    console.error('Error sending OTP:', error);
+    console.error('Error sending custom OTP:', error);
     return { success: false, error: error.message || 'Failed to send OTP' };
   }
 };
@@ -72,27 +59,19 @@ export const checkPhoneExists = async (phone: string) => {
   }
 };
 
-// Verify OTP code using Supabase
+// Verify OTP code using custom service
 export const verifyOTPCode = async (phone: string, otp: string) => {
   try {
-    console.log('Verifying OTP for phone:', phone);
+    console.log('Verifying custom OTP for phone:', phone);
     
     // Ensure phone number is in international format
     const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
     
-    const { data, error } = await supabase.auth.verifyOtp({
-      phone: formattedPhone,
-      token: otp,
-      type: 'sms'
-    });
-
-    if (error) {
-      console.error('Error verifying OTP:', error);
-      return { success: false, error: error.message || 'Invalid OTP' };
-    }
-
-    if (data.user) {
-      console.log('OTP verified successfully');
+    // Use custom OTP verification service
+    const result = await databaseOTPService.verifyOTP(formattedPhone, otp);
+    
+    if (result.success) {
+      console.log('Custom OTP verified successfully');
       
       // Check if phone number already exists in database
       const phoneCheck = await checkPhoneExists(phone);
@@ -104,16 +83,19 @@ export const verifyOTPCode = async (phone: string, otp: string) => {
         isNewUser
       });
       
+      // Generate a user ID (since we're not using Supabase auth anymore)
+      const userId = result.data?.userId || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
       // Create or update user profile
-      const profileResult = await createOrUpdateUserProfile(data.user.id, formattedPhone);
+      const profileResult = await createOrUpdateUserProfile(userId, formattedPhone);
       
       // Store authentication data for persistence
-      localStorage.setItem('userId', data.user.id);
+      localStorage.setItem('userId', userId);
       localStorage.setItem('userPhone', formattedPhone);
       localStorage.setItem('isAuthenticated', 'true');
       
       console.log('Authentication data stored:', {
-        userId: data.user.id,
+        userId: userId,
         phone: formattedPhone,
         isAuthenticated: 'true',
         isNewUser
@@ -121,14 +103,15 @@ export const verifyOTPCode = async (phone: string, otp: string) => {
       
       return { 
         success: true, 
-        data: data.user, 
+        data: { id: userId, phone: formattedPhone }, 
         isNewUser 
       };
+    } else {
+      console.error('Error verifying custom OTP:', result.error);
+      return { success: false, error: result.error || 'Invalid OTP' };
     }
-    
-    return { success: false, error: 'Authentication failed' };
   } catch (error: any) {
-    console.error('Error verifying OTP:', error);
+    console.error('Error verifying custom OTP:', error);
     return { success: false, error: error.message || 'Failed to verify OTP' };
   }
 };
