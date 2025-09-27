@@ -261,6 +261,53 @@ export class DatabaseOTPService {
   }
 
   /**
+   * Verify OTP
+   */
+  async verifyOTP(phone: string, otp: string): Promise<OTPResult> {
+    try {
+      const response = await fetch(`${this.supabaseUrl}/rest/v1/otps?phone=eq.${phone}&otp_code=eq.${otp}&is_verified=eq.false&expires_at=gt.${new Date().toISOString()}`, {
+        method: 'GET',
+        headers: {
+          'apikey': this.supabaseKey,
+          'Authorization': `Bearer ${this.supabaseKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        return { success: false, error: 'Failed to verify OTP' };
+      }
+
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        // Mark OTP as verified
+        const updateResponse = await fetch(`${this.supabaseUrl}/rest/v1/otps?id=eq.${data[0].id}`, {
+          method: 'PATCH',
+          headers: {
+            'apikey': this.supabaseKey,
+            'Authorization': `Bearer ${this.supabaseKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            is_verified: true,
+            updated_at: new Date().toISOString()
+          })
+        });
+
+        if (updateResponse.ok) {
+          return { success: true, message: 'OTP verified successfully' };
+        }
+      }
+
+      return { success: false, error: 'Invalid or expired OTP' };
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      return { success: false, error: 'Failed to verify OTP' };
+    }
+  }
+
+  /**
    * Get service status
    */
   getServiceStatus(): ServiceStatus {

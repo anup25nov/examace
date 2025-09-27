@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { smsService } from './smsService';
+import { databaseOTPService } from './databaseOTPService';
 
 export interface ProfileData {
   id?: string;
@@ -159,20 +159,10 @@ class ProfileService {
         };
       }
 
-      // For now, generate OTP locally and send via SMS
-      // In production, you would call the database function
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      
-      // Send SMS with the OTP
-      const smsResult = await smsService.sendOTP(phone, otp);
+      // Use the clean database OTP service
+      const smsResult = await databaseOTPService.sendOTP(phone);
       
       if (smsResult.success) {
-        // Store OTP in localStorage for verification (temporary solution)
-        localStorage.setItem(`otp_${phone}`, JSON.stringify({
-          otp: otp,
-          expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString()
-        }));
-
         return {
           success: true,
           message: 'OTP sent successfully to your phone number',
@@ -193,7 +183,7 @@ class ProfileService {
     }
   }
 
-  // Verify OTP (simplified version using localStorage)
+  // Verify OTP using database service
   async verifyOTP(phone: string, otp: string): Promise<VerificationResponse> {
     try {
       const user = await this.getCurrentUser();
@@ -204,47 +194,27 @@ class ProfileService {
         };
       }
 
-      // Get stored OTP from localStorage
-      const storedOtpData = localStorage.getItem(`otp_${phone}`);
+      // Use the clean database OTP service for verification
+      const verifyResult = await databaseOTPService.verifyOTP(phone, otp);
       
-      if (!storedOtpData) {
+      if (verifyResult.success) {
+        // Update user profile with verified phone
+        await this.updateUserProfile(user.id, {
+          phone: phone,
+          phone_verified: true
+        });
+
+        return {
+          success: true,
+          message: 'Phone number verified successfully',
+          verified: true
+        };
+      } else {
         return {
           success: false,
-          message: 'OTP not found. Please request a new OTP.'
+          message: verifyResult.error || 'Invalid OTP. Please try again.'
         };
       }
-
-      const { otp: storedOtp, expires_at } = JSON.parse(storedOtpData);
-      
-      if (new Date() > new Date(expires_at)) {
-        localStorage.removeItem(`otp_${phone}`);
-        return {
-          success: false,
-          message: 'OTP has expired. Please request a new OTP.'
-        };
-      }
-
-      if (storedOtp !== otp) {
-        return {
-          success: false,
-          message: 'Invalid OTP. Please try again.'
-        };
-      }
-
-      // Mark OTP as used
-      localStorage.removeItem(`otp_${phone}`);
-
-      // Update user profile with verified phone
-      await this.updateUserProfile(user.id, {
-        phone: phone,
-        phone_verified: true
-      });
-
-      return {
-        success: true,
-        message: 'Phone number verified successfully',
-        verified: true
-      };
     } catch (error) {
       console.error('Error in verifyOTP:', error);
       return {
