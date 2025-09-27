@@ -8,7 +8,7 @@ import { Loader2, Phone, ArrowLeft } from 'lucide-react';
 import { 
   sendOTPCode, 
   verifyOTPCode
-} from '@/lib/supabaseAuthSimple';
+} from '@/lib/supabaseAuth';
 import OTPInput from './OTPInput';
 import { supabase } from '@/integrations/supabase/client';
 import { defaultConfig } from '@/config/appConfig';
@@ -30,6 +30,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
   const [canResend, setCanResend] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
   const [referralInvalid, setReferralInvalid] = useState<string | null>(null);
+  const [authSuccess, setAuthSuccess] = useState(false);
 
   // Timer effect for OTP resend
   useEffect(() => {
@@ -70,6 +71,16 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     }
   }, []);
 
+  // Handle navigation when auth success is triggered
+  useEffect(() => {
+    if (authSuccess) {
+      console.log('🔍 useEffect: Auth success detected, calling onAuthSuccess...');
+      setLoading(false); // Ensure loading is false
+      onAuthSuccess();
+      setAuthSuccess(false); // Reset the flag
+    }
+  }, [authSuccess, onAuthSuccess]);
+
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -102,40 +113,64 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
   const handleOTPSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🔍 OTP Submit triggered (OTP hidden for security)');
+    
     if (otp.length !== 6) {
       setError('Please enter a valid 6-digit OTP');
       return;
     }
 
+    console.log('🔍 Setting loading to true...');
     setLoading(true);
     setError('');
 
     try {
+      console.log('🔍 Calling verifyOTPCode with phone:', phone, '(OTP hidden for security)');
       const result = await verifyOTPCode(phone, otp);
-      console.log('OTP verification result:', result);
+      console.log('🔍 OTP verification result:', result);
+      console.log('🔍 Result success:', result.success);
       
-      if (result.success && result.data) {
+      if (result.success && 'data' in result && result.data) {
+        console.log('🔍 Result data:', result.data);
+        console.log('🔍 Result isNewUser:', result.isNewUser);
+        
         const isNewUser = !!result.isNewUser;
-        console.log('Is new user:', isNewUser);
+        console.log('🔍 Is new user:', isNewUser);
+        console.log('🔍 Setting isNewUser state to:', isNewUser);
         setIsNewUser(isNewUser);
         
         // Step 1 Complete: OTP verified successfully
         // Now check if user is new or existing
         if (isNewUser) {
-          console.log('New user detected - going to referral step');
+          console.log('🔍 New user detected - going to referral step');
+          console.log('🔍 Setting step to referral and loading to false');
           setStep('referral');
+          setLoading(false); // Reset loading for new users
+          console.log('🔍 Loading should now be false for new user');
         } else {
-          console.log('Existing user detected - going to dashboard');
-          onAuthSuccess();
+          console.log('🔍 Existing user detected - going to dashboard');
+          console.log('🔍 Resetting loading state first...');
+          setLoading(false);
+          console.log('🔍 Loading state reset to false');
+          
+          // Trigger auth success through useEffect
+          console.log('🔍 Setting authSuccess to true...');
+          setAuthSuccess(true);
         }
       } else {
-        setError(result.error || 'Invalid OTP');
+        const errorMessage = 'error' in result ? result.error : 'Invalid OTP';
+        console.log('🔍 OTP verification failed:', errorMessage);
+        console.log('🔍 Setting error and loading to false');
+        setError(errorMessage);
+        setLoading(false);
+        console.log('🔍 Loading should now be false after error');
       }
     } catch (error: any) {
-      console.error('OTP verification error:', error);
+      console.error('🔍 OTP verification error:', error);
+      console.log('🔍 Setting error and loading to false in catch block');
       setError(error.message || 'Failed to verify OTP');
-    } finally {
       setLoading(false);
+      console.log('🔍 Loading should now be false after catch error');
     }
   };
 
@@ -242,6 +277,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     setError('');
     setIsNewUser(false);
     setReferralInvalid(null);
+    setAuthSuccess(false);
   };
 
   // Removed unused functions - referral handling is now simplified

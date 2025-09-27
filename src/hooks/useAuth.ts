@@ -14,56 +14,34 @@ export const useAuth = () => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
+    // Prevent multiple simultaneous auth checks
+    if ((window as any).authCheckInProgress || authChecked) {
+      console.log('Auth check already in progress or completed, skipping...');
+      return;
+    }
+    
+    (window as any).authCheckInProgress = true;
+    
     const checkAuthStatus = async () => {
       try {
-        console.log('Checking auth status...');
+        console.log('🔍 [useAuth] Starting auth status check...');
         
-        // First check if we have a valid Supabase session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.warn('Session error (likely invalid refresh token):', sessionError.message);
-          // Try to refresh the session before giving up
-          try {
-            const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-            if (refreshError) {
-              console.warn('Session refresh failed:', refreshError.message);
-              // Clear invalid session data
-              localStorage.removeItem('userId');
-              localStorage.removeItem('userEmail');
-              localStorage.removeItem('isAuthenticated');
-              localStorage.removeItem('lastVisitDate');
-              setIsAuthenticated(false);
-              setUser(null);
-              setLoading(false);
-              return;
-            } else if (refreshData.session) {
-              console.log('Session refreshed successfully');
-              // Continue with the refreshed session
-            }
-          } catch (refreshErr) {
-            console.warn('Session refresh error:', refreshErr);
-            // Clear invalid session data
-            localStorage.removeItem('userId');
-            localStorage.removeItem('userEmail');
-            localStorage.removeItem('isAuthenticated');
-            localStorage.removeItem('lastVisitDate');
-            setIsAuthenticated(false);
-            setUser(null);
-            setLoading(false);
-            return;
-          }
-        }
-        
+        // For phone-based auth, we primarily rely on localStorage
+        // Check localStorage first for faster response
         const isAuth = isUserAuthenticated();
-        console.log('isUserAuthenticated result:', isAuth);
+        console.log('🔍 [useAuth] isUserAuthenticated result:', isAuth);
         
-        if (isAuth && session) {
+        if (isAuth) {
+          // User is authenticated via localStorage, get user data
+          console.log('🔍 [useAuth] User is authenticated, fetching user data...');
           const authUser = await getCurrentAuthUser();
-          console.log('getCurrentAuthUser result:', authUser);
+          console.log('🔍 [useAuth] getCurrentAuthUser result:', authUser);
+          
           if (authUser) {
+            console.log('🔍 [useAuth] Setting user and authentication state...');
             setUser(authUser);
             setIsAuthenticated(true);
             
@@ -94,12 +72,14 @@ export const useAuth = () => {
               console.error('Error updating daily visit:', error);
             }
           } else {
-            // Token might be expired - check and refresh if possible
-            console.warn('Auth user not found, checking token expiry');
+            // User data not found, clear auth state
+            console.warn('🔍 [useAuth] Auth user not found, clearing auth state');
             setIsAuthenticated(false);
             setUser(null);
           }
         } else {
+          // User not authenticated, clear state
+          console.log('🔍 [useAuth] User not authenticated, clearing state');
           setIsAuthenticated(false);
           setUser(null);
         }
@@ -109,27 +89,35 @@ export const useAuth = () => {
         setIsAuthenticated(false);
         setUser(null);
       } finally {
+        console.log('🔍 [useAuth] Auth check completed, setting loading to false');
         setLoading(false);
+        setAuthChecked(true);
+        (window as any).authCheckInProgress = false; // Reset the flag
       }
     };
 
-    // Add timeout to prevent infinite loading
+    // Add timeout to prevent infinite loading (increased to 10 seconds)
     const timeoutId = setTimeout(() => {
       if (loading) {
         console.warn('Auth check timeout, setting loading to false');
         setLoading(false);
+        setAuthChecked(true);
+        (window as any).authCheckInProgress = false;
       }
-    }, 5000);
+    }, 10000);
 
     checkAuthStatus();
     
     // Set up session refresh interval for persistent login
     const refreshInterval = setInterval(async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          // Refresh session every 30 minutes to maintain login
-          await supabase.auth.refreshSession();
+        // Only refresh if user is authenticated
+        if (isUserAuthenticated()) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            // Refresh session every 30 minutes to maintain login
+            await supabase.auth.refreshSession();
+          }
         }
       } catch (error) {
         console.warn('Session refresh failed:', error);
@@ -137,10 +125,11 @@ export const useAuth = () => {
     }, 30 * 60 * 1000); // 30 minutes
     
     return () => {
+      (window as any).authCheckInProgress = false; // Reset the flag
       clearTimeout(timeoutId);
       clearInterval(refreshInterval);
     };
-  }, []);
+  }, [authChecked]);
 
   const logout = async () => {
     try {

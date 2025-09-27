@@ -1,5 +1,7 @@
 // Supabase phone authentication service
 import { supabase } from '@/integrations/supabase/client';
+import { supabaseService } from '@/integrations/supabase/serviceClient';
+import { databaseOTPService } from './databaseOTPService';
 
 export interface AuthUser {
   id: string;
@@ -8,38 +10,21 @@ export interface AuthUser {
   updatedAt: string;
 }
 
-// Send OTP to phone using Supabase
+// Send OTP to phone using our custom database OTP service
 export const sendOTPCode = async (phone: string) => {
   try {
     console.log('Starting OTP send process for phone:', phone);
     
-    // Ensure phone number is in international format
-    const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
+    // Use our custom database OTP service
+    const result = await databaseOTPService.sendOTP(phone);
     
-    const { data, error } = await supabase.auth.signInWithOtp({
-      phone: formattedPhone,
-      options: {
-        shouldCreateUser: true
-      }
-    });
-
-    if (error) {
-      console.error('Error sending OTP:', error);
-      let errorMessage = 'Failed to send OTP';
-      
-      if (error.message?.includes('Invalid phone')) {
-        errorMessage = 'Invalid phone number format.';
-      } else if (error.message?.includes('too many requests')) {
-        errorMessage = 'Too many requests. Please try again later.';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      return { success: false, error: errorMessage };
+    if (result.success) {
+      console.log('OTP sent successfully via', result.provider);
+      return { success: true, data: { provider: result.provider, messageId: result.messageId } };
+    } else {
+      console.error('Error sending OTP:', result.error);
+      return { success: false, error: result.error || 'Failed to send OTP' };
     }
-
-    console.log('OTP sent successfully to phone');
-    return { success: true, data };
   } catch (error: any) {
     console.error('Error sending OTP:', error);
     return { success: false, error: error.message || 'Failed to send OTP' };
@@ -51,7 +36,7 @@ export const checkPhoneExists = async (phone: string) => {
   try {
     const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
     
-    const { data, error } = await supabase
+    const { data, error } = await supabaseService
       .from('user_profiles')
       .select('id, phone, created_at')
       .eq('phone', formattedPhone)
@@ -72,63 +57,75 @@ export const checkPhoneExists = async (phone: string) => {
   }
 };
 
-// Verify OTP code using Supabase
+// Verify OTP code using secure server-side verification
 export const verifyOTPCode = async (phone: string, otp: string) => {
   try {
-    console.log('Verifying OTP for phone:', phone);
+    console.log('🔍 [verifyOTPCode] Starting secure OTP verification for phone:', phone);
+    console.log('🔍 [verifyOTPCode] OTP verification initiated (OTP hidden for security)');
     
-    // Ensure phone number is in international format
-    const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
+    // Use secure server-side verification
+    console.log('🔍 [verifyOTPCode] Calling secure server-side verification...');
     
-    const { data, error } = await supabase.auth.verifyOtp({
-      phone: formattedPhone,
-      token: otp,
-      type: 'sms'
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-otp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
+      },
+      body: JSON.stringify({
+        phone: phone,
+        otp: otp
+      })
     });
 
-    if (error) {
-      console.error('Error verifying OTP:', error);
-      return { success: false, error: error.message || 'Invalid OTP' };
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('🔍 [verifyOTPCode] Server verification failed:', response.status, errorData);
+      return { success: false, error: 'Failed to verify OTP' };
     }
 
-    if (data.user) {
-      console.log('OTP verified successfully');
+    const result = await response.json();
+    console.log('🔍 [verifyOTPCode] Server verification result:', result);
+    
+    if (result.success && result.data) {
+      console.log('🔍 [verifyOTPCode] OTP verified successfully via secure server');
       
-      // Check if phone number already exists in database
-      const phoneCheck = await checkPhoneExists(phone);
-      const isNewUser = !phoneCheck.exists;
+      const { userId, phone: verifiedPhone, isNewUser } = result.data;
+      const formattedPhone = verifiedPhone || (phone.startsWith('+') ? phone : `+91${phone}`);
       
-      console.log('Phone existence check result:', {
+      console.log('🔍 [verifyOTPCode] Verification data:', {
+        userId,
         phone: formattedPhone,
-        exists: phoneCheck.exists,
         isNewUser
       });
       
-      // Create or update user profile
-      const profileResult = await createOrUpdateUserProfile(data.user.id, formattedPhone);
-      
       // Store authentication data for persistence
-      localStorage.setItem('userId', data.user.id);
+      console.log('🔍 [verifyOTPCode] Storing authentication data in localStorage...');
+      localStorage.setItem('userId', userId);
       localStorage.setItem('userPhone', formattedPhone);
       localStorage.setItem('isAuthenticated', 'true');
       
-      console.log('Authentication data stored:', {
-        userId: data.user.id,
+      console.log('🔍 [verifyOTPCode] Authentication data stored:', {
+        userId: userId,
         phone: formattedPhone,
         isAuthenticated: 'true',
         isNewUser
       });
       
-      return { 
+      const returnData = { 
         success: true, 
-        data: data.user, 
+        data: { id: userId, phone: formattedPhone }, 
         isNewUser 
       };
+      console.log('🔍 [verifyOTPCode] Returning success data:', returnData);
+      return returnData;
+    } else {
+      console.error('🔍 [verifyOTPCode] Server verification failed:', result.error);
+      return { success: false, error: result.error || 'Invalid OTP' };
     }
-    
-    return { success: false, error: 'Authentication failed' };
   } catch (error: any) {
-    console.error('Error verifying OTP:', error);
+    console.error('🔍 [verifyOTPCode] Error in verifyOTPCode:', error);
     return { success: false, error: error.message || 'Failed to verify OTP' };
   }
 };
@@ -141,7 +138,7 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string) =
     // Check if user profile already exists to determine if this is a new user
     let isNewUser = false;
     try {
-      const { data: existingProfile, error: checkError } = await supabase
+      const { data: existingProfile, error: checkError } = await supabaseService
         .from('user_profiles')
         .select('id, phone, created_at')
         .eq('id', userId)
@@ -178,13 +175,13 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string) =
           
           // Additional check: see if user has any activity (exam stats, referrals, etc.)
           try {
-            const { data: examStats, error: examError } = await supabase
+            const { data: examStats, error: examError } = await supabaseService
               .from('exam_stats')
               .select('id')
               .eq('user_id', userId)
               .limit(1);
             
-            const { data: referralTransactions, error: transactionError } = await supabase
+            const { data: referralTransactions, error: transactionError } = await supabaseService
               .from('referral_transactions')
               .select('id')
               .eq('referrer_id', userId)
@@ -237,7 +234,7 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string) =
     
     try {
       // First, check if user profile already exists
-      const { data: existingUser, error: checkError } = await supabase
+      const { data: existingUser, error: checkError } = await supabaseService
         .from('user_profiles')
         .select('id, phone')
         .eq('id', userId)
@@ -249,7 +246,7 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string) =
       } else if (existingUser) {
         // User already exists, just update if needed
         console.log('User profile already exists, updating...');
-        const updateResult = await supabase
+        const updateResult = await supabaseService
           .from('user_profiles')
           .update({
             phone: phone,
@@ -265,7 +262,7 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string) =
       } else {
         // User doesn't exist, create new profile
         console.log('Creating new user profile...');
-        const insertResult = await supabase
+        const insertResult = await supabaseService
           .from('user_profiles')
           .insert(profileData)
           .select()
@@ -288,7 +285,7 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string) =
     // Only create referral code for new users (not on every login)
     if (isNewUser) {
       try {
-        const { data: existingReferral, error: checkReferralError } = await supabase
+        const { data: existingReferral, error: checkReferralError } = await supabaseService
           .from('referral_codes')
           .select('id')
           .eq('user_id', userId)
@@ -298,7 +295,7 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string) =
           console.error('Error checking existing referral code:', checkReferralError);
         } else if (!existingReferral) {
           const referralCode = userId.substring(0, 8).toUpperCase();
-          const { error: referralError } = await supabase
+          const { error: referralError } = await supabaseService
             .from('referral_codes')
             .insert({
               user_id: userId,
@@ -321,7 +318,7 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string) =
     // Try to create default exam stats (only for brand new users)
     if (isNewUser) {
       try {
-        const { error: statsError } = await supabase
+        const { error: statsError } = await supabaseService
           .rpc('create_all_default_exam_stats', { p_user_id: userId });
 
         if (statsError) {
@@ -443,12 +440,21 @@ export const getCurrentAuthUser = async (): Promise<AuthUser | null> => {
         return cached.data;
       }
       
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise<null>((_, reject) => {
+        setTimeout(() => reject(new Error('Database query timeout')), 5000);
+      });
       
-      const { data: userProfile, error } = await supabase
+      const dbQueryPromise = supabase
         .from('user_profiles')
         .select('*')
         .eq('id', userId)
-        .maybeSingle(); // Use maybeSingle() instead of single() to handle 0 rows gracefully
+        .maybeSingle();
+      
+      const { data: userProfile, error } = await Promise.race([
+        dbQueryPromise,
+        timeoutPromise
+      ]) as any;
       
       if (userProfile && !error) {
         console.log('User profile found:', userProfile);
@@ -480,6 +486,16 @@ export const getCurrentAuthUser = async (): Promise<AuthUser | null> => {
     return null;
   } catch (error: any) {
     console.error('Error getting current auth user:', error);
+    // Cache null result to prevent repeated calls
+    const userId = localStorage.getItem('userId');
+    const userPhone = localStorage.getItem('userPhone');
+    if (userId && userPhone) {
+      const cacheKey = `${userId}-${userPhone}`;
+      userProfileCache[cacheKey] = {
+        data: null,
+        timestamp: Date.now()
+      };
+    }
     return null;
   }
 };

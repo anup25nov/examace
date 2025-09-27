@@ -34,13 +34,34 @@ const Auth = () => {
   }, [navigate]);
 
   const handleAuthSuccess = () => {
-    console.log('Auth success callback triggered');
-    console.log('Current auth state:', {
+    console.log('🔍 [handleAuthSuccess] Auth success callback triggered');
+    console.log('🔍 [handleAuthSuccess] Current auth state:', {
       isAuthenticated: localStorage.getItem('isAuthenticated'),
       userId: localStorage.getItem('userId'),
+      userPhone: localStorage.getItem('userPhone'),
       userEmail: localStorage.getItem('userEmail')
     });
-    navigate('/', { replace: true });
+    
+    // Check if user is properly authenticated
+    console.log('🔍 [handleAuthSuccess] Calling isUserAuthenticated()...');
+    const isAuth = isUserAuthenticated();
+    console.log('🔍 [handleAuthSuccess] isUserAuthenticated result:', isAuth);
+    
+    if (isAuth) {
+      console.log('🔍 [handleAuthSuccess] User is authenticated, navigating to dashboard...');
+      
+      // Add a small delay to prevent multiple navigation attempts
+      setTimeout(() => {
+        try {
+          navigate('/', { replace: true });
+          console.log('🔍 [handleAuthSuccess] Navigation called successfully');
+        } catch (navError) {
+          console.error('🔍 [handleAuthSuccess] Navigation error:', navError);
+        }
+      }, 100);
+    } else {
+      console.error('🔍 [handleAuthSuccess] User authentication check failed, staying on auth page');
+    }
   };
 
   if (loading) {
