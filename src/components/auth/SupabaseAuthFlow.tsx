@@ -285,7 +285,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
   const renderPhoneStep = () => (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Welcome to Step2Sarkari</CardTitle>
+        <CardTitle className="text-2xl font-bold text-center">Welcome to Step 2 Sarkari</CardTitle>
         <CardDescription className="text-center">
           Enter your phone number to get started
         </CardDescription>
@@ -308,7 +308,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              We'll send you an OTP to verify your number
+              Check whatsapp for OTP
             </p>
           </div>
 

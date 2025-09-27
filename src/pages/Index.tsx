@@ -78,6 +78,9 @@ const Index = () => {
   useEffect(() => {
     analytics.trackPageView('home', 'S2S Home');
     
+    // Reset navigation state when component mounts (user returns to home)
+    setIsNavigating(false);
+    
     // Check if this is the first visit today
     if (isAuthenticated) {
       const today = new Date().toDateString();
@@ -147,11 +150,20 @@ const Index = () => {
       // Small delay to ensure scroll happens before navigation
       setTimeout(() => {
         navigate(`/exam/${examId}`);
+        
+        // Reset navigation state after a reasonable timeout
+        setTimeout(() => {
+          setIsNavigating(false);
+        }, 3000); // 3 seconds timeout
       }, 50);
     }
   };
 
+  // Debug logging for loading state
+  console.log('🔍 [Index] Render state:', { loading, isAuthenticated, user: !!user, isNavigating });
+
   if (loading) {
+    console.log('🔍 [Index] Showing loading screen');
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center">
@@ -160,6 +172,7 @@ const Index = () => {
           </div>
           <h2 className="text-xl font-bold text-foreground mb-2">Loading...</h2>
           <p className="text-muted-foreground">Preparing your dashboard</p>
+          <p className="text-xs text-gray-500 mt-2">Debug: loading={loading.toString()}, isAuthenticated={isAuthenticated.toString()}</p>
         </div>
       </div>
     );
@@ -183,7 +196,7 @@ const Index = () => {
     <PullToRefresh onRefresh={handleRefresh} enablePullToRefresh={false}>
       <div className="min-h-screen bg-background">
       {/* Header - Mobile Optimized */}
-      <header className="border-b border-border bg-white/95 backdrop-blur-md sticky top-0 z-50 shadow-lg header-with-status-bar">
+      <header className="border-b border-border bg-gradient-to-r from-white/95 via-blue-50/95 to-indigo-50/95 backdrop-blur-md sticky top-0 z-50 shadow-lg header-with-status-bar">
         <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             {/* Logo - Left Aligned */}
@@ -203,24 +216,26 @@ const Index = () => {
             </div>
             
             {/* Notification and Profile - Right Aligned */}
-            {isAuthenticated ? (
-              <div className="flex items-center space-x-1 sm:space-x-2">
-                <UserMessages />
-                <ProfileDropdown
-                  onLogout={handleLogout}
-                  onMembershipClick={handleMembershipClick}
-                  onReferralClick={handleReferralClick}
-                />
-              </div>
-            ) : (
-              <Button 
-                onClick={() => navigate('/auth')} 
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 px-3 sm:px-4 py-2 text-sm sm:text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 min-w-[60px] min-h-[36px]"
-              >
-                <span className="hidden sm:inline">Login</span>
-                <span className="sm:hidden">Login</span>
-              </Button>
-            )}
+            <div className="flex items-center space-x-1 sm:space-x-2">
+              {isAuthenticated ? (
+                <>
+                  <UserMessages />
+                  <ProfileDropdown
+                    onLogout={handleLogout}
+                    onMembershipClick={handleMembershipClick}
+                    onReferralClick={handleReferralClick}
+                  />
+                </>
+              ) : (
+                <Button 
+                  onClick={() => navigate('/auth')} 
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 px-3 sm:px-4 py-2 text-sm sm:text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 min-w-[60px] min-h-[36px]"
+                >
+                  <span className="hidden sm:inline">Login</span>
+                  <span className="sm:hidden">Login</span>
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -286,6 +301,21 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* Daily Accolades - Show over the container */}
+      {showDailyAccolades && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4">
+            <DailyAccolades
+              isFirstVisit={isFirstDailyVisit}
+              onClose={() => {
+                setShowDailyAccolades(false);
+                setIsFirstDailyVisit(false);
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Exams Grid */}
       <section className="py-12 sm:py-16">
@@ -537,20 +567,6 @@ const Index = () => {
       <Footer />
       </div>
       
-      {/* Daily Accolades - Show at center of splash screen */}
-      {showDailyAccolades && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4">
-            <DailyAccolades
-              isFirstVisit={isFirstDailyVisit}
-              onClose={() => {
-                setShowDailyAccolades(false);
-                setIsFirstDailyVisit(false);
-              }}
-            />
-          </div>
-        </div>
-      )}
     </PullToRefresh>
   );
 };

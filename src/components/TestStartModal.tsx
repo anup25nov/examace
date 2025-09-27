@@ -146,7 +146,7 @@ export const TestStartModal: React.FC<TestStartModalProps> = ({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-3">
               <div className={`p-2 bg-gradient-to-r ${testInfo.color} rounded-lg text-white`}>

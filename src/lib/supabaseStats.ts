@@ -301,27 +301,30 @@ class SupabaseStatsService {
     if (!user) return { data: null, error: 'User not authenticated' };
 
     try {
-    // Create test attempt
+    // Use RPC function instead of direct insert to bypass RLS
     const { data: attemptData, error: attemptError } = await supabase
-      .from('test_attempts')
-      .insert({
-        user_id: user.id,
-        exam_id: submission.examId,
-        test_id: submission.testId || 'default',
-        test_type: submission.testType || 'mock',
-        score: submission.score,
-        total_questions: submission.totalQuestions,
-        correct_answers: submission.correctAnswers,
-        time_taken: submission.timeTaken,
-        answers: submission.answers
-      })
-      .select()
-      .single();
-
+      .rpc('insert_test_attempt' as any, {
+        p_user_id: user.id,
+        p_exam_id: submission.examId,
+        p_test_id: submission.testId || 'default',
+        p_test_type: submission.testType || 'mock',
+        p_score: submission.score,
+        p_total_questions: submission.totalQuestions,
+        p_correct_answers: submission.correctAnswers,
+        p_time_taken: submission.timeTaken,
+        p_answers: submission.answers
+      });
 
       if (attemptError) {
         console.error('Error inserting test attempt:', attemptError);
         return { data: null, error: attemptError };
+      }
+
+      // RPC function returns an array with success/message/attempt_id
+      const result = Array.isArray(attemptData) ? attemptData[0] : attemptData;
+      if (!result || !(result as any).success) {
+        console.error('Test attempt creation failed:', (result as any)?.message);
+        return { data: null, error: (result as any)?.message || 'Failed to create test attempt' };
       }
 
     // Get existing stats

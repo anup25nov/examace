@@ -106,17 +106,37 @@ export const MobileAppStateManager: React.FC<MobileAppStateManagerProps> = ({
     }
   }, [user, refreshUser, onAppStateChange]);
 
-  // Handle visibility change for web platforms
+  // Handle visibility change for web platforms with debouncing
   useEffect(() => {
+    let refreshTimeout: NodeJS.Timeout | null = null;
+    let lastRefreshTime = 0;
+    const REFRESH_DEBOUNCE_MS = 2000; // 2 seconds debounce
+
     const handleVisibilityChange = async () => {
       if (!document.hidden && user) {
-        // Page became visible - refresh user data
-        try {
-          await refreshUser();
-          console.log('User data refreshed on page visibility change');
-        } catch (error) {
-          console.error('Error refreshing user data on visibility change:', error);
+        const now = Date.now();
+        
+        // Debounce: only refresh if enough time has passed since last refresh
+        if (now - lastRefreshTime < REFRESH_DEBOUNCE_MS) {
+          console.log('Skipping user data refresh - too soon since last refresh');
+          return;
         }
+
+        // Clear any pending refresh
+        if (refreshTimeout) {
+          clearTimeout(refreshTimeout);
+        }
+
+        // Add a small delay to prevent conflicts with navigation
+        refreshTimeout = setTimeout(async () => {
+          try {
+            await refreshUser();
+            lastRefreshTime = Date.now();
+            console.log('User data refreshed on page visibility change');
+          } catch (error) {
+            console.error('Error refreshing user data on visibility change:', error);
+          }
+        }, 500); // 500ms delay to allow navigation to complete
       }
     };
 
@@ -124,6 +144,9 @@ export const MobileAppStateManager: React.FC<MobileAppStateManagerProps> = ({
     
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (refreshTimeout) {
+        clearTimeout(refreshTimeout);
+      }
     };
   }, [user, refreshUser]);
 

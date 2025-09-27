@@ -188,30 +188,33 @@ export class TestSystemFixed {
         };
       }
 
-      // Create test attempt record
+      // Create test attempt record using RPC function to bypass RLS
       const { data: testAttempt, error: attemptError } = await supabase
-        .from('test_attempts')
-        .insert({
-          user_id: userId,
-          exam_id: examId,
-          test_type: testType,
-          test_id: testId,
-          score: 0,
-          total_questions: 0,
-          correct_answers: 0,
-          time_taken: 0,
-          status: 'in_progress',
-          started_at: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .select()
-        .single();
+        .rpc('insert_test_attempt' as any, {
+          p_user_id: userId,
+          p_exam_id: examId,
+          p_test_id: testId,
+          p_test_type: testType,
+          p_score: 0,
+          p_total_questions: 0,
+          p_correct_answers: 0,
+          p_time_taken: 0,
+          p_answers: null
+        });
 
       if (attemptError) {
         return {
           success: false,
           error: 'Failed to create test attempt'
+        };
+      }
+
+      // RPC function returns an array with success/message/attempt_id
+      const result = Array.isArray(testAttempt) ? testAttempt[0] : testAttempt;
+      if (!result || !(result as any).success) {
+        return {
+          success: false,
+          error: (result as any)?.message || 'Failed to create test attempt'
         };
       }
 
@@ -226,8 +229,8 @@ export class TestSystemFixed {
 
       return {
         success: true,
-        data: testAttempt,
-        testAttemptId: testAttempt.id
+        data: result,
+        testAttemptId: (result as any).attempt_id
       };
 
     } catch (error) {

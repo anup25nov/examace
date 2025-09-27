@@ -44,9 +44,7 @@ import PullToRefresh from "@/components/PullToRefresh";
 import ResponsiveScrollContainer from "@/components/ResponsiveScrollContainer";
 import CachedImage from "@/components/CachedImage";
 import { ProfileDropdown } from "@/components/ProfileDropdown";
-import UserMessages from "@/components/UserMessages";
-import { MembershipPlans } from "@/components/MembershipPlans";
-import ReferralPage from "@/pages/ReferralPage";
+import UserMessages from '@/components/UserMessages';
 
 // Icon mapping for dynamic loading
 const iconMap: { [key: string]: any } = {
@@ -128,10 +126,6 @@ const EnhancedExamDashboard = () => {
   // Mobile debug panel - only show in development
   const [showDebugPanel, setShowDebugPanel] = useState(false);
 
-  // Modal states
-  const [showMembershipPlans, setShowMembershipPlans] = useState(false);
-  const [showReferralPage, setShowReferralPage] = useState(false);
-
   // Handler functions for ProfileDropdown
   const { logout } = useAuth();
   
@@ -140,12 +134,15 @@ const EnhancedExamDashboard = () => {
   };
 
   const handleMembershipClick = () => {
-    setShowMembershipPlans(true);
+    // Navigate to membership page or show modal
+    console.log('Membership clicked');
   };
 
   const handleReferralClick = () => {
-    setShowReferralPage(true);
+    // Navigate to referral page or show modal
+    console.log('Referral clicked');
   };
+
 
   // Enhanced refresh function with better error handling
   const handleRefresh = async () => {
@@ -275,6 +272,9 @@ const EnhancedExamDashboard = () => {
   const userName = (profile as any)?.name || localStorage.getItem("userName");
   const cleanedPhone = userPhone?.replace(/^\+91/, "");
   const displayName = userName || (cleanedPhone ? `Hi, ${cleanedPhone}` : "User");
+  
+  // Debug logging for profile visibility
+  console.log('🔍 [EnhancedExamDashboard] Auth state:', { isAuthenticated, user, displayName });
 
   // Load test data dynamically with optimization
   useEffect(() => {
@@ -399,7 +399,18 @@ const EnhancedExamDashboard = () => {
 
   // Check test completions using bulk API
   const checkTestCompletions = async () => {
-    if (!examId || !exam) return;
+    if (!examId || !exam || !isAuthenticated || !user?.id) {
+      console.log('🔍 [checkTestCompletions] Skipping - missing requirements:', { 
+        examId: !!examId, 
+        exam: !!exam, 
+        isAuthenticated, 
+        userId: !!user?.id 
+      });
+      return;
+    }
+
+    // Add a small delay to ensure authentication is fully processed
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
       // Get all test completions for the exam at once
@@ -464,10 +475,10 @@ const EnhancedExamDashboard = () => {
   }, [examId, navigate, isAuthenticated, loading]);
 
   useEffect(() => {
-    if (examId && (mockTests.free.length > 0 || mockTests.premium.length > 0 || pyqData.length > 0)) {
+    if (examId && isAuthenticated && user?.id && (mockTests.free.length > 0 || mockTests.premium.length > 0 || pyqData.length > 0)) {
       checkTestCompletions();
     }
-  }, [examId, mockTests, pyqData]);
+  }, [examId, isAuthenticated, user?.id, mockTests, pyqData]);
 
   // Update user stats
   useEffect(() => {
@@ -790,20 +801,22 @@ const EnhancedExamDashboard = () => {
               </div>
             </div>
             
-            {/* User Info - Right Aligned */}
+            {/* Notification and Profile - Right Aligned */}
             <div className="flex items-center space-x-1 sm:space-x-2">
-              <div className="text-right">
-                <div className="flex items-center space-x-1 sm:space-x-2">
-                  <p className="text-xs sm:text-sm font-medium text-foreground truncate max-w-[120px] sm:max-w-none">{displayName}!</p>
-                  {/* {getMembershipBadge()} */}
+              {isAuthenticated ? (
+                <>
+                  <UserMessages />
+                  <ProfileDropdown
+                    onLogout={handleLogout}
+                    onMembershipClick={handleMembershipClick}
+                    onReferralClick={handleReferralClick}
+                  />
+                </>
+              ) : (
+                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                  <span className="text-xs text-gray-600">?</span>
                 </div>
-              </div>
-              <UserMessages />
-              <ProfileDropdown
-                onLogout={handleLogout}
-                onMembershipClick={handleMembershipClick}
-                onReferralClick={handleReferralClick}
-              />
+              )}
             </div>
           </div>
         </div>
@@ -953,7 +966,7 @@ const EnhancedExamDashboard = () => {
           </div>
 
           {/* PYQ Tab - First */}
-          <TabsContent value="pyq" className="space-y-0 h-[1000px] min-h-[1000px]">
+          <TabsContent value="pyq" className="space-y-0 min-h-[600px]">
             <YearWiseTabs
               years={pyqData}
               completedTests={completedTests}
@@ -968,7 +981,7 @@ const EnhancedExamDashboard = () => {
           </TabsContent>
 
           {/* Mock Tests Tab - Second */}
-          <TabsContent value="mock" className="space-y-0 h-[1000px] min-h-[1000px]">
+          <TabsContent value="mock" className="space-y-0 min-h-[600px]">
             <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-emerald-50 to-green-50 h-full flex flex-col">
               <CardHeader className="bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-t-lg">
                 <CardTitle className="flex items-center space-x-3">
@@ -1198,33 +1211,6 @@ const EnhancedExamDashboard = () => {
 
       </div>
 
-      {/* Modals */}
-      {showMembershipPlans && (
-        <MembershipPlans 
-          onClose={() => setShowMembershipPlans(false)}
-          onSelectPlan={(plan) => {
-            console.log('Selected plan:', plan);
-            setShowMembershipPlans(false);
-          }}
-        />
-      )}
-      
-      {showReferralPage && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center p-4 border-b">
-              <h2 className="text-lg font-semibold">Referral Program</h2>
-              <button
-                onClick={() => setShowReferralPage(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
-            </div>
-            <ReferralPage />
-          </div>
-        </div>
-      )}
     </PullToRefresh>
   );
 };

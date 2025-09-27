@@ -21,6 +21,11 @@ export const useAuth = () => {
     // Prevent multiple simultaneous auth checks
     if ((window as any).authCheckInProgress || authChecked) {
       console.log('Auth check already in progress or completed, skipping...');
+      // Force loading to false if auth is already checked
+      if (authChecked && loading) {
+        console.log('🔍 [useAuth] Force setting loading to false (auth already checked)');
+        setLoading(false);
+      }
       return;
     }
     
@@ -123,7 +128,19 @@ export const useAuth = () => {
       (window as any).authCheckInProgress = false; // Reset the flag
       clearTimeout(timeoutId);
     };
-  }, [authChecked]);
+  }, [authChecked, loading]);
+
+  // Additional safety mechanism - force loading to false after 5 seconds
+  useEffect(() => {
+    const forceLoadingFalse = setTimeout(() => {
+      if (loading) {
+        console.warn('🔍 [useAuth] Force setting loading to false after 5 seconds');
+        setLoading(false);
+      }
+    }, 5000);
+
+    return () => clearTimeout(forceLoadingFalse);
+  }, [loading]);
 
   const logout = async () => {
     try {
