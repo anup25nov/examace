@@ -81,11 +81,16 @@ export const verifyOTPCode = async (phone: string, otp: string) => {
       console.log('Phone existence check result:', {
         phone: formattedPhone,
         exists: phoneCheck.exists,
-        isNewUser
+        isNewUser,
+        existingUserId: phoneCheck.data?.id
       });
       
-      // Generate a user ID (since we're not using Supabase auth anymore)
-      const userId = result.data?.userId || generateUserID();
+      // Use existing user ID if phone exists, otherwise generate new one
+      const userId = phoneCheck.exists && phoneCheck.data?.id 
+        ? phoneCheck.data.id 
+        : (result.data?.userId || generateUserID());
+      
+      console.log('User ID determined:', { userId, isNewUser });
       
       // Create or update user profile
       const profileResult = await createOrUpdateUserProfile(userId, formattedPhone, isNewUser);
@@ -146,8 +151,23 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string, i
         // Phone number exists with different user ID - this is a conflict
         console.warn(`Phone number ${phone} already exists with user ID ${existingPhoneUser.id}, but trying to create with ${userId}`);
         error = new Error('Phone number already registered with a different account');
+      } else if (existingPhoneUser && existingPhoneUser.id === userId) {
+        // Phone number exists with same user ID - just update last login
+        console.log('Updating existing user profile for login:', userId);
+        const updateResult = await supabase
+          .from('user_profiles')
+          .update({ 
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', userId)
+          .select()
+          .single();
+        
+        data = updateResult.data;
+        error = updateResult.error;
       } else {
-        // Safe to proceed with upsert
+        // No existing phone user - safe to proceed with upsert (new user)
+        console.log('Creating new user profile:', userId);
         const upsertResult = await supabase
           .from('user_profiles')
           .upsert(profileData, { 

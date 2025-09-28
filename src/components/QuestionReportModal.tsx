@@ -97,23 +97,31 @@ export const QuestionReportModal: React.FC<QuestionReportModalProps> = ({
         return;
       }
 
+      const reportData = {
+        user_id: user.id,
+        exam_id: examId,
+        test_type: testType,
+        test_id: testId,
+        question_id: questionId,
+        report_type: selectedReportType,
+        description: description.trim() || null
+      };
+
+      console.log('🔍 [QuestionReportModal] Submitting question report:', reportData);
+
       const { error: reportError } = await supabase
         .from('question_reports' as any)
-        .insert({
-          user_id: user.id,
-          exam_id: examId,
-          test_type: testType,
-          test_id: testId,
-          question_id: questionId,
-          report_type: selectedReportType,
-          description: description.trim() || null
-        });
+        .insert(reportData);
+
+      console.log('🔍 [QuestionReportModal] Report submission result:', { reportError });
 
       if (reportError) {
-        console.error('Error reporting question:', reportError);
+        console.error('❌ [QuestionReportModal] Error reporting question:', reportError);
         setError('Failed to submit report. Please try again.');
         return;
       }
+
+      console.log('✅ [QuestionReportModal] Question report submitted successfully');
 
       setSuccess(true);
       setTimeout(() => {
