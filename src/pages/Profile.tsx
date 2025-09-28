@@ -71,6 +71,7 @@ const Profile = () => {
     averageScore: 0,
     totalTimeSpent: 0
   });
+  const [membershipTransactions, setMembershipTransactions] = useState<any[]>([]);
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -107,6 +108,19 @@ const Profile = () => {
       // Load membership data
       const membershipData = await unifiedPaymentService.getUserMembership(user!.id);
       setMembership(membershipData);
+
+      // Load membership transactions
+      const { data: transactionsData, error: transactionsError } = await supabase
+        .from('membership_transactions')
+        .select('*')
+        .eq('user_id', user!.id)
+        .order('completed_at', { ascending: false });
+
+      if (transactionsError) {
+        console.error('Error loading membership transactions:', transactionsError);
+      } else {
+        setMembershipTransactions(transactionsData || []);
+      }
 
       // Load user statistics from real data
       try {
@@ -492,6 +506,55 @@ const Profile = () => {
               </CardContent>
             </Card>
 
+            {/* Membership Transactions Card */}
+            {membershipTransactions.length > 0 && (
+              <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/30">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center">
+                      <CreditCard className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <div className="text-xl font-bold text-gray-900">Payment History</div>
+                      <p className="text-sm text-gray-600">Your membership transactions</p>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {membershipTransactions.map((transaction, index) => (
+                      <div key={transaction.id || index} className="flex items-center justify-between p-4 bg-white/60 rounded-xl border border-white/50">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                            <Check className="w-5 h-5 text-green-600" />
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {transaction.plan_id === 'pro' ? 'Pro Plan' : 
+                               transaction.plan_id === 'pro_plus' ? 'Pro+ Plan' : 
+                               'Premium Plan'}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {new Date(transaction.completed_at).toLocaleDateString('en-IN', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-bold text-gray-900">₹{transaction.amount}</div>
+                          <div className="text-sm text-green-600 capitalize">{transaction.status}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Enhanced Referral Stats Card */}
             <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-green-50/30 to-emerald-50/30">

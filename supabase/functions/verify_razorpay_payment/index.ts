@@ -249,7 +249,7 @@ serve(async (req) => {
     console.log('Payment ID:', paymentId)
 
     // Activate membership
-    const { error: membershipError } = await supabase
+    const { data: membershipData, error: membershipError } = await supabase
       .from('user_memberships')
       .insert({
         user_id: body.user_id,
@@ -259,6 +259,8 @@ serve(async (req) => {
         status: 'active',
         plan: body.plan
       })
+      .select('id')
+      .single()
 
     if (membershipError) {
       console.error('Membership activation error:', membershipError)
@@ -268,7 +270,47 @@ serve(async (req) => {
       )
     }
 
-    console.log('Membership activated successfully')
+    console.log('Membership activated successfully, ID:', membershipData.id)
+
+    // Create membership transaction record
+    const { error: transactionError } = await supabase
+      .from('membership_transactions')
+      .insert({
+        user_id: body.user_id,
+        membership_id: membershipData.id,
+        transaction_id: body.payment_id,
+        amount: planAmount,
+        currency: 'INR',
+        status: 'completed',
+        payment_method: 'razorpay',
+        gateway_payment_id: body.payment_id,
+        gateway_order_id: body.order_id,
+        completed_at: new Date().toISOString()
+      })
+
+    if (transactionError) {
+      console.error('Membership transaction creation error:', transactionError)
+      // Don't fail the payment for transaction record error, but log it
+    } else {
+      console.log('Membership transaction created successfully')
+    }
+
+    // Update user profile with membership info
+    const { error: profileError } = await supabase
+      .from('user_profiles')
+      .update({
+        membership_plan: body.plan,
+        membership_expiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', body.user_id)
+
+    if (profileError) {
+      console.error('Profile update error:', profileError)
+      // Don't fail the payment for profile update error, but log it
+    } else {
+      console.log('User profile updated with membership info')
+    }
 
     // Create membership purchase message
     const planName = body.plan === 'pro' ? 'Pro Plan' : body.plan === 'pro_plus' ? 'Pro Plus Plan' : 'Premium Plan';
