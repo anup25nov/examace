@@ -1,18 +1,11 @@
 // Data storage verification utilities
 
 import { supabase } from '@/integrations/supabase/client';
-import { db } from './firebase';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export interface DataVerificationResult {
   supabase: {
     connected: boolean;
     tables: string[];
-    error?: string;
-  };
-  firebase: {
-    connected: boolean;
-    collections: string[];
     error?: string;
   };
   environment: string;
@@ -52,44 +45,11 @@ export const verifySupabaseConnection = async () => {
   }
 };
 
-// Verify Firebase connection and data storage
-export const verifyFirebaseConnection = async () => {
-  try {
-    // Test basic connection by trying to read a document
-    const testDocRef = doc(db, 'test', 'connection');
-    const testDoc = await getDoc(testDocRef);
-    
-    // If document doesn't exist, create a test document
-    if (!testDoc.exists()) {
-      await setDoc(testDocRef, {
-        test: true,
-        timestamp: serverTimestamp(),
-        environment: import.meta.env.VITE_ENV || 'development'
-      });
-    }
-
-    const collections = ['users', 'test'];
-    
-    return {
-      connected: true,
-      collections,
-      error: undefined
-    };
-  } catch (error) {
-    console.error('Firebase verification failed:', error);
-    return {
-      connected: false,
-      collections: [],
-      error: error instanceof Error ? error.message : 'Unknown error'
-    };
-  }
-};
 
 // Test data storage by creating a test record
 export const testDataStorage = async () => {
   const results: DataVerificationResult = {
     supabase: { connected: false, tables: [] },
-    firebase: { connected: false, collections: [] },
     environment: import.meta.env.VITE_ENV || 'development',
     timestamp: new Date().toISOString()
   };
@@ -97,9 +57,6 @@ export const testDataStorage = async () => {
   try {
     // Test Supabase
     results.supabase = await verifySupabaseConnection();
-    
-    // Test Firebase
-    results.firebase = await verifyFirebaseConnection();
     
     // Log results
     console.log('📊 Data Storage Verification:', results);
@@ -111,7 +68,7 @@ export const testDataStorage = async () => {
   }
 };
 
-// Test writing data to both databases
+// Test writing data to Supabase
 export const testDataWriting = async () => {
   const testData = {
     test: true,
@@ -121,8 +78,7 @@ export const testDataWriting = async () => {
   };
 
   const results = {
-    supabase: { success: false, error: undefined as string | undefined },
-    firebase: { success: false, error: undefined as string | undefined }
+    supabase: { success: false, error: undefined as string | undefined }
   };
 
   try {
@@ -144,15 +100,6 @@ export const testDataWriting = async () => {
     }
   } catch (error) {
     results.supabase.error = error instanceof Error ? error.message : 'Unknown error';
-  }
-
-  try {
-    // Test Firebase write
-    const testDocRef = doc(db, 'test_data', testData.userId);
-    await setDoc(testDocRef, testData);
-    results.firebase.success = true;
-  } catch (error) {
-    results.firebase.error = error instanceof Error ? error.message : 'Unknown error';
   }
 
   console.log('✍️ Data Writing Test:', results);

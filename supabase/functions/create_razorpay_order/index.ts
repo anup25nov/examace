@@ -18,9 +18,9 @@ const RZP_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET') || '';
 // Centralized pricing configuration - SINGLE SOURCE OF TRUTH
 // This should match the pricing in src/config/pricingConfig.ts
 const PLAN_PRICES: Record<string, number> = {
-  pro: 999, // Pro plan: ₹999 (production price)
-  pro_plus: 1999, // Pro+ plan: ₹1999 (production price)
-  premium: 999, // Premium plan: ₹999 (alias for pro)
+  pro: 1, // Pro plan: ₹999 (production price)
+  pro_plus: 2, // Pro+ plan: ₹1999 (production price)
+  premium: 1, // Premium plan: ₹999 (alias for pro)
 };
 
 serve(async (req: Request) => {

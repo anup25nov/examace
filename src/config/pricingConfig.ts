@@ -4,9 +4,9 @@
 // Centralized pricing constants - SINGLE SOURCE OF TRUTH
 // Production pricing - Update these values for real pricing
 const PRICING_CONSTANTS = {
-  PRO_PLAN_PRICE: process.env.NODE_ENV === 'production' ? 999 : 1, // ₹999 in production, ₹1 for testing
-  PRO_PLUS_PLAN_PRICE: process.env.NODE_ENV === 'production' ? 1999 : 2, // ₹1999 in production, ₹2 for testing
-  PREMIUM_PLAN_PRICE: process.env.NODE_ENV === 'production' ? 999 : 1, // Premium is alias for Pro
+  PRO_PLAN_PRICE: process.env.NODE_ENV === 'production' ? 1 : 1, // ₹999 in production, ₹1 for testing
+  PRO_PLUS_PLAN_PRICE: process.env.NODE_ENV === 'production' ? 2 : 2, // ₹1999 in production, ₹2 for testing
+  PREMIUM_PLAN_PRICE: process.env.NODE_ENV === 'production' ? 1 : 1, // Premium is alias for Pro
   CURRENCY: 'INR',
 };
 

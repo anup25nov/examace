@@ -3,13 +3,6 @@
 // Preload critical resources
 export const preloadCriticalResources = () => {
   try {
-    // Preload Firebase SDK
-    const firebaseScript = document.createElement('link');
-    firebaseScript.rel = 'preload';
-    firebaseScript.href = 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    firebaseScript.as = 'script';
-    document.head.appendChild(firebaseScript);
-
     // Preload Supabase SDK
     const supabaseScript = document.createElement('link');
     supabaseScript.rel = 'preload';
