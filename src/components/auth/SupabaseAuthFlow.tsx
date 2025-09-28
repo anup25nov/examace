@@ -332,7 +332,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
           <form onSubmit={handlePhoneSubmit} className="space-y-6">
             <div className="space-y-2">
               <div className="relative group">
-                <Phone className="absolute left-3 top-3 h-5 w-5 text-blue-500 group-focus-within:text-blue-600 transition-colors" />
+                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-500 z-10 pointer-events-none" />
                 <Input
                   id="phone"
                   type="tel"
@@ -408,9 +408,9 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
         <div className="absolute -bottom-4 -left-4 w-24 h-24 bg-gradient-to-tr from-teal-400/20 to-cyan-400/20 rounded-full blur-xl"></div>
         
         <div className="relative z-10 text-center">
-          <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+          {/* <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
             <MessageCircle className="w-6 h-6 text-white" />
-          </div>
+          </div> */}
           <h1 className="text-2xl font-bold mb-2 text-gray-800">
             Verify Your Phone
           </h1>
@@ -492,7 +492,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
                   type="button"
                   variant="link"
                   onClick={handleResendOTP}
-                  className="text-green-600 hover:text-green-700 font-semibold"
+                  className="text-blue-600 hover:text-blue-700 font-semibold"
                   disabled={loading}
                 >
                   <MessageCircle className="mr-2 h-4 w-4" />
@@ -518,12 +518,12 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
       }`}
     >
       {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 p-6 mb-6">
-        <div className="absolute -top-4 -right-4 w-20 h-20 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-xl"></div>
-        <div className="absolute -bottom-4 -left-4 w-24 h-24 bg-gradient-to-tr from-rose-400/20 to-orange-400/20 rounded-full blur-xl"></div>
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-6 mb-6">
+        <div className="absolute -top-4 -right-4 w-20 h-20 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-xl"></div>
+        <div className="absolute -bottom-4 -left-4 w-24 h-24 bg-gradient-to-tr from-indigo-400/20 to-purple-400/20 rounded-full blur-xl"></div>
         
         <div className="relative z-10 text-center">
-          <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
+          <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
             <span className="text-2xl">🎉</span>
           </div>
           <h1 className="text-2xl font-bold mb-2 text-gray-800">
@@ -552,7 +552,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
                     placeholder="Enter referral code"
                     value={referralCode}
                     onChange={(e) => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20))}
-                    className="text-center font-mono tracking-wider text-lg h-12 border-2 border-gray-200 focus:border-purple-500 transition-all duration-200 rounded-xl"
+                    className="text-center font-mono tracking-wider text-lg h-12 border-2 border-gray-200 focus:border-blue-500 transition-all duration-200 rounded-xl"
                     maxLength={20}
                   />
                   {referralCode && (
@@ -584,7 +584,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
                 type="button" 
                 onClick={handleReferralSubmit} 
                 disabled={loading || !referralCode.trim()}
-                className={`${isKeyboardOpen ? 'w-full' : 'flex-1'} h-12 text-lg font-semibold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200`}
+                className={`${isKeyboardOpen ? 'w-full' : 'flex-1'} h-12 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200`}
               >
                 {loading ? (
                   <>
@@ -602,9 +602,9 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
 
             {/* Info Section */}
             <div className="text-center pt-4 border-t border-gray-100">
-              <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4">
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
                 <p className="text-sm text-gray-700 font-medium">
-                  💰 Earn <span className="font-bold text-purple-600">{defaultConfig.commission.percentage}%</span> commission by referring friends!
+                  💰 Earn <span className="font-bold text-blue-600">{defaultConfig.commission.percentage}%</span> commission by referring friends!
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   Share your referral code and earn money for each successful referral
