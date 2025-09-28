@@ -175,14 +175,6 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
         analytics: {
           enabled: false
         },
-        // Additional options to prevent tracking
-        external: {
-          wallets: []
-        },
-        // Disable all tracking
-        notes: {
-          disable_analytics: true
-        },
         handler: async (response: any) => {
           try {
             // Get referral code from localStorage if available

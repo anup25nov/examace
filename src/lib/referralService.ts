@@ -491,7 +491,7 @@ class ReferralService {
       if (!data || !Array.isArray(data) || data.length === 0) {
         return {
           valid: false,
-          message: 'Invalid referral code'
+          message: 'Referral code not found. Please check the code and try again.'
         };
       }
 

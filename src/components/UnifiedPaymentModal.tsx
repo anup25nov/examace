@@ -300,14 +300,6 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
         analytics: {
           enabled: false
         },
-        // Additional options to prevent tracking
-        external: {
-          wallets: []
-        },
-        // Disable all tracking
-        notes: {
-          disable_analytics: true
-        },
         handler: async (response: any) => {
           // Prevent multiple handler executions
           if (loading) {

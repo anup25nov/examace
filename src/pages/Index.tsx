@@ -123,10 +123,11 @@ const Index = () => {
     setShowReferralSystem(true);
   };
 
-  const handleReferralCodeApplied = (code: string) => {
+  const handleReferralCodeApplied = (code: string, referrerId?: string) => {
     setAppliedReferralCode(code);
     setShowReferralCodeInput(false);
     // Show success message
+    console.log('Referral code applied:', code, 'Referrer ID:', referrerId);
   };
 
 

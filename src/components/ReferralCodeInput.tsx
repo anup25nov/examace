@@ -17,6 +17,7 @@ interface ReferralCodeInputProps {
 export const ReferralCodeInput: React.FC<ReferralCodeInputProps> = ({
   onReferralApplied,
   onSkip,
+  onClose,
   className = ''
 }) => {
   const [referralCode, setReferralCode] = useState('');
@@ -54,18 +55,25 @@ export const ReferralCodeInput: React.FC<ReferralCodeInputProps> = ({
   };
 
   const handleApplyReferral = async () => {
-    if (!validationResult?.valid) return;
+    if (!validationResult?.valid) {
+      console.log('Cannot apply referral - validation result not valid:', validationResult);
+      return;
+    }
 
+    console.log('Applying referral code:', referralCode.trim());
     setIsValidating(true);
 
     try {
       // Use the proper applyReferralCode function that calls the database
       const result = await referralService.applyReferralCode(referralCode.trim());
+      console.log('Referral application result:', result);
       
       if (result.success) {
+        console.log('Referral code applied successfully');
         setIsApplied(true);
         onReferralApplied?.(referralCode.trim(), result.referrerId || '');
       } else {
+        console.log('Referral code application failed:', result.message);
         setValidationResult({
           valid: false,
           message: result.message
@@ -125,11 +133,17 @@ export const ReferralCodeInput: React.FC<ReferralCodeInputProps> = ({
               placeholder="Enter referral code"
               value={referralCode}
               onChange={(e) => {
-                setReferralCode(e.target.value.toUpperCase());
+                const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                setReferralCode(value);
                 setValidationResult(null);
               }}
-              className="flex-1"
+              className={`flex-1 ${
+                referralCode.length > 0 && referralCode.length < 3 
+                  ? 'border-orange-300 focus:border-orange-500' 
+                  : ''
+              }`}
               disabled={isValidating}
+              maxLength={20}
             />
             <Button
               onClick={handleValidateCode}
@@ -140,24 +154,42 @@ export const ReferralCodeInput: React.FC<ReferralCodeInputProps> = ({
               {isValidating ? 'Validating...' : 'Validate'}
             </Button>
           </div>
+          {referralCode.length > 0 && referralCode.length < 3 && (
+            <p className="text-xs text-orange-600 mt-1">
+              ⚠️ Referral code must be at least 3 characters
+            </p>
+          )}
         </div>
 
         {validationResult && (
-          <div className={`flex items-center space-x-2 p-3 rounded-lg ${
+          <div className={`flex items-start space-x-3 p-4 rounded-lg ${
             validationResult.valid 
               ? 'bg-green-50 border border-green-200' 
               : 'bg-red-50 border border-red-200'
           }`}>
             {validationResult.valid ? (
-              <CheckCircle className="w-4 h-4 text-green-600" />
+              <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
             ) : (
-              <XCircle className="w-4 h-4 text-red-600" />
+              <XCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
             )}
-            <span className={`text-sm ${
-              validationResult.valid ? 'text-green-700' : 'text-red-700'
-            }`}>
-              {validationResult.message}
-            </span>
+            <div className="flex-1">
+              <p className={`text-sm font-medium ${
+                validationResult.valid ? 'text-green-800' : 'text-red-800'
+              }`}>
+                {validationResult.message}
+              </p>
+              {!validationResult.valid && (
+                <div className="mt-2 text-xs text-red-600">
+                  <p className="mb-1">💡 <strong>Tips for valid referral codes:</strong></p>
+                  <ul className="list-disc list-inside space-y-1 ml-2">
+                    <li>Check for typos or extra spaces</li>
+                    <li>Make sure the code is at least 3 characters long</li>
+                    <li>Try asking your referrer to share the code again</li>
+                    <li>You can skip this step and add a code later</li>
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -183,6 +215,20 @@ export const ReferralCodeInput: React.FC<ReferralCodeInputProps> = ({
               className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
             >
               {isValidating ? 'Applying...' : 'Apply Referral Code'}
+            </Button>
+          )}
+          
+          {validationResult && !validationResult.valid && (
+            <Button
+              onClick={() => {
+                setValidationResult(null);
+                setReferralCode('');
+              }}
+              variant="outline"
+              disabled={isValidating}
+              className="flex-1"
+            >
+              Try Different Code
             </Button>
           )}
           
