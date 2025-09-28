@@ -149,26 +149,11 @@ export const ViewportDialog: React.FC<ViewportDialogProps> = ({
 
       {/* Dialog content - perfectly centered within viewport */}
       <div 
-        style={{
-          ...styles.content,
-          position: 'relative',
-          transform: 'none',
-          top: 'auto',
-          left: 'auto',
-          right: 'auto',
-          bottom: 'auto',
-          margin: 0,
-          alignSelf: 'center',
-          justifySelf: 'center',
-          maxHeight: viewport.isMobile ? '85vh' : '75vh',
-          overflowY: 'auto',
-          boxSizing: 'border-box'
-        }} 
-        className={`modal-content-perfect-center ${className}`}
+        className={`relative w-full max-w-4xl max-h-[85vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col z-10 ${className}`}
       >
         {/* Header */}
         {title && (
-          <div style={styles.header}>
+          <div className="sticky top-0 z-10 bg-white border-b border-gray-200 p-4 flex justify-between items-center rounded-t-2xl flex-shrink-0">
             <h2 className="text-lg sm:text-xl font-bold truncate pr-2">{title}</h2>
             {showCloseButton && (
               <Button 
@@ -184,7 +169,7 @@ export const ViewportDialog: React.FC<ViewportDialogProps> = ({
         )}
         
         {/* Content */}
-        <div style={title ? styles.body : { ...styles.body, padding: '16px' }}>
+        <div className="flex-1 p-4 overflow-y-auto">
           {children}
         </div>
       </div>
