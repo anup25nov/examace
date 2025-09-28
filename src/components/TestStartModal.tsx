@@ -211,26 +211,26 @@ export const TestStartModal: React.FC<TestStartModalProps> = ({
             <CardContent>
               <RadioGroup value={selectedLanguage} onValueChange={setSelectedLanguage}>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="en" id="en" />
+                  <RadioGroupItem value="en" id="en" className="w-3 h-3 !w-3 !h-3" />
                   <Label htmlFor="en" className="flex items-center space-x-2 cursor-pointer">
                     <span>English</span>
                     <Badge variant="outline" className="text-xs">Default</Badge>
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="hi" id="hi" />
+                  <RadioGroupItem value="hi" id="hi" className="w-3 h-3 !w-3 !h-3" />
                   <Label htmlFor="hi" className="flex items-center space-x-2 cursor-pointer">
                     <span>हिंदी</span>
                     <Badge variant="outline" className="text-xs">Hindi</Badge>
                   </Label>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="both" id="both" />
+                {/* <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="both" id="both" className="w-3 h-3" />
                   <Label htmlFor="both" className="flex items-center space-x-2 cursor-pointer">
                     <span>Both Languages</span>
                     <Badge variant="outline" className="text-xs">Recommended</Badge>
                   </Label>
-                </div>
+                </div> */}
               </RadioGroup>
             </CardContent>
           </Card>
@@ -301,7 +301,7 @@ export const TestStartModal: React.FC<TestStartModalProps> = ({
                   id="consent"
                   checked={hasReadInstructions}
                   onCheckedChange={(checked) => setHasReadInstructions(checked as boolean)}
-                  className="mt-1"
+                  className="mt-1 w-3 h-3 !w-3 !h-3"
                 />
                 <Label htmlFor="consent" className="text-sm leading-relaxed cursor-pointer">
                   I have read and understood all the instructions above. I am ready to start the test and understand that:
