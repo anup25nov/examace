@@ -38,6 +38,7 @@ export const UserMessages: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
+
   useEffect(() => {
     if (user) {
       // Load messages and unread count in a single call
@@ -152,8 +153,12 @@ export const UserMessages: React.FC = () => {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="relative">
+        <DialogTrigger asChild>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="relative"
+        >
           <Bell className="w-4 h-4 sm:mr-2" />
           <span className="hidden sm:inline">Messages</span>
           {unreadCount > 0 && (
