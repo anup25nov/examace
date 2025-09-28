@@ -6,6 +6,7 @@ import { FileText, Calendar, Clock, CheckCircle, Star, Crown, Target, History } 
 import { useAuth } from '@/hooks/useAuth';
 import { unifiedPaymentService } from '@/lib/unifiedPaymentService';
 import { MembershipPlans } from '@/components/MembershipPlans';
+import { PerfectModal } from '@/components/PerfectModal';
 import { TestStartModal } from '@/components/TestStartModal';
 import ResponsiveScrollContainer from '@/components/ResponsiveScrollContainer';
 
@@ -448,12 +449,17 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
       </Card>
 
       {/* Membership Plans Modal */}
-      {showMembershipPlans && (
+      <PerfectModal
+        isOpen={showMembershipPlans}
+        onClose={() => setShowMembershipPlans(false)}
+        title="Choose Membership Plan"
+        maxWidth="max-w-4xl"
+      >
         <MembershipPlans
           onSelectPlan={handlePlanSelection}
           onClose={() => setShowMembershipPlans(false)}
         />
-      )}
+      </PerfectModal>
 
       {/* Test Start Modal */}
       {showTestStartModal && selectedTestForStart && (

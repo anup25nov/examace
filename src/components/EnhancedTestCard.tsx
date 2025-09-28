@@ -17,6 +17,7 @@ import {
 import { PremiumTest } from '@/lib/premiumService';
 import { TestStartModal } from './TestStartModal';
 import { MembershipPlans } from './MembershipPlans';
+import { PerfectModal } from './PerfectModal';
 import { unifiedPaymentService } from '@/lib/unifiedPaymentService';
 import { useAuth } from '@/hooks/useAuth';
 import { useMembership } from '@/contexts/MembershipContext';
@@ -268,13 +269,18 @@ export const EnhancedTestCard: React.FC<EnhancedTestCardProps> = ({
       />
 
       {/* Membership Plans Modal */}
-      {showMembershipPlans && (
+      <PerfectModal
+        isOpen={showMembershipPlans}
+        onClose={() => setShowMembershipPlans(false)}
+        title="Choose Membership Plan"
+        maxWidth="max-w-4xl"
+      >
         <MembershipPlans
           onSelectPlan={handlePlanSelection}
           onClose={() => setShowMembershipPlans(false)}
           currentPlan={membership?.plan_id}
         />
-      )}
+      </PerfectModal>
     </>
   );
 };

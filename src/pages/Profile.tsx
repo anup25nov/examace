@@ -32,6 +32,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { unifiedPaymentService } from '@/lib/unifiedPaymentService';
 import { MembershipPlans } from '@/components/MembershipPlans';
+import { PerfectModal } from '@/components/PerfectModal';
 import { supabase } from '@/integrations/supabase/client';
 import { messagingService } from '@/lib/messagingService';
 
@@ -456,7 +457,12 @@ const Profile = () => {
       </div>
 
       {/* Membership Plans Modal */}
-      {showMembershipPlans && (
+      <PerfectModal
+        isOpen={showMembershipPlans}
+        onClose={() => setShowMembershipPlans(false)}
+        title="Choose Membership Plan"
+        maxWidth="max-w-4xl"
+      >
         <MembershipPlans
           onSelectPlan={(plan) => {
             console.log('Selected plan:', plan);
@@ -465,7 +471,7 @@ const Profile = () => {
           onClose={() => setShowMembershipPlans(false)}
           currentPlan={membership?.plan_id}
         />
-      )}
+      </PerfectModal>
     </div>
   );
 };

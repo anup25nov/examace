@@ -439,7 +439,7 @@ export const MockTestsContainer: React.FC<MockTestsContainerProps> = ({
         isOpen={showMembershipPlans}
         onClose={() => setShowMembershipPlans(false)}
         title="Choose Membership Plan"
-        maxWidth="max-w-2xl"
+        maxWidth="max-w-4xl"
       >
         <MembershipPlans
           onSelectPlan={handlePlanSelect}

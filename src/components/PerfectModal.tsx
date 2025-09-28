@@ -17,7 +17,7 @@ export const PerfectModal: React.FC<PerfectModalProps> = ({
   onClose,
   title,
   children,
-  maxWidth = 'max-w-2xl',
+  maxWidth = 'max-w-4xl',
   showCloseButton = true,
   className = ''
 }) => {
@@ -205,41 +205,11 @@ export const PerfectModal: React.FC<PerfectModalProps> = ({
       {/* Modal content */}
       <div
         ref={contentRef}
-        style={{
-          position: 'relative',
-          width: '100%',
-          maxWidth: maxWidth,
-          maxHeight: '70vh',
-          backgroundColor: 'white',
-          borderRadius: '16px',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-          zIndex: 2,
-          margin: 0,
-          padding: 0,
-          transform: 'none',
-          top: 'auto',
-          left: 'auto',
-          right: 'auto',
-          bottom: 'auto',
-          boxSizing: 'border-box'
-        }}
-        className={className}
+        className={`relative w-full ${maxWidth} max-h-[85vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col z-10 ${className}`}
       >
 
         {/* Body */}
-        <div
-          style={{
-            maxHeight: 'calc(70vh - 80px)',
-            overflowY: 'auto',
-            padding: '16px',
-            minHeight: '0',
-            flex: '1',
-            boxSizing: 'border-box'
-          }}
-        >
+        <div className="flex-1 p-4 overflow-y-auto">
           {children}
         </div>
       </div>
