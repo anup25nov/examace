@@ -1,3 +1,4 @@
+import React from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,6 +13,8 @@ import PullToRefresh from "@/components/PullToRefresh";
 import SwipeToGoBack from "@/components/SwipeToGoBack";
 // Import modal debugger to make it available globally
 import "@/utils/modalDebugger";
+// Import analytics blocker
+import { initAnalyticsBlocker } from "@/lib/analyticsBlocker";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AboutUs from "./pages/AboutUs";
@@ -42,6 +45,11 @@ const App = () => {
   console.log('Environment:', import.meta.env.MODE);
   console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL ? 'Set' : 'Missing');
   console.log('Supabase Key:', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Set' : 'Missing');
+  
+  // Initialize analytics blocker
+  React.useEffect(() => {
+    initAnalyticsBlocker();
+  }, []);
   
   return (
     <QueryClientProvider client={queryClient}>

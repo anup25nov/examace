@@ -66,6 +66,17 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
       try {
         setRazorpayLoading(true);
         
+        // Block Razorpay analytics requests
+        const originalFetch = window.fetch;
+        window.fetch = function(...args) {
+          const url = args[0];
+          if (typeof url === 'string' && url.includes('lumberjack.razorpay.com')) {
+            console.log('Blocked Razorpay analytics request:', url);
+            return Promise.reject(new Error('Analytics blocked by CSP'));
+          }
+          return originalFetch.apply(this, args);
+        };
+        
         // Check if already loaded
         if (window.Razorpay) {
           setRazorpayLoaded(true);
@@ -298,6 +309,14 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
         // Disable Razorpay analytics tracking
         analytics: {
           enabled: false
+        },
+        // Additional options to prevent tracking
+        external: {
+          wallets: []
+        },
+        // Disable all tracking
+        notes: {
+          disable_analytics: true
         },
         handler: async (response: any) => {
           // Prevent multiple handler executions

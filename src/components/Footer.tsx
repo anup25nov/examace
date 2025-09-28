@@ -36,7 +36,7 @@ const Footer = () => {
           {/* Quick Links */}
           <div>
             <h3 className="text-xl font-bold mb-4">Quick Links</h3>
-            <ul className="space-y-2">
+            <ul className="space-y-1">
               <li><button onClick={() => handleNavigation("/")} className="text-gray-300 hover:text-white transition-colors">Home</button></li>
               <li><button onClick={() => handleNavigation("/exam/ssc-cgl")} className="text-gray-300 hover:text-white transition-colors">Mock Tests</button></li>
               <li><button onClick={() => handleNavigation("/exam/ssc-cgl")} className="text-gray-300 hover:text-white transition-colors">Previous Year Questions</button></li>
@@ -48,7 +48,7 @@ const Footer = () => {
           {/* Support */}
           <div>
             <h3 className="text-xl font-bold mb-4">Support</h3>
-            <ul className="space-y-2">
+            <ul className="space-y-1">
               <li><button onClick={() => handleNavigation("/faq")} className="text-gray-300 hover:text-white transition-colors">FAQ</button></li>
               <li><button onClick={() => handleNavigation("/privacy")} className="text-gray-300 hover:text-white transition-colors">Privacy Policy</button></li>
               {/* <li><button onClick={() => handleNavigation("/terms")} className="text-gray-300 hover:text-white transition-colors">Terms of Service</button></li> */}
