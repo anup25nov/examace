@@ -17,8 +17,7 @@ import {
   IndianRupee, 
   Info,
   Loader2,
-  MessageSquare,
-  X
+  MessageSquare
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -192,12 +191,15 @@ export const UserMessages: React.FC = () => {
             minWidth: '100vw',
             minHeight: '100vh',
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             justifyContent: 'center',
+            paddingTop: '130px',
+            paddingLeft: '16px',
+            paddingRight: '16px',
+            paddingBottom: '16px',
             zIndex: 50,
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
             backdropFilter: 'blur(4px)',
-            padding: '16px',
             boxSizing: 'border-box',
             margin: 0,
             border: 'none',
@@ -227,7 +229,7 @@ export const UserMessages: React.FC = () => {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b">
+            <div className="flex items-center p-6 border-b">
               <div className="flex items-center space-x-2">
                 <MessageSquare className="w-5 h-5" />
                 <h2 className="text-lg font-semibold">Messages</h2>
@@ -237,12 +239,6 @@ export const UserMessages: React.FC = () => {
                   </span>
                 )}
               </div>
-              <button 
-                onClick={() => setIsOpen(false)}
-                className="text-gray-500 hover:text-gray-700 p-1 rounded-sm hover:bg-gray-100"
-              >
-                <X className="w-4 h-4" />
-              </button>
             </div>
             
             {/* Description */}
@@ -307,13 +303,6 @@ export const UserMessages: React.FC = () => {
                 ))
               )}
             </div>
-            </div>
-            
-            {/* Footer */}
-            <div className="flex justify-end p-6 border-t bg-gray-50">
-              <Button variant="outline" onClick={() => setIsOpen(false)}>
-                Close
-              </Button>
             </div>
           </div>
         </div>
