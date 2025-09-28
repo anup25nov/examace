@@ -298,12 +298,10 @@ export const MockTestsContainer: React.FC<MockTestsContainerProps> = ({
                   className={`relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.03] hover:border-primary/40 h-72 group ${
                     isCompleted 
                       ? 'border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg' 
-                      : test.isPremium && !hasAccess.get(test.id)
-                        ? 'border-gradient-to-r from-red-200 to-pink-200 bg-gradient-to-br from-red-50 via-pink-50 to-rose-50 shadow-lg ring-2 ring-red-200/50 cursor-pointer hover:ring-red-300/70' 
-                        : test.isPremium 
-                          ? 'border-gradient-to-r from-yellow-200 to-orange-200 bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 shadow-lg ring-2 ring-yellow-200/50' 
-                          : 'border-border bg-gradient-to-br from-white to-slate-50'
-                  }`}
+                      : test.isPremium 
+                        ? 'border-gradient-to-r from-yellow-200 to-orange-200 bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 shadow-lg ring-2 ring-yellow-200/50' 
+                        : 'border-border bg-gradient-to-br from-white to-slate-50'
+                  } ${test.isPremium && !hasAccess.get(test.id) ? 'cursor-pointer' : ''}`}
                   onClick={() => handleCardClick(test)}
                 >
                   <CardContent className="p-3 sm:p-4 h-full flex flex-col">
@@ -315,11 +313,9 @@ export const MockTestsContainer: React.FC<MockTestsContainerProps> = ({
                         </h4>
                         <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
                           <Badge className={`text-xs px-2 py-1 ${
-                            test.isPremium && !hasAccess.get(test.id)
-                              ? 'bg-gradient-to-r from-red-400 via-pink-500 to-rose-500 text-white animate-pulse shadow-lg border-2 border-red-300' 
-                              : test.isPremium 
-                                ? 'bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-white animate-pulse shadow-lg border-2 border-yellow-300' 
-                                : 'bg-gradient-to-r from-green-400 to-emerald-500 text-white animate-pulse border-2 border-green-300 shadow-lg'
+                            test.isPremium 
+                              ? 'bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-white animate-pulse shadow-lg border-2 border-yellow-300' 
+                              : 'bg-gradient-to-r from-green-400 to-emerald-500 text-white animate-pulse border-2 border-green-300 shadow-lg'
                           }`}>
                             {test.isPremium ? (
                               <div className="flex items-center space-x-1">
