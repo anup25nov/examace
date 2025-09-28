@@ -763,7 +763,10 @@ const EnhancedExamDashboard = () => {
         <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             {/* Logo and App Name - Left Aligned */}
-            <div className="flex items-center space-x-2 sm:space-x-3">
+            <div 
+              className="flex items-center space-x-2 sm:space-x-3 cursor-pointer hover:opacity-80 transition-opacity duration-200"
+              onClick={() => navigate('/')}
+            >
               <CachedImage 
                 src="/logos/logo.jpeg" 
                 alt="Step2Sarkari Logo" 
