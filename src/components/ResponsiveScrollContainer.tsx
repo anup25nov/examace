@@ -19,9 +19,9 @@ const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps> = ({
   const [canScrollDown, setCanScrollDown] = useState(false);
   
   // Version check to ensure updates are applied
-  const VERSION = '2.0.2';
+  const VERSION = '2.0.3';
   const TIMESTAMP = Date.now();
-  console.log(`🚀 ResponsiveScrollContainer v${VERSION} - Mobile 3-card layout`);
+  console.log(`🚀 ResponsiveScrollContainer v${VERSION} - Improved scrolling thresholds`);
   console.log('📱 Current timestamp:', new Date().toISOString());
   console.log('🔧 Card count:', cardCount);
   console.log('🆔 Component instance ID:', TIMESTAMP);
@@ -46,29 +46,30 @@ const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps> = ({
     console.log(`🔧 Getting responsive config - isMobile: ${isMobile}, cardCount: ${cardCount}`);
     
     if (isMobile) {
-      // FORCE CACHE BUST - Mobile 3-card layout
+      // Mobile: Show 2 cards then enable scrolling
       const config = {
         cardsPerRow: 1,
-        maxVisibleCards: 3, // Show 3 cards on mobile - FORCE UPDATED
-        shouldEnableScrolling: cardCount > 3,
+        maxVisibleCards: 2, // Show 2 cards on mobile, then scroll
+        shouldEnableScrolling: cardCount > 2,
         containerClass: "space-y-4",
-        version: "2.0.2", // Cache busting
+        version: "2.0.3", // Cache busting
         timestamp: Date.now()
       };
-      debugLog(`Mobile config (FORCE UPDATED):`, config);
-      console.log('🔧 MOBILE CONFIG FORCE UPDATED:', config);
-      console.log('✅ Mobile maxVisibleCards FORCED to 3');
-      console.log('🔥 CACHE BUSTING: Version 2.0.2');
+      debugLog(`Mobile config (UPDATED):`, config);
+      console.log('🔧 MOBILE CONFIG UPDATED:', config);
+      console.log('✅ Mobile maxVisibleCards set to 2 for better scrolling');
+      console.log('🔥 CACHE BUSTING: Version 2.0.3');
       return config;
     } else {
-      // Desktop: 4 cards per row, 4.5 rows = 18 cards total (increased height)
+      // Desktop: Show 8 cards (2 rows of 4) then enable scrolling
       const config = {
         cardsPerRow: 4,
-        maxVisibleCards: 18, // Increased to show 18 cards on desktop
-        shouldEnableScrolling: cardCount > 18,
+        maxVisibleCards: 8, // Show 8 cards on desktop (2 rows), then scroll
+        shouldEnableScrolling: cardCount > 8,
         containerClass: "grid grid-cols-4 gap-4"
       };
-      debugLog(`Desktop config:`, config);
+      debugLog(`Desktop config (UPDATED):`, config);
+      console.log('✅ Desktop maxVisibleCards set to 8 for better scrolling');
       return config;
     }
   };
@@ -219,25 +220,25 @@ const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps> = ({
   // Calculate dynamic height based on wireframe layout
   const getContainerHeight = () => {
     console.log('🔄 Calculating container height - FORCE REFRESH');
-    console.log('🔥 CACHE BUSTING: Height calculation with version 2.0.2');
+    console.log('🔥 CACHE BUSTING: Height calculation with version 2.0.3');
     if (isMobile) {
-      // Mobile: Show 3 cards, each ~300px (288px card + 16px gap)
-      const height = '900px'; // 3 * 300px = 900px
+      // Mobile: Show 2 cards (2 * 288px + gap) = ~600px
+      const height = '400px'; // Show 2 cards comfortably
       debugLog(`Mobile height: ${height}`);
-      console.log('✅ Mobile height set to 900px for 3 cards');
+      console.log('✅ Mobile height set to 400px for 2-card layout');
       return height;
     } else {
-      // Desktop: Use viewport height instead of fixed height
-      const height = 'calc(100vh - 300px)'; // Account for header, stats, and padding
+      // Desktop: Show 2 rows of 4 cards = 8 cards total
+      const height = '600px'; // Show 2 rows comfortably (8 cards)
       debugLog(`Desktop height: ${height}`);
-      console.log('✅ Desktop height set to calc(100vh - 300px)');
+      console.log('✅ Desktop height set to 600px for 2-row layout (8 cards)');
       return height;
     }
   };
 
   const containerHeight = getContainerHeight();
   console.log('🔄 Final rendering - FORCE REFRESH');
-  console.log('🔥 CACHE BUSTING: Final render with version 2.0.2');
+  console.log('🔥 CACHE BUSTING: Final render with version 2.0.3');
   debugLog(`Rendering with:`, {
     shouldEnableScrolling,
     containerHeight,
@@ -255,8 +256,10 @@ const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps> = ({
         style={{ 
           height: containerHeight,
           scrollBehavior: 'smooth',
-          maxHeight: '90vh', // Prevent overflow on small screens
-          minHeight: '400px' // Ensure minimum height for visibility
+          maxHeight: '600px', // Reasonable max height
+          minHeight: '300px', // Reduced minimum height
+          scrollbarWidth: 'thin', // Better scrollbar appearance
+          scrollbarColor: '#cbd5e1 #f1f5f9' // Custom scrollbar colors
         }}
       >
         {children}

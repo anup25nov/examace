@@ -205,7 +205,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
   return (
     <div className={`space-y-0 ${className}`}>
       {/* PYQ Cards Container */}
-      <Card className="gradient-card border-0 shadow-lg h-[520px] flex flex-col">
+      <Card className="gradient-card border-0 shadow-lg flex flex-col">
         <CardHeader className="pb-3 sm:pb-4 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-t-lg">
           <CardTitle className="flex flex-col space-y-3 sm:space-y-4">
             {/* Main Header - Mobile Optimized */}
@@ -294,7 +294,7 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
           </CardTitle>
         </CardHeader>
 
-        <CardContent className="p-4 flex-1 overflow-hidden">
+        <CardContent className="p-4 flex-1">
           {/* Papers Grid */}
           <ResponsiveScrollContainer
             cardCount={filteredPapers.length}
@@ -418,11 +418,24 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
                               e.stopPropagation();
                               handleStartTest(paper);
                             }}
-                            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 text-xs sm:text-sm"
+                            className={`w-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 text-xs sm:text-sm ${
+                              paper.isPremium && !hasAccess.get(paper.id)
+                                ? 'bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white'
+                                : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
+                            }`}
                             size="sm"
                           >
-                            <span className="hidden sm:inline">Start Test</span>
-                            <span className="sm:hidden">Start</span>
+                            {paper.isPremium && !hasAccess.get(paper.id) ? (
+                              <>
+                                <span className="hidden sm:inline">Upgrade to Access</span>
+                                <span className="sm:hidden">Upgrade</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="hidden sm:inline">Start Test</span>
+                                <span className="sm:hidden">Start</span>
+                              </>
+                            )}
                           </Button>
                         )}
                       </div>

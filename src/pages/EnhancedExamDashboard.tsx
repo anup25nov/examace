@@ -35,6 +35,7 @@ import { useDashboardData } from "@/contexts/DashboardDataContext";
 import { analytics } from "@/lib/analytics";
 import { EnhancedTestCard } from "@/components/EnhancedTestCard";
 import { YearWiseTabs } from "@/components/YearWiseTabs";
+import { MockTestsContainer } from "@/components/MockTestsContainer";
 import { secureTestDataLoader } from "@/lib/secureTestDataLoader";
 import { premiumService, PremiumTest } from "@/lib/premiumService";
 import { supabase } from "@/integrations/supabase/client";
@@ -934,7 +935,7 @@ const EnhancedExamDashboard = () => {
           </div>
 
           {/* PYQ Tab - First */}
-          <TabsContent value="pyq" className="space-y-0 h-[1000px] min-h-[1000px]">
+          <TabsContent value="pyq" className="space-y-0">
             <YearWiseTabs
               years={pyqData}
               completedTests={completedTests}
@@ -949,93 +950,18 @@ const EnhancedExamDashboard = () => {
           </TabsContent>
 
           {/* Mock Tests Tab - Second */}
-          <TabsContent value="mock" className="space-y-0 h-[1000px] min-h-[1000px]">
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-emerald-50 to-green-50 h-full flex flex-col">
-              <CardHeader className="bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-t-lg">
-                <CardTitle className="flex items-center space-x-3">
-                  <div className="p-2 bg-white/20 rounded-lg">
-                    <Trophy className="w-6 h-6 text-white" />
-                  </div>
-                  <span>Full Mock Tests</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6 flex-1 overflow-hidden">
-                {(() => {
-                  const message = getSectionMessage('mock');
-                  return message ? (
-                    <div className={`mb-6 p-4 rounded-lg border ${
-                      message.type === 'info' ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200' :
-                      message.type === 'success' ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200' :
-                      'bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200'
-                    }`}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="text-2xl">{message.icon}</div>
-                          <p className={`font-medium ${
-                            message.type === 'info' ? 'text-blue-700' :
-                            message.type === 'success' ? 'text-green-700' :
-                            'text-yellow-700'
-                          }`}>
-                            {message.message}
-                          </p>
-                        </div>
-                        <Button
-                          onClick={() => handleMessageAction(message.actionType, message.purchaseLink)}
-                          className={`${
-                            message.type === 'info' ? 'bg-blue-600 hover:bg-blue-700' :
-                            message.type === 'success' ? 'bg-green-600 hover:bg-green-700' :
-                            'bg-yellow-600 hover:bg-yellow-700'
-                          } text-white`}
-                          size="sm"
-                        >
-                          {message.actionText}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : null;
-                })()}
-                <ResponsiveScrollContainer
-                  cardCount={[...mockTests.free, ...mockTests.premium].filter(test => {
-                    const isCompleted = completedTests.has(`mock-${test.id}`) || completedTests.has(test.id);
-                    if (testFilter === 'attempted') return isCompleted;
-                    if (testFilter === 'not-attempted') return !isCompleted;
-                    return true;
-                  }).length}
-                  className="min-w-0"
-                >
-                  {[...mockTests.free, ...mockTests.premium]
-                    .filter(test => {
-                      const isCompleted = completedTests.has(`mock-${test.id}`) || completedTests.has(test.id);
-                      if (testFilter === 'attempted') return isCompleted;
-                      if (testFilter === 'not-attempted') return !isCompleted;
-                      return true;
-                    })
-                    .map((test) => {
-                      const isCompleted = completedTests.has(`mock-${test.id}`) || completedTests.has(test.id);
-                      const testScore = testScores.get(`mock-${test.id}`) || testScores.get(test.id);
-                      
-                      // debugLog(`Rendering test card: ${test.name}`, {
-                      //   isCompleted,
-                      //   testScore,
-                      //   testId: test.id
-                      // });
-                      
-                      return (
-                        <EnhancedTestCard
-                          key={test.id}
-                          test={test}
-                          isCompleted={isCompleted}
-                          testScore={testScore}
-                          onStartTest={(language) => handleTestStart('mock', test.id, undefined, language)}
-                          onViewSolutions={() => handleViewSolutions('mock', test.id)}
-                          onRetry={() => handleTestStart('mock', test.id)}
-                          testType="mock"
-                        />
-                      );
-                    })}
-                </ResponsiveScrollContainer>
-              </CardContent>
-            </Card>
+          <TabsContent value="mock" className="space-y-0">
+            <MockTestsContainer
+              mockTests={mockTests}
+              completedTests={completedTests}
+              testScores={testScores}
+              onStartTest={(testId, language) => handleTestStart('mock', testId, undefined, language)}
+              onViewSolutions={(testId) => handleViewSolutions('mock', testId)}
+              onRetry={(testId) => handleTestStart('mock', testId)}
+              testFilter={testFilter}
+              sectionMessage={getSectionMessage('mock')}
+              onMessageAction={handleMessageAction}
+            />
           </TabsContent>
 
           {/* Practice Tab - Hidden for now */}
