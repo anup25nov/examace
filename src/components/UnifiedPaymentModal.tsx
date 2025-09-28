@@ -295,6 +295,10 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
         theme: {
           color: '#3B82F6',
         },
+        // Disable Razorpay analytics tracking
+        analytics: {
+          enabled: false
+        },
         handler: async (response: any) => {
           // Prevent multiple handler executions
           if (loading) {

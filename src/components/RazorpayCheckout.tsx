@@ -170,6 +170,10 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
         theme: {
           color: '#3B82F6',
         },
+        // Disable Razorpay analytics tracking
+        analytics: {
+          enabled: false
+        },
         handler: async (response: any) => {
           try {
             // Get referral code from localStorage if available
