@@ -29,7 +29,19 @@ export interface VerificationResponse {
 class ProfileService {
   // Get current authenticated user
   private async getCurrentUser() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const userId = localStorage.getItem('userId');
+    const userPhone = localStorage.getItem('userPhone');
+    const isAuthenticated = localStorage.getItem('isAuthenticated');
+    
+    console.log('🔍 [profileService] Getting current user:', { userId, userPhone, isAuthenticated });
+    
+    if (!userId || !userPhone || isAuthenticated !== 'true') {
+      console.error('❌ [profileService] User not authenticated:', { userId, userPhone, isAuthenticated });
+      return null;
+    }
+
+    const user = { id: userId, phone: userPhone };
+    console.log('✅ [profileService] User authenticated:', user);
     return user;
   }
 

@@ -684,6 +684,31 @@ const TestInterface = () => {
   const handleAnswerSelect = (optionIndex: number) => {
     // Get the original question index from the filtered questions
     const originalIndex = questions.findIndex(q => q.id === filteredQuestions[currentQuestion].id);
+    const question = questions[originalIndex];
+    
+    const isCorrect = optionIndex === (question.correctAnswerIndex || question.correct);
+    
+    console.log('🔍 Answer Selection Debug:', {
+      questionId: question.id,
+      questionText: question.questionEn,
+      options: question.options,
+      correctAnswerIndex: question.correctAnswerIndex,
+      correctAnswer: question.correct,
+      userSelectedIndex: optionIndex,
+      userSelectedOption: question.options[optionIndex],
+      correctOption: question.options[question.correctAnswerIndex || question.correct || 0],
+      originalIndex: originalIndex,
+      isCorrect: isCorrect
+    });
+    
+    // Add visual feedback for correct answer
+    if (isCorrect) {
+      console.log('✅ CORRECT ANSWER SELECTED!');
+    } else {
+      console.log('❌ INCORRECT ANSWER SELECTED!');
+      console.log(`💡 Hint: The correct answer is option ${String.fromCharCode(65 + (question.correctAnswerIndex || question.correct || 0))} (${question.options[question.correctAnswerIndex || question.correct || 0]})`);
+    }
+    
     setAnswers(prev => ({
       ...prev,
       [originalIndex]: optionIndex
@@ -793,6 +818,35 @@ const TestInterface = () => {
       // Submit test attempt using the comprehensive stats service
       if (examId) {
         try {
+          // Enhanced test submission debugging
+          console.log('🔍 ENHANCED Test Submission Debug:', {
+            examId,
+            testType: actualTestType,
+            testId: actualTestId,
+            score,
+            correct,
+            totalQuestions: questions.length,
+            answers: answers,
+            questions: questions.map((q, index) => ({
+              questionId: q.id,
+              questionText: q.questionEn,
+              options: q.options,
+              correctAnswerIndex: q.correctAnswerIndex,
+              correctAnswer: q.correct,
+              userAnswer: answers[index],
+              userAnswerText: q.options[answers[index]],
+              correctAnswerText: q.options[q.correctAnswerIndex || q.correct || 0],
+              isCorrect: answers[index] === (q.correctAnswerIndex || q.correct)
+            })),
+            submissionData: {
+              details: questions.map((question, index) => ({
+                questionId: question.id,
+                selectedOption: answers[index] ?? -1,
+                isCorrect: answers[index] === (question.correctAnswerIndex || question.correct)
+              }))
+            }
+          });
+
           // Use the comprehensive test submission service
           const submissionResult = await testSubmissionService.submitTestAttempt({
             examId,
@@ -806,7 +860,7 @@ const TestInterface = () => {
               details: questions.map((question, index) => ({
                 questionId: question.id,
                 selectedOption: answers[index] ?? -1,
-                isCorrect: answers[index] === question.correctAnswerIndex
+                isCorrect: answers[index] === (question.correctAnswerIndex || question.correct)
               })),
               skipped: questions.length - Object.keys(answers).length
             },

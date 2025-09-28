@@ -186,10 +186,16 @@ const ExamDashboard = () => {
     if (!examId || !exam) return;
 
     try {
-      console.log('🔍 [ExamDashboard] Checking test completions for exam:', examId);
+      console.log('🔍 Exam Page Debug: Starting checkTestCompletions for exam:', examId);
       
       // Try bulk API first
       const { data: allCompletions, error } = await bulkTestService.getAllTestCompletionsForExam(examId);
+      
+      console.log('🔍 Exam Page Debug: getAllTestCompletionsForExam result:', {
+        completions: allCompletions?.length || 0,
+        error,
+        sampleData: allCompletions?.slice(0, 3)
+      });
       
       if (error || !allCompletions || allCompletions.length === 0) {
         console.log('⚠️ [ExamDashboard] Bulk API failed or returned no data, falling back to individual checks');
@@ -227,12 +233,20 @@ const ExamDashboard = () => {
         for (const yearData of availableTests.pyq) {
           for (const paper of yearData.papers) {
             const completionKey = `pyq-${paper.id}`;
+            
+            console.log('🔍 Checking PYQ test completion:', { examId, testId: paper.id, completionKey });
+            
             const isCompleted = await isTestCompleted(examId, 'pyq', paper.id);
+            console.log('🔍 isTestCompleted result:', { completionKey, isCompleted });
+            
             if (isCompleted) {
               completedTests.add(completionKey);
               
               // Get individual test score
+              console.log('🔍 Getting individual test score for:', completionKey);
               const scoreResult = await getIndividualTestScore(examId, 'pyq', paper.id);
+              console.log('🔍 getIndividualTestScore result:', { completionKey, scoreResult });
+              
               if ('data' in scoreResult && scoreResult.data) {
                 testScores.set(completionKey, {
                   score: scoreResult.data.score,
@@ -418,6 +432,12 @@ const ExamDashboard = () => {
 
   // Update userStats when comprehensive stats change
   useEffect(() => {
+    console.log('🔍 [ExamDashboard] Updating user stats:', { 
+      comprehensiveStats, 
+      testScores: Array.from(testScores.entries()),
+      statsLoading 
+    });
+
     if (comprehensiveStats) {
       // Calculate best rank from individual test scores
       let bestRank = 0;
@@ -427,13 +447,16 @@ const ExamDashboard = () => {
         }
       });
 
-      setUserStats({
+      const newUserStats = {
         totalTests: comprehensiveStats.totalTests,
         avgScore: comprehensiveStats.last10Average, // Use last 10 average
         bestScore: comprehensiveStats.bestScore,
         bestRank: bestRank,
         lastActive: comprehensiveStats.lastTestDate ? new Date(comprehensiveStats.lastTestDate) : null
-      });
+      };
+
+      console.log('🔍 [ExamDashboard] Setting user stats from comprehensive stats:', newUserStats);
+      setUserStats(newUserStats);
     } else if (examId && !statsLoading) {
       // Fallback to legacy stats if comprehensive stats are not available
       const currentExamStats = allStats.find(stat => stat.examId === examId);

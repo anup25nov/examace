@@ -40,6 +40,7 @@ interface Question {
   questionHi: string;
   options: string[] | Array<{text: string; image?: string}> | Array<{en: string; hi?: string}>;
   correct: number;
+  correctAnswerIndex?: number; // Add for compatibility with different question formats
   difficulty: string;
   subject?: string;
   topic: string;
@@ -533,7 +534,8 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
         <div className="space-y-6">
           {questions.map((question, index) => {
             const userAnswer = userAnswers[index];
-            const isCorrect = question.correct !== undefined && userAnswer === question.correct;
+            const isCorrect = (question.correctAnswerIndex !== undefined && userAnswer === question.correctAnswerIndex) || 
+                              (question.correct !== undefined && userAnswer === question.correct);
             const hasExplanation = !!(question.explanation || question.explanationEn || question.explanationHi);
 
             return (
@@ -691,7 +693,12 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                           Your Answer: {userAnswer !== undefined ? String.fromCharCode(65 + userAnswer) : 'Not Attempted'}
                         </p>
                         <p className="text-xs sm:text-sm text-muted-foreground">
-                          Correct Answer: {question.correct !== undefined && question.correct >= 0 && question.correct < (question.options?.length || 0) ? String.fromCharCode(65 + question.correct) : 'Not available'}
+                          Correct Answer: {(() => {
+                            const correctIndex = question.correctAnswerIndex !== undefined ? question.correctAnswerIndex : question.correct;
+                            return correctIndex !== undefined && correctIndex >= 0 && correctIndex < (question.options?.length || 0) 
+                              ? String.fromCharCode(65 + correctIndex) 
+                              : 'Not available';
+                          })()}
                         </p>
                         {userAnswer !== undefined && (
                           <p className={`text-xs sm:text-sm font-medium ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>

@@ -59,7 +59,19 @@ class ComprehensiveStatsService {
   }
 
   private async getCurrentUser() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const userId = localStorage.getItem('userId');
+    const userPhone = localStorage.getItem('userPhone');
+    const isAuthenticated = localStorage.getItem('isAuthenticated');
+    
+    console.log('🔍 [comprehensiveStatsService] Getting current user:', { userId, userPhone, isAuthenticated });
+    
+    if (!userId || !userPhone || isAuthenticated !== 'true') {
+      console.error('❌ [comprehensiveStatsService] User not authenticated:', { userId, userPhone, isAuthenticated });
+      return null;
+    }
+
+    const user = { id: userId, phone: userPhone };
+    console.log('✅ [comprehensiveStatsService] User authenticated:', user);
     return user;
   }
 
@@ -81,7 +93,7 @@ class ComprehensiveStatsService {
         return { data: cached.data, error: null };
       }
 
-      console.log('Fetching comprehensive stats for exam:', examId, 'user:', user.id);
+      console.log('🔍 Stats Debug: Getting stats for user:', user.id, 'exam:', examId);
 
       // Get all test attempts for this exam
       const { data: testAttempts, error: attemptsError } = await supabase
@@ -92,7 +104,17 @@ class ComprehensiveStatsService {
         .not('completed_at', 'is', null)
         .order('completed_at', { ascending: false });
 
-      console.log('Test attempts query result:', { testAttempts, attemptsError });
+      console.log('🔍 Stats Debug: Test attempts query result:', { 
+        testAttempts: testAttempts?.length || 0, 
+        attemptsError,
+        sampleData: testAttempts?.slice(0, 3).map(attempt => ({
+          id: attempt.id,
+          test_type: attempt.test_type,
+          test_id: attempt.test_id,
+          score: attempt.score,
+          completed_at: attempt.completed_at
+        }))
+      });
 
       if (attemptsError) {
         console.error('Error fetching test attempts:', attemptsError);
@@ -100,6 +122,7 @@ class ComprehensiveStatsService {
       }
 
       if (!testAttempts || testAttempts.length === 0) {
+        console.log('🔍 Stats Debug: No test attempts found');
         const emptyStats: ComprehensiveTestStats = {
           totalTests: 0,
           bestScore: 0,
@@ -118,8 +141,10 @@ class ComprehensiveStatsService {
       }
 
       // Calculate comprehensive statistics
-      console.log('Calculating comprehensive stats for', testAttempts.length, 'test attempts');
+      console.log('🔍 Stats Debug: Calculating stats for', testAttempts.length, 'test attempts');
       const stats = this.calculateComprehensiveStats(testAttempts as TestAttempt[]);
+      
+      console.log('🔍 Stats Debug: Calculated stats:', stats);
       console.log('Calculated stats:', stats);
       
       // Cache the result
@@ -226,18 +251,37 @@ class ComprehensiveStatsService {
     answers?: any;
   }): Promise<{ data: any; error: any }> {
     try {
+      console.log('🔍 [comprehensiveStatsService] Starting test attempt submission:', submission);
+      
       // Get current user using custom authentication
       const userId = localStorage.getItem('userId');
       const userPhone = localStorage.getItem('userPhone');
       const isAuthenticated = localStorage.getItem('isAuthenticated');
       
+      console.log('🔍 [comprehensiveStatsService] User auth check:', { userId, userPhone, isAuthenticated });
+      
       if (!userId || !userPhone || isAuthenticated !== 'true') {
+        console.error('❌ [comprehensiveStatsService] User not authenticated for test submission');
         return { data: null, error: 'User not authenticated' };
       }
       
       const user = { id: userId, phone: userPhone };
+      console.log('✅ [comprehensiveStatsService] User authenticated for test submission:', user);
 
       // Use the upsert function to handle both create and update in one call
+      console.log('🔍 [comprehensiveStatsService] Calling upsert_test_attempt RPC with params:', {
+        p_user_id: user.id,
+        p_exam_id: submission.examId,
+        p_test_type: submission.testType,
+        p_test_id: submission.testId,
+        p_score: submission.score,
+        p_total_questions: submission.totalQuestions,
+        p_correct_answers: submission.correctAnswers,
+        p_time_taken: submission.timeTaken,
+        p_answers: submission.answers,
+        p_status: 'completed'
+      });
+
       const { data: upsertResult, error: upsertError } = await supabase
         .rpc('upsert_test_attempt' as any, {
           p_user_id: user.id,
@@ -252,13 +296,15 @@ class ComprehensiveStatsService {
           p_status: 'completed'
         });
 
+      console.log('🔍 [comprehensiveStatsService] upsert_test_attempt RPC result:', { upsertResult, upsertError });
+
       if (upsertError) {
-        console.error('Error upserting test attempt:', upsertError);
+        console.error('❌ [comprehensiveStatsService] Error upserting test attempt:', upsertError);
         return { data: null, error: upsertError };
       }
 
       const attemptData = upsertResult && Array.isArray(upsertResult) && upsertResult.length > 0 ? upsertResult[0] : null;
-      console.log('Test attempt upsert result:', { attemptData, upsertError });
+      console.log('🔍 [comprehensiveStatsService] Test attempt upsert result:', { attemptData, upsertError });
 
       if (!attemptData || !attemptData.success) {
         return { data: null, error: attemptData?.message || 'Failed to save test attempt' };

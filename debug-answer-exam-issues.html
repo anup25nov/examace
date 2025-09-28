@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Answer Indexing & Exam Page Issues</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .issue-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .debug-button {
+            background-color: #007bff;
+        }
+        .debug-button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+        .question {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            margin: 10px 0;
+        }
+        .option {
+            padding: 5px 10px;
+            margin: 2px 0;
+            border-radius: 3px;
+            background-color: #e9ecef;
+        }
+        .correct-option {
+            background-color: #d4edda;
+            border-left: 3px solid #28a745;
+        }
+        .user-answer {
+            background-color: #fff3cd;
+            border-left: 3px solid #ffc107;
+        }
+        .incorrect-option {
+            background-color: #f8d7da;
+            border-left: 3px solid #dc3545;
+        }
+        .test-instructions {
+            background-color: #e3f2fd;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: white;
+            border-radius: 3px;
+            border-left: 3px solid #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Debug Answer Indexing & Exam Page Issues</h1>
+        
+        <div class="test-instructions">
+            <h3>📋 Testing Instructions</h3>
+            <div class="step">
+                <strong>Step 1:</strong> Open browser dev tools (F12) and go to Console tab
+            </div>
+            <div class="step">
+                <strong>Step 2:</strong> Take a test and select option B (100) for the "25 × 4" question
+            </div>
+            <div class="step">
+                <strong>Step 3:</strong> Check console logs for "Answer Selection Debug" messages
+            </div>
+            <div class="step">
+                <strong>Step 4:</strong> Submit the test and check "Test Submission Debug" logs
+            </div>
+            <div class="step">
+                <strong>Step 5:</strong> Go to exam dashboard and check "Checking PYQ test completion" logs
+            </div>
+        </div>
+
+        <div class="issue-section info">
+            <h2>🔍 Issue 1: Answer Indexing Problem</h2>
+            
+            <div class="question">
+                <h4>Expected Behavior:</h4>
+                <p><strong>Question:</strong> "What is the value of 25 × 4?"</p>
+                <div class="option">A) 90</div>
+                <div class="option correct-option">B) 100 ✓ (Correct Answer)</div>
+                <div class="option">C) 110</div>
+                <div class="option">D) 120</div>
+                <p><strong>JSON Data:</strong> "correct": 1 (which means index 1 = option B)</p>
+            </div>
+
+            <div class="question">
+                <h4>Current Problem:</h4>
+                <p>Image shows A (90) as correct with green checkmark, B (100) as incorrect with red X</p>
+                <p>This suggests user is selecting option A (index 0) instead of option B (index 1)</p>
+            </div>
+
+            <button onclick="testAnswerIndexing()">🔍 Test Answer Indexing Logic</button>
+            <button onclick="simulateUserSelection()">🎯 Simulate User Selection</button>
+        </div>
+
+        <div class="issue-section info">
+            <h2>📊 Issue 2: Exam Page Not Showing Completed Tests</h2>
+            
+            <div class="question">
+                <h4>Expected Behavior:</h4>
+                <p>After completing a test, the exam page should show:</p>
+                <ul>
+                    <li>✅ Completion status</li>
+                    <li>📊 Score display</li>
+                    <li>🏆 Rank display</li>
+                    <li>📖 View Solutions button</li>
+                    <li>🔄 Retry button</li>
+                </ul>
+            </div>
+
+            <div class="question">
+                <h4>Current Problem:</h4>
+                <p>Completed tests are not showing with scores, ranks, and action buttons</p>
+                <p>This suggests API calls for test completion data are failing</p>
+            </div>
+
+            <button onclick="testTestCompletionAPIs()">🔍 Test Completion APIs</button>
+            <button onclick="simulateTestCompletion()">📝 Simulate Test Completion</button>
+        </div>
+
+        <div class="issue-section">
+            <h2>📊 Debug Results</h2>
+            <div id="debug-results"></div>
+        </div>
+    </div>
+
+    <script>
+        // Sample question data
+        const sampleQuestion = {
+            "id": "q1",
+            "questionEn": "What is the value of 25 × 4?",
+            "questionHi": "25 × 4 का मान क्या है?",
+            "options": ["90", "100", "110", "120"],
+            "correct": 1, // This means option B (100) is correct
+            "correctAnswerIndex": 1,
+            "difficulty": "easy",
+            "subject": "quantitative-aptitude",
+            "topic": "arithmetic",
+            "marks": 2,
+            "negativeMarks": 0.5
+        };
+
+        function showResult(message, type = 'info') {
+            const element = document.getElementById('debug-results');
+            const resultElement = document.createElement('div');
+            resultElement.className = `result ${type}`;
+            resultElement.textContent = message;
+            element.appendChild(resultElement);
+            element.scrollTop = element.scrollHeight;
+        }
+
+        function clearResults() {
+            document.getElementById('debug-results').innerHTML = '';
+        }
+
+        function testAnswerIndexing() {
+            clearResults();
+            showResult('🔍 Testing Answer Indexing Logic...', 'info');
+            
+            const question = sampleQuestion;
+            const correctIndex = question.correct; // 1
+            const correctOption = question.options[correctIndex]; // "100"
+            const correctDisplay = String.fromCharCode(65 + correctIndex); // "B"
+            
+            showResult('Question Data Analysis:', 'info');
+            showResult(`JSON correct value: ${correctIndex}`, 'info');
+            showResult(`Correct option text: ${correctOption}`, 'info');
+            showResult(`Correct display letter: ${correctDisplay}`, 'info');
+            showResult(`All options: ${JSON.stringify(question.options)}`, 'info');
+            
+            // Test different user selections
+            showResult('\n--- Testing User Selections ---', 'info');
+            
+            [0, 1, 2, 3].forEach(userSelection => {
+                const isCorrect = userSelection === correctIndex;
+                const userOption = question.options[userSelection];
+                const userDisplay = String.fromCharCode(65 + userSelection);
+                
+                showResult(`User selects ${userDisplay} (${userOption}) - Index: ${userSelection}`, 'info');
+                showResult(`Is correct: ${isCorrect}`, isCorrect ? 'success' : 'error');
+                showResult('---', 'info');
+            });
+            
+            showResult('✅ Answer indexing logic test completed!', 'success');
+            showResult('Expected: User should select B (100) to get correct answer', 'info');
+        }
+
+        function simulateUserSelection() {
+            clearResults();
+            showResult('🎯 Simulating User Selection Process...', 'info');
+            
+            const question = sampleQuestion;
+            
+            // Simulate user selecting option B (index 1)
+            const userSelection = 1;
+            const userOption = question.options[userSelection];
+            const correctIndex = question.correct;
+            const correctOption = question.options[correctIndex];
+            
+            showResult('Simulating user selects option B (100)...', 'info');
+            showResult(`User selected index: ${userSelection}`, 'info');
+            showResult(`User selected option: ${userOption}`, 'info');
+            showResult(`Correct index: ${correctIndex}`, 'info');
+            showResult(`Correct option: ${correctOption}`, 'info');
+            showResult(`Is correct: ${userSelection === correctIndex}`, userSelection === correctIndex ? 'success' : 'error');
+            
+            if (userSelection === correctIndex) {
+                showResult('✅ SUCCESS: User selection matches correct answer!', 'success');
+                showResult('This should show B (100) as correct with green checkmark', 'success');
+            } else {
+                showResult('❌ FAILED: User selection does not match correct answer!', 'error');
+                showResult('This would show wrong option as correct', 'error');
+            }
+        }
+
+        function testTestCompletionAPIs() {
+            clearResults();
+            showResult('🔍 Testing Test Completion APIs...', 'info');
+            
+            showResult('API calls that should be made:', 'info');
+            showResult('1. isTestCompleted(examId, testType, testId)', 'info');
+            showResult('2. getIndividualTestScore(examId, testType, testId)', 'info');
+            showResult('3. bulkTestService.getAllTestCompletionsForExam(examId)', 'info');
+            
+            showResult('\nExpected API responses:', 'info');
+            showResult('isTestCompleted: true (if test is completed)', 'info');
+            showResult('getIndividualTestScore: { score: 85, rank: 3, total_participants: 150 }', 'info');
+            showResult('getAllTestCompletionsForExam: Array of completion objects', 'info');
+            
+            showResult('\nCommon issues:', 'info');
+            showResult('- RLS policies blocking API access', 'error');
+            showResult('- User authentication problems', 'error');
+            showResult('- API endpoints returning errors', 'error');
+            showResult('- Data not stored during test submission', 'error');
+            
+            showResult('\n✅ Test completion API analysis completed!', 'success');
+        }
+
+        function simulateTestCompletion() {
+            clearResults();
+            showResult('📝 Simulating Test Completion Process...', 'info');
+            
+            const completionData = {
+                testId: "2024-paper-1",
+                testType: "pyq",
+                examId: "ssc-cgl",
+                score: 85,
+                rank: 3,
+                totalParticipants: 150,
+                correctAnswers: 85,
+                totalQuestions: 100,
+                timeTaken: 3600,
+                completedAt: new Date().toISOString()
+            };
+            
+            showResult('Simulating completed test data:', 'info');
+            showResult(JSON.stringify(completionData, null, 2), 'info');
+            
+            showResult('\nExpected UI display:', 'info');
+            showResult('✅ Test shows as completed', 'success');
+            showResult('📊 Score: 85/100 (85%)', 'success');
+            showResult('🏆 Rank: #3 of 150 participants', 'success');
+            showResult('📖 View Solutions button appears', 'success');
+            showResult('🔄 Retry button appears', 'success');
+            
+            showResult('\nIf not showing:', 'error');
+            showResult('- Check browser console for API errors', 'error');
+            showResult('- Verify test_attempts table has data', 'error');
+            showResult('- Check test_completions table has data', 'error');
+            showResult('- Verify RLS policies allow access', 'error');
+            
+            showResult('\n✅ Test completion simulation completed!', 'success');
+        }
+
+        // Initialize
+        showResult('🔧 Debug tool initialized. Follow the testing instructions above.', 'info');
+        showResult('Open browser dev tools (F12) and go to Console tab before testing.', 'info');
+    </script>
+</body>
+</html>

@@ -193,14 +193,21 @@ export class UnifiedPaymentService {
         };
       }
 
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      // Get current user using custom authentication
+      const userId = localStorage.getItem('userId');
+      const userPhone = localStorage.getItem('userPhone');
+      const isAuthenticated = localStorage.getItem('isAuthenticated');
+      
+      if (!userId || !userPhone || isAuthenticated !== 'true') {
+        console.error('❌ [unifiedPaymentService] User not authenticated for payment processing');
         return {
           success: false,
           error: 'User not authenticated'
         };
       }
+
+      const user = { id: userId, phone: userPhone };
+      console.log('✅ [unifiedPaymentService] User authenticated for payment processing:', user);
 
       // Get plan details
       const plans = await this.getPaymentPlans();

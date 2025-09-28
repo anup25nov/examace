@@ -61,24 +61,36 @@ export class BulkTestService {
     examId: string
   ): Promise<{ data: BulkTestCompletionWithType[]; error: any }> {
     try {
+      console.log('🔍 [bulkTestService] Getting all test completions for exam:', examId);
+      
       const user = await this.getCurrentUser();
       if (!user) {
+        console.error('❌ [bulkTestService] User not authenticated');
         return { data: [], error: 'User not authenticated' };
       }
+
+      console.log('🔍 [bulkTestService] Calling get_all_test_completions_for_exam RPC with params:', {
+        user_uuid: user.id,
+        exam_name: examId
+      });
 
       const { data, error } = await supabase.rpc('get_all_test_completions_for_exam' as any, {
         user_uuid: user.id,
         exam_name: examId
       });
 
+      console.log('🔍 [bulkTestService] get_all_test_completions_for_exam RPC result:', { data, error });
+
       if (error) {
-        console.error('Error getting all test completions:', error);
+        console.error('❌ [bulkTestService] Error getting all test completions:', error);
         return { data: [], error };
       }
 
-      return { data: (data as BulkTestCompletionWithType[]) || [], error: null };
+      const result = (data as BulkTestCompletionWithType[]) || [];
+      console.log('✅ [bulkTestService] Retrieved test completions:', result.length, 'completions');
+      return { data: result, error: null };
     } catch (error) {
-      console.error('Error in getAllTestCompletionsForExam:', error);
+      console.error('❌ [bulkTestService] Exception in getAllTestCompletionsForExam:', error);
       return { data: [], error };
     }
   }
@@ -198,7 +210,19 @@ export class BulkTestService {
    * Get current user
    */
   private async getCurrentUser() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const userId = localStorage.getItem('userId');
+    const userPhone = localStorage.getItem('userPhone');
+    const isAuthenticated = localStorage.getItem('isAuthenticated');
+    
+    console.log('🔍 [bulkTestService] Getting current user:', { userId, userPhone, isAuthenticated });
+    
+    if (!userId || !userPhone || isAuthenticated !== 'true') {
+      console.error('❌ [bulkTestService] User not authenticated:', { userId, userPhone, isAuthenticated });
+      return null;
+    }
+
+    const user = { id: userId, phone: userPhone };
+    console.log('✅ [bulkTestService] User authenticated:', user);
     return user;
   }
 }

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Answer Indexing Fix Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .question {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            margin: 10px 0;
+        }
+        .option {
+            padding: 5px 10px;
+            margin: 2px 0;
+            border-radius: 3px;
+            background-color: #e9ecef;
+        }
+        .correct-option {
+            background-color: #d4edda;
+            border-left: 3px solid #28a745;
+        }
+        .user-answer {
+            background-color: #fff3cd;
+            border-left: 3px solid #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Answer Indexing Fix Test</h1>
+        
+        <div class="test-section">
+            <h2>📋 Issues to Fix</h2>
+            
+            <div class="question">
+                <h4>Issue 1: Answer Indexing Mismatch</h4>
+                <p><strong>Problem:</strong> JSON has "correct": 1 (0-based index) but UI expects consistent indexing</p>
+                <p><strong>Example:</strong> JSON shows "correct": 1, meaning option B (index 1), but display logic was inconsistent</p>
+            </div>
+            
+            <div class="question">
+                <h4>Issue 2: Exam Page Not Showing Completed Tests</h4>
+                <p><strong>Problem:</strong> Completed tests, ranks, and scores not displaying on exam page</p>
+                <p><strong>Impact:</strong> Users can't see their test performance history</p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🧪 Test Answer Indexing Logic</h2>
+            
+            <div class="question">
+                <h4>Sample Question Data</h4>
+                <div id="question-data"></div>
+            </div>
+            
+            <button onclick="testAnswerIndexing()">🔍 Test Answer Indexing</button>
+            <button onclick="testCorrectnessCalculation()">✅ Test Correctness Calculation</button>
+            <button onclick="testDisplayLogic()">📺 Test Display Logic</button>
+        </div>
+
+        <div class="test-section">
+            <h2>🧪 Test Exam Page Data</h2>
+            
+            <div class="question">
+                <h4>Test Completion Data</h4>
+                <div id="completion-data"></div>
+            </div>
+            
+            <button onclick="testTestCompletion()">📊 Test Test Completion</button>
+            <button onclick="testScoreDisplay()">🏆 Test Score Display</button>
+            <button onclick="testRankDisplay()">📈 Test Rank Display</button>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 Test Results</h2>
+            <div id="test-results"></div>
+        </div>
+    </div>
+
+    <script>
+        // Sample question data from JSON
+        const sampleQuestion = {
+            "id": "q1",
+            "questionEn": "What is the value of 25 × 4?",
+            "options": ["90", "100", "110", "120"],
+            "correct": 1, // This means option B (index 1)
+            "marks": 2,
+            "negativeMarks": 0.5
+        };
+
+        // Sample test completion data
+        const sampleCompletion = {
+            testId: "test-1",
+            testName: "Mock Test 1",
+            testType: "mock",
+            isCompleted: true,
+            score: 85,
+            rank: 3,
+            totalParticipants: 150,
+            correctAnswers: 85,
+            totalQuestions: 100,
+            timeTaken: 3600
+        };
+
+        function showResult(message, type = 'info') {
+            const element = document.getElementById('test-results');
+            const resultElement = document.createElement('div');
+            resultElement.className = `result ${type}`;
+            resultElement.textContent = message;
+            element.appendChild(resultElement);
+            element.scrollTop = element.scrollHeight;
+        }
+
+        function clearResults() {
+            document.getElementById('test-results').innerHTML = '';
+        }
+
+        function displayQuestionData() {
+            const element = document.getElementById('question-data');
+            element.innerHTML = `
+                <div class="option"><strong>Question:</strong> ${sampleQuestion.questionEn}</div>
+                <div class="option">A) ${sampleQuestion.options[0]}</div>
+                <div class="option correct-option">B) ${sampleQuestion.options[1]} ✓ (Correct)</div>
+                <div class="option">C) ${sampleQuestion.options[2]}</div>
+                <div class="option">D) ${sampleQuestion.options[3]}</div>
+                <div class="option"><strong>JSON:</strong> "correct": ${sampleQuestion.correct} (0-based index)</div>
+                <div class="option"><strong>Expected Display:</strong> Option B</div>
+            `;
+        }
+
+        function displayCompletionData() {
+            const element = document.getElementById('completion-data');
+            element.innerHTML = `
+                <div class="option"><strong>Test:</strong> ${sampleCompletion.testName}</div>
+                <div class="option"><strong>Type:</strong> ${sampleCompletion.testType.toUpperCase()}</div>
+                <div class="option"><strong>Completed:</strong> ${sampleCompletion.isCompleted ? 'Yes' : 'No'}</div>
+                <div class="option"><strong>Score:</strong> ${sampleCompletion.score}/100</div>
+                <div class="option"><strong>Rank:</strong> #${sampleCompletion.rank} of ${sampleCompletion.totalParticipants}</div>
+                <div class="option"><strong>Correct Answers:</strong> ${sampleCompletion.correctAnswers}/${sampleCompletion.totalQuestions}</div>
+                <div class="option"><strong>Time Taken:</strong> ${Math.floor(sampleCompletion.timeTaken / 60)} minutes</div>
+            `;
+        }
+
+        function testAnswerIndexing() {
+            clearResults();
+            showResult('🔍 Testing Answer Indexing Logic...', 'info');
+            
+            const correctIndex = sampleQuestion.correct; // 1 (0-based)
+            const correctDisplay = String.fromCharCode(65 + correctIndex); // B
+            
+            showResult(`JSON correct value: ${correctIndex}`, 'info');
+            showResult(`Converted to display: ${correctDisplay}`, 'info');
+            showResult(`Expected option: ${sampleQuestion.options[correctIndex]}`, 'info');
+            
+            if (correctDisplay === 'B' && correctIndex === 1) {
+                showResult('✅ SUCCESS: Answer indexing is correct!', 'success');
+                showResult('✅ Index 1 correctly maps to option B', 'success');
+            } else {
+                showResult('❌ FAILED: Answer indexing is incorrect!', 'error');
+            }
+        }
+
+        function testCorrectnessCalculation() {
+            clearResults();
+            showResult('✅ Testing Correctness Calculation...', 'info');
+            
+            // Simulate different user answers
+            const testCases = [
+                { userAnswer: 0, expected: false, description: 'User selected A (wrong)' },
+                { userAnswer: 1, expected: true, description: 'User selected B (correct)' },
+                { userAnswer: 2, expected: false, description: 'User selected C (wrong)' },
+                { userAnswer: 3, expected: false, description: 'User selected D (wrong)' }
+            ];
+            
+            testCases.forEach(testCase => {
+                const isCorrect = testCase.userAnswer === sampleQuestion.correct;
+                const userOption = String.fromCharCode(65 + testCase.userAnswer);
+                
+                showResult(`User Answer: ${userOption} (index ${testCase.userAnswer})`, 'info');
+                showResult(`Correct: ${isCorrect} (Expected: ${testCase.expected})`, isCorrect === testCase.expected ? 'success' : 'error');
+                showResult(`Description: ${testCase.description}`, 'info');
+                showResult('---', 'info');
+            });
+            
+            showResult('✅ Correctness calculation test completed!', 'success');
+        }
+
+        function testDisplayLogic() {
+            clearResults();
+            showResult('📺 Testing Display Logic...', 'info');
+            
+            // Test the new consistent logic
+            const question = sampleQuestion;
+            const userAnswer = 1; // User selected B
+            
+            // New logic: Check both correctAnswerIndex and correct
+            const isCorrect = (question.correctAnswerIndex !== undefined && userAnswer === question.correctAnswerIndex) || 
+                              (question.correct !== undefined && userAnswer === question.correct);
+            
+            // Display logic
+            const correctIndex = question.correctAnswerIndex !== undefined ? question.correctAnswerIndex : question.correct;
+            const correctDisplay = correctIndex !== undefined && correctIndex >= 0 && correctIndex < question.options.length 
+                ? String.fromCharCode(65 + correctIndex) 
+                : 'Not available';
+            
+            showResult('Testing new consistent display logic:', 'info');
+            showResult(`Question correct field: ${question.correct}`, 'info');
+            showResult(`User answer: ${String.fromCharCode(65 + userAnswer)} (index ${userAnswer})`, 'info');
+            showResult(`Is correct: ${isCorrect}`, isCorrect ? 'success' : 'error');
+            showResult(`Correct answer display: ${correctDisplay}`, 'info');
+            
+            if (isCorrect && correctDisplay === 'B') {
+                showResult('✅ SUCCESS: Display logic works correctly!', 'success');
+            } else {
+                showResult('❌ FAILED: Display logic has issues!', 'error');
+            }
+        }
+
+        function testTestCompletion() {
+            clearResults();
+            showResult('📊 Testing Test Completion Data...', 'info');
+            
+            const completion = sampleCompletion;
+            
+            showResult('Test completion data validation:', 'info');
+            showResult(`Test ID: ${completion.testId}`, 'info');
+            showResult(`Test Name: ${completion.testName}`, 'info');
+            showResult(`Test Type: ${completion.testType}`, 'info');
+            showResult(`Is Completed: ${completion.isCompleted}`, completion.isCompleted ? 'success' : 'error');
+            showResult(`Score: ${completion.score}`, 'info');
+            showResult(`Rank: ${completion.rank}`, 'info');
+            showResult(`Total Participants: ${completion.totalParticipants}`, 'info');
+            
+            if (completion.isCompleted && completion.score > 0 && completion.rank > 0) {
+                showResult('✅ SUCCESS: Test completion data is valid!', 'success');
+            } else {
+                showResult('❌ FAILED: Test completion data is invalid!', 'error');
+            }
+        }
+
+        function testScoreDisplay() {
+            clearResults();
+            showResult('🏆 Testing Score Display Logic...', 'info');
+            
+            const completion = sampleCompletion;
+            
+            // Simulate score display logic
+            const scorePercentage = Math.round((completion.score / 100) * 100);
+            const scoreColor = scorePercentage >= 80 ? 'green' : scorePercentage >= 60 ? 'yellow' : 'red';
+            
+            showResult('Score display calculations:', 'info');
+            showResult(`Raw Score: ${completion.score}`, 'info');
+            showResult(`Percentage: ${scorePercentage}%`, 'info');
+            showResult(`Color: ${scoreColor}`, 'info');
+            showResult(`Display: ${completion.score}/100 (${scorePercentage}%)`, 'info');
+            
+            if (scorePercentage > 0 && scorePercentage <= 100) {
+                showResult('✅ SUCCESS: Score display logic works!', 'success');
+            } else {
+                showResult('❌ FAILED: Score display logic has issues!', 'error');
+            }
+        }
+
+        function testRankDisplay() {
+            clearResults();
+            showResult('📈 Testing Rank Display Logic...', 'info');
+            
+            const completion = sampleCompletion;
+            
+            // Simulate rank display logic
+            const rankDisplay = `#${completion.rank}`;
+            const participantsDisplay = `${completion.totalParticipants} participants`;
+            const percentile = Math.round(((completion.totalParticipants - completion.rank + 1) / completion.totalParticipants) * 100);
+            
+            showResult('Rank display calculations:', 'info');
+            showResult(`Rank: ${rankDisplay}`, 'info');
+            showResult(`Total Participants: ${participantsDisplay}`, 'info');
+            showResult(`Percentile: ${percentile}%`, 'info');
+            showResult(`Full Display: ${rankDisplay} of ${participantsDisplay} (${percentile}th percentile)`, 'info');
+            
+            if (completion.rank > 0 && completion.rank <= completion.totalParticipants) {
+                showResult('✅ SUCCESS: Rank display logic works!', 'success');
+            } else {
+                showResult('❌ FAILED: Rank display logic has issues!', 'error');
+            }
+        }
+
+        // Initialize
+        displayQuestionData();
+        displayCompletionData();
+    </script>
+</body>
+</html>

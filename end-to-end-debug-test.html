@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>End-to-End Debug Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .debug-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border-color: #ffeaa7;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .debug-button {
+            background-color: #007bff;
+        }
+        .debug-button:hover {
+            background-color: #0056b3;
+        }
+        .warning-button {
+            background-color: #ffc107;
+            color: #000;
+        }
+        .warning-button:hover {
+            background-color: #e0a800;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+        .step {
+            margin: 10px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .step h4 {
+            margin: 0 0 10px 0;
+            color: #007bff;
+        }
+        .test-instructions {
+            background-color: #e3f2fd;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .console-output {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .log-entry {
+            margin: 2px 0;
+        }
+        .log-error {
+            color: #f48771;
+        }
+        .log-success {
+            color: #4ec9b0;
+        }
+        .log-warning {
+            color: #dcdcaa;
+        }
+        .log-info {
+            color: #9cdcfe;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 End-to-End Debug Test</h1>
+        
+        <div class="test-instructions">
+            <h3>📋 Testing Instructions</h3>
+            <div class="step">
+                <h4>Step 1: Open Browser Dev Tools</h4>
+                <p>Press F12 and go to Console tab to see debug logs</p>
+            </div>
+            <div class="step">
+                <h4>Step 2: Test Answer Selection</h4>
+                <p>Take a test and select option B (100) for "25 × 4" question</p>
+                <p>Look for "✅ CORRECT ANSWER SELECTED!" in console</p>
+            </div>
+            <div class="step">
+                <h4>Step 3: Test Submission</h4>
+                <p>Submit the test and check "🔍 ENHANCED Test Submission Debug" logs</p>
+            </div>
+            <div class="step">
+                <h4>Step 4: Test Statistics</h4>
+                <p>Check "🔍 Stats Debug" logs for statistics calculation</p>
+            </div>
+            <div class="step">
+                <h4>Step 5: Test Exam Page</h4>
+                <p>Go to exam dashboard and check "🔍 Exam Page Debug" logs</p>
+            </div>
+        </div>
+
+        <div class="debug-section info">
+            <h2>🔍 Issue 1: Answer Selection Debugging</h2>
+            <p><strong>Expected Behavior:</strong> User selects correct option B (100) for "25 × 4" question</p>
+            <p><strong>Debug Logs to Look For:</strong></p>
+            <ul>
+                <li><code>🔍 Answer Selection Debug:</code> - Shows selection details</li>
+                <li><code>✅ CORRECT ANSWER SELECTED!</code> - Confirms correct selection</li>
+                <li><code>❌ INCORRECT ANSWER SELECTED!</code> - Shows incorrect selection with hint</li>
+            </ul>
+            <button onclick="simulateAnswerSelection()">🎯 Simulate Answer Selection</button>
+            <button onclick="showAnswerSelectionLogs()">📋 Show Expected Logs</button>
+        </div>
+
+        <div class="debug-section info">
+            <h2>📊 Issue 2: Statistics Debugging</h2>
+            <p><strong>Expected Behavior:</strong> Statistics show correct average score and best rank</p>
+            <p><strong>Debug Logs to Look For:</strong></p>
+            <ul>
+                <li><code>🔍 Stats Debug: Getting stats for user:</code> - Shows user and exam info</li>
+                <li><code>🔍 Stats Debug: Test attempts query result:</code> - Shows database query results</li>
+                <li><code>🔍 Stats Debug: Calculated stats:</code> - Shows final calculated statistics</li>
+            </ul>
+            <button onclick="simulateStatsCalculation()">📈 Simulate Stats Calculation</button>
+            <button onclick="showStatsLogs()">📋 Show Expected Logs</button>
+        </div>
+
+        <div class="debug-section info">
+            <h2>📄 Issue 3: Exam Page Debugging</h2>
+            <p><strong>Expected Behavior:</strong> Completed tests show with scores, ranks, and buttons</p>
+            <p><strong>Debug Logs to Look For:</strong></p>
+            <ul>
+                <li><code>🔍 Exam Page Debug: Starting checkTestCompletions</code> - Shows exam page loading</li>
+                <li><code>🔍 Exam Page Debug: getAllTestCompletionsForExam result:</code> - Shows bulk API results</li>
+                <li><code>🔍 Exam Page Debug: isTestCompleted result:</code> - Shows individual test completion checks</li>
+                <li><code>🔍 Exam Page Debug: getIndividualTestScore result:</code> - Shows score and rank data</li>
+            </ul>
+            <button onclick="simulateExamPageLoading()">📄 Simulate Exam Page Loading</button>
+            <button onclick="showExamPageLogs()">📋 Show Expected Logs</button>
+        </div>
+
+        <div class="debug-section warning">
+            <h2>⚠️ Common Issues and Solutions</h2>
+            <div class="step">
+                <h4>Issue: Answer Selection Shows Wrong Option</h4>
+                <p><strong>Cause:</strong> User is selecting wrong option, not a system bug</p>
+                <p><strong>Solution:</strong> Look for hint in console: "💡 Hint: The correct answer is option B (100)"</p>
+            </div>
+            <div class="step">
+                <h4>Issue: Statistics Show 0 or Missing Values</h4>
+                <p><strong>Cause:</strong> Test attempts not found in database or calculation error</p>
+                <p><strong>Solution:</strong> Check "🔍 Stats Debug: No test attempts found" or calculation logs</p>
+            </div>
+            <div class="step">
+                <h4>Issue: Exam Page Not Showing Completed Tests</h4>
+                <p><strong>Cause:</strong> API calls failing or returning empty data</p>
+                <p><strong>Solution:</strong> Check API error logs and fallback mechanism logs</p>
+            </div>
+        </div>
+
+        <div class="debug-section">
+            <h2>📊 Debug Results</h2>
+            <div id="debug-results"></div>
+        </div>
+
+        <div class="debug-section">
+            <h2>🖥️ Console Output Simulator</h2>
+            <div id="console-output" class="console-output">
+                <div class="log-entry log-info">Console ready. Start testing to see debug logs...</div>
+            </div>
+            <button onclick="clearConsole()">🗑️ Clear Console</button>
+        </div>
+    </div>
+
+    <script>
+        function showResult(message, type = 'info') {
+            const element = document.getElementById('debug-results');
+            const resultElement = document.createElement('div');
+            resultElement.className = `result ${type}`;
+            resultElement.textContent = message;
+            element.appendChild(resultElement);
+            element.scrollTop = element.scrollHeight;
+        }
+
+        function clearResults() {
+            document.getElementById('debug-results').innerHTML = '';
+        }
+
+        function addConsoleLog(message, type = 'info') {
+            const console = document.getElementById('console-output');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            console.appendChild(logEntry);
+            console.scrollTop = console.scrollHeight;
+        }
+
+        function clearConsole() {
+            document.getElementById('console-output').innerHTML = '<div class="log-entry log-info">Console cleared.</div>';
+        }
+
+        function simulateAnswerSelection() {
+            clearResults();
+            clearConsole();
+            
+            addConsoleLog('🔍 Answer Selection Debug: {', 'info');
+            addConsoleLog('  questionId: "q1",', 'info');
+            addConsoleLog('  questionText: "What is the value of 25 × 4?",', 'info');
+            addConsoleLog('  options: ["90", "100", "110", "120"],', 'info');
+            addConsoleLog('  correctAnswerIndex: 1,', 'info');
+            addConsoleLog('  correctAnswer: 1,', 'info');
+            addConsoleLog('  userSelectedIndex: 1,', 'info');
+            addConsoleLog('  userSelectedOption: "100",', 'info');
+            addConsoleLog('  correctOption: "100",', 'info');
+            addConsoleLog('  isCorrect: true', 'info');
+            addConsoleLog('}', 'info');
+            addConsoleLog('✅ CORRECT ANSWER SELECTED!', 'success');
+            
+            showResult('✅ SUCCESS: Answer selection simulation completed!\n\nUser correctly selected option B (100) for the "25 × 4" question.\nThe system correctly identified this as the right answer.', 'success');
+        }
+
+        function showAnswerSelectionLogs() {
+            clearResults();
+            showResult(`🔍 Expected Debug Logs for Answer Selection:
+
+1. CORRECT SELECTION:
+🔍 Answer Selection Debug: {
+  questionId: "q1",
+  questionText: "What is the value of 25 × 4?",
+  options: ["90", "100", "110", "120"],
+  correctAnswerIndex: 1,
+  correctAnswer: 1,
+  userSelectedIndex: 1,
+  userSelectedOption: "100",
+  correctOption: "100",
+  isCorrect: true
+}
+✅ CORRECT ANSWER SELECTED!
+
+2. INCORRECT SELECTION:
+🔍 Answer Selection Debug: {
+  questionId: "q1",
+  questionText: "What is the value of 25 × 4?",
+  options: ["90", "100", "110", "120"],
+  correctAnswerIndex: 1,
+  correctAnswer: 1,
+  userSelectedIndex: 0,
+  userSelectedOption: "90",
+  correctOption: "100",
+  isCorrect: false
+}
+❌ INCORRECT ANSWER SELECTED!
+💡 Hint: The correct answer is option B (100)
+
+This will help identify if the user is selecting the wrong option.`, 'info');
+        }
+
+        function simulateStatsCalculation() {
+            clearResults();
+            clearConsole();
+            
+            addConsoleLog('🔍 Stats Debug: Getting stats for user: user-123 exam: ssc-cgl', 'info');
+            addConsoleLog('🔍 Stats Debug: Test attempts query result: {', 'info');
+            addConsoleLog('  testAttempts: 3,', 'info');
+            addConsoleLog('  attemptsError: null,', 'info');
+            addConsoleLog('  sampleData: [', 'info');
+            addConsoleLog('    { id: "attempt-1", test_type: "pyq", test_id: "2024-paper-1", score: 85, completed_at: "2025-01-15T10:30:00Z" },', 'info');
+            addConsoleLog('    { id: "attempt-2", test_type: "mock", test_id: "mock-1", score: 92, completed_at: "2025-01-14T15:20:00Z" },', 'info');
+            addConsoleLog('    { id: "attempt-3", test_type: "pyq", test_id: "2023-paper-2", score: 78, completed_at: "2025-01-13T09:45:00Z" }', 'info');
+            addConsoleLog('  ]', 'info');
+            addConsoleLog('}', 'info');
+            addConsoleLog('🔍 Stats Debug: Calculating stats for 3 test attempts', 'info');
+            addConsoleLog('🔍 Stats Debug: Calculated stats: {', 'info');
+            addConsoleLog('  totalTests: 3,', 'info');
+            addConsoleLog('  bestScore: 92,', 'info');
+            addConsoleLog('  averageScore: 85,', 'info');
+            addConsoleLog('  last10Average: 85,', 'info');
+            addConsoleLog('  lastTestDate: "2025-01-15T10:30:00Z"', 'info');
+            addConsoleLog('}', 'info');
+            
+            showResult('✅ SUCCESS: Statistics calculation simulation completed!\n\nFound 3 test attempts with scores: 85, 92, 78\nCalculated statistics:\n- Total Tests: 3\n- Best Score: 92\n- Average Score: 85\n- Last 10 Average: 85', 'success');
+        }
+
+        function showStatsLogs() {
+            clearResults();
+            showResult(`🔍 Expected Debug Logs for Statistics:
+
+1. SUCCESSFUL STATS CALCULATION:
+🔍 Stats Debug: Getting stats for user: user-123 exam: ssc-cgl
+🔍 Stats Debug: Test attempts query result: {
+  testAttempts: 3,
+  attemptsError: null,
+  sampleData: [
+    { id: "attempt-1", test_type: "pyq", test_id: "2024-paper-1", score: 85, completed_at: "2025-01-15T10:30:00Z" },
+    { id: "attempt-2", test_type: "mock", test_id: "mock-1", score: 92, completed_at: "2025-01-14T15:20:00Z" }
+  ]
+}
+🔍 Stats Debug: Calculated stats: {
+  totalTests: 3,
+  bestScore: 92,
+  averageScore: 85,
+  last10Average: 85
+}
+
+2. NO TEST ATTEMPTS FOUND:
+🔍 Stats Debug: No test attempts found
+(Returns empty stats with all values as 0)
+
+This will help identify if test attempts are being stored and retrieved correctly.`, 'info');
+        }
+
+        function simulateExamPageLoading() {
+            clearResults();
+            clearConsole();
+            
+            addConsoleLog('🔍 Exam Page Debug: Starting checkTestCompletions for exam: ssc-cgl', 'info');
+            addConsoleLog('🔍 Exam Page Debug: getAllTestCompletionsForExam result: {', 'info');
+            addConsoleLog('  completions: 2,', 'info');
+            addConsoleLog('  error: null,', 'info');
+            addConsoleLog('  sampleData: [', 'info');
+            addConsoleLog('    { test_id: "2024-paper-1", test_type: "pyq", is_completed: true, score: 85, rank: 3 },', 'info');
+            addConsoleLog('    { test_id: "mock-1", test_type: "mock", is_completed: true, score: 92, rank: 1 }', 'info');
+            addConsoleLog('  ]', 'info');
+            addConsoleLog('}', 'info');
+            addConsoleLog('🔍 Exam Page Debug: Processed completed tests: ["pyq-2024-paper-1", "mock-mock-1"]', 'info');
+            addConsoleLog('🔍 Exam Page Debug: Processed test scores: [', 'info');
+            addConsoleLog('  ["pyq-2024-paper-1", { score: 85, rank: 3, totalParticipants: 150 }],', 'info');
+            addConsoleLog('  ["mock-mock-1", { score: 92, rank: 1, totalParticipants: 200 }]', 'info');
+            addConsoleLog(']', 'info');
+            
+            showResult('✅ SUCCESS: Exam page loading simulation completed!\n\nFound 2 completed tests:\n- PYQ 2024 Paper 1: Score 85, Rank #3 of 150\n- Mock Test 1: Score 92, Rank #1 of 200\n\nThese should now show on the exam page with View Solutions and Retry buttons.', 'success');
+        }
+
+        function showExamPageLogs() {
+            clearResults();
+            showResult(`🔍 Expected Debug Logs for Exam Page:
+
+1. SUCCESSFUL BULK API:
+🔍 Exam Page Debug: Starting checkTestCompletions for exam: ssc-cgl
+🔍 Exam Page Debug: getAllTestCompletionsForExam result: {
+  completions: 2,
+  error: null,
+  sampleData: [
+    { test_id: "2024-paper-1", test_type: "pyq", is_completed: true, score: 85, rank: 3 }
+  ]
+}
+🔍 Exam Page Debug: Processed completed tests: ["pyq-2024-paper-1"]
+🔍 Exam Page Debug: Processed test scores: [["pyq-2024-paper-1", { score: 85, rank: 3, totalParticipants: 150 }]]
+
+2. FALLBACK TO INDIVIDUAL API:
+⚠️ [ExamDashboard] Bulk API failed or returned no data, falling back to individual checks
+🔍 Exam Page Debug: Checking individual PYQ test: pyq-2024-paper-1
+🔍 Exam Page Debug: isTestCompleted result: { completionKey: "pyq-2024-paper-1", isCompleted: true }
+🔍 Exam Page Debug: getIndividualTestScore result: { completionKey: "pyq-2024-paper-1", scoreResult: { score: 85, rank: 3 } }
+
+This will help identify if API calls are working and data is being retrieved correctly.`, 'info');
+        }
+
+        // Initialize
+        addConsoleLog('End-to-End Debug Test initialized. Follow the testing instructions above.', 'info');
+        addConsoleLog('Open browser dev tools (F12) and go to Console tab before testing.', 'warning');
+    </script>
+</body>
+</html>

@@ -92,10 +92,22 @@ export class RazorpayPaymentService {
     referralCode?: string
   ): Promise<RazorpayPaymentResponse> {
     try {
+      // Get user ID from localStorage for custom authentication
+      const userId = localStorage.getItem('userId');
+      const userPhone = localStorage.getItem('userPhone');
+      const isAuthenticated = localStorage.getItem('isAuthenticated');
+      
+      if (!userId || !userPhone || isAuthenticated !== 'true') {
+        console.error('❌ [razorpayPaymentService] User not authenticated for payment verification');
+        return { success: false, error: 'User not authenticated' } as any;
+      }
+
+      console.log('🔍 [razorpayPaymentService] Verifying payment for user:', userId);
+
       // Verify via Supabase Edge Function, which also activates membership
       const { data, error } = await supabase.functions.invoke('verify_razorpay_payment' as any, {
         body: {
-          user_id: (await supabase.auth.getUser()).data.user?.id,
+          user_id: userId,
           plan: planId,
           order_id: razorpayPaymentData.razorpay_order_id,
           payment_id: razorpayPaymentData.razorpay_payment_id,

@@ -31,6 +31,17 @@ class TestSubmissionService {
    */
   async submitTestAttempt(submission: TestSubmissionData): Promise<TestSubmissionResult> {
     try {
+      console.log('🔍 [testSubmissionService] Starting test submission:', {
+        examId: submission.examId,
+        testType: submission.testType,
+        testId: submission.testId,
+        score: submission.score,
+        totalQuestions: submission.totalQuestions,
+        correctAnswers: submission.correctAnswers,
+        timeTaken: submission.timeTaken,
+        answers: submission.answers
+      });
+
       // Submit to comprehensive stats service
       const { data: attemptData, error: attemptError } = await comprehensiveStatsService.submitTestAttempt({
         examId: submission.examId,
@@ -42,6 +53,8 @@ class TestSubmissionService {
         timeTaken: submission.timeTaken,
         answers: submission.answers
       });
+
+      console.log('🔍 [testSubmissionService] Comprehensive stats service result:', { attemptData, attemptError });
 
       if (attemptError) {
         console.error('Error submitting test attempt:', attemptError);
@@ -143,7 +156,19 @@ class TestSubmissionService {
    * Get current user
    */
   private async getCurrentUser() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const userId = localStorage.getItem('userId');
+    const userPhone = localStorage.getItem('userPhone');
+    const isAuthenticated = localStorage.getItem('isAuthenticated');
+    
+    console.log('🔍 [testSubmissionService] Getting current user:', { userId, userPhone, isAuthenticated });
+    
+    if (!userId || !userPhone || isAuthenticated !== 'true') {
+      console.error('❌ [testSubmissionService] User not authenticated:', { userId, userPhone, isAuthenticated });
+      return null;
+    }
+
+    const user = { id: userId, phone: userPhone };
+    console.log('✅ [testSubmissionService] User authenticated:', user);
     return user;
   }
 
