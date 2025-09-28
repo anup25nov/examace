@@ -43,6 +43,7 @@ export const ReferralCodeInput: React.FC<ReferralCodeInputProps> = ({
       const result = await referralService.validateReferralCode(referralCode.trim());
       setValidationResult(result);
     } catch (error) {
+      console.error('Error validating referral code:', error);
       setValidationResult({
         valid: false,
         message: 'Error validating referral code'
@@ -58,7 +59,8 @@ export const ReferralCodeInput: React.FC<ReferralCodeInputProps> = ({
     setIsValidating(true);
 
     try {
-      const result = await referralService.createReferralTracking(referralCode.trim());
+      // Use the proper applyReferralCode function that calls the database
+      const result = await referralService.applyReferralCode(referralCode.trim());
       
       if (result.success) {
         setIsApplied(true);
@@ -70,6 +72,7 @@ export const ReferralCodeInput: React.FC<ReferralCodeInputProps> = ({
         });
       }
     } catch (error) {
+      console.error('Error applying referral code:', error);
       setValidationResult({
         valid: false,
         message: 'Error applying referral code'

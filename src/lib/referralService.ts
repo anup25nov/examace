@@ -460,7 +460,7 @@ class ReferralService {
     }
   }
 
-  // Validate referral code
+  // Validate referral code using database function
   async validateReferralCode(referralCode: string): Promise<{
     valid: boolean;
     message: string;
@@ -474,24 +474,32 @@ class ReferralService {
         };
       }
 
-      // Check if referral code exists in referral_codes table
+      // Use the database function for validation
       const { data, error } = await supabase
-        .from('referral_codes')
-        .select('user_id, code')
-        .eq('code', referralCode.toUpperCase())
-        .eq('is_active', true)
-        .maybeSingle();
+        .rpc('validate_referral_code_for_signup' as any, {
+          p_referral_code: referralCode.toUpperCase()
+        });
 
-      if (error || !data) {
+      if (error) {
+        console.error('Error validating referral code:', error);
+        return {
+          valid: false,
+          message: 'Error validating referral code'
+        };
+      }
+
+      if (!data || !Array.isArray(data) || data.length === 0) {
         return {
           valid: false,
           message: 'Invalid referral code'
         };
       }
 
+      const result = data[0];
+      
       // Check if user is trying to use their own referral code
       const user = await this.getCurrentUser();
-      if (user && data.user_id === user.id) {
+      if (user && result.referrer_id === user.id) {
         return {
           valid: false,
           message: 'Cannot use your own referral code'
@@ -499,9 +507,9 @@ class ReferralService {
       }
 
       return {
-        valid: true,
-        message: 'Valid referral code',
-        referrerId: data.user_id
+        valid: result.valid,
+        message: result.message,
+        referrerId: result.referrer_id
       };
     } catch (error) {
       console.error('Error in validateReferralCode:', error);
