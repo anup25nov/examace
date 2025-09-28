@@ -57,8 +57,13 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
       const initialHeight = window.innerHeight;
       const currentHeight = window.visualViewport?.height || window.innerHeight;
       const heightDifference = initialHeight - currentHeight;
-      setIsKeyboardOpen(heightDifference > 150);
+      const keyboardOpen = heightDifference > 100; // Reduced threshold
+      console.log('Keyboard detection:', { initialHeight, currentHeight, heightDifference, keyboardOpen });
+      setIsKeyboardOpen(keyboardOpen);
     };
+
+    // Initial check
+    handleResize();
 
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', handleResize);
@@ -291,7 +296,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-8 mb-6">
         {/* Decorative Elements */}
         <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-xl"></div>
-        <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-tr from-indigo-400/20 to-pink-400/20 rounded-full blur-xl"></div>
+        <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-tr from-indigo-400/20 to-purple-400/20 rounded-full blur-xl"></div>
         
         {/* Main Content */}
         <div className="relative z-10 text-center">
@@ -394,7 +399,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     <div 
       ref={otpContainerRef}
       className={`w-full max-w-md mx-auto transition-all duration-300 ${
-        isKeyboardOpen ? 'transform -translate-y-8' : ''
+        isKeyboardOpen ? 'transform -translate-y-16' : ''
       }`}
     >
       {/* Hero Section */}
@@ -463,7 +468,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
               </Button>
               <Button 
                 type="submit" 
-                className="flex-1 h-12 text-lg font-semibold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200" 
+                className="flex-1 h-12 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200" 
                 disabled={loading || otp.length !== 6}
               >
                 {loading ? (
