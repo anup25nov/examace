@@ -7,7 +7,7 @@
 export const blockRazorpayAnalytics = () => {
   if (typeof window === 'undefined') return;
 
-  // Block fetch requests to Razorpay analytics
+  // Block fetch requests to Razorpay analytics (but allow checkout script)
   const originalFetch = window.fetch;
   window.fetch = function(...args) {
     const url = args[0];
@@ -18,7 +18,7 @@ export const blockRazorpayAnalytics = () => {
     return originalFetch.apply(this, args);
   };
 
-  // Block XMLHttpRequest to Razorpay analytics
+  // Block XMLHttpRequest to Razorpay analytics (but allow checkout script)
   const originalXHR = window.XMLHttpRequest;
   const XHRConstructor = function() {
     const xhr = new originalXHR();

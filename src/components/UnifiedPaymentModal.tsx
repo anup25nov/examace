@@ -66,16 +66,6 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
       try {
         setRazorpayLoading(true);
         
-        // Block Razorpay analytics requests
-        const originalFetch = window.fetch;
-        window.fetch = function(...args) {
-          const url = args[0];
-          if (typeof url === 'string' && url.includes('lumberjack.razorpay.com')) {
-            console.log('Blocked Razorpay analytics request:', url);
-            return Promise.reject(new Error('Analytics blocked by CSP'));
-          }
-          return originalFetch.apply(this, args);
-        };
         
         // Check if already loaded
         if (window.Razorpay) {
