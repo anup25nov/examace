@@ -204,24 +204,26 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string, i
         console.log('Creating referral code for new user:', userId);
         
         // First check if referral code already exists
-        const { data: existingCode, error: checkError } = await supabase
+        const { data: existingCodes, error: checkError } = await supabase
           .from('referral_codes')
           .select('code')
           .eq('user_id', userId)
-          .single();
+          .eq('is_active', true)
+          .limit(1);
 
-        if (checkError && checkError.code !== 'PGRST116') {
+        if (checkError) {
           console.error('Error checking existing referral code:', checkError);
         }
 
-        if (existingCode) {
-          console.log('Referral code already exists for user:', existingCode.code);
+        if (existingCodes && existingCodes.length > 0) {
+          console.log('Referral code already exists for user:', existingCodes[0].code);
         } else {
           // Use the database function to create referral code (bypasses RLS)
           const { data: createResult, error: createError } = await supabase
             .rpc('create_user_referral_code', {
-              user_uuid: userId
-            });
+              user_uuid: userId,
+              custom_code: null
+            } as any);
 
           if (createError) {
             console.error('Error creating referral code via RPC:', createError);
@@ -249,8 +251,17 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string, i
               console.error('Fallback referral code creation failed:', fallbackError);
               console.warn('Referral code creation failed. User can still use the app.');
             }
+          } else if (createResult && Array.isArray(createResult) && createResult.length > 0) {
+            // Handle table response format: [{success: boolean, message: string, referral_code: string}]
+            const result = createResult[0] as { success: boolean; message: string; referral_code: string };
+            if (result.success) {
+              console.log('Referral code created successfully via RPC:', result.referral_code);
+            } else {
+              console.error('Referral code creation failed:', result.message);
+              console.warn('Referral code creation failed. User can still use the app.');
+            }
           } else {
-            console.log('Referral code created successfully via RPC:', createResult);
+            console.log('Referral code created successfully via RPC (no result data)');
           }
         }
       } catch (referralError) {
