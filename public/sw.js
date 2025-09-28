@@ -13,7 +13,7 @@ const CRITICAL_RESOURCES = [
   '/index.html',
   '/logos/logo.jpeg',
   '/logos/alternate_image.png',
-  '/logos/examace-logo.svg',
+  '/logos/logo.jpeg',
   '/logos/ssc-cgl-logo.svg',
   '/logos/india-map.svg',
   '/logos/math-addition.svg',

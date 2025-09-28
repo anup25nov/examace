@@ -219,7 +219,15 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
               <div className="text-xs text-gray-600">Earnings</div>
             </div>
             <div>
-              <div className="text-xs font-mono text-blue-600">{referralStats.referral_code?.slice(0, 6) || 'N/A'}</div>
+              <div className="text-xs font-mono text-blue-600" title={referralStats.referral_code || 'No code'}>
+                {referralStats.referral_code ? 
+                  (referralStats.referral_code.length > 8 ? 
+                    `${referralStats.referral_code.slice(0, 6)}...` : 
+                    referralStats.referral_code
+                  ) : 
+                  'N/A'
+                }
+              </div>
               <div className="text-xs text-gray-600">Code</div>
             </div>
           </div>

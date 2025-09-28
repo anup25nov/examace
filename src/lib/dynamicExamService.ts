@@ -118,8 +118,8 @@ export class DynamicExamService {
       icon: 'BookOpen',
       color: 'blue',
       gradient: 'from-blue-500 to-blue-600',
-      logo: '/logos/ssc-cgl-logo.svg',
-      bannerImage: '/logos/examace-logo.svg',
+      logo: '/logos/ssc.jpeg',
+      bannerImage: '/logos/logo.jpeg',
       stats: { enrolled: '2.5M+', tests: '150+', questions: '5000+' },
       sections: [
         {
@@ -187,8 +187,8 @@ export class DynamicExamService {
       icon: 'Plane',
       color: 'sky',
       gradient: 'from-sky-500 to-sky-600',
-      logo: '/logos/airforce-logo.svg',
-      bannerImage: '/logos/examace-logo.svg',
+      logo: '/logos/airforce.jpeg',
+      bannerImage: '/logos/logo.jpeg',
       stats: { enrolled: '500K+', tests: '80+', questions: '2000+' },
       sections: [
         {
@@ -256,8 +256,8 @@ export class DynamicExamService {
       icon: 'Ship',
       color: 'blue',
       gradient: 'from-blue-600 to-blue-700',
-      logo: '/logos/navy-logo.svg',
-      bannerImage: '/logos/examace-logo.svg',
+      logo: '/logos/navy.jpeg',
+      bannerImage: '/logos/logo.jpeg',
       stats: { enrolled: '300K+', tests: '60+', questions: '1500+' },
       sections: [
         {
@@ -325,8 +325,8 @@ export class DynamicExamService {
       icon: 'Train',
       color: 'purple',
       gradient: 'from-purple-500 to-purple-600',
-      logo: '/logos/railway-logo.svg',
-      bannerImage: '/logos/examace-logo.svg',
+      logo: '/logos/indian_railway.jpeg',
+      bannerImage: '/logos/indian_railway.jpeg',
       stats: { enrolled: '3.0M+', tests: '200+', questions: '4000+' },
       sections: [
         {

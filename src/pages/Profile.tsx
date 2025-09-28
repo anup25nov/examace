@@ -26,7 +26,21 @@ import {
   Target,
   Award,
   TrendingUp,
-  Loader2
+  Loader2,
+  BookOpen,
+  Brain,
+  Flame,
+  Sparkles,
+  Activity,
+  PieChart,
+  TrendingDown,
+  Eye,
+  Bookmark,
+  MessageSquare,
+  Download,
+  Share2,
+  Bell,
+  Heart
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
@@ -49,6 +63,11 @@ const Profile = () => {
     total_earnings: 0,
     referral_code: '',
     pending_earnings: 0
+  });
+  const [userStats, setUserStats] = useState({
+    totalTests: 0,
+    averageScore: 0,
+    totalTimeSpent: 0
   });
 
   useEffect(() => {
@@ -74,6 +93,43 @@ const Profile = () => {
       // Load membership data
       const membershipData = await unifiedPaymentService.getUserMembership(user!.id);
       setMembership(membershipData);
+
+      // Load user statistics from real data
+      try {
+        // Try to get real test data if available
+        const { data: testData, error: testError } = await supabase
+          .from('test_attempts')
+          .select('*')
+          .eq('user_id', user!.id);
+        
+        if (!testError && testData && testData.length > 0) {
+          const totalTests = testData.length;
+          const scores = testData.map(test => test.score || 0).filter(score => score > 0);
+          const averageScore = scores.length > 0 ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length) : 0;
+          const totalTimeSpent = testData.reduce((sum, test) => sum + (test.time_taken || 0), 0);
+          
+          setUserStats({
+            totalTests,
+            averageScore,
+            totalTimeSpent: Math.round(totalTimeSpent / 60) // Convert to minutes
+          });
+        } else {
+          // No test data available, keep defaults
+          setUserStats({
+            totalTests: 0,
+            averageScore: 0,
+            totalTimeSpent: 0
+          });
+        }
+      } catch (error) {
+        console.error('Error loading user stats:', error);
+        // Keep defaults on error
+        setUserStats({
+          totalTests: 0,
+          averageScore: 0,
+          totalTimeSpent: 0
+        });
+      }
 
       // Only load referral stats if user is on referral page or has referral data
       // This reduces unnecessary API calls for users who don't use referrals
@@ -205,8 +261,8 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      {/* Header */}
-      <header className="border-b border-border bg-white/95 backdrop-blur-md sticky top-0 z-50 shadow-lg">
+      {/* Enhanced Header with Glassmorphism */}
+      <header className="border-b border-white/20 bg-white/80 backdrop-blur-xl sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -214,12 +270,29 @@ const Profile = () => {
                 variant="ghost" 
                 size="sm" 
                 onClick={() => navigate(-1)}
-                className="flex items-center space-x-2"
+                className="flex items-center space-x-2 hover:bg-white/50 transition-all duration-200"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Back</span>
               </Button>
-              <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">
+                    {(profile as any)?.name?.charAt(0)?.toUpperCase() || 'U'}
+                  </span>
+                </div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                  Profile
+                </h1>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button variant="ghost" size="sm" className="hover:bg-white/50">
+                <Settings className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="sm" className="hover:bg-white/50">
+                <Share2 className="w-4 h-4" />
+              </Button>
             </div>
           </div>
         </div>
@@ -227,86 +300,158 @@ const Profile = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Profile Info */}
+          {/* Enhanced Profile Info */}
           <div className="lg:col-span-2 space-y-6">
-            {/* User Info Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg flex items-center justify-center">
-                    <span className="text-white font-semibold text-lg">
-                      {(profile as any)?.name?.charAt(0)?.toUpperCase() || 'U'}
-                    </span>
+            {/* Hero Profile Card */}
+            <Card className="overflow-hidden border-0 shadow-2xl bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 backdrop-blur-sm">
+              <div className="relative">
+                {/* Background Pattern */}
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 via-purple-600/5 to-indigo-600/5"></div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full -translate-y-16 translate-x-16"></div>
+                <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-indigo-400/10 to-pink-400/10 rounded-full translate-y-12 -translate-x-12"></div>
+                
+                <CardContent className="relative p-8">
+                  <div className="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-6">
+                    {/* Profile Avatar */}
+                    <div className="relative">
+                      <div className="w-20 h-20 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 rounded-2xl flex items-center justify-center shadow-lg ring-4 ring-white/50">
+                        <span className="text-white font-bold text-2xl">
+                          {(profile as any)?.name?.charAt(0)?.toUpperCase() || 'U'}
+                        </span>
+                      </div>
+                      <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center ring-2 ring-white">
+                        <CheckCircle className="w-4 h-4 text-white" />
+                      </div>
+                    </div>
+                    
+                    {/* Profile Info */}
+                    <div className="flex-1">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <h2 className="text-3xl font-bold text-gray-900 mb-1">
+                            {(profile as any)?.name || 'User'}
+                          </h2>
+                          <p className="text-gray-600 mb-2">{(profile as any)?.phone || 'No phone'}</p>
+                          <div className="flex items-center space-x-4 text-sm text-gray-500">
+                            <div className="flex items-center space-x-1">
+                              <Calendar className="w-4 h-4" />
+                              <span>Joined {formatDate((profile as any)?.created_at || new Date().toISOString())}</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Shield className="w-4 h-4 text-green-500" />
+                              <span className="text-green-600">Verified</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-4 md:mt-0">
+                          {getMembershipBadge()}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-xl font-bold">{(profile as any)?.name || 'User'}</h2>
-                    <p className="text-sm text-gray-600">{(profile as any)?.phone || 'No phone'}</p>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center space-x-2">
-                    <Shield className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">Phone Verified</span>
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="w-4 h-4 text-blue-500" />
-                    <span className="text-sm">Joined {formatDate((profile as any)?.created_at || new Date().toISOString())}</span>
-                  </div>
-                </div>
-              </CardContent>
+                </CardContent>
+              </div>
             </Card>
 
-            {/* Membership Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  {getMembershipIcon()}
-                  <span>Membership Status</span>
+            {/* User Statistics Grid - Only show if user has data */}
+            {userStats.totalTests > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="text-center p-4 hover:shadow-lg transition-all duration-200 border-0 bg-gradient-to-br from-blue-50 to-blue-100/50">
+                  <div className="flex flex-col items-center space-y-2">
+                    <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
+                      <Trophy className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">{userStats.totalTests}</div>
+                    <div className="text-sm text-gray-600">Tests Taken</div>
+                  </div>
+                </Card>
+                
+                {userStats.averageScore > 0 && (
+                  <Card className="text-center p-4 hover:shadow-lg transition-all duration-200 border-0 bg-gradient-to-br from-green-50 to-green-100/50">
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
+                        <Target className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900">{userStats.averageScore}%</div>
+                      <div className="text-sm text-gray-600">Avg Score</div>
+                    </div>
+                  </Card>
+                )}
+                
+                {userStats.totalTimeSpent > 0 && (
+                  <Card className="text-center p-4 hover:shadow-lg transition-all duration-200 border-0 bg-gradient-to-br from-purple-50 to-purple-100/50">
+                    <div className="flex flex-col items-center space-y-2">
+                      <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
+                        <Clock className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="text-2xl font-bold text-gray-900">{userStats.totalTimeSpent}m</div>
+                      <div className="text-sm text-gray-600">Time Spent</div>
+                    </div>
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {/* Enhanced Membership Card */}
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-yellow-50/30 to-orange-50/30">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
+                    {getMembershipIcon()}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">Membership Status</h3>
+                    <p className="text-sm text-gray-600">Your current plan details</p>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between p-4 bg-white/60 rounded-xl border border-white/50">
+                    <div className="flex items-center space-x-3">
                       {getMembershipBadge()}
-                      {/* <span className="text-sm text-gray-600">
-                        {membership ? `₹${membership.amount}` : 'Free'}
-                      </span> */}
+                      <div className="text-sm text-gray-600">
+                        {membership ? `₹${membership.amount}` : 'Free Plan'}
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-1">
-                      {React.createElement(getMembershipStatus().icon, { className: `w-4 h-4 ${getMembershipStatus().color}` })}
-                      <span className={`text-sm ${getMembershipStatus().color}`}>
+                    <div className="flex items-center space-x-2">
+                      {React.createElement(getMembershipStatus().icon, { className: `w-5 h-5 ${getMembershipStatus().color}` })}
+                      <span className={`font-medium ${getMembershipStatus().color}`}>
                         {getMembershipStatus().text}
                       </span>
                     </div>
                   </div>
 
                   {membership && isMembershipActive() && (
-                    <div className="bg-green-50 p-3 rounded-lg">
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-xl border border-green-200">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-green-800">
-                          Expires on {formatDate(membership.end_date)}
-                        </span>
-                        <span className="text-sm font-medium text-green-800">
-                          {getDaysRemaining()} days left
-                        </span>
+                        <div>
+                          <p className="text-sm font-medium text-green-800">Expires on {formatDate(membership.end_date)}</p>
+                          <p className="text-xs text-green-600">Renew before expiration to continue benefits</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-green-800">{getDaysRemaining()}</div>
+                          <div className="text-xs text-green-600">days left</div>
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <Progress value={(getDaysRemaining() / 30) * 100} className="h-2" />
                       </div>
                     </div>
                   )}
 
                   {shouldShowUpgrade() && (
-                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                      <div className="flex items-start space-x-3">
-                        <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
+                      <div className="flex items-start space-x-4">
+                        <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <Crown className="w-6 h-6 text-white" />
+                        </div>
                         <div className="flex-1">
-                          <h4 className="font-medium text-blue-900 mb-1">Upgrade Available</h4>
-                          <p className="text-sm text-blue-700 mb-3">{getUpgradeMessage()}</p>
+                          <h4 className="font-bold text-blue-900 mb-2">Upgrade Available</h4>
+                          <p className="text-sm text-blue-700 mb-4">{getUpgradeMessage()}</p>
                           <Button 
                             onClick={() => setShowMembershipPlans(true)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                           >
                             <Crown className="w-4 h-4 mr-2" />
                             Upgrade Now
@@ -319,131 +464,193 @@ const Profile = () => {
               </CardContent>
             </Card>
 
-            {/* Referral Stats Card */}
-            <Card>
+
+            {/* Enhanced Referral Stats Card */}
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-green-50/30 to-emerald-50/30">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Gift className="w-5 h-5 text-green-500" />
-                  <span>Referral Program</span>
+                <CardTitle className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                    <Gift className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">Referral Program</h3>
+                    <p className="text-sm text-gray-600">Earn money by referring friends</p>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-gray-900">{referralStats.total_referrals}</div>
-                    <div className="text-sm text-gray-600">Referrals</div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                  <div className="text-center p-4 bg-white/60 rounded-xl border border-white/50">
+                    <div className="text-3xl font-bold text-gray-900 mb-1">{referralStats.total_referrals}</div>
+                    <div className="text-sm text-gray-600">Total Referrals</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">₹{referralStats.total_earnings}</div>
+                  <div className="text-center p-4 bg-white/60 rounded-xl border border-white/50">
+                    <div className="text-3xl font-bold text-green-600 mb-1">₹{referralStats.total_earnings}</div>
                     <div className="text-sm text-gray-600">Total Earnings</div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">₹{referralStats.pending_earnings}</div>
-                    <div className="text-sm text-gray-600">Pending</div>
+                  <div className="text-center p-4 bg-white/60 rounded-xl border border-white/50 md:col-span-1 col-span-2">
+                    <div className="text-3xl font-bold text-blue-600 mb-1">₹{referralStats.pending_earnings}</div>
+                    <div className="text-sm text-gray-600">Pending Earnings</div>
                   </div>
-                  {/* <div className="text-center">
-                    <div className="text-sm font-mono text-purple-600">{referralStats.referral_code || 'N/A'}</div>
-                    <div className="text-sm text-gray-600">Referral Code</div>
-                  </div> */}
                 </div>
-                <div className="mt-4">
+                <div className="space-y-3">
                   <Button 
                     onClick={() => navigate('/referral')}
-                    variant="outline"
-                    className="w-full"
+                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                   >
                     <Gift className="w-4 h-4 mr-2" />
                     View Referral Dashboard
                   </Button>
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500">Earn 50% commission on every successful referral</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Quick Actions Sidebar */}
+          {/* Enhanced Sidebar */}
           <div className="space-y-6">
-            <Card>
+            {/* Quick Actions */}
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/30">
               <CardHeader>
-                <CardTitle className="text-lg">Quick Actions</CardTitle>
+                <CardTitle className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center">
+                    <Zap className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900">Quick Actions</h3>
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Button 
                   onClick={() => setShowMembershipPlans(true)}
-                  className="w-full justify-start"
-                  variant="outline"
+                  className="w-full justify-start bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                 >
-                  <Crown className="w-4 h-4 mr-2" />
+                  <Crown className="w-4 h-4 mr-3" />
                   Manage Membership
                 </Button>
                 <Button 
                   onClick={() => navigate('/referral')}
-                  className="w-full justify-start"
-                  variant="outline"
+                  className="w-full justify-start bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                 >
-                  <Gift className="w-4 h-4 mr-2" />
+                  <Gift className="w-4 h-4 mr-3" />
                   Referral Program
                 </Button>
                 <Button 
                   onClick={() => navigate('/exam/ssc-cgl')}
-                  className="w-full justify-start"
-                  variant="outline"
+                  className="w-full justify-start bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                 >
-                  <Trophy className="w-4 h-4 mr-2" />
+                  <Trophy className="w-4 h-4 mr-3" />
                   Take Mock Test
+                </Button>
+                <Button 
+                  onClick={() => navigate('/study-materials')}
+                  className="w-full justify-start bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  <BookOpen className="w-4 h-4 mr-3" />
+                  Study Materials
                 </Button>
               </CardContent>
             </Card>
 
+            {/* Study Progress - Only show if user has test data */}
+            {userStats.totalTests > 0 && (
+              <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-green-50/30 to-emerald-50/30">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                      <BarChart3 className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900">Study Progress</h3>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Tests Completed</span>
+                      <span className="font-semibold">{userStats.totalTests}</span>
+                    </div>
+                    <Progress value={Math.min((userStats.totalTests / 50) * 100, 100)} className="h-2" />
+                  </div>
+                  
+                  {userStats.averageScore > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Average Score</span>
+                        <span className="font-semibold">{userStats.averageScore}%</span>
+                      </div>
+                      <Progress value={userStats.averageScore} className="h-2" />
+                    </div>
+                  )}
+                  
+                  {userStats.totalTimeSpent > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Total Study Time</span>
+                        <span className="font-semibold">{userStats.totalTimeSpent} min</span>
+                      </div>
+                      <Progress value={Math.min((userStats.totalTimeSpent / 1000) * 100, 100)} className="h-2" />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Plan Features */}
             {membership && (
-              <Card>
+              <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-yellow-50/30 to-orange-50/30">
                 <CardHeader>
-                  <CardTitle className="text-lg">Your Plan Features</CardTitle>
+                  <CardTitle className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center">
+                      <Star className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900">Your Plan Features</h3>
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {membership.plan_id === 'pro' ? (
                       <>
-                        <div className="flex items-center space-x-2">
-                          <Check className="w-4 h-4 text-green-500" />
-                          <span className="text-sm">11 Mock Tests</span>
+                        <div className="flex items-center space-x-3 p-2 rounded-lg bg-green-50">
+                          <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                          <span className="text-sm font-medium">11 Mock Tests</span>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Check className="w-4 h-4 text-green-500" />
-                          <span className="text-sm">3 Months Access</span>
+                        <div className="flex items-center space-x-3 p-2 rounded-lg bg-green-50">
+                          <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                          <span className="text-sm font-medium">3 Months Access</span>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Check className="w-4 h-4 text-green-500" />
-                          <span className="text-sm">Detailed Solutions</span>
+                        <div className="flex items-center space-x-3 p-2 rounded-lg bg-green-50">
+                          <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                          <span className="text-sm font-medium">Detailed Solutions</span>
                         </div>
                       </>
                     ) : membership.plan_id === 'pro_plus' ? (
                       <>
-                        <div className="flex items-center space-x-2">
-                          <Check className="w-4 h-4 text-green-500" />
-                          <span className="text-sm">Unlimited Mock Tests</span>
+                        <div className="flex items-center space-x-3 p-2 rounded-lg bg-green-50">
+                          <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                          <span className="text-sm font-medium">Unlimited Mock Tests</span>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Check className="w-4 h-4 text-green-500" />
-                          <span className="text-sm">12 Months Access</span>
+                        <div className="flex items-center space-x-3 p-2 rounded-lg bg-green-50">
+                          <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                          <span className="text-sm font-medium">12 Months Access</span>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Check className="w-4 h-4 text-green-500" />
-                          <span className="text-sm">Priority Support</span>
+                        <div className="flex items-center space-x-3 p-2 rounded-lg bg-green-50">
+                          <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                          <span className="text-sm font-medium">Priority Support</span>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Check className="w-4 h-4 text-green-500" />
-                          <span className="text-sm">Advanced Analytics</span>
+                        <div className="flex items-center space-x-3 p-2 rounded-lg bg-green-50">
+                          <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                          <span className="text-sm font-medium">Advanced Analytics</span>
                         </div>
                       </>
                     ) : (
                       <>
-                        <div className="flex items-center space-x-2">
-                          <Check className="w-4 h-4 text-gray-400" />
+                        <div className="flex items-center space-x-3 p-2 rounded-lg bg-gray-50">
+                          <Check className="w-5 h-5 text-gray-400 flex-shrink-0" />
                           <span className="text-sm text-gray-500">Limited Mock Tests</span>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <Check className="w-4 h-4 text-gray-400" />
+                        <div className="flex items-center space-x-3 p-2 rounded-lg bg-gray-50">
+                          <Check className="w-5 h-5 text-gray-400 flex-shrink-0" />
                           <span className="text-sm text-gray-500">Basic Features</span>
                         </div>
                       </>
@@ -452,6 +659,7 @@ const Profile = () => {
                 </CardContent>
               </Card>
             )}
+
           </div>
         </div>
       </div>

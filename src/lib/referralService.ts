@@ -246,7 +246,34 @@ class ReferralService {
         .from('referral_codes')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
+
+      if (referralCodeError) {
+        console.error('Error fetching referral code:', referralCodeError);
+      }
+
+      // If no referral code exists, try to create one
+      let finalReferralCode = referralCodeData?.code || '';
+      if (!finalReferralCode) {
+        try {
+          console.log('No referral code found, attempting to create one...');
+          const { data: createResult, error: createError } = await supabase
+            .rpc('create_user_referral_code', {
+              user_uuid: user.id,
+              custom_code: null
+            } as any);
+
+          if (!createError && createResult && Array.isArray(createResult) && createResult.length > 0) {
+            const result = createResult[0] as { success: boolean; referral_code: string };
+            if (result.success) {
+              finalReferralCode = result.referral_code;
+              console.log('Referral code created successfully:', finalReferralCode);
+            }
+          }
+        } catch (createError) {
+          console.error('Error creating referral code:', createError);
+        }
+      }
 
       // Get earnings info using the new function
       const { data: earningsData, error: earningsError } = await supabase
@@ -271,7 +298,7 @@ class ReferralService {
       return {
         total_referrals: referralCount || 0,
         total_earnings: earnings.total_earnings || 0,
-        referral_code: referralCodeData?.code || '',
+        referral_code: finalReferralCode,
         max_referrals: 20,
         commission_rate: 50.00,
         pending_earnings: earnings.pending_earnings || 0,
