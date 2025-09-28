@@ -239,6 +239,7 @@ export const UserMessages: React.FC = () => {
                     {unreadCount} unread
                   </span>
                 )}
+                
               </div>
               <button 
                 onClick={() => setIsOpen(false)}
