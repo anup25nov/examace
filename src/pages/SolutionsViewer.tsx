@@ -225,14 +225,16 @@ const SolutionsViewer = () => {
           const questionIndex = parseInt(index);
           const question = data.questions[questionIndex];
           const userAnswer = answers[questionIndex];
-          return count + (userAnswer === question.correctAnswerIndex ? 1 : 0);
+          const correctAnswer = question.correctAnswerIndex !== undefined ? question.correctAnswerIndex : question.correct;
+          return count + (userAnswer === correctAnswer ? 1 : 0);
         }, 0);
 
         const totalMarks = data.questions.reduce((sum, q) => sum + q.marks, 0);
         const obtainedMarks = data.questions.reduce((sum, q, index) => {
           const userAnswer = answers[index];
           if (userAnswer === undefined) return sum; // Skipped
-          if (userAnswer === q.correctAnswerIndex) return sum + q.marks; // Correct
+          const correctAnswer = q.correctAnswerIndex !== undefined ? q.correctAnswerIndex : q.correct;
+          if (userAnswer === correctAnswer) return sum + q.marks; // Correct
           return sum - q.negativeMarks; // Incorrect
         }, 0);
 

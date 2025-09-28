@@ -448,6 +448,13 @@ const EnhancedExamDashboard = () => {
 
   // Update user stats
   useEffect(() => {
+    console.log('🔍 [EnhancedExamDashboard] Updating user stats:', { 
+      comprehensiveStats, 
+      testScores: Array.from(testScores.entries()),
+      allStats: allStats.length,
+      statsLoading 
+    });
+
     if (comprehensiveStats) {
       // Use comprehensive stats (includes last 10 average)
       let bestRank = 0;
@@ -457,14 +464,17 @@ const EnhancedExamDashboard = () => {
         }
       });
 
-      setUserStats({
+      const newUserStats = {
         totalTests: comprehensiveStats.totalTests,
         avgScore: comprehensiveStats.last10Average, // Use last 10 average
         bestScore: comprehensiveStats.bestScore,
         bestRank: bestRank,
         lastActive: comprehensiveStats.lastTestDate ? new Date(comprehensiveStats.lastTestDate) : null,
         avgScoreLast10: comprehensiveStats.last10Average
-      });
+      };
+
+      console.log('🔍 [EnhancedExamDashboard] Setting user stats from comprehensive stats:', newUserStats);
+      setUserStats(newUserStats);
     } else if (examId && allStats.length > 0) {
       // Fallback to legacy stats
       const currentExamStats = allStats.find(stat => stat.examId === examId);

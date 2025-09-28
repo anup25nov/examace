@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ViewportDialog } from '@/components/ViewportDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -145,16 +146,12 @@ export const TestStartModal: React.FC<TestStartModalProps> = ({
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center space-x-3">
-              <div className={`p-2 bg-gradient-to-r ${testInfo.color} rounded-lg text-white`}>
-                <IconComponent className="w-6 h-6" />
-              </div>
-              <span>Test Instructions & Settings</span>
-            </DialogTitle>
-          </DialogHeader>
+      <ViewportDialog
+        isOpen={isOpen}
+        onClose={onClose}
+        title="Test Instructions"
+        maxWidth="max-w-2xl"
+      >
 
         <div className="space-y-6">
           {/* Test Overview */}
@@ -380,8 +377,7 @@ export const TestStartModal: React.FC<TestStartModalProps> = ({
             </Button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </ViewportDialog>
 
     {/* Upgrade Modal */}
     {showUpgradeModal && planLimits && (

@@ -6,14 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from '@/components/ui/dialog';
+import { ViewportDialog } from '@/components/ViewportDialog';
 import { 
   AlertTriangle, 
   X, 
@@ -149,25 +142,25 @@ export const QuestionReportModal: React.FC<QuestionReportModalProps> = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        {children || (
-          <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-            <Flag className="w-4 h-4 mr-2" />
-            Report Question
-          </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
+    <>
+      {children || (
+        <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700" onClick={() => setIsOpen(true)}>
+          <Flag className="w-4 h-4 mr-2" />
+          Report Question
+        </Button>
+      )}
+      
+      <ViewportDialog
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        title="Report Question Issue"
+        maxWidth="max-w-2xl"
+      >
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2 text-muted-foreground">
             <AlertTriangle className="w-5 h-5 text-red-500" />
-            <span>Report Question Issue</span>
-          </DialogTitle>
-          <DialogDescription>
-            Help us improve by reporting any issues with this question
-          </DialogDescription>
-        </DialogHeader>
+            <span>Help us improve by reporting any issues with this question</span>
+          </div>
 
         {success ? (
           <div className="text-center py-8">
@@ -274,8 +267,9 @@ export const QuestionReportModal: React.FC<QuestionReportModalProps> = ({
             </div>
           </form>
         )}
-      </DialogContent>
-    </Dialog>
+        </div>
+      </ViewportDialog>
+    </>
   );
 };
 

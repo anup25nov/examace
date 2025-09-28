@@ -10,6 +10,8 @@ import MobileStatusBarHandler from "@/components/MobileStatusBarHandler";
 import MobileKeyboardHandler from "@/components/MobileKeyboardHandler";
 import PullToRefresh from "@/components/PullToRefresh";
 import SwipeToGoBack from "@/components/SwipeToGoBack";
+// Import modal debugger to make it available globally
+import "@/utils/modalDebugger";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AboutUs from "./pages/AboutUs";

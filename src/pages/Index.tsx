@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Clock, Trophy, Users, TrendingUp, Brain, ChevronRight, Flame, FileText, Smartphone, Download, QrCode } from "lucide-react";
+import { BookOpen, Clock, Trophy, Users, TrendingUp, Brain, ChevronRight, Flame, FileText, Smartphone, Download, QrCode, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { dynamicExamService } from "@/lib/dynamicExamService";
 
@@ -21,6 +21,7 @@ import PullToRefresh from "@/components/PullToRefresh";
 // Removed referral code modal from login flow - now handled during OTP verification
 import Footer from "@/components/Footer";
 import CachedImage from "@/components/CachedImage";
+import { ModalWrapper } from "@/components/ModalWrapper";
 
 // Icon mapping for dynamic loading
 const iconMap: { [key: string]: any } = {
@@ -501,36 +502,60 @@ const Index = () => {
       </section>
 
       {/* Modals */}
-      {showMembershipPlans && (
+      <ModalWrapper
+        isOpen={showMembershipPlans}
+        onClose={() => setShowMembershipPlans(false)}
+        title="Choose Membership Plan"
+        maxWidth="4xl"
+      >
         <MembershipPlans
           onSelectPlan={handlePlanSelect}
           onClose={() => setShowMembershipPlans(false)}
           currentPlan={(profile as any)?.membership_plan}
         />
-      )}
+      </ModalWrapper>
 
       {/* Payment handled within MembershipPlans via RazorpayCheckout */}
 
-      {showPhoneModal && (
-        <PhoneUpdateModal
-          currentPhone={(profile as any)?.phone}
-          onClose={() => setShowPhoneModal(false)}
-          onPhoneUpdate={handlePhoneUpdateSuccess}
-        />
-      )}
+      <ModalWrapper
+        isOpen={showPhoneModal}
+        onClose={() => setShowPhoneModal(false)}
+        title="Update Phone Number"
+        maxWidth="md"
+      >
+        <div className="p-6">
+          <PhoneUpdateModal
+            currentPhone={(profile as any)?.phone}
+            onClose={() => setShowPhoneModal(false)}
+            onPhoneUpdate={handlePhoneUpdateSuccess}
+          />
+        </div>
+      </ModalWrapper>
 
-      {showReferralSystem && (
+      <ModalWrapper
+        isOpen={showReferralSystem}
+        onClose={() => setShowReferralSystem(false)}
+        title="Referral System"
+        maxWidth="4xl"
+      >
         <ReferralSystem
           onClose={() => setShowReferralSystem(false)}
         />
-      )}
+      </ModalWrapper>
 
-      {showReferralCodeInput && (
-        <ReferralCodeInput
-          onReferralApplied={handleReferralCodeApplied}
-          onClose={() => setShowReferralCodeInput(false)}
-        />
-      )}
+      <ModalWrapper
+        isOpen={showReferralCodeInput}
+        onClose={() => setShowReferralCodeInput(false)}
+        title="Enter Referral Code"
+        maxWidth="md"
+      >
+        <div className="p-6">
+          <ReferralCodeInput
+            onReferralApplied={handleReferralCodeApplied}
+            onClose={() => setShowReferralCodeInput(false)}
+          />
+        </div>
+      </ModalWrapper>
 
 
       {/* Referral Code Collection removed - now handled during OTP verification for new users only */}
@@ -539,19 +564,24 @@ const Index = () => {
       </div>
       
       {/* Daily Accolades - Show at center of splash screen */}
-      {showDailyAccolades && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4">
-            <DailyAccolades
-              isFirstVisit={isFirstDailyVisit}
-              onClose={() => {
-                setShowDailyAccolades(false);
-                setIsFirstDailyVisit(false);
-              }}
-            />
-          </div>
-        </div>
-      )}
+      <ModalWrapper
+        isOpen={showDailyAccolades}
+        onClose={() => {
+          setShowDailyAccolades(false);
+          setIsFirstDailyVisit(false);
+        }}
+        title="Daily Accolades"
+        maxWidth="md"
+        showCloseButton={false}
+      >
+        <DailyAccolades
+          isFirstVisit={isFirstDailyVisit}
+          onClose={() => {
+            setShowDailyAccolades(false);
+            setIsFirstDailyVisit(false);
+          }}
+        />
+      </ModalWrapper>
     </PullToRefresh>
   );
 };
