@@ -257,10 +257,8 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
           
           <DropdownMenuItem 
             onClick={() => {
-              // Show membership modal directly without navigation
               setIsOpen(false);
-              // Trigger membership modal - we'll need to pass this up to parent
-              window.dispatchEvent(new CustomEvent('showMembershipModal'));
+              onMembershipClick();
             }}
             className="flex items-center space-x-2 cursor-pointer hover:bg-yellow-50 p-2 rounded-lg"
           >

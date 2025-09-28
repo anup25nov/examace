@@ -228,37 +228,6 @@ export const PerfectModal: React.FC<PerfectModalProps> = ({
         }}
         className={className}
       >
-        {/* Header */}
-        {title && (
-          <div
-            style={{
-              position: 'sticky',
-              top: 0,
-              zIndex: 10,
-              backgroundColor: 'white',
-              borderBottom: '1px solid #e5e7eb',
-              padding: '16px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              borderRadius: '16px 16px 0 0',
-              minHeight: '0',
-              flexShrink: 0
-            }}
-          >
-            <h2 className="text-lg sm:text-xl font-bold truncate pr-2">{title}</h2>
-            {showCloseButton && (
-              <Button
-                onClick={onClose}
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 hover:bg-gray-100 flex-shrink-0"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
-        )}
 
         {/* Body */}
         <div
