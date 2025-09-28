@@ -247,54 +247,108 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
   // Removed unused functions - referral handling is now simplified
 
   const renderPhoneStep = () => (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Welcome to Step2Sarkari</CardTitle>
-        <CardDescription className="text-center">
-          Enter your phone number to get started
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handlePhoneSubmit} className="space-y-4">
-          <div className="space-y-2">
-            {/* <Label htmlFor="phone">Phone Number</Label> */}
-            <div className="relative">
-              <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="Enter your 10-digit phone number"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                className="pl-10"
-                maxLength={10}
-                required
+    <div className="w-full max-w-md mx-auto">
+      {/* Hero Section with Background */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-8 mb-6">
+        {/* Decorative Elements */}
+        <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-xl"></div>
+        <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-tr from-indigo-400/20 to-pink-400/20 rounded-full blur-xl"></div>
+        
+        {/* Main Content */}
+        <div className="relative z-10 text-center">
+          <div className="mb-4">
+            <div className="w-16 h-16 mx-auto mb-4 bg-white rounded-2xl flex items-center justify-center shadow-lg p-2">
+              <img 
+                src="/logos/logo.jpeg" 
+                alt="Step 2 Sarkari Logo" 
+                className="w-full h-full object-contain"
               />
             </div>
-            <p className="text-xs text-muted-foreground">
-              We'll send you an OTP to verify your number
-            </p>
           </div>
+          <h1 className="text-3xl font-bold mb-2">
+            Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Step 2 Sarkari</span>
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Your gateway to government exam success
+          </p>
+        </div>
+      </div>
 
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          
-          <Button type="submit" className="w-full" disabled={loading || phone.length !== 10}>
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Sending OTP...
-              </>
-            ) : (
-              'Send OTP'
+      {/* Form Card */}
+      <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+        <CardHeader className="space-y-1 pb-4">
+          <CardTitle className="text-xl font-semibold text-center text-gray-800">
+            Get Started
+          </CardTitle>
+          {/* <CardDescription className="text-center text-gray-600">
+            Enter your phone number to begin your journey
+          </CardDescription> */}
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handlePhoneSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <div className="relative group">
+                <Phone className="absolute left-3 top-3 h-5 w-5 text-blue-500 group-focus-within:text-blue-600 transition-colors" />
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="Enter your 10-digit phone number"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  className="pl-12 h-12 text-lg border-2 border-gray-200 focus:border-blue-500 transition-all duration-200 rounded-xl"
+                  maxLength={10}
+                  required
+                />
+              </div>
+              <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span>Check WhatsApp for OTP</span>
+              </div>
+            </div>
+
+            {error && (
+              <Alert variant="destructive" className="border-red-200 bg-red-50">
+                <AlertDescription className="text-red-700">{error}</AlertDescription>
+              </Alert>
             )}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+            
+            <Button 
+              type="submit" 
+              className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-200 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5" 
+              disabled={loading || phone.length !== 10}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Sending OTP...
+                </>
+              ) : (
+                <>
+                  <Phone className="mr-2 h-5 w-5" />
+                  Send OTP
+                </>
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Features Section */}
+      <div className="mt-8 grid grid-cols-2 gap-4">
+        <div className="text-center p-4 bg-white/60 rounded-xl backdrop-blur-sm">
+          <div className="w-8 h-8 mx-auto mb-2 bg-green-100 rounded-full flex items-center justify-center">
+            <span className="text-green-600 text-sm">✓</span>
+          </div>
+          <p className="text-sm font-medium text-gray-700">Free Access</p>
+        </div>
+        <div className="text-center p-4 bg-white/60 rounded-xl backdrop-blur-sm">
+          <div className="w-8 h-8 mx-auto mb-2 bg-blue-100 rounded-full flex items-center justify-center">
+            <span className="text-blue-600 text-sm">📱</span>
+          </div>
+          <p className="text-sm font-medium text-gray-700">WhatsApp OTP</p>
+        </div>
+      </div>
+    </div>
   );
 
   const renderOTPStep = () => (
