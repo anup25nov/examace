@@ -222,6 +222,58 @@ class ReferralService {
     }
   }
 
+  // Ensure user has a referral code (create if missing)
+  async ensureReferralCodeExists(userId: string): Promise<{ success: boolean; referralCode?: string; error?: string }> {
+    try {
+      // Check if referral code already exists
+      const { data: existingCode, error: checkError } = await supabase
+        .from('referral_codes')
+        .select('code')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking existing referral code:', checkError);
+        return { success: false, error: checkError.message };
+      }
+
+      // If referral code exists, return it
+      if (existingCode && existingCode.code) {
+        console.log('Referral code already exists:', existingCode.code);
+        return { success: true, referralCode: existingCode.code };
+      }
+
+      // Create referral code if it doesn't exist
+      console.log('Creating referral code for user:', userId);
+      const { data: createResult, error: createError } = await supabase
+        .rpc('create_user_referral_code', {
+          user_uuid: userId,
+          custom_code: null
+        } as any);
+
+      if (createError) {
+        console.error('Error creating referral code:', createError);
+        return { success: false, error: createError.message };
+      }
+
+      if (createResult && Array.isArray(createResult) && createResult.length > 0) {
+        const result = createResult[0] as { success: boolean; referral_code: string };
+        if (result.success) {
+          console.log('Referral code created successfully:', result.referral_code);
+          return { success: true, referralCode: result.referral_code };
+        } else {
+          return { success: false, error: 'Failed to create referral code' };
+        }
+      }
+
+      return { success: false, error: 'No result from referral code creation' };
+    } catch (error: any) {
+      console.error('Error ensuring referral code exists:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
   // Get referral statistics for user
   async getReferralStats(): Promise<ReferralStats> {
     try {

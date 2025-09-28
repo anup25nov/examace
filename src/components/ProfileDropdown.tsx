@@ -29,7 +29,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { useOptimizedUserProfile } from '@/hooks/useOptimizedUserProfile';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ProfileUpdateModal } from './ProfileUpdateModal';
-import { referralService } from '@/lib/referralService';
 import UserMessages from './UserMessages';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -51,28 +50,10 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [showProfileUpdate, setShowProfileUpdate] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [referralStats, setReferralStats] = useState({
-    total_referrals: 0,
-    total_earnings: 0,
-    referral_code: '',
-    max_referrals: 20,
-    commission_rate: 50.00,
-    pending_rewards: 0,
-    verified_referrals: 0,
-    rewarded_referrals: 0
-  });
 
-  // Fetch referral stats and admin status - ALWAYS call hooks before any early returns
+  // Check admin status
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const stats = await referralService.getReferralStats();
-        setReferralStats(stats);
-      } catch (error) {
-        console.error('Error fetching referral stats:', error);
-      }
-
-      // Check admin status
       if (user) {
         try {
           const { data, error } = await supabase.rpc('is_admin' as any, {
@@ -207,31 +188,6 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
           </div>
         </div>
         
-        {/* Compact Stats */}
-        <div className="p-3 bg-gray-50">
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div>
-              <div className="text-sm font-bold text-gray-900">{referralStats.total_referrals || 0}</div>
-              <div className="text-xs text-gray-600">Referrals</div>
-            </div>
-            <div>
-              <div className="text-sm font-bold text-green-600">₹{referralStats.total_earnings || 0}</div>
-              <div className="text-xs text-gray-600">Earnings</div>
-            </div>
-            <div>
-              <div className="text-xs font-mono text-blue-600" title={referralStats.referral_code || 'No code'}>
-                {referralStats.referral_code ? 
-                  (referralStats.referral_code.length > 8 ? 
-                    `${referralStats.referral_code.slice(0, 6)}...` : 
-                    referralStats.referral_code
-                  ) : 
-                  'N/A'
-                }
-              </div>
-              <div className="text-xs text-gray-600">Code</div>
-            </div>
-          </div>
-        </div>
         
         {/* Menu Items */}
         <div className="p-2 space-y-1">

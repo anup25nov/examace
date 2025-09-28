@@ -192,16 +192,13 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string, i
 
     console.log('User profile upserted successfully:', data);
     
-    // Create referral code for new users only
-    if (isNewUser) {
-      console.log('✅ NEW USER: Creating referral code');
-    } else {
-      console.log('❌ EXISTING USER: Skipping referral code creation');
-    }
+    // Ensure referral code exists for all users (new and existing)
+    console.log('🔍 Checking referral code for user:', userId);
     
-    if (isNewUser) {
+    // Always check and create referral code if missing
+    {
       try {
-        console.log('Creating referral code for new user:', userId);
+        console.log('Ensuring referral code exists for user:', userId);
         
         // First check if referral code already exists
         const { data: existingCodes, error: checkError } = await supabase

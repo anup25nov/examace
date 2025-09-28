@@ -40,7 +40,8 @@ import {
   Download,
   Share2,
   Bell,
-  Heart
+  Heart,
+  Copy
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
@@ -48,6 +49,7 @@ import { unifiedPaymentService } from '@/lib/unifiedPaymentService';
 import { MembershipPlans } from '@/components/MembershipPlans';
 import { PerfectModal } from '@/components/PerfectModal';
 import { supabase } from '@/integrations/supabase/client';
+import { referralService } from '@/lib/referralService';
 import { messagingService } from '@/lib/messagingService';
 
 const Profile = () => {
@@ -90,6 +92,18 @@ const Profile = () => {
     try {
       setLoading(true);
       
+      // Ensure referral code exists for this user
+      try {
+        const referralResult = await referralService.ensureReferralCodeExists(user!.id);
+        if (referralResult.success) {
+          console.log('Referral code ensured:', referralResult.referralCode);
+        } else {
+          console.warn('Could not ensure referral code:', referralResult.error);
+        }
+      } catch (error) {
+        console.error('Error ensuring referral code:', error);
+      }
+      
       // Load membership data
       const membershipData = await unifiedPaymentService.getUserMembership(user!.id);
       setMembership(membershipData);
@@ -131,25 +145,39 @@ const Profile = () => {
         });
       }
 
-      // Only load referral stats if user is on referral page or has referral data
-      // This reduces unnecessary API calls for users who don't use referrals
-      const hasReferralData = localStorage.getItem('hasReferralData') === 'true';
-      if (hasReferralData) {
-        try {
+      // Always load referral code, but only load full stats if needed
+      try {
+        // Get referral code
+        const { data: referralCodeData, error: referralCodeError } = await supabase
+          .from('referral_codes')
+          .select('code')
+          .eq('user_id', user!.id)
+          .eq('is_active', true)
+          .maybeSingle();
+        
+        // Set referral code
+        setReferralStats(prev => ({
+          ...prev,
+          referral_code: referralCodeData?.code || ''
+        }));
+        
+        // Only load full referral stats if user has referral data
+        const hasReferralData = localStorage.getItem('hasReferralData') === 'true';
+        if (hasReferralData) {
           const { data, error } = await supabase.rpc('get_user_referral_earnings' as any, {
             user_uuid: user!.id
           });
+          
           if (!error && data && Array.isArray(data) && data.length > 0) {
-            setReferralStats({
-              total_referrals: 0, // This would need to be fetched separately
+            setReferralStats(prev => ({
+              ...prev,
               total_earnings: (data[0] as any).total_earnings || 0,
-              referral_code: '', // This would need to be fetched separately
               pending_earnings: (data[0] as any).pending_earnings || 0
-            });
+            }));
           }
-        } catch (error) {
-          console.error('Error loading referral stats:', error);
         }
+      } catch (error) {
+        console.error('Error loading referral data:', error);
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -400,7 +428,7 @@ const Profile = () => {
                     {getMembershipIcon()}
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">Membership Status</h3>
+                    <div className="text-xl font-bold text-gray-900">Membership Status</div>
                     <p className="text-sm text-gray-600">Your current plan details</p>
                   </div>
                 </CardTitle>
@@ -473,7 +501,7 @@ const Profile = () => {
                     <Gift className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">Referral Program</h3>
+                    <div className="text-xl font-bold text-gray-900">Referral Program</div>
                     <p className="text-sm text-gray-600">Earn money by referring friends</p>
                   </div>
                 </CardTitle>
@@ -493,6 +521,53 @@ const Profile = () => {
                     <div className="text-sm text-gray-600">Pending Earnings</div>
                   </div>
                 </div>
+                
+                {/* Referral Code Display */}
+                <div className="mb-6 p-4 bg-gradient-to-r from-green-100 to-emerald-100 rounded-xl border border-green-200">
+                  <div className="text-center">
+                    <div className="text-sm font-medium text-green-800 mb-2">Your Referral Code</div>
+                    {referralStats.referral_code ? (
+                      <>
+                        <div className="bg-white rounded-lg p-3 mb-3">
+                          <div className="text-2xl font-mono font-bold text-green-600 tracking-wider">
+                            {referralStats.referral_code}
+                          </div>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <Button
+                            onClick={() => {
+                              navigator.clipboard.writeText(`${window.location.origin}/auth?ref=${referralStats.referral_code}`);
+                              // You could add a toast notification here
+                            }}
+                            variant="outline"
+                            size="sm"
+                            className="text-green-600 border-green-300 hover:bg-green-50"
+                          >
+                            <Copy className="w-4 h-4 mr-2" />
+                            Copy Link
+                          </Button>
+                          <Button
+                            onClick={() => navigate('/referral')}
+                            variant="outline"
+                            size="sm"
+                            className="text-green-600 border-green-300 hover:bg-green-50"
+                          >
+                            <Share2 className="w-4 h-4 mr-2" />
+                            Share
+                          </Button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="bg-white rounded-lg p-3 mb-3">
+                        <div className="text-sm text-gray-500 flex items-center justify-center">
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Creating your referral code...
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
                 <div className="space-y-3">
                   <Button 
                     onClick={() => navigate('/referral')}
@@ -518,7 +593,7 @@ const Profile = () => {
                   <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center">
                     <Zap className="w-5 h-5 text-white" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900">Quick Actions</h3>
+                  <div className="text-lg font-bold text-gray-900">Quick Actions</div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -561,7 +636,7 @@ const Profile = () => {
                     <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
                       <BarChart3 className="w-5 h-5 text-white" />
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900">Study Progress</h3>
+                    <div className="text-lg font-bold text-gray-900">Study Progress</div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -604,7 +679,7 @@ const Profile = () => {
                     <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center">
                       <Star className="w-5 h-5 text-white" />
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900">Your Plan Features</h3>
+                    <div className="text-lg font-bold text-gray-900">Your Plan Features</div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
