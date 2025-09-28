@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { RazorpayCheckout } from './RazorpayCheckout';
 import { messagingService } from '@/lib/messagingService';
 import { getActiveMembershipPlans, getMembershipPlan } from '@/config/appConfig';
+import { createModalDebugger } from '@/utils/modalDebugger';
 
 interface MembershipPlan {
   id: string;
@@ -86,6 +87,74 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedPlanForPayment, setSelectedPlanForPayment] = useState<MembershipPlan | null>(null);
+  
+  // Add debugging
+  const membershipRef = useRef<HTMLDivElement>(null);
+  const debugMembership = createModalDebugger('MembershipPlans');
+
+  // Debug positioning when component mounts or updates
+  useEffect(() => {
+    if (membershipRef.current) {
+      const rect = membershipRef.current.getBoundingClientRect();
+      const style = window.getComputedStyle(membershipRef.current);
+      
+      console.log('🔍 [MembershipPlans] Component mounted/updated:', {
+        element: membershipRef.current,
+        boundingRect: {
+          x: rect.x,
+          y: rect.y,
+          width: rect.width,
+          height: rect.height,
+          top: rect.top,
+          left: rect.left,
+          bottom: rect.bottom,
+          right: rect.right
+        },
+        computedStyle: {
+          width: style.width,
+          height: style.height,
+          maxHeight: style.maxHeight,
+          overflow: style.overflow,
+          position: style.position,
+          display: style.display,
+          flexDirection: style.flexDirection
+        },
+        viewport: {
+          width: window.innerWidth,
+          height: window.innerHeight
+        },
+        parentElement: {
+          tagName: membershipRef.current.parentElement?.tagName,
+          className: membershipRef.current.parentElement?.className,
+          boundingRect: membershipRef.current.parentElement?.getBoundingClientRect()
+        },
+        isMobile,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Note: MembershipPlans is now just content, not a modal
+      // The actual modal is PerfectModal, so we don't need to debug positioning here
+      console.log('📝 [MembershipPlans] Component mounted as content (not modal):', {
+        element: membershipRef.current,
+        boundingRect: {
+          x: rect.x,
+          y: rect.y,
+          width: rect.width,
+          height: rect.height,
+          top: rect.top,
+          left: rect.left,
+          bottom: rect.bottom,
+          right: rect.right
+        },
+        parentElement: {
+          tagName: membershipRef.current.parentElement?.tagName,
+          className: membershipRef.current.parentElement?.className
+        },
+        isMobile,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }, [isMobile, plans, loading, error, debugMembership]);
 
   // Load plans from centralized configuration
   useEffect(() => {
@@ -186,10 +255,7 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2">
-      <div className={`bg-white rounded-xl shadow-xl w-full max-h-[90vh] overflow-y-auto ${
-        isMobile ? 'max-w-sm mx-1' : 'max-w-4xl'
-      }`}>
+    <div ref={membershipRef} className="w-full h-full overflow-y-auto min-h-0 flex flex-col">
         {/* Enhanced Header */}
         <div className="relative p-6 bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-200">
           <Button
@@ -439,7 +505,6 @@ export const MembershipPlans: React.FC<MembershipPlansProps> = ({
           onPaymentSuccess={handlePaymentSuccess}
         />
       )}
-      </div>
     </div>
   );
 };

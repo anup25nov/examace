@@ -150,7 +150,7 @@ export const TestStartModal: React.FC<TestStartModalProps> = ({
         isOpen={isOpen}
         onClose={onClose}
         title="Test Instructions"
-        maxWidth="max-w-2xl"
+        maxWidth="2xl"
       >
 
         <div className="space-y-6">

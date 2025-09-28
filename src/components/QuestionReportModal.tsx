@@ -154,7 +154,7 @@ export const QuestionReportModal: React.FC<QuestionReportModalProps> = ({
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         title="Report Question Issue"
-        maxWidth="max-w-2xl"
+        maxWidth="4xl"
       >
         <div className="space-y-4">
           <div className="flex items-center space-x-2 text-muted-foreground">

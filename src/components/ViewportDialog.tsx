@@ -14,17 +14,28 @@ interface ViewportDialogProps {
   className?: string;
 }
 
+// Map maxWidth prop to actual Tailwind classes
+const maxWidthMap: Record<string, string> = {
+  'sm': 'max-w-sm',
+  'md': 'max-w-md', 
+  'lg': 'max-w-lg',
+  'xl': 'max-w-xl',
+  '2xl': 'max-w-2xl',
+  '4xl': 'max-w-4xl'
+};
+
 export const ViewportDialog: React.FC<ViewportDialogProps> = ({
   isOpen,
   onClose,
   title,
   children,
-  maxWidth = 'max-w-lg',
+  maxWidth = 'lg',
   showCloseButton = true,
   className = ''
 }) => {
   const { getModalStyles, viewport } = useViewportModal();
-  const styles = getModalStyles(maxWidth);
+  const actualMaxWidth = maxWidthMap[maxWidth] || maxWidth;
+  const styles = getModalStyles(actualMaxWidth);
   const dialogRef = useRef<HTMLDivElement>(null);
   const debugDialog = createModalDebugger(`ViewportDialog-${title || 'Untitled'}`);
 
@@ -102,16 +113,59 @@ export const ViewportDialog: React.FC<ViewportDialogProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div style={styles.container} ref={dialogRef}>
+    <div 
+      style={{
+        ...styles.container,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        maxWidth: '100vw',
+        maxHeight: '100vh',
+        minWidth: '100vw',
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 50,
+        transform: 'none',
+        margin: 0,
+        padding: viewport.isMobile ? '8px' : '12px',
+        overflow: 'hidden',
+        boxSizing: 'border-box'
+      }} 
+      className="modal-perfect-center" 
+      ref={dialogRef}
+    >
       {/* Backdrop click to close */}
-      <div 
-        className="absolute inset-0" 
+      <div
+        className="absolute inset-0"
         onClick={onClose}
         aria-hidden="true"
       />
-      
+
       {/* Dialog content - perfectly centered within viewport */}
-      <div style={styles.content} className={className}>
+      <div 
+        style={{
+          ...styles.content,
+          position: 'relative',
+          transform: 'none',
+          top: 'auto',
+          left: 'auto',
+          right: 'auto',
+          bottom: 'auto',
+          margin: 0,
+          alignSelf: 'center',
+          justifySelf: 'center',
+          maxHeight: viewport.isMobile ? '85vh' : '75vh',
+          overflowY: 'auto',
+          boxSizing: 'border-box'
+        }} 
+        className={`modal-content-perfect-center ${className}`}
+      >
         {/* Header */}
         {title && (
           <div style={styles.header}>

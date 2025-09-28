@@ -15,12 +15,12 @@ interface ModalWrapperProps {
 }
 
 const maxWidthClasses = {
-  sm: 'max-w-sm',
-  md: 'max-w-md',
-  lg: 'max-w-lg',
-  xl: 'max-w-xl',
-  '2xl': 'max-w-2xl',
-  '4xl': 'max-w-4xl'
+  sm: 'max-w-sm', // 384px
+  md: 'max-w-md', // 448px
+  lg: 'max-w-lg', // 512px
+  xl: 'max-w-xl', // 576px
+  '2xl': 'max-w-2xl', // 672px
+  '4xl': 'max-w-4xl' // 896px
 };
 
 export const ModalWrapper: React.FC<ModalWrapperProps> = ({
@@ -93,6 +93,18 @@ export const ModalWrapper: React.FC<ModalWrapperProps> = ({
         viewport,
         timestamp: new Date().toISOString()
       });
+      
+      // Additional debugging for Choose Plan modal
+      if (title === 'Choose Membership Plan') {
+        console.log('🎯 [ModalWrapper] Choose Plan modal specific debug:', {
+          containerStyle: styles.container,
+          contentStyle: styles.content,
+          headerStyle: styles.header,
+          bodyStyle: styles.body,
+          isMobile: viewport.isMobile,
+          viewportDimensions: { width: viewport.width, height: viewport.height }
+        });
+      }
     }
   }, [isOpen, title, styles, viewport]);
 
@@ -122,16 +134,59 @@ export const ModalWrapper: React.FC<ModalWrapperProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div style={styles.container} ref={modalRef}>
+    <div 
+      style={{
+        ...styles.container,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        maxWidth: '100vw',
+        maxHeight: '100vh',
+        minWidth: '100vw',
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 50,
+        transform: 'none',
+        margin: 0,
+        padding: viewport.isMobile ? '8px' : '12px',
+        overflow: 'hidden',
+        boxSizing: 'border-box'
+      }} 
+      className="modal-perfect-center" 
+      ref={modalRef}
+    >
       {/* Backdrop click to close */}
-      <div 
-        className="absolute inset-0" 
+      <div
+        className="absolute inset-0"
         onClick={onClose}
         aria-hidden="true"
       />
-      
+
       {/* Modal content - perfectly centered within viewport */}
-      <div style={styles.content} className={className}>
+      <div 
+        style={{
+          ...styles.content,
+          position: 'relative',
+          transform: 'none',
+          top: 'auto',
+          left: 'auto',
+          right: 'auto',
+          bottom: 'auto',
+          margin: 0,
+          alignSelf: 'center',
+          justifySelf: 'center',
+          maxHeight: viewport.isMobile ? '85vh' : '75vh',
+          overflowY: 'auto',
+          boxSizing: 'border-box'
+        }} 
+        className={`modal-content-perfect-center ${className}`}
+      >
         {/* Header */}
         <div style={styles.header}>
           <h2 className="text-lg sm:text-xl font-bold truncate pr-2">{title}</h2>

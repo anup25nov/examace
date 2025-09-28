@@ -22,6 +22,7 @@ import PullToRefresh from "@/components/PullToRefresh";
 import Footer from "@/components/Footer";
 import CachedImage from "@/components/CachedImage";
 import { ModalWrapper } from "@/components/ModalWrapper";
+import { PerfectModal } from "@/components/PerfectModal";
 
 // Icon mapping for dynamic loading
 const iconMap: { [key: string]: any } = {
@@ -502,18 +503,18 @@ const Index = () => {
       </section>
 
       {/* Modals */}
-      <ModalWrapper
+      <PerfectModal
         isOpen={showMembershipPlans}
         onClose={() => setShowMembershipPlans(false)}
         title="Choose Membership Plan"
-        maxWidth="4xl"
+        maxWidth="max-w-2xl"
       >
         <MembershipPlans
           onSelectPlan={handlePlanSelect}
           onClose={() => setShowMembershipPlans(false)}
           currentPlan={(profile as any)?.membership_plan}
         />
-      </ModalWrapper>
+      </PerfectModal>
 
       {/* Payment handled within MembershipPlans via RazorpayCheckout */}
 

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Choose Plan Modal</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .button {
+            background: #3b82f6;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        .button:hover {
+            background: #2563eb;
+        }
+        .log-section {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .instructions {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug Choose Plan Modal</h1>
+        
+        <div class="instructions">
+            <h3>📋 Instructions:</h3>
+            <ol>
+                <li>Open your app at <code>http://localhost:8083/</code></li>
+                <li>Open the browser console (F12 → Console tab)</li>
+                <li>Click "Choose Membership Plan" button</li>
+                <li>Look for these specific log patterns in the console:</li>
+            </ol>
+        </div>
+
+        <h3>🎯 Expected Log Patterns:</h3>
+        
+        <h4>1. ModalWrapper Logs:</h4>
+        <div class="log-section">🎯 [ModalWrapper] Modal rendering with styles: {
+  title: "Choose Membership Plan",
+  styles: {
+    container: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 50, ... },
+    content: { width: "100%", maxWidth: "max-w-2xl", maxHeight: "88vh", ... },
+    header: { position: "sticky", top: 0, zIndex: 10, ... },
+    body: { maxHeight: "calc(88vh - 80px)", overflowY: "auto", ... }
+  },
+  viewport: { width: 1920, height: 1080, isMobile: false },
+  timestamp: "2025-01-28T10:30:00.000Z"
+}
+
+🎯 [ModalWrapper] Choose Plan modal specific debug: {
+  containerStyle: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, ... },
+  contentStyle: { width: "100%", maxWidth: "max-w-2xl", maxHeight: "88vh", ... },
+  headerStyle: { position: "sticky", top: 0, zIndex: 10, ... },
+  bodyStyle: { maxHeight: "calc(88vh - 80px)", overflowY: "auto", ... },
+  isMobile: false,
+  viewportDimensions: { width: 1920, height: 1080 }
+}</div>
+
+        <h4>2. MembershipPlans Logs:</h4>
+        <div class="log-section">🔍 [MembershipPlans] Component mounted/updated: {
+  element: HTMLDivElement,
+  boundingRect: DOMRect { x: 0, y: 0, width: 672, height: 400, top: 0, left: 0, bottom: 400, right: 672 },
+  computedStyle: CSSStyleDeclaration { width: "672px", height: "400px", ... },
+  isMobile: false,
+  timestamp: "2025-01-28T10:30:00.000Z"
+}</div>
+
+        <h4>3. Modal Debugger Logs:</h4>
+        <div class="log-section">✅ [ModalDebugger] MembershipPlans positioning check: {
+  type: 'fully_visible',
+  modalName: 'MembershipPlans',
+  details: {
+    boundingRect: { x: 0, y: 0, width: 672, height: 400, top: 0, left: 0, bottom: 400, right: 672 },
+    viewport: { width: 1920, height: 1080 },
+    isFullyVisible: true,
+    isPartiallyVisible: false,
+    isOutsideViewport: false
+  },
+  timestamp: "2025-01-28T10:30:00.000Z"
+}</div>
+
+        <h3>🚨 What to Look For:</h3>
+        <ul>
+            <li><strong>❌ Positioning Issues:</strong> Look for <code>type: 'partially_visible'</code> or <code>type: 'outside_viewport'</code></li>
+            <li><strong>❌ Size Issues:</strong> Check if <code>width</code> or <code>height</code> values seem wrong</li>
+            <li><strong>❌ Viewport Issues:</strong> Check if <code>viewport</code> dimensions are correct</li>
+            <li><strong>❌ Style Issues:</strong> Look for unexpected values in <code>computedStyle</code></li>
+        </ul>
+
+        <h3>🔧 Debug Commands:</h3>
+        <p>You can also run these commands in the console:</p>
+        <div class="log-section">// Check all modals
+debugAllModals()
+
+// Check only visible modals  
+debugVisibleModals()
+
+// Check active modals from registry
+debugActiveModals()</div>
+
+        <h3>📱 Mobile Testing:</h3>
+        <p>To test on mobile viewport:</p>
+        <ol>
+            <li>Open DevTools (F12)</li>
+            <li>Click the mobile device icon (📱)</li>
+            <li>Select a mobile device (e.g., iPhone 12)</li>
+            <li>Refresh the page and test the modal</li>
+        </ol>
+    </div>
+
+    <script>
+        // Add some helpful console commands
+        console.log('🔍 Debug Choose Plan Modal - Ready!');
+        console.log('📋 Instructions:');
+        console.log('1. Go to http://localhost:8083/');
+        console.log('2. Open console (F12)');
+        console.log('3. Click "Choose Membership Plan"');
+        console.log('4. Look for the log patterns shown above');
+        console.log('');
+        console.log('🔧 Available debug commands:');
+        console.log('- debugAllModals()');
+        console.log('- debugVisibleModals()');
+        console.log('- debugActiveModals()');
+    </script>
+</body>
+</html>
