@@ -19,9 +19,9 @@ const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps> = ({
   const [canScrollDown, setCanScrollDown] = useState(false);
   
   // Version check to ensure updates are applied
-  const VERSION = '2.0.3';
+  const VERSION = '2.0.4';
   const TIMESTAMP = Date.now();
-  console.log(`🚀 ResponsiveScrollContainer v${VERSION} - Improved scrolling thresholds`);
+  console.log(`🚀 ResponsiveScrollContainer v${VERSION} - Show 3 cards on mobile`);
   console.log('📱 Current timestamp:', new Date().toISOString());
   console.log('🔧 Card count:', cardCount);
   console.log('🆔 Component instance ID:', TIMESTAMP);
@@ -46,19 +46,19 @@ const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps> = ({
     console.log(`🔧 Getting responsive config - isMobile: ${isMobile}, cardCount: ${cardCount}`);
     
     if (isMobile) {
-      // Mobile: Show 2 cards then enable scrolling
+      // Mobile: Show 3-4 cards then enable scrolling
       const config = {
         cardsPerRow: 1,
-        maxVisibleCards: 2, // Show 2 cards on mobile, then scroll
-        shouldEnableScrolling: cardCount > 2,
+        maxVisibleCards: 3, // Show 3 cards on mobile, then scroll
+        shouldEnableScrolling: cardCount > 3,
         containerClass: "space-y-4",
-        version: "2.0.3", // Cache busting
+        version: "2.0.4", // Cache busting
         timestamp: Date.now()
       };
       debugLog(`Mobile config (UPDATED):`, config);
       console.log('🔧 MOBILE CONFIG UPDATED:', config);
-      console.log('✅ Mobile maxVisibleCards set to 2 for better scrolling');
-      console.log('🔥 CACHE BUSTING: Version 2.0.3');
+      console.log('✅ Mobile maxVisibleCards set to 3 for better scrolling');
+      console.log('🔥 CACHE BUSTING: Version 2.0.4');
       return config;
     } else {
       // Desktop: Show 8 cards (2 rows of 4) then enable scrolling
@@ -222,10 +222,10 @@ const ResponsiveScrollContainer: React.FC<ResponsiveScrollContainerProps> = ({
     console.log('🔄 Calculating container height - FORCE REFRESH');
     console.log('🔥 CACHE BUSTING: Height calculation with version 2.0.3');
     if (isMobile) {
-      // Mobile: Show 2 cards (2 * 288px + gap) = ~600px
-      const height = '400px'; // Show 2 cards comfortably
+      // Mobile: Show 3 cards (3 * 288px + gap) = ~900px
+      const height = '600px'; // Show 3 cards comfortably
       debugLog(`Mobile height: ${height}`);
-      console.log('✅ Mobile height set to 400px for 2-card layout');
+      console.log('✅ Mobile height set to 600px for 3-card layout');
       return height;
     } else {
       // Desktop: Show 2 rows of 4 cards = 8 cards total

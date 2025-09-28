@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Phone, ArrowLeft } from 'lucide-react';
+import { Loader2, Phone, ArrowLeft, MessageCircle, CheckCircle, Clock } from 'lucide-react';
 import { 
   sendOTPCode, 
   verifyOTPCode
@@ -30,6 +30,9 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
   const [canResend, setCanResend] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
   const [referralInvalid, setReferralInvalid] = useState<string | null>(null);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [otpAutoFetched, setOtpAutoFetched] = useState(false);
+  const otpContainerRef = useRef<HTMLDivElement>(null);
 
   // Timer effect for OTP resend
   useEffect(() => {
@@ -47,6 +50,42 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     }
     return () => clearInterval(interval);
   }, [resendTimer]);
+
+  // Keyboard detection for mobile
+  useEffect(() => {
+    const handleResize = () => {
+      const initialHeight = window.innerHeight;
+      const currentHeight = window.visualViewport?.height || window.innerHeight;
+      const heightDifference = initialHeight - currentHeight;
+      setIsKeyboardOpen(heightDifference > 150);
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+    } else {
+      window.addEventListener('resize', handleResize);
+    }
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize);
+      } else {
+        window.removeEventListener('resize', handleResize);
+      }
+    };
+  }, []);
+
+  // Auto-fetch OTP when step changes to OTP
+  useEffect(() => {
+    if (step === 'otp' && !otpAutoFetched) {
+      // Simulate auto-fetching OTP (in real implementation, this would read from SMS)
+      setTimeout(() => {
+        // This is a demo - in real app, you'd use SMS reading APIs
+        console.log('Auto-fetching OTP...');
+        setOtpAutoFetched(true);
+      }, 2000);
+    }
+  }, [step, otpAutoFetched]);
 
   // Start timer when OTP step is reached
   useEffect(() => {
@@ -352,144 +391,225 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
   );
 
   const renderOTPStep = () => (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">Verify Phone</CardTitle>
-        <CardDescription className="text-center">
-          Enter the 6-digit code sent to +91{phone}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleOTPSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label>Verification Code</Label>
-            <OTPInput
-              value={otp}
-              onChange={setOtp}
-              length={6}
-              disabled={loading}
-              className="my-4"
-            />
+    <div 
+      ref={otpContainerRef}
+      className={`w-full max-w-md mx-auto transition-all duration-300 ${
+        isKeyboardOpen ? 'transform -translate-y-8' : ''
+      }`}
+    >
+      {/* Hero Section */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 p-6 mb-6">
+        <div className="absolute -top-4 -right-4 w-20 h-20 bg-gradient-to-br from-green-400/20 to-emerald-400/20 rounded-full blur-xl"></div>
+        <div className="absolute -bottom-4 -left-4 w-24 h-24 bg-gradient-to-tr from-teal-400/20 to-cyan-400/20 rounded-full blur-xl"></div>
+        
+        <div className="relative z-10 text-center">
+          <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+            <MessageCircle className="w-6 h-6 text-white" />
           </div>
-          
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          
-          <div className="flex space-x-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={resetForm}
-              className="flex-1"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
-            </Button>
-            <Button type="submit" className="flex-1" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Verifying...
-                </>
-              ) : (
-                'Verify'
-              )}
-            </Button>
-          </div>
+          <h1 className="text-2xl font-bold mb-2 text-gray-800">
+            Verify Your Phone
+          </h1>
+          <p className="text-gray-600">
+            Code sent to whatsapp <span className="font-semibold text-gray-800">+91{phone}</span>
+          </p>
+        </div>
+      </div>
 
-          <div className="text-center">
-            {canResend ? (
+      {/* OTP Form Card */}
+      <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+        <CardContent className="p-6">
+          <form onSubmit={handleOTPSubmit} className="space-y-6">
+            {/* OTP Input Section */}
+            <div className="space-y-4">
+              <div className="text-center">
+                <Label className="text-lg font-semibold text-gray-800 mb-4 block">
+                  Enter Verification Code
+                </Label>
+                <OTPInput
+                  value={otp}
+                  onChange={setOtp}
+                  length={6}
+                  disabled={loading}
+                  className="my-4"
+                />
+              </div>
+
+              {/* Auto-fetch indicator */}
+              {/* {otpAutoFetched && (
+                <div className="flex items-center justify-center space-x-2 text-sm text-green-600 bg-green-50 rounded-lg p-3">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>OTP auto-detected from SMS</span>
+                </div>
+              )} */}
+            </div>
+            
+            {error && (
+              <Alert variant="destructive" className="border-red-200 bg-red-50">
+                <AlertDescription className="text-red-700">{error}</AlertDescription>
+              </Alert>
+            )}
+            
+            {/* Action Buttons */}
+            <div className="flex space-x-3">
               <Button
                 type="button"
-                variant="link"
-                onClick={handleResendOTP}
-                className="text-sm"
+                variant="outline"
+                onClick={resetForm}
+                className="flex-1 h-12 text-lg font-semibold rounded-xl"
                 disabled={loading}
               >
-                Resend OTP
+                <ArrowLeft className="mr-2 h-5 w-5" />
+                Back
               </Button>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Resend OTP in {resendTimer}s
-              </p>
-            )}
-          </div>
-        </form>
+              <Button 
+                type="submit" 
+                className="flex-1 h-12 text-lg font-semibold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200" 
+                disabled={loading || otp.length !== 6}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="mr-2 h-5 w-5" />
+                    Verify
+                  </>
+                )}
+              </Button>
+            </div>
 
-
-      </CardContent>
-    </Card>
+            {/* Resend Section */}
+            <div className="text-center pt-4 border-t border-gray-100">
+              {canResend ? (
+                <Button
+                  type="button"
+                  variant="link"
+                  onClick={handleResendOTP}
+                  className="text-green-600 hover:text-green-700 font-semibold"
+                  disabled={loading}
+                >
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                  Resend OTP
+                </Button>
+              ) : (
+                <div className="flex items-center justify-center space-x-2 text-gray-500">
+                  <Clock className="w-4 h-4" />
+                  <span className="text-sm">Resend OTP in {resendTimer}s</span>
+                </div>
+              )}
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 
   const renderReferralStep = () => (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold text-center">🎉 Welcome!</CardTitle>
-        <CardDescription className="text-center">
-          Do you have a referral code?
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          {/* Referral Code Input */}
-          <div className="space-y-3">
-            <Label htmlFor="referralCode" className="text-sm font-medium text-gray-700">
-              Referral Code (Optional)
-            </Label>
-            <Input
-              id="referralCode"
-              type="text"
-              placeholder="Enter referral code (e.g., ABC12345)"
-              value={referralCode}
-              onChange={(e) => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20))}
-              className="text-center font-mono tracking-wider"
-              maxLength={20}
-            />
-            {referralInvalid && (
-              <p className="text-sm text-red-600 text-center">{referralInvalid}</p>
-            )}
+    <div 
+      className={`w-full max-w-md mx-auto transition-all duration-300 ${
+        isKeyboardOpen ? 'transform -translate-y-8' : ''
+      }`}
+    >
+      {/* Hero Section */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 p-6 mb-6">
+        <div className="absolute -top-4 -right-4 w-20 h-20 bg-gradient-to-br from-purple-400/20 to-pink-400/20 rounded-full blur-xl"></div>
+        <div className="absolute -bottom-4 -left-4 w-24 h-24 bg-gradient-to-tr from-rose-400/20 to-orange-400/20 rounded-full blur-xl"></div>
+        
+        <div className="relative z-10 text-center">
+          <div className="w-12 h-12 mx-auto mb-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
+            <span className="text-2xl">🎉</span>
           </div>
-          
-          {/* Action Buttons */}
-          <div className="flex space-x-3">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={handleSkipReferral}
-              disabled={loading}
-              className="flex-1"
-            >
-              Skip
-            </Button>
-            <Button 
-              type="button" 
-              onClick={handleReferralSubmit} 
-              disabled={loading || !referralCode.trim()}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Applying...
-                </>
-              ) : (
-                'Apply & Continue'
-              )}
-            </Button>
-          </div>
-          
-          {/* Info */}
-          <div className="text-center">
-            <p className="text-xs text-gray-500">
-              You can earn {defaultConfig.commission.percentage}% commission by referring friends!
-            </p>
-          </div>
+          <h1 className="text-2xl font-bold mb-2 text-gray-800">
+            Welcome to Step 2 Sarkari!
+          </h1>
+          <p className="text-gray-600">
+            Do you have a referral code?
+          </p>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      {/* Referral Form Card */}
+      <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+        <CardContent className="p-6">
+          <div className="space-y-6">
+            {/* Referral Code Input */}
+            <div className="space-y-4">
+              <div className="text-center">
+                <Label htmlFor="referralCode" className="text-lg font-semibold text-gray-800 mb-4 block">
+                  Referral Code (Optional)
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="referralCode"
+                    type="text"
+                    placeholder="Enter referral code"
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20))}
+                    className="text-center font-mono tracking-wider text-lg h-12 border-2 border-gray-200 focus:border-purple-500 transition-all duration-200 rounded-xl"
+                    maxLength={20}
+                  />
+                  {referralCode && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                    </div>
+                  )}
+                </div>
+                {referralInvalid && (
+                  <p className="text-sm text-red-600 text-center mt-2 bg-red-50 rounded-lg p-2">
+                    {referralInvalid}
+                  </p>
+                )}
+              </div>
+            </div>
+            
+            {/* Action Buttons - Stacked on mobile when keyboard is open */}
+            <div className={`flex ${isKeyboardOpen ? 'flex-col space-y-3' : 'space-x-3'}`}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={handleSkipReferral}
+                disabled={loading}
+                className={`${isKeyboardOpen ? 'w-full' : 'flex-1'} h-12 text-lg font-semibold rounded-xl border-2 hover:bg-gray-50`}
+              >
+                Skip
+              </Button>
+              <Button 
+                type="button" 
+                onClick={handleReferralSubmit} 
+                disabled={loading || !referralCode.trim()}
+                className={`${isKeyboardOpen ? 'w-full' : 'flex-1'} h-12 text-lg font-semibold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200`}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Applying...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="mr-2 h-5 w-5" />
+                    Continue
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Info Section */}
+            <div className="text-center pt-4 border-t border-gray-100">
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4">
+                <p className="text-sm text-gray-700 font-medium">
+                  💰 Earn <span className="font-bold text-purple-600">{defaultConfig.commission.percentage}%</span> commission by referring friends!
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Share your referral code and earn money for each successful referral
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 
   switch (step) {

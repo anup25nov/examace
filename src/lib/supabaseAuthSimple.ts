@@ -192,45 +192,66 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string, i
 
     console.log('User profile upserted successfully:', data);
     
-    // Create referral code for new users
+    // Create referral code for new users only
+    if (isNewUser) {
+      console.log('✅ NEW USER: Creating referral code');
+    } else {
+      console.log('❌ EXISTING USER: Skipping referral code creation');
+    }
+    
     if (isNewUser) {
       try {
         console.log('Creating referral code for new user:', userId);
         
-        // Use the database function to create referral code (bypasses RLS)
-        const referralCode = userId.substring(0, 8).toUpperCase();
-        const { data: createResult, error: createError } = await supabase
-          .rpc('create_user_referral_code', {
-            user_uuid: userId
-          });
+        // First check if referral code already exists
+        const { data: existingCode, error: checkError } = await supabase
+          .from('referral_codes')
+          .select('code')
+          .eq('user_id', userId)
+          .single();
 
-        if (createError) {
-          console.error('Error creating referral code via RPC:', createError);
-          
-          // Fallback: Try direct insert (may fail due to RLS)
-          try {
-            const { error: directError } = await supabase
-              .from('referral_codes')
-              .insert({
-                user_id: userId,
-                code: referralCode,
-                total_referrals: 0,
-                total_earnings: 0.00,
-                is_active: true
-              });
+        if (checkError && checkError.code !== 'PGRST116') {
+          console.error('Error checking existing referral code:', checkError);
+        }
 
-            if (directError) {
-              console.error('Direct referral code creation also failed:', directError);
-              console.warn('Referral code creation failed due to RLS policies. User can still use the app.');
-            } else {
-              console.log('Referral code created via direct insert:', referralCode);
-            }
-          } catch (fallbackError) {
-            console.error('Fallback referral code creation failed:', fallbackError);
-            console.warn('Referral code creation failed. User can still use the app.');
-          }
+        if (existingCode) {
+          console.log('Referral code already exists for user:', existingCode.code);
         } else {
-          console.log('Referral code created successfully via RPC:', createResult);
+          // Use the database function to create referral code (bypasses RLS)
+          const { data: createResult, error: createError } = await supabase
+            .rpc('create_user_referral_code', {
+              user_uuid: userId
+            });
+
+          if (createError) {
+            console.error('Error creating referral code via RPC:', createError);
+            
+            // Fallback: Try direct insert (may fail due to RLS)
+            try {
+              const referralCode = userId.substring(0, 8).toUpperCase();
+              const { error: directError } = await supabase
+                .from('referral_codes')
+                .insert({
+                  user_id: userId,
+                  code: referralCode,
+                  total_referrals: 0,
+                  total_earnings: 0.00,
+                  is_active: true
+                });
+
+              if (directError) {
+                console.error('Direct referral code creation also failed:', directError);
+                console.warn('Referral code creation failed due to RLS policies. User can still use the app.');
+              } else {
+                console.log('Referral code created via direct insert:', referralCode);
+              }
+            } catch (fallbackError) {
+              console.error('Fallback referral code creation failed:', fallbackError);
+              console.warn('Referral code creation failed. User can still use the app.');
+            }
+          } else {
+            console.log('Referral code created successfully via RPC:', createResult);
+          }
         }
       } catch (referralError) {
         console.error('Error creating referral code for new user:', referralError);
