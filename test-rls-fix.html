@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RLS Fix Test - Referral Codes</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .instructions {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 RLS Fix Test - Referral Codes</h1>
+        
+        <div class="instructions">
+            <h3>📋 Instructions</h3>
+            <p>Before running these tests, apply the RLS fix in your Supabase Dashboard:</p>
+            <ol>
+                <li>Go to Supabase Dashboard → SQL Editor</li>
+                <li>Run this SQL command:</li>
+                <pre>ALTER TABLE "public"."referral_codes" DISABLE ROW LEVEL SECURITY;
+GRANT ALL ON TABLE "public"."referral_codes" TO "anon";
+GRANT ALL ON TABLE "public"."referral_codes" TO "authenticated";</pre>
+                <li>Then run the tests below</li>
+            </ol>
+        </div>
+        
+        <div class="test-section">
+            <h2>1. Test Referral Codes Access</h2>
+            <p>Test reading from referral_codes table:</p>
+            <button onclick="testReferralCodesRead()">📖 Test Read Access</button>
+            <div id="read-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Test Referral Codes Insert</h2>
+            <p>Test inserting into referral_codes table:</p>
+            <button onclick="testReferralCodesInsert()">➕ Test Insert Access</button>
+            <div id="insert-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Test RPC Function</h2>
+            <p>Test the create_user_referral_code RPC function:</p>
+            <button onclick="testRPCFunction()">🔧 Test RPC Function</button>
+            <div id="rpc-results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. Cleanup Test Data</h2>
+            <p>Clean up any test data created:</p>
+            <button onclick="cleanupTestData()">🧹 Cleanup Test Data</button>
+            <div id="cleanup-results"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://talvssmwnsfotoutjlhd.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhbHZzc213bnNmb3RvdXRqbGhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3MjQ2NjMsImV4cCI6MjA3MjMwMDY2M30.kViEumcw7qxZeITgtZf91D-UVFY5PaFyXganLyh2Tok';
+
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const resultElement = document.createElement('div');
+            resultElement.className = `result ${type}`;
+            resultElement.textContent = message;
+            element.appendChild(resultElement);
+            element.scrollTop = element.scrollHeight;
+        }
+
+        function clearResults(elementId) {
+            document.getElementById(elementId).innerHTML = '';
+        }
+
+        function generateUUID() {
+            return crypto.randomUUID();
+        }
+
+        async function testReferralCodesRead() {
+            clearResults('read-results');
+            showResult('read-results', '📖 Testing referral_codes read access...', 'info');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/referral_codes?select=*&limit=5`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'apikey': SUPABASE_ANON_KEY
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('read-results', `✅ Read access successful!\nFound ${data.length} referral codes:\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    const errorText = await response.text();
+                    showResult('read-results', `❌ Read access failed:\nStatus: ${response.status}\nError: ${errorText}`, 'error');
+                }
+            } catch (error) {
+                showResult('read-results', `❌ Read test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testReferralCodesInsert() {
+            clearResults('insert-results');
+            showResult('insert-results', '➕ Testing referral_codes insert access...', 'info');
+            
+            try {
+                const testUUID = generateUUID();
+                const testCode = `TEST${Date.now().toString().slice(-6)}`;
+                
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/referral_codes`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify({
+                        user_id: testUUID,
+                        code: testCode,
+                        total_referrals: 0,
+                        total_earnings: 0.00,
+                        is_active: true
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('insert-results', `✅ Insert access successful!\nCreated referral code:\n${JSON.stringify(data[0], null, 2)}`, 'success');
+                    
+                    // Store the created ID for cleanup
+                    window.testReferralCodeId = data[0].id;
+                } else {
+                    const errorText = await response.text();
+                    showResult('insert-results', `❌ Insert access failed:\nStatus: ${response.status}\nError: ${errorText}`, 'error');
+                }
+            } catch (error) {
+                showResult('insert-results', `❌ Insert test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testRPCFunction() {
+            clearResults('rpc-results');
+            showResult('rpc-results', '🔧 Testing create_user_referral_code RPC function...', 'info');
+            
+            try {
+                const testUUID = generateUUID();
+                const testCode = `RPC${Date.now().toString().slice(-6)}`;
+                
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/create_user_referral_code`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_uuid: testUUID,
+                        custom_code: testCode
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('rpc-results', `✅ RPC function executed!\nResult:\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    const errorText = await response.text();
+                    showResult('rpc-results', `❌ RPC function failed:\nStatus: ${response.status}\nError: ${errorText}`, 'error');
+                }
+            } catch (error) {
+                showResult('rpc-results', `❌ RPC test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function cleanupTestData() {
+            clearResults('cleanup-results');
+            showResult('cleanup-results', '🧹 Cleaning up test data...', 'info');
+            
+            try {
+                if (window.testReferralCodeId) {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/referral_codes?id=eq.${window.testReferralCodeId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'apikey': SUPABASE_ANON_KEY
+                        }
+                    });
+
+                    if (response.ok) {
+                        showResult('cleanup-results', '✅ Test data cleaned up successfully!', 'success');
+                        delete window.testReferralCodeId;
+                    } else {
+                        showResult('cleanup-results', '⚠️ Cleanup may have failed, but test data will expire naturally', 'info');
+                    }
+                } else {
+                    showResult('cleanup-results', 'ℹ️ No test data to clean up', 'info');
+                }
+            } catch (error) {
+                showResult('cleanup-results', `⚠️ Cleanup failed: ${error.message}`, 'info');
+            }
+        }
+    </script>
+</body>
+</html>

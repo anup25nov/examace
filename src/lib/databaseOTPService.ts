@@ -60,7 +60,7 @@ export class DatabaseOTPService {
     };
 
     this.supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://talvssmwnsfotoutjlhd.supabase.co';
-    this.supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhbHZzc213bnNmb3RvdXRqbGhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3MjQ2NjMsImV4cCI6MjA3MjMwMDY2M30.kViEumcw7qxZeITgtZf91D-UVFY5PaFyXganLyh2Tok';
+    this.supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhbHZzc213bnNmb3RvdXRqbGhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3MjQ2NjMsImV4cCI6MjA3MjMwMDY2M30.kViEumcw7qxZeITgtZf91D-UVFY5PaFyXganLyh2Tok';
   }
 
   /**
@@ -92,7 +92,10 @@ export class DatabaseOTPService {
    */
   private async expireExistingOTPs(phone: string): Promise<void> {
     try {
-      const response = await fetch(`${this.supabaseUrl}/rest/v1/otps?phone=eq.${phone}&is_verified=eq.false`, {
+      // Normalize phone number - remove +91 prefix if present
+      const normalizedPhone = phone.startsWith('+91') ? phone.substring(3) : phone;
+      
+      const response = await fetch(`${this.supabaseUrl}/rest/v1/otps?phone=eq.${normalizedPhone}&is_verified=eq.false`, {
         method: 'PATCH',
         headers: {
           'apikey': this.supabaseKey,
@@ -118,7 +121,7 @@ export class DatabaseOTPService {
           // No existing OTPs to expire
         }
       } else {
-        console.error(`⚠️ Could not expire existing OTPs for phone: ${phone} (${response.status})`);
+        console.error(`⚠️ Could not expire existing OTPs for phone: ${normalizedPhone} (${response.status})`);
       }
     } catch (error) {
       console.error(`❌ Error expiring existing OTPs for phone ${phone}:`, error);
@@ -129,13 +132,16 @@ export class DatabaseOTPService {
    * Store OTP in database
    */
   private async storeOTP(phone: string, otp: string, provider: string, messageId?: string): Promise<string> {
+    // Normalize phone number - remove +91 prefix if present
+    const normalizedPhone = phone.startsWith('+91') ? phone.substring(3) : phone;
+    
     // First, expire all existing OTPs for this phone number
-    await this.expireExistingOTPs(phone);
+    await this.expireExistingOTPs(normalizedPhone);
     
     const expiresAt = new Date(Date.now() + this.config.otpExpiryMinutes * 60 * 1000);
     
     const otpData = {
-      phone,
+      phone: normalizedPhone,
       otp_code: otp,
       provider,
       message_id: messageId,
@@ -172,9 +178,12 @@ export class DatabaseOTPService {
   async sendOTP(phone: string): Promise<OTPResult> {
     const startTime = Date.now();
     try {
+      // Normalize phone number - remove +91 prefix if present
+      const normalizedPhone = phone.startsWith('+91') ? phone.substring(3) : phone;
+      
       // Check rate limiting
-      if (await this.isRateLimited(phone)) {
-        console.error(`❌ Rate limit exceeded for phone: ${phone}`);
+      if (await this.isRateLimited(normalizedPhone)) {
+        console.error(`❌ Rate limit exceeded for phone: ${normalizedPhone}`);
         return { success: false, error: 'Rate limit exceeded. Please wait before requesting another OTP.' };
       }
       const response = await fetch(`${this.supabaseUrl}/functions/v1/send-sms`, {
@@ -185,7 +194,7 @@ export class DatabaseOTPService {
           'apikey': this.supabaseKey
         },
         body: JSON.stringify({
-          phone,
+          phone: normalizedPhone,
           type: 'otp',
           sender: 'EXAMACE'
         })
@@ -203,7 +212,7 @@ export class DatabaseOTPService {
         // OTP sent successfully
         
         // Update rate limit
-        const rateLimitKey = `rate_limit_${phone}`;
+        const rateLimitKey = `rate_limit_${normalizedPhone}`;
         localStorage.setItem(rateLimitKey, Date.now().toString());
         
         return {
@@ -265,7 +274,21 @@ export class DatabaseOTPService {
    */
   async verifyOTP(phone: string, otp: string): Promise<OTPResult> {
     try {
-      const response = await fetch(`${this.supabaseUrl}/rest/v1/otps?phone=eq.${phone}&otp_code=eq.${otp}&is_verified=eq.false&expires_at=gt.${new Date().toISOString()}`, {
+      // Normalize phone number - remove +91 prefix if present
+      const normalizedPhone = phone.startsWith('+91') ? phone.substring(3) : phone;
+      
+      const currentTime = new Date().toISOString();
+      const queryUrl = `${this.supabaseUrl}/rest/v1/otps?phone=eq.${normalizedPhone}&otp_code=eq.${otp}&is_verified=eq.false&expires_at=gt.${currentTime}`;
+      
+      console.log('🔍 OTP Verification Query:', {
+        originalPhone: phone,
+        normalizedPhone,
+        otp: otp.substring(0, 2) + '****', // Mask OTP for security
+        currentTime,
+        queryUrl: queryUrl.replace(this.supabaseKey, '***masked***')
+      });
+
+      const response = await fetch(queryUrl, {
         method: 'GET',
         headers: {
           'apikey': this.supabaseKey,
@@ -275,12 +298,55 @@ export class DatabaseOTPService {
       });
 
       if (!response.ok) {
-        return { success: false, error: 'Failed to verify OTP' };
+        const errorText = await response.text();
+        console.error('❌ OTP Verification Failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText
+        });
+        return { success: false, error: `Failed to verify OTP: ${response.status} ${response.statusText}` };
       }
 
       const data = await response.json();
+      console.log('📊 OTP Query Results:', {
+        found: data.length,
+        records: data.map((record: any) => ({
+          id: record.id,
+          phone: record.phone,
+          expires_at: record.expires_at,
+          is_verified: record.is_verified,
+          attempts: record.attempts
+        }))
+      });
       
       if (data && data.length > 0) {
+        // Check if OTP has exceeded max attempts
+        if (data[0].attempts >= data[0].max_attempts) {
+          console.error('❌ OTP Max Attempts Exceeded:', {
+            attempts: data[0].attempts,
+            maxAttempts: data[0].max_attempts
+          });
+          return { success: false, error: 'Maximum verification attempts exceeded. Please request a new OTP.' };
+        }
+
+        // Increment attempts first
+        const incrementResponse = await fetch(`${this.supabaseUrl}/rest/v1/otps?id=eq.${data[0].id}`, {
+          method: 'PATCH',
+          headers: {
+            'apikey': this.supabaseKey,
+            'Authorization': `Bearer ${this.supabaseKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            attempts: data[0].attempts + 1,
+            updated_at: new Date().toISOString()
+          })
+        });
+
+        if (!incrementResponse.ok) {
+          console.error('❌ Failed to increment OTP attempts');
+        }
+
         // Mark OTP as verified
         const updateResponse = await fetch(`${this.supabaseUrl}/rest/v1/otps?id=eq.${data[0].id}`, {
           method: 'PATCH',
@@ -296,13 +362,19 @@ export class DatabaseOTPService {
         });
 
         if (updateResponse.ok) {
+          console.log('✅ OTP Verified Successfully');
           return { success: true, message: 'OTP verified successfully' };
+        } else {
+          const updateError = await updateResponse.text();
+          console.error('❌ Failed to mark OTP as verified:', updateError);
+          return { success: false, error: 'Failed to complete verification' };
         }
       }
 
+      console.log('❌ No Valid OTP Found');
       return { success: false, error: 'Invalid or expired OTP' };
     } catch (error) {
-      console.error('Error verifying OTP:', error);
+      console.error('💥 Critical Error in OTP Verification:', error);
       return { success: false, error: 'Failed to verify OTP' };
     }
   }

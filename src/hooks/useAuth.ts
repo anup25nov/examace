@@ -20,47 +20,11 @@ export const useAuth = () => {
       try {
         console.log('Checking auth status...');
         
-        // First check if we have a valid Supabase session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.warn('Session error (likely invalid refresh token):', sessionError.message);
-          // Try to refresh the session before giving up
-          try {
-            const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-            if (refreshError) {
-              console.warn('Session refresh failed:', refreshError.message);
-              // Clear invalid session data
-              localStorage.removeItem('userId');
-              localStorage.removeItem('userEmail');
-              localStorage.removeItem('isAuthenticated');
-              localStorage.removeItem('lastVisitDate');
-              setIsAuthenticated(false);
-              setUser(null);
-              setLoading(false);
-              return;
-            } else if (refreshData.session) {
-              console.log('Session refreshed successfully');
-              // Continue with the refreshed session
-            }
-          } catch (refreshErr) {
-            console.warn('Session refresh error:', refreshErr);
-            // Clear invalid session data
-            localStorage.removeItem('userId');
-            localStorage.removeItem('userEmail');
-            localStorage.removeItem('isAuthenticated');
-            localStorage.removeItem('lastVisitDate');
-            setIsAuthenticated(false);
-            setUser(null);
-            setLoading(false);
-            return;
-          }
-        }
-        
+        // Use custom authentication (localStorage-based) instead of Supabase session
         const isAuth = isUserAuthenticated();
         console.log('isUserAuthenticated result:', isAuth);
         
-        if (isAuth && session) {
+        if (isAuth) {
           const authUser = await getCurrentAuthUser();
           console.log('getCurrentAuthUser result:', authUser);
           if (authUser) {
@@ -94,8 +58,11 @@ export const useAuth = () => {
               console.error('Error updating daily visit:', error);
             }
           } else {
-            // Token might be expired - check and refresh if possible
-            console.warn('Auth user not found, checking token expiry');
+            // User data not found in database, clear authentication
+            console.warn('Auth user not found in database, clearing authentication');
+            localStorage.removeItem('userId');
+            localStorage.removeItem('userPhone');
+            localStorage.removeItem('isAuthenticated');
             setIsAuthenticated(false);
             setUser(null);
           }
@@ -123,31 +90,14 @@ export const useAuth = () => {
 
     checkAuthStatus();
     
-    // Set up session refresh interval for persistent login
-    const refreshInterval = setInterval(async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          // Refresh session every 30 minutes to maintain login
-          await supabase.auth.refreshSession();
-        }
-      } catch (error) {
-        console.warn('Session refresh failed:', error);
-      }
-    }, 30 * 60 * 1000); // 30 minutes
-    
     return () => {
       clearTimeout(timeoutId);
-      clearInterval(refreshInterval);
     };
   }, []);
 
   const logout = async () => {
     try {
-      // Sign out from Supabase first
-      await supabase.auth.signOut();
-      
-      // Then use the custom signOutUser function
+      // Use the custom signOutUser function
       await signOutUser();
       
       setUser(null);

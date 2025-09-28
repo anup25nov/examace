@@ -23,14 +23,20 @@ const Auth = () => {
       
       if (isAuth) {
         console.log('User is authenticated, redirecting to dashboard');
-        navigate('/', { replace: true });
+        // Add small delay to prevent infinite redirect loops
+        setTimeout(() => {
+          navigate('/', { replace: true });
+        }, 100);
       } else {
         console.log('User is not authenticated, showing auth form');
         setLoading(false);
       }
     };
 
-    checkAuth();
+    // Add small delay to prevent race conditions
+    const timeoutId = setTimeout(checkAuth, 50);
+    
+    return () => clearTimeout(timeoutId);
   }, [navigate]);
 
   const handleAuthSuccess = () => {

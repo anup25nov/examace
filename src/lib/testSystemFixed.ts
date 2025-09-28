@@ -257,14 +257,19 @@ export class TestSystemFixed {
         };
       }
 
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      // Get current user using custom authentication
+      const userId = localStorage.getItem('userId');
+      const userPhone = localStorage.getItem('userPhone');
+      const isAuthenticated = localStorage.getItem('isAuthenticated');
+      
+      if (!userId || !userPhone || isAuthenticated !== 'true') {
         return {
           success: false,
           error: 'User not authenticated'
         };
       }
+      
+      const user = { id: userId, phone: userPhone };
 
       // Check if test is still available
       const availability = await this.checkTestAvailability(

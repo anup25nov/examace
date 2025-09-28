@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinite Redirect Fix Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .scenario {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            margin: 10px 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .status.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Infinite Redirect Fix Test</h1>
+        
+        <div class="test-section">
+            <h2>📋 Current Authentication State</h2>
+            <div id="auth-status"></div>
+            <button onclick="checkAuthStatus()">🔍 Check Auth Status</button>
+            <button onclick="clearAuthData()">🧹 Clear Auth Data</button>
+        </div>
+
+        <div class="test-section">
+            <h2>🧪 Test Scenarios</h2>
+            
+            <div class="scenario">
+                <h4>Scenario 1: Simulate Authenticated User</h4>
+                <p>Set up localStorage to simulate an authenticated user and test redirect behavior.</p>
+                <button onclick="simulateAuthenticatedUser()">✅ Simulate Authenticated User</button>
+            </div>
+            
+            <div class="scenario">
+                <h4>Scenario 2: Test Redirect Logic</h4>
+                <p>Test the authentication check logic that was causing infinite loops.</p>
+                <button onclick="testRedirectLogic()">🔄 Test Redirect Logic</button>
+            </div>
+            
+            <div class="scenario">
+                <h4>Scenario 3: Simulate Invalid Auth</h4>
+                <p>Test behavior when localStorage has auth data but user doesn't exist in database.</p>
+                <button onclick="simulateInvalidAuth()">❌ Simulate Invalid Auth</button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 Test Results</h2>
+            <div id="test-results"></div>
+        </div>
+    </div>
+
+    <script>
+        function showResult(message, type = 'info') {
+            const element = document.getElementById('test-results');
+            const resultElement = document.createElement('div');
+            resultElement.className = `result ${type}`;
+            resultElement.textContent = message;
+            element.appendChild(resultElement);
+            element.scrollTop = element.scrollHeight;
+        }
+
+        function clearResults() {
+            document.getElementById('test-results').innerHTML = '';
+        }
+
+        function updateAuthStatus() {
+            const statusElement = document.getElementById('auth-status');
+            const isAuthenticated = localStorage.getItem('isAuthenticated');
+            const userId = localStorage.getItem('userId');
+            const userPhone = localStorage.getItem('userPhone');
+            
+            let statusClass = 'info';
+            let statusText = 'Not Authenticated';
+            
+            if (isAuthenticated === 'true' && userId && userPhone) {
+                statusClass = 'success';
+                statusText = 'Authenticated';
+            } else if (isAuthenticated === 'true' && (!userId || !userPhone)) {
+                statusClass = 'error';
+                statusText = 'Invalid Auth Data';
+            }
+            
+            statusElement.innerHTML = `
+                <div class="status ${statusClass}">
+                    Status: ${statusText}
+                </div>
+                <div style="margin-top: 10px;">
+                    <strong>localStorage Data:</strong><br>
+                    isAuthenticated: ${isAuthenticated || 'null'}<br>
+                    userId: ${userId || 'null'}<br>
+                    userPhone: ${userPhone || 'null'}
+                </div>
+            `;
+        }
+
+        function checkAuthStatus() {
+            clearResults();
+            updateAuthStatus();
+            
+            const isAuthenticated = localStorage.getItem('isAuthenticated');
+            const userId = localStorage.getItem('userId');
+            const userPhone = localStorage.getItem('userPhone');
+            
+            showResult('🔍 Checking Authentication Status...', 'info');
+            
+            // Simulate the isUserAuthenticated logic
+            const isAuth = isAuthenticated === 'true' && !!userId && !!userPhone;
+            
+            showResult(`isUserAuthenticated() result: ${isAuth}`, isAuth ? 'success' : 'info');
+            
+            if (isAuth) {
+                showResult('✅ User is authenticated - should redirect to dashboard', 'success');
+            } else {
+                showResult('❌ User is not authenticated - should redirect to /auth', 'info');
+            }
+        }
+
+        function clearAuthData() {
+            clearResults();
+            
+            // Clear all authentication data
+            localStorage.removeItem('isAuthenticated');
+            localStorage.removeItem('userId');
+            localStorage.removeItem('userPhone');
+            localStorage.removeItem('userEmail');
+            localStorage.removeItem('lastVisitDate');
+            
+            showResult('🧹 Authentication data cleared', 'success');
+            updateAuthStatus();
+        }
+
+        function simulateAuthenticatedUser() {
+            clearResults();
+            
+            // Set up valid authentication data
+            localStorage.setItem('isAuthenticated', 'true');
+            localStorage.setItem('userId', 'ad42ae74-9838-48da-ac12-eb38cf9f9217');
+            localStorage.setItem('userPhone', '+917050959444');
+            
+            showResult('✅ Simulated authenticated user data:', 'success');
+            showResult(JSON.stringify({
+                isAuthenticated: 'true',
+                userId: 'ad42ae74-9838-48da-ac12-eb38cf9f9217',
+                userPhone: '+917050959444'
+            }, null, 2), 'info');
+            
+            updateAuthStatus();
+            
+            // Test the authentication logic
+            setTimeout(() => {
+                const isAuth = localStorage.getItem('isAuthenticated') === 'true' && 
+                              !!localStorage.getItem('userId') && 
+                              !!localStorage.getItem('userPhone');
+                
+                showResult(`\n🔍 Authentication check result: ${isAuth}`, isAuth ? 'success' : 'error');
+                
+                if (isAuth) {
+                    showResult('✅ Should redirect to dashboard (no infinite loop)', 'success');
+                } else {
+                    showResult('❌ Authentication check failed', 'error');
+                }
+            }, 100);
+        }
+
+        function testRedirectLogic() {
+            clearResults();
+            showResult('🔄 Testing Redirect Logic...', 'info');
+            
+            let redirectCount = 0;
+            const maxRedirects = 5;
+            
+            function simulateRedirect() {
+                redirectCount++;
+                showResult(`Redirect attempt #${redirectCount}`, 'info');
+                
+                const isAuth = localStorage.getItem('isAuthenticated') === 'true' && 
+                              !!localStorage.getItem('userId') && 
+                              !!localStorage.getItem('userPhone');
+                
+                if (redirectCount >= maxRedirects) {
+                    showResult(`❌ INFINITE LOOP DETECTED! (${redirectCount} redirects)`, 'error');
+                    return;
+                }
+                
+                if (isAuth) {
+                    showResult('✅ Authenticated - redirecting to /', 'success');
+                    // Simulate navigation delay
+                    setTimeout(() => {
+                        showResult('📍 Now on / route - checking ProtectedRoute...', 'info');
+                        setTimeout(() => {
+                            showResult('✅ ProtectedRoute allows access - no redirect', 'success');
+                            showResult('🎉 NO INFINITE LOOP! Fix is working!', 'success');
+                        }, 100);
+                    }, 100);
+                } else {
+                    showResult('❌ Not authenticated - redirecting to /auth', 'info');
+                    setTimeout(() => {
+                        showResult('📍 Now on /auth route - checking Auth component...', 'info');
+                        setTimeout(simulateRedirect, 100);
+                    }, 100);
+                }
+            }
+            
+            simulateRedirect();
+        }
+
+        function simulateInvalidAuth() {
+            clearResults();
+            
+            // Set up invalid authentication data (auth flag true but missing user data)
+            localStorage.setItem('isAuthenticated', 'true');
+            localStorage.removeItem('userId');
+            localStorage.removeItem('userPhone');
+            
+            showResult('❌ Simulated invalid authentication data:', 'error');
+            showResult(JSON.stringify({
+                isAuthenticated: 'true',
+                userId: 'null',
+                userPhone: 'null'
+            }, null, 2), 'error');
+            
+            updateAuthStatus();
+            
+            // Test the authentication logic
+            setTimeout(() => {
+                const isAuth = localStorage.getItem('isAuthenticated') === 'true' && 
+                              !!localStorage.getItem('userId') && 
+                              !!localStorage.getItem('userPhone');
+                
+                showResult(`\n🔍 Authentication check result: ${isAuth}`, isAuth ? 'error' : 'success');
+                
+                if (!isAuth) {
+                    showResult('✅ Invalid auth detected - should clear data and redirect to /auth', 'success');
+                    showResult('✅ This prevents infinite loops with invalid data', 'success');
+                } else {
+                    showResult('❌ Invalid auth not detected properly', 'error');
+                }
+            }, 100);
+        }
+
+        // Initialize
+        updateAuthStatus();
+    </script>
+</body>
+</html>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phone Conflict Fix Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .scenario {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Phone Conflict Fix Test</h1>
+        
+        <div class="test-section">
+            <h2>📋 Test Scenarios</h2>
+            
+            <div class="scenario">
+                <h4>Scenario 1: New User (Should Succeed)</h4>
+                <p>Create a new user profile with a unique phone number.</p>
+                <button onclick="testNewUser()">✅ Test New User</button>
+            </div>
+            
+            <div class="scenario">
+                <h4>Scenario 2: Existing User Update (Should Succeed)</h4>
+                <p>Update an existing user profile with the same phone number.</p>
+                <button onclick="testExistingUserUpdate()">✅ Test Existing User Update</button>
+            </div>
+            
+            <div class="scenario">
+                <h4>Scenario 3: Phone Conflict (Should Fail Gracefully)</h4>
+                <p>Try to create a user profile with a phone number that already exists with a different user ID.</p>
+                <button onclick="testPhoneConflict()">❌ Test Phone Conflict</button>
+            </div>
+            
+            <div class="scenario">
+                <h4>Scenario 4: Cleanup Test Data</h4>
+                <p>Clean up any test data created during testing.</p>
+                <button onclick="cleanupTestData()">🧹 Cleanup</button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 Test Results</h2>
+            <div id="test-results"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://talvssmwnsfotoutjlhd.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhbHZzc213bnNmb3RvdXRqbGhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3MjQ2NjMsImV4cCI6MjA3MjMwMDY2M30.kViEumcw7qxZeITgtZf91D-UVFY5PaFyXganLyh2Tok';
+
+        let testUserIds = [];
+
+        function generateUUID() {
+            return crypto.randomUUID();
+        }
+
+        function showResult(message, type = 'info') {
+            const element = document.getElementById('test-results');
+            const resultElement = document.createElement('div');
+            resultElement.className = `result ${type}`;
+            resultElement.textContent = message;
+            element.appendChild(resultElement);
+            element.scrollTop = element.scrollHeight;
+        }
+
+        function clearResults() {
+            document.getElementById('test-results').innerHTML = '';
+        }
+
+        async function testNewUser() {
+            clearResults();
+            showResult('🧪 Testing Scenario 1: New User Creation...', 'info');
+            
+            try {
+                const testUUID = generateUUID();
+                const testPhone = `+9170509${Date.now().toString().slice(-4)}`;
+                
+                showResult(`Creating user with ID: ${testUUID}`, 'info');
+                showResult(`Phone number: ${testPhone}`, 'info');
+                
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify({
+                        id: testUUID,
+                        phone: testPhone
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    testUserIds.push(testUUID);
+                    showResult(`✅ SUCCESS: New user created!\nProfile: ${JSON.stringify(data[0], null, 2)}`, 'success');
+                } else {
+                    const errorText = await response.text();
+                    showResult(`❌ FAILED: ${response.status} - ${errorText}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        async function testExistingUserUpdate() {
+            clearResults();
+            showResult('🧪 Testing Scenario 2: Existing User Update...', 'info');
+            
+            if (testUserIds.length === 0) {
+                showResult('❌ No test users available. Run Scenario 1 first.', 'error');
+                return;
+            }
+
+            try {
+                const existingUUID = testUserIds[0];
+                const testPhone = `+9170509${Date.now().toString().slice(-4)}`;
+                
+                showResult(`Updating user ID: ${existingUUID}`, 'info');
+                showResult(`New phone number: ${testPhone}`, 'info');
+                
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles?id=eq.${existingUUID}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify({
+                        phone: testPhone,
+                        updated_at: new Date().toISOString()
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult(`✅ SUCCESS: User updated!\nProfile: ${JSON.stringify(data[0], null, 2)}`, 'success');
+                } else {
+                    const errorText = await response.text();
+                    showResult(`❌ FAILED: ${response.status} - ${errorText}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        async function testPhoneConflict() {
+            clearResults();
+            showResult('🧪 Testing Scenario 3: Phone Conflict Detection...', 'info');
+            
+            if (testUserIds.length === 0) {
+                showResult('❌ No test users available. Run Scenario 1 first.', 'error');
+                return;
+            }
+
+            try {
+                // Get the first test user's phone number
+                const existingUUID = testUserIds[0];
+                const existingUserResponse = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles?id=eq.${existingUUID}`, {
+                    headers: {
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'apikey': SUPABASE_ANON_KEY
+                    }
+                });
+
+                if (!existingUserResponse.ok) {
+                    showResult('❌ Could not fetch existing user data', 'error');
+                    return;
+                }
+
+                const existingUserData = await existingUserResponse.json();
+                const existingPhone = existingUserData[0].phone;
+                const newUUID = generateUUID();
+
+                showResult(`Existing user ID: ${existingUUID}`, 'info');
+                showResult(`Existing phone: ${existingPhone}`, 'info');
+                showResult(`Trying to create new user ID: ${newUUID}`, 'info');
+                showResult(`With same phone: ${existingPhone}`, 'info');
+
+                // Try to create a new user with the same phone number
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify({
+                        id: newUUID,
+                        phone: existingPhone
+                    })
+                });
+
+                if (response.ok) {
+                    showResult('❌ UNEXPECTED: Phone conflict was not detected!', 'error');
+                    const data = await response.json();
+                    showResult(`Created profile: ${JSON.stringify(data[0], null, 2)}`, 'error');
+                } else {
+                    const errorText = await response.text();
+                    showResult(`✅ EXPECTED: Phone conflict detected!\nStatus: ${response.status}\nError: ${errorText}`, 'success');
+                }
+            } catch (error) {
+                showResult(`❌ ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        async function cleanupTestData() {
+            clearResults();
+            showResult('🧹 Cleaning up test data...', 'info');
+            
+            try {
+                for (const userId of testUserIds) {
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles?id=eq.${userId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'apikey': SUPABASE_ANON_KEY
+                        }
+                    });
+
+                    if (response.ok) {
+                        showResult(`✅ Deleted user profile: ${userId}`, 'success');
+                    } else {
+                        showResult(`⚠️ Could not delete user profile: ${userId}`, 'info');
+                    }
+                }
+                
+                testUserIds = [];
+                showResult('✅ Cleanup completed!', 'success');
+            } catch (error) {
+                showResult(`❌ Cleanup error: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

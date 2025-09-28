@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTP Debug Test - ExamAce</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .debug-section {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .debug-section h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .url-display {
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 OTP Debug Test Tool</h1>
+        
+        <div class="form-group">
+            <label for="phone">Phone Number:</label>
+            <input type="tel" id="phone" placeholder="7050959444" value="7050959444">
+            <small style="color: #666; font-size: 12px;">Note: Use format without +91 prefix (as stored in database)</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="otp">OTP Code:</label>
+            <input type="text" id="otp" placeholder="537964" value="537964">
+        </div>
+        
+        <button onclick="testOTPVerification()">🧪 Test OTP Verification</button>
+        <button onclick="checkOTPExists()">🔍 Check OTP Exists</button>
+        <button onclick="getAllOTPs()">📋 Get All OTPs for Phone</button>
+        <button onclick="cleanupOTPs()">🧹 Check Expired OTPs</button>
+        <button onclick="clearResults()">🗑️ Clear Results</button>
+        
+        <div id="results"></div>
+        
+        <div class="debug-section">
+            <h3>🔧 Debug Information</h3>
+            <p><strong>Environment:</strong> <span id="env-info">Loading...</span></p>
+            <p><strong>Supabase URL:</strong> <span id="supabase-url">Loading...</span></p>
+            <p><strong>Has API Key:</strong> <span id="has-key">Loading...</span></p>
+            <div class="url-display" id="query-url">Query URL will appear here when testing...</div>
+        </div>
+    </div>
+
+    <script>
+        // Mock environment for testing
+        const mockEnv = {
+            VITE_SUPABASE_URL: 'https://talvssmwnsfotoutjlhd.supabase.co',
+            VITE_SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhbHZzc213bnNmb3RvdXRqbGhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3MjQ2NjMsImV4cCI6MjA3MjMwMDY2M30.kViEumcw7qxZeITgtZf91D-UVFY5PaFyXganLyh2Tok'
+        };
+
+        // Initialize debug info
+        document.getElementById('env-info').textContent = 'Development';
+        document.getElementById('supabase-url').textContent = mockEnv.VITE_SUPABASE_URL;
+        document.getElementById('has-key').textContent = mockEnv.VITE_SUPABASE_ANON_KEY ? 'Yes' : 'No';
+
+        function showResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const resultElement = document.createElement('div');
+            resultElement.className = `result ${type}`;
+            resultElement.textContent = message;
+            resultsDiv.appendChild(resultElement);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('query-url').textContent = 'Query URL will appear here when testing...';
+        }
+
+        async function testOTPVerification() {
+            const phone = document.getElementById('phone').value;
+            const otp = document.getElementById('otp').value;
+            
+            if (!phone || !otp) {
+                showResult('Please enter both phone number and OTP', 'error');
+                return;
+            }
+
+            showResult('🧪 Testing OTP Verification...', 'info');
+            
+            try {
+                const currentTime = new Date().toISOString();
+                const queryUrl = `${mockEnv.VITE_SUPABASE_URL}/rest/v1/otps?phone=eq.${phone}&otp_code=eq.${otp}&is_verified=eq.false&expires_at=gt.${currentTime}`;
+                
+                document.getElementById('query-url').textContent = queryUrl;
+                
+                const response = await fetch(queryUrl, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': mockEnv.VITE_SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${mockEnv.VITE_SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                showResult(`HTTP Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult(`Found ${data.length} matching OTP records:`, 'info');
+                    showResult(JSON.stringify(data, null, 2), 'info');
+                    
+                    if (data.length > 0) {
+                        const record = data[0];
+                        showResult(`\n📊 OTP Details:
+ID: ${record.id}
+Phone: ${record.phone}
+OTP: ${record.otp_code.substring(0, 2)}****
+Expires: ${record.expires_at}
+Verified: ${record.is_verified}
+Attempts: ${record.attempts}/${record.max_attempts}
+Created: ${record.created_at}
+Is Expired: ${new Date(record.expires_at) < new Date()}
+Is Active: ${!record.is_verified && new Date(record.expires_at) > new Date()}`, 'info');
+                    }
+                } else {
+                    const errorText = await response.text();
+                    showResult(`Error Response: ${errorText}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Test failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkOTPExists() {
+            const phone = document.getElementById('phone').value;
+            const otp = document.getElementById('otp').value;
+            
+            if (!phone || !otp) {
+                showResult('Please enter both phone number and OTP', 'error');
+                return;
+            }
+
+            showResult('🔍 Checking if OTP exists...', 'info');
+            
+            try {
+                const queryUrl = `${mockEnv.VITE_SUPABASE_URL}/rest/v1/otps?phone=eq.${phone}&otp_code=eq.${otp}&select=*`;
+                
+                const response = await fetch(queryUrl, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': mockEnv.VITE_SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${mockEnv.VITE_SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult(`Found ${data.length} OTP records for this phone/OTP combination:`, 'info');
+                    showResult(JSON.stringify(data, null, 2), 'info');
+                } else {
+                    const errorText = await response.text();
+                    showResult(`Error: ${errorText}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Check failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function getAllOTPs() {
+            const phone = document.getElementById('phone').value;
+            
+            if (!phone) {
+                showResult('Please enter phone number', 'error');
+                return;
+            }
+
+            showResult('📋 Getting all OTPs for phone...', 'info');
+            
+            try {
+                const queryUrl = `${mockEnv.VITE_SUPABASE_URL}/rest/v1/otps?phone=eq.${phone}&select=*&order=created_at.desc`;
+                
+                const response = await fetch(queryUrl, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': mockEnv.VITE_SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${mockEnv.VITE_SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult(`Found ${data.length} total OTP records for ${phone}:`, 'info');
+                    
+                    data.forEach((record, index) => {
+                        showResult(`\n${index + 1}. OTP ${record.otp_code.substring(0, 2)}****
+   Created: ${record.created_at}
+   Expires: ${record.expires_at}
+   Verified: ${record.is_verified}
+   Attempts: ${record.attempts}/${record.max_attempts}
+   Status: ${new Date(record.expires_at) < new Date() ? 'EXPIRED' : record.is_verified ? 'VERIFIED' : 'ACTIVE'}`, 'info');
+                    });
+                } else {
+                    const errorText = await response.text();
+                    showResult(`Error: ${errorText}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Failed to get OTPs: ${error.message}`, 'error');
+            }
+        }
+
+        async function cleanupOTPs() {
+            showResult('🧹 Checking for expired OTPs...', 'info');
+            
+            try {
+                const currentTime = new Date().toISOString();
+                const queryUrl = `${mockEnv.VITE_SUPABASE_URL}/rest/v1/otps?expires_at=lt.${currentTime}&select=id,phone,otp_code,expires_at,created_at`;
+                
+                const response = await fetch(queryUrl, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': mockEnv.VITE_SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${mockEnv.VITE_SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult(`Found ${data.length} expired OTP records:`, 'info');
+                    
+                    if (data.length > 0) {
+                        data.forEach((record, index) => {
+                            const expiredTime = new Date(record.expires_at);
+                            const createdTime = new Date(record.created_at);
+                            const hoursAgo = Math.round((Date.now() - expiredTime.getTime()) / (1000 * 60 * 60));
+                            
+                            showResult(`${index + 1}. Phone: ${record.phone}, OTP: ${record.otp_code.substring(0, 2)}****, Expired ${hoursAgo} hours ago`, 'info');
+                        });
+                    } else {
+                        showResult('✅ No expired OTPs found', 'success');
+                    }
+                } else {
+                    const errorText = await response.text();
+                    showResult(`Error: ${errorText}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Failed to check expired OTPs: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

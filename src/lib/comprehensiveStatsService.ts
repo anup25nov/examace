@@ -226,10 +226,16 @@ class ComprehensiveStatsService {
     answers?: any;
   }): Promise<{ data: any; error: any }> {
     try {
-      const user = await this.getCurrentUser();
-      if (!user) {
+      // Get current user using custom authentication
+      const userId = localStorage.getItem('userId');
+      const userPhone = localStorage.getItem('userPhone');
+      const isAuthenticated = localStorage.getItem('isAuthenticated');
+      
+      if (!userId || !userPhone || isAuthenticated !== 'true') {
         return { data: null, error: 'User not authenticated' };
       }
+      
+      const user = { id: userId, phone: userPhone };
 
       // Use the upsert function to handle both create and update in one call
       const { data: upsertResult, error: upsertError } = await supabase

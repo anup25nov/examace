@@ -296,9 +296,16 @@ class SupabaseStatsService {
   }
 
   async submitTestAttempt(submission: TestSubmissionData): Promise<{ data: any; error: any }> {
-    const user = await this.getCurrentUser();
+    // Get current user using custom authentication
+    const userId = localStorage.getItem('userId');
+    const userPhone = localStorage.getItem('userPhone');
+    const isAuthenticated = localStorage.getItem('isAuthenticated');
     
-    if (!user) return { data: null, error: 'User not authenticated' };
+    if (!userId || !userPhone || isAuthenticated !== 'true') {
+      return { data: null, error: 'User not authenticated' };
+    }
+    
+    const user = { id: userId, phone: userPhone };
 
     try {
     // Create test attempt

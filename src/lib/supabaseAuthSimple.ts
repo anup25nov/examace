@@ -1,6 +1,7 @@
 // Simplified Supabase phone authentication service with custom OTP
 import { supabase } from '@/integrations/supabase/client';
 import { databaseOTPService } from './databaseOTPService';
+import { generateUserID } from './uuidUtils';
 
 export interface AuthUser {
   id: string;
@@ -84,7 +85,7 @@ export const verifyOTPCode = async (phone: string, otp: string) => {
       });
       
       // Generate a user ID (since we're not using Supabase auth anymore)
-      const userId = result.data?.userId || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const userId = result.data?.userId || generateUserID();
       
       // Create or update user profile
       const profileResult = await createOrUpdateUserProfile(userId, formattedPhone, isNewUser);
@@ -127,15 +128,42 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string, i
       updated_at: new Date().toISOString()
     };
 
-    // Use upsert to create or update user profile
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .upsert(profileData, { 
-        onConflict: 'id',
-        ignoreDuplicates: false 
-      })
-      .select()
-      .single();
+    // Handle user profile creation with proper conflict resolution
+    let data, error;
+    
+    try {
+      // First check if phone number already exists with a different user ID
+      const { data: existingPhoneUser, error: phoneCheckError } = await supabase
+        .from('user_profiles')
+        .select('id, phone')
+        .eq('phone', phone)
+        .maybeSingle();
+
+      if (phoneCheckError) {
+        console.error('Error checking phone number:', phoneCheckError);
+        error = phoneCheckError;
+      } else if (existingPhoneUser && existingPhoneUser.id !== userId) {
+        // Phone number exists with different user ID - this is a conflict
+        console.warn(`Phone number ${phone} already exists with user ID ${existingPhoneUser.id}, but trying to create with ${userId}`);
+        error = new Error('Phone number already registered with a different account');
+      } else {
+        // Safe to proceed with upsert
+        const upsertResult = await supabase
+          .from('user_profiles')
+          .upsert(profileData, { 
+            onConflict: 'id',
+            ignoreDuplicates: false 
+          })
+          .select()
+          .single();
+        
+        data = upsertResult.data;
+        error = upsertResult.error;
+      }
+    } catch (upsertError: any) {
+      console.error('Error in user profile upsert:', upsertError);
+      error = upsertError;
+    }
 
     if (error) {
       console.error('Error upserting user profile:', error);
@@ -149,39 +177,44 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string, i
       try {
         console.log('Creating referral code for new user:', userId);
         
-        // Check if referral code already exists
-        const { data: existingReferral, error: checkError } = await supabase
-          .from('referral_codes')
-          .select('id')
-          .eq('user_id', userId)
-          .maybeSingle();
+        // Use the database function to create referral code (bypasses RLS)
+        const referralCode = userId.substring(0, 8).toUpperCase();
+        const { data: createResult, error: createError } = await supabase
+          .rpc('create_user_referral_code', {
+            user_uuid: userId
+          });
 
-        if (checkError) {
-          console.error('Error checking existing referral code:', checkError);
-        } else if (!existingReferral) {
-          // Generate referral code from user ID
-          const referralCode = userId.substring(0, 8).toUpperCase();
+        if (createError) {
+          console.error('Error creating referral code via RPC:', createError);
           
-          const { error: referralError } = await supabase
-            .from('referral_codes')
-            .insert({
-              user_id: userId,
-              code: referralCode,
-              total_referrals: 0,
-              total_earnings: 0.00,
-              is_active: true
-            });
+          // Fallback: Try direct insert (may fail due to RLS)
+          try {
+            const { error: directError } = await supabase
+              .from('referral_codes')
+              .insert({
+                user_id: userId,
+                code: referralCode,
+                total_referrals: 0,
+                total_earnings: 0.00,
+                is_active: true
+              });
 
-          if (referralError) {
-            console.error('Error creating referral code:', referralError);
-          } else {
-            console.log('Referral code created successfully:', referralCode);
+            if (directError) {
+              console.error('Direct referral code creation also failed:', directError);
+              console.warn('Referral code creation failed due to RLS policies. User can still use the app.');
+            } else {
+              console.log('Referral code created via direct insert:', referralCode);
+            }
+          } catch (fallbackError) {
+            console.error('Fallback referral code creation failed:', fallbackError);
+            console.warn('Referral code creation failed. User can still use the app.');
           }
         } else {
-          console.log('Referral code already exists for user');
+          console.log('Referral code created successfully via RPC:', createResult);
         }
       } catch (referralError) {
         console.error('Error creating referral code for new user:', referralError);
+        console.warn('Referral code creation failed. User can still use the app.');
       }
       
       // Create default exam stats for new users

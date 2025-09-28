@@ -1,6 +1,7 @@
 // Supabase phone authentication service with custom OTP
 import { supabase } from '@/integrations/supabase/client';
 import { databaseOTPService } from './databaseOTPService';
+import { generateUserID } from './uuidUtils';
 
 export interface AuthUser {
   id: string;
@@ -84,7 +85,7 @@ export const verifyOTPCode = async (phone: string, otp: string) => {
       });
       
       // Generate a user ID (since we're not using Supabase auth anymore)
-      const userId = result.data?.userId || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const userId = result.data?.userId || generateUserID();
       
       // Create or update user profile
       const profileResult = await createOrUpdateUserProfile(userId, formattedPhone);
@@ -219,43 +220,59 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string) =
     let data, error;
     
     try {
-      // First, check if user profile already exists
-      const { data: existingUser, error: checkError } = await supabase
+      // First, check if phone number already exists with a different user ID
+      const { data: existingPhoneUser, error: phoneCheckError } = await supabase
         .from('user_profiles')
         .select('id, phone')
-        .eq('id', userId)
+        .eq('phone', phone)
         .maybeSingle();
 
-      if (checkError) {
-        console.error('Error checking existing user:', checkError);
-        error = checkError;
-      } else if (existingUser) {
-        // User already exists, just update if needed
-        console.log('User profile already exists, updating...');
-        const updateResult = await supabase
-          .from('user_profiles')
-          .update({
-            phone: phone,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', userId)
-          .select()
-          .single();
-        
-        data = updateResult.data;
-        error = updateResult.error;
-        isNewUser = false;
+      if (phoneCheckError) {
+        console.error('Error checking phone number:', phoneCheckError);
+        error = phoneCheckError;
+      } else if (existingPhoneUser && existingPhoneUser.id !== userId) {
+        // Phone number exists with different user ID - this is a conflict
+        console.warn(`Phone number ${phone} already exists with user ID ${existingPhoneUser.id}, but trying to create with ${userId}`);
+        error = new Error('Phone number already registered with a different account');
       } else {
-        // User doesn't exist, create new profile
-        console.log('Creating new user profile...');
-        const insertResult = await supabase
+        // Safe to proceed - check if user profile already exists by ID
+        const { data: existingUser, error: checkError } = await supabase
           .from('user_profiles')
-          .insert(profileData)
-          .select()
-          .single();
-        
-        data = insertResult.data;
-        error = insertResult.error;
+          .select('id, phone')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (checkError) {
+          console.error('Error checking existing user:', checkError);
+          error = checkError;
+        } else if (existingUser) {
+          // User already exists, just update if needed
+          console.log('User profile already exists, updating...');
+          const updateResult = await supabase
+            .from('user_profiles')
+            .update({
+              phone: phone,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', userId)
+            .select()
+            .single();
+          
+          data = updateResult.data;
+          error = updateResult.error;
+          isNewUser = false;
+        } else {
+          // User doesn't exist, create new profile
+          console.log('Creating new user profile...');
+          const insertResult = await supabase
+            .from('user_profiles')
+            .insert(profileData)
+            .select()
+            .single();
+          
+          data = insertResult.data;
+          error = insertResult.error;
+        }
       }
       
     } catch (upsertError: any) {
@@ -271,33 +288,44 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string) =
     // Only create referral code for new users (not on every login)
     if (isNewUser) {
       try {
-        const { data: existingReferral, error: checkReferralError } = await supabase
-          .from('referral_codes')
-          .select('id')
-          .eq('user_id', userId)
-          .maybeSingle();
+        // Use the database function to create referral code (bypasses RLS)
+        const referralCode = userId.substring(0, 8).toUpperCase();
+        const { data: createResult, error: createError } = await supabase
+          .rpc('create_user_referral_code', {
+            user_uuid: userId
+          });
 
-        if (checkReferralError) {
-          console.error('Error checking existing referral code:', checkReferralError);
-        } else if (!existingReferral) {
-          const referralCode = userId.substring(0, 8).toUpperCase();
-          const { error: referralError } = await supabase
-            .from('referral_codes')
-            .insert({
-              user_id: userId,
-              code: referralCode,
-              total_referrals: 0,
-              total_earnings: 0.00
-            });
+        if (createError) {
+          console.error('Error creating referral code via RPC:', createError);
+          
+          // Fallback: Try direct insert (may fail due to RLS)
+          try {
+            const { error: directError } = await supabase
+              .from('referral_codes')
+              .insert({
+                user_id: userId,
+                code: referralCode,
+                total_referrals: 0,
+                total_earnings: 0.00,
+                is_active: true
+              });
 
-          if (referralError) {
-            console.error('Error creating referral code:', referralError);
-          } else {
-            console.log('Referral code created for new user:', referralCode);
+            if (directError) {
+              console.error('Direct referral code creation also failed:', directError);
+              console.warn('Referral code creation failed due to RLS policies. User can still use the app.');
+            } else {
+              console.log('Referral code created via direct insert:', referralCode);
+            }
+          } catch (fallbackError) {
+            console.error('Fallback referral code creation failed:', fallbackError);
+            console.warn('Referral code creation failed. User can still use the app.');
           }
+        } else {
+          console.log('Referral code created successfully via RPC:', createResult);
         }
       } catch (referralError) {
         console.error('Error creating referral code for new user:', referralError);
+        console.warn('Referral code creation failed. User can still use the app.');
       }
     }
 
