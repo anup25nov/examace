@@ -17,7 +17,8 @@ import {
   IndianRupee, 
   Info,
   Loader2,
-  MessageSquare
+  MessageSquare,
+  X
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -229,7 +230,7 @@ export const UserMessages: React.FC = () => {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center p-6 border-b">
+            <div className="flex items-center justify-between p-6 border-b">
               <div className="flex items-center space-x-2">
                 <MessageSquare className="w-5 h-5" />
                 <h2 className="text-lg font-semibold">Messages</h2>
@@ -239,6 +240,12 @@ export const UserMessages: React.FC = () => {
                   </span>
                 )}
               </div>
+              <button 
+                onClick={() => setIsOpen(false)}
+                className="text-gray-500 hover:text-gray-700 p-1 rounded-sm hover:bg-gray-100"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
             
             {/* Description */}
