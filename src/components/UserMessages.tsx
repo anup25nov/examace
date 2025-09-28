@@ -17,7 +17,8 @@ import {
   IndianRupee, 
   Info,
   Loader2,
-  MessageSquare
+  MessageSquare,
+  X
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -37,7 +38,6 @@ export const UserMessages: React.FC = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-
 
   useEffect(() => {
     if (user) {
@@ -149,103 +149,176 @@ export const UserMessages: React.FC = () => {
     return messageType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
+  console.log('UserMessages render - user:', user, 'isOpen:', isOpen, 'unreadCount:', unreadCount);
+
   if (!user) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogTrigger asChild>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="relative"
+    <>
+      <Button 
+        variant="outline" 
+        size="sm" 
+        className="relative"
+        onClick={() => {
+          console.log('Message button clicked, isOpen:', isOpen);
+          setIsOpen(true);
+        }}
+      >
+        <Bell className="w-4 h-4 sm:mr-2" />
+        <span className="hidden sm:inline">Messages</span>
+        {unreadCount > 0 && (
+          <Badge 
+            variant="destructive" 
+            className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+          >
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </Badge>
+        )}
+      </Button>
+      
+      {/* Messages Modal */}
+      {isOpen && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            maxWidth: '100vw',
+            maxHeight: '100vh',
+            minWidth: '100vw',
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 50,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(4px)',
+            padding: '16px',
+            boxSizing: 'border-box',
+            margin: 0,
+            border: 'none',
+            outline: 'none',
+            transform: 'none',
+            overflow: 'hidden'
+          }}
+          onClick={() => setIsOpen(false)}
         >
-          <Bell className="w-4 h-4 sm:mr-2" />
-          <span className="hidden sm:inline">Messages</span>
-          {unreadCount > 0 && (
-            <Badge 
-              variant="destructive" 
-              className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
-            >
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </Badge>
-          )}
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <MessageSquare className="w-5 h-5" />
-            <span>Messages</span>
-            {unreadCount > 0 && (
-              <Badge variant="secondary">{unreadCount} unread</Badge>
-            )}
-          </DialogTitle>
-          <DialogDescription>
-            Your membership, withdrawal, and question report status updates
-          </DialogDescription>
-        </DialogHeader>
+          {/* Backdrop click to close */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 1
+            }}
+            onClick={() => setIsOpen(false)}
+            aria-hidden="true"
+          />
 
-        <div className="flex-1 overflow-y-auto space-y-4">
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-              <span className="ml-2 text-gray-600">Loading messages...</span>
-            </div>
-          ) : messages.length === 0 ? (
-            <div className="text-center py-8">
-              <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Messages</h3>
-              <p className="text-gray-600">You don't have any messages yet.</p>
-            </div>
-          ) : (
-            messages.map((message) => (
-              <Card 
-                key={message.id} 
-                className={`cursor-pointer transition-all hover:shadow-md ${
-                  !message.is_read ? 'border-blue-200 bg-blue-50' : ''
-                }`}
-                onClick={() => !message.is_read && markAsRead(message.id)}
+          {/* Modal content */}
+          <div 
+            className="relative w-full max-w-2xl max-h-[85vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col z-10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b">
+              <div className="flex items-center space-x-2">
+                <MessageSquare className="w-5 h-5" />
+                <h2 className="text-lg font-semibold">Messages</h2>
+                {unreadCount > 0 && (
+                  <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
+                    {unreadCount} unread
+                  </span>
+                )}
+              </div>
+              <button 
+                onClick={() => setIsOpen(false)}
+                className="text-gray-500 hover:text-gray-700 p-1 rounded-sm hover:bg-gray-100"
               >
-                <CardContent className="p-4">
-                  <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0 mt-1">
-                      {getMessageIcon(message.message_type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-semibold text-gray-900 truncate">
-                          {message.title}
-                        </h4>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant={getMessageBadgeVariant(message.message_type)}>
-                            {formatMessageType(message.message_type)}
-                          </Badge>
-                          {!message.is_read && (
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                          )}
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            {/* Description */}
+            <div className="px-6 py-3 border-b bg-gray-50">
+              <p className="text-sm text-gray-600">
+                Your membership, withdrawal, and question report status updates
+              </p>
+            </div>
+            
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6" style={{ maxHeight: 'calc(85vh - 120px)' }}>
+              <div className="space-y-4">
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+                  <span className="ml-2 text-gray-600">Loading messages...</span>
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="text-center py-8">
+                  <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Messages</h3>
+                  <p className="text-gray-600">You don't have any messages yet.</p>
+                </div>
+              ) : (
+                messages.map((message) => (
+                  <Card 
+                    key={message.id} 
+                    className={`cursor-pointer transition-all hover:shadow-md ${
+                      !message.is_read ? 'border-blue-200 bg-blue-50' : ''
+                    }`}
+                    onClick={() => !message.is_read && markAsRead(message.id)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 mt-1">
+                          {getMessageIcon(message.message_type)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-semibold text-gray-900 truncate">
+                              {message.title}
+                            </h4>
+                            <div className="flex items-center space-x-2">
+                              <Badge variant={getMessageBadgeVariant(message.message_type)}>
+                                {formatMessageType(message.message_type)}
+                              </Badge>
+                              {!message.is_read && (
+                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-gray-700 text-sm mb-2">
+                            {message.message}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(message.created_at).toLocaleString()}
+                          </p>
                         </div>
                       </div>
-                      <p className="text-gray-700 text-sm mb-2">
-                        {message.message}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(message.created_at).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+            </div>
+            
+            {/* Footer */}
+            <div className="flex justify-end p-6 border-t bg-gray-50">
+              <Button variant="outline" onClick={() => setIsOpen(false)}>
+                Close
+              </Button>
+            </div>
+          </div>
         </div>
-
-        <div className="flex justify-end pt-4 border-t">
-          <Button variant="outline" onClick={() => setIsOpen(false)}>
-            Close
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+      )}
+    </>
   );
 };
 
