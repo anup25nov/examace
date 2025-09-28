@@ -256,7 +256,6 @@ const Index = () => {
               </div>
             </div>
           )}
-          
           {/* Brand Name - Glorified */}
           <div className="mb-8 animate-fade-in">
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black text-white drop-shadow-2xl mb-4 tracking-tight whitespace-nowrap">
