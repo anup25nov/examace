@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { getCommissionPercentage } from '@/config/appConfig';
 import { toast } from 'sonner';
 
 interface ReferralStats {
@@ -295,7 +296,7 @@ export const ReferralDashboard: React.FC = () => {
             </Button>
           </div>
           <p className="text-sm text-muted-foreground mt-2">
-            When someone uses your code to sign up and purchases a membership, you'll earn 50% commission!
+            When someone uses your code to sign up and purchases a membership, you'll earn {getCommissionPercentage()}% commission!
           </p>
         </CardContent>
       </Card>

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { referralService, ReferralStats } from '@/lib/referralServiceSimple';
+import { getCommissionPercentage } from '@/config/appConfig';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { getPlanPricing, formatPrice } from '@/config/pricingConfig';
 
@@ -109,7 +110,7 @@ export const ReferralSystem: React.FC<ReferralSystemProps> = ({ onClose }) => {
               </div>
               <div>
                 <h2 className="text-xl font-bold text-gray-900">Referral Program</h2>
-                <p className="text-gray-600 text-sm">Earn 50% commission on every referral!</p>
+                <p className="text-gray-600 text-sm">Earn {getCommissionPercentage()}% commission on every referral!</p>
               </div>
             </div>
             <Button
@@ -247,8 +248,8 @@ export const ReferralSystem: React.FC<ReferralSystemProps> = ({ onClose }) => {
                       <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
                         <span className="text-purple-600 font-bold">3</span>
                       </div>
-                      <h4 className="font-semibold mb-2">You Earn 50%</h4>
-                      <p className="text-sm text-gray-600">Get 50% of their purchase as commission</p>
+                      <h4 className="font-semibold mb-2">You Earn {getCommissionPercentage()}%</h4>
+                      <p className="text-sm text-gray-600">Get {getCommissionPercentage()}% of their purchase as commission</p>
                     </div>
                   </div>
                 </CardContent>

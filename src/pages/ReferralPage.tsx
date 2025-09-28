@@ -9,26 +9,18 @@ import {
   Gift,
   Users,
   IndianRupee,
-  TrendingUp,
   Copy,
   Check,
-  Star,
   Crown,
   Share2,
-  ExternalLink,
-  Award,
-  Target,
   QrCode,
   RefreshCw,
   AlertCircle,
   CheckCircle2,
   Clock,
-  Zap,
   BarChart3,
   Trophy,
-  Sparkles,
-  MessageSquare,
-  Download
+  Sparkles
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { referralService, ReferralStats } from '@/lib/referralService';
@@ -266,7 +258,7 @@ const ReferralPage = () => {
               </Button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Referral Program</h1>
-                <p className="text-gray-600">Earn {getCommissionPercentage()}% commission on every referral</p>
+                {/* <p className="text-gray-600">Earn {getCommissionPercentage()}% commission on every referral</p> */}
               </div>
             </div>
             
@@ -278,7 +270,7 @@ const ReferralPage = () => {
                 </div>
               )}
               
-              <Button
+              {/* <Button
                 variant="outline"
                 size="sm"
                 onClick={() => loadReferralStats(true)}
@@ -287,12 +279,12 @@ const ReferralPage = () => {
               >
                 <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
                 {refreshing ? 'Refreshing...' : 'Refresh'}
-              </Button>
+              </Button> */}
               
-              <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2">
+              {/* <Badge className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2">
                 <Gift className="w-4 h-4 mr-2" />
                 {getCommissionPercentage()}% Commission
-              </Badge>
+              </Badge> */}
             </div>
           </div>
         </div>
@@ -324,39 +316,16 @@ const ReferralPage = () => {
             <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
               <Gift className="w-10 h-10 text-white" />
             </div>
-            <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center">
+            {/* <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center">
               <Sparkles className="w-3 h-3 text-white" />
-            </div>
+            </div> */}
           </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-4">Start Earning Today!</h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-6">
-            Share ExamAce with your friends and earn <span className="font-semibold text-green-600">{getCommissionPercentage()}% commission</span> on every purchase they make. 
+            Share code with your friends and earn <span className="font-semibold text-green-600">{getCommissionPercentage()}% commission</span> on first purchase they make. 
             The more you refer, the more you earn!
           </p>
           
-          {/* Quick Stats Preview */}
-          {(comprehensiveStats || referralStats) && (
-            <div className="flex justify-center space-x-8 text-center">
-              <div>
-                <div className="text-2xl font-bold text-blue-600">
-                  {comprehensiveStats?.total_referrals || referralStats?.total_referrals || 0}
-                </div>
-                <div className="text-sm text-gray-600">Referrals</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-600">
-                  ₹{comprehensiveStats?.total_commissions_earned || referralStats?.total_earnings || 0}
-                </div>
-                <div className="text-sm text-gray-600">Earned</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-orange-600">
-                  ₹{comprehensiveStats?.pending_commissions || referralStats?.pending_rewards || 0}
-                </div>
-                <div className="text-sm text-gray-600">Pending</div>
-              </div>
-            </div>
-          )}
         </div>
 
         {(comprehensiveStats || referralStats) ? (
@@ -429,7 +398,8 @@ const ReferralPage = () => {
                     <div className="text-4xl font-mono font-bold mb-2">
                       {comprehensiveStats?.referral_code || referralStats?.referral_code || 'N/A'}
                     </div>
-                    <div className="text-sm opacity-90">Share this code with friends to start earning!</div>
+
+                    <div className="text-sm opacity-90">💡 <strong>Pro Tip:</strong> Share your code on social media, WhatsApp, or email to maximize your earnings!</div>
                   </div>
                   
                   <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
@@ -449,13 +419,13 @@ const ReferralPage = () => {
                       Share
                     </Button>
                     
-                    <Button
+                    {/* <Button
                       onClick={generateQRCode}
                       className="bg-white/20 text-white border-white hover:bg-white/30 font-semibold px-6 py-3"
                     >
                       <QrCode className="w-4 h-4 mr-2" />
                       QR Code
-                    </Button>
+                    </Button> */}
                   </div>
                   
                   {/* QR Code Display */}
@@ -474,8 +444,11 @@ const ReferralPage = () => {
                   )}
                   
                   <div className="text-sm opacity-90 mt-4">
-                    💡 <strong>Pro Tip:</strong> Share your code on social media, WhatsApp, or email to maximize your earnings!
+                    {/* 💡 <strong>Pro Tip:</strong> Share your code on social media, WhatsApp, or email to maximize your earnings! */}
+                    {/* 💡 <strong>Pro Tip3:</strong> Share your code on social media, WhatsApp, or email to maximize your earnings! */}
+                  
                   </div>
+                  
                 </div>
               </CardContent>
             </Card>
@@ -514,12 +487,6 @@ const ReferralPage = () => {
             )}
 
 
-            {/* Disclaimer */}
-            <Card className="border-amber-200 bg-amber-50">
-              <CardContent className="p-4 text-sm text-amber-800">
-                Note: Withdrawals are enabled when your pending commissions exceed ₹70. Commissions move from pending to paid after admin review and payout.
-              </CardContent>
-            </Card>
 
             {/* Progress Tracking */}
             <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200">
@@ -639,46 +606,6 @@ const ReferralPage = () => {
               </Card>
             )}
 
-            {/* How It Works */}
-            <Card className="bg-gradient-to-br from-slate-50 to-gray-100 border-slate-200">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Target className="w-6 h-6 text-blue-600" />
-                  <span>How It Works</span>
-                </CardTitle>
-                <p className="text-gray-600">Simple steps to start earning with referrals</p>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  <div className="text-center group">
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-105 transition-transform duration-200">
-                      <Share2 className="w-8 h-8 text-white" />
-                    </div>
-                    <h4 className="font-bold text-lg mb-3 text-gray-900">Share Your Code</h4>
-                    <p className="text-gray-600 leading-relaxed">Share your unique referral code with friends, family, and on social media platforms</p>
-                    <div className="mt-3 text-sm text-blue-600 font-medium">Step 1</div>
-                  </div>
-                  
-                  <div className="text-center group">
-                    <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-105 transition-transform duration-200">
-                      <Users className="w-8 h-8 text-white" />
-                    </div>
-                    <h4 className="font-bold text-lg mb-3 text-gray-900">They Sign Up</h4>
-                    <p className="text-gray-600 leading-relaxed">Your referrals sign up using your code and start their exam preparation journey</p>
-                    <div className="mt-3 text-sm text-green-600 font-medium">Step 2</div>
-                  </div>
-                  
-                  <div className="text-center group">
-                    <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg group-hover:scale-105 transition-transform duration-200">
-                      <Trophy className="w-8 h-8 text-white" />
-                    </div>
-                    <h4 className="font-bold text-lg mb-3 text-gray-900">You Earn</h4>
-                    <p className="text-gray-600 leading-relaxed">Earn <span className="font-semibold text-purple-600">{getCommissionPercentage()}% commission</span> on every purchase they make</p>
-                    <div className="mt-3 text-sm text-purple-600 font-medium">Step 3</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
 
             {/* Commission Details */}
             <Card className="bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200">
@@ -718,37 +645,6 @@ const ReferralPage = () => {
               </CardContent>
             </Card>
 
-            {/* Call to Action */}
-            <Card className="bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-2xl">
-              <CardContent className="p-8 text-center">
-                <div className="max-w-2xl mx-auto">
-                  <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Zap className="w-8 h-8" />
-                  </div>
-                  <h3 className="text-3xl font-bold mb-4">Ready to Start Earning?</h3>
-                  <p className="text-lg mb-8 opacity-90">
-                    Share your referral code now and start building your passive income stream. 
-                    Every referral brings you closer to your financial goals!
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    <Button
-                      onClick={shareReferralLink}
-                      className="bg-white text-green-600 hover:bg-gray-100 font-bold px-8 py-4 text-lg"
-                    >
-                      <Share2 className="w-5 h-5 mr-2" />
-                      Share Now
-                    </Button>
-                    <Button
-                      onClick={() => copyToClipboard(`${window.location.origin}/auth?ref=${comprehensiveStats?.referral_code || referralStats?.referral_code}`)}
-                      className="bg-white/20 text-white border-white hover:bg-white/30 font-bold px-8 py-4 text-lg"
-                    >
-                      <Copy className="w-5 h-5 mr-2" />
-                      Copy Link
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         ) : (
           <Card>

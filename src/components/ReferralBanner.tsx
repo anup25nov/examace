@@ -16,7 +16,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { referralService } from '@/lib/referralServiceSimple';
 import { referralBannerService } from '@/lib/referralBannerService';
-import { defaultConfig } from '@/config/appConfig';
+import { defaultConfig, getCommissionPercentage } from '@/config/appConfig';
 
 interface ReferralBannerProps {
   className?: string;
@@ -76,7 +76,7 @@ export const ReferralBanner: React.FC<ReferralBannerProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Gift className="w-4 h-4 text-green-600" />
-            <span className="text-sm font-medium text-green-800">Earn 50% on referrals</span>
+            <span className="text-sm font-medium text-green-800">Earn {getCommissionPercentage()}% on referrals</span>
           </div>
           <Button
             size="sm"

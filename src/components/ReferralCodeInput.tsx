@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, XCircle, Gift, Users } from 'lucide-react';
 import { referralService } from '@/lib/referralService';
+import { getCommissionPercentage } from '@/config/appConfig';
 
 interface ReferralCodeInputProps {
   onReferralApplied?: (referralCode: string, referrerId: string) => void;
@@ -164,7 +165,7 @@ export const ReferralCodeInput: React.FC<ReferralCodeInputProps> = ({
               <h4 className="font-medium text-blue-800">Referral Benefits</h4>
             </div>
             <ul className="text-sm text-blue-700 space-y-1">
-              <li>• You'll earn 50% of your first purchase as rewards</li>
+              <li>• You'll earn {getCommissionPercentage()}% of your first purchase as rewards</li>
               <li>• Your referrer will also earn rewards</li>
               <li>• Rewards can be withdrawn to your UPI account</li>
             </ul>

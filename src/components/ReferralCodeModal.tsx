@@ -15,6 +15,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { referralService } from '@/lib/referralService';
+import { getCommissionPercentage } from '@/config/appConfig';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -178,7 +179,7 @@ export const ReferralCodeModal: React.FC<ReferralCodeModalProps> = ({
                   Referral Code Applied Successfully!
                 </h3>
                 <p className="text-gray-600">
-                  You'll earn 50% commission on every purchase made by your referrals.
+                  You'll earn {getCommissionPercentage()}% commission on every purchase made by your referrals.
                 </p>
               </div>
             </div>
@@ -188,7 +189,7 @@ export const ReferralCodeModal: React.FC<ReferralCodeModalProps> = ({
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 space-y-3">
                 <div className="flex items-center space-x-2">
                   <Crown className="w-5 h-5 text-yellow-600" />
-                  <span className="font-semibold text-gray-900">Earn 50% Commission</span>
+                  <span className="font-semibold text-gray-900">Earn {getCommissionPercentage()}% Commission</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Users className="w-5 h-5 text-blue-600" />
