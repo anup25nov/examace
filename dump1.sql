@@ -1,16 +1,8 @@
-/*
-pg_dump "postgresql://postgres:rUyUSFnBG2B5Wyae@db.talvssmwnsfotoutjlhd.supabase.co:5432/postgres" \
-  -s \
-  -n public \
-  -n auth \
-  -n storage \
-  -n extensions \
-  -n realtime \
-  > /Users/anupmishra/Desktop/repos/examace/dump1.sql
-*/
+--
+-- PostgreSQL database dump
+--
 
-
-\restrict PBg8y9Rzn9OZ1cbsMx8h0HLeW8pQQLHBEH5YZA8dzAxRtZwcM8giSef617GEIxJ
+\restrict quKcG0DdlAMrQsSb6Lt1x9tn3D4RRhylm1N3ZBpthxYrwIucv3ugGSbDt5goPhr
 
 -- Dumped from database version 17.4
 -- Dumped by pg_dump version 18.0
@@ -9741,32 +9733,6 @@ CREATE TABLE public.exam_questions (
 ALTER TABLE public.exam_questions OWNER TO postgres;
 
 --
--- Name: exam_stats; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.exam_stats (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    user_id uuid NOT NULL,
-    exam_id character varying(50) NOT NULL,
-    total_tests integer DEFAULT 0,
-    best_score integer DEFAULT 0,
-    average_score numeric(5,2) DEFAULT 0,
-    rank integer,
-    last_test_date timestamp with time zone,
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now(),
-    total_tests_taken integer DEFAULT 0,
-    total_score integer DEFAULT 0,
-    total_time_taken integer DEFAULT 0,
-    average_time_per_question numeric(5,2) DEFAULT 0.00,
-    accuracy_percentage numeric(5,2) DEFAULT 0.00,
-    percentile numeric(5,2) DEFAULT 0.00
-);
-
-
-ALTER TABLE public.exam_stats OWNER TO postgres;
-
---
 -- Name: exam_test_data; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -10892,22 +10858,6 @@ ALTER TABLE ONLY public.exam_questions
 
 
 --
--- Name: exam_stats exam_stats_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.exam_stats
-    ADD CONSTRAINT exam_stats_pkey PRIMARY KEY (id);
-
-
---
--- Name: exam_stats exam_stats_user_id_exam_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.exam_stats
-    ADD CONSTRAINT exam_stats_user_id_exam_id_key UNIQUE (user_id, exam_id);
-
-
---
 -- Name: exam_test_data exam_test_data_exam_id_test_type_test_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -11628,20 +11578,6 @@ CREATE INDEX idx_exam_questions_exam_test ON public.exam_questions USING btree (
 --
 
 CREATE INDEX idx_exam_questions_order ON public.exam_questions USING btree (exam_id, test_type, test_id, question_order);
-
-
---
--- Name: idx_exam_stats_user_exam; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_exam_stats_user_exam ON public.exam_stats USING btree (user_id, exam_id);
-
-
---
--- Name: idx_exam_stats_user_id_exam_id; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_exam_stats_user_id_exam_id ON public.exam_stats USING btree (user_id, exam_id);
 
 
 --
@@ -12622,14 +12558,6 @@ ALTER TABLE ONLY auth.sso_domains
 
 
 --
--- Name: exam_stats exam_stats_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.exam_stats
-    ADD CONSTRAINT exam_stats_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.user_profiles(id) ON DELETE CASCADE;
-
-
---
 -- Name: individual_test_scores individual_test_scores_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -13057,13 +12985,6 @@ CREATE POLICY "Users can create their own refund requests" ON public.refund_requ
 
 
 --
--- Name: exam_stats Users can insert own exam stats; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users can insert own exam stats" ON public.exam_stats FOR INSERT WITH CHECK ((user_id = auth.uid()));
-
-
---
 -- Name: user_memberships Users can insert own memberships; Type: POLICY; Schema: public; Owner: postgres
 --
 
@@ -13162,13 +13083,6 @@ CREATE POLICY "Users can read exam test data" ON public.exam_test_data FOR SELEC
 
 
 --
--- Name: exam_stats Users can update own exam stats; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users can update own exam stats" ON public.exam_stats FOR UPDATE USING ((user_id = auth.uid()));
-
-
---
 -- Name: user_profiles Users can update own profile; Type: POLICY; Schema: public; Owner: postgres
 --
 
@@ -13222,13 +13136,6 @@ CREATE POLICY "Users can update their own profiles" ON public.user_profiles FOR 
 --
 
 CREATE POLICY "Users can update their own test shares" ON public.test_shares FOR UPDATE USING ((auth.uid() = created_by));
-
-
---
--- Name: exam_stats Users can view own exam stats; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users can view own exam stats" ON public.exam_stats FOR SELECT USING ((user_id = auth.uid()));
 
 
 --
@@ -13355,20 +13262,6 @@ CREATE POLICY "Users can view their own test shares" ON public.test_shares FOR S
 --
 
 ALTER TABLE public.exam_questions ENABLE ROW LEVEL SECURITY;
-
---
--- Name: exam_stats exam_stats_anon_access; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY exam_stats_anon_access ON public.exam_stats TO anon USING (true) WITH CHECK (true);
-
-
---
--- Name: exam_stats exam_stats_authenticated_access; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY exam_stats_authenticated_access ON public.exam_stats TO authenticated USING (true) WITH CHECK (true);
-
 
 --
 -- Name: exam_test_data; Type: ROW SECURITY; Schema: public; Owner: postgres
@@ -15363,15 +15256,6 @@ GRANT ALL ON TABLE public.exam_questions TO service_role;
 
 
 --
--- Name: TABLE exam_stats; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON TABLE public.exam_stats TO anon;
-GRANT ALL ON TABLE public.exam_stats TO authenticated;
-GRANT ALL ON TABLE public.exam_stats TO service_role;
-
-
---
 -- Name: TABLE exam_test_data; Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -15898,5 +15782,5 @@ ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA storage GRANT ALL ON TABLES
 -- PostgreSQL database dump complete
 --
 
-\unrestrict PBg8y9Rzn9OZ1cbsMx8h0HLeW8pQQLHBEH5YZA8dzAxRtZwcM8giSef617GEIxJ
+\unrestrict quKcG0DdlAMrQsSb6Lt1x9tn3D4RRhylm1N3ZBpthxYrwIucv3ugGSbDt5goPhr
 
