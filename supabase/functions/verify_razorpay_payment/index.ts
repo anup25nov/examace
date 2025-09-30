@@ -201,64 +201,95 @@ serve(async (req) => {
     const planAmount = getPlanPrice(body.plan)
     console.log('Plan amount:', planAmount)
 
-    // Insert payment record
-    const { data: paymentData, error: paymentError } = await supabase
-      .from('payments')
-      .insert({
-        user_id: body.user_id,
-        plan: body.plan,
-        amount: planAmount.toString(),
-        currency: 'INR',
-        status: 'completed',
-        razorpay_payment_id: body.payment_id,
-        razorpay_order_id: body.order_id,
-        razorpay_signature: body.signature,
-        paid_at: new Date().toISOString(),
-        payment_id: body.payment_id,
-        plan_id: body.plan, // Use the actual plan ID (pro/pro_plus)
-        plan_name: body.plan === 'pro' ? 'Pro Plan' : 'Pro Plus Plan',
-        payment_method: 'razorpay'
-      })
-      .select('id')
-      .single()
+    // Upsert/complete payment record: update existing pending by order_id if present, otherwise insert
+    let paymentId: string | null = null
 
-    if (paymentError) {
-      console.error('Payment upsert error:', paymentError)
-      console.error('Payment data being inserted:', {
-        user_id: body.user_id,
-        plan: body.plan,
-        amount: planAmount.toString(),
-        currency: 'INR',
-        status: 'completed',
-        razorpay_payment_id: body.payment_id,
-        razorpay_order_id: body.order_id,
-        razorpay_signature: body.signature,
-        paid_at: new Date().toISOString(),
-        payment_id: body.payment_id,
-        plan_id: '00000000-0000-0000-0000-000000000002',
-        plan_name: body.plan,
-        payment_method: 'razorpay'
-      })
-      return new Response(
-        JSON.stringify({ success: false, error: 'Payment record failed', details: paymentError }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    const { data: existingPayment, error: findPaymentError } = await supabase
+      .from('payments')
+      .select('id')
+      .eq('razorpay_order_id', body.order_id)
+      .maybeSingle()
+
+    if (findPaymentError) {
+      console.error('Find payment error:', findPaymentError)
     }
 
-    const paymentId = paymentData.id
+    if (existingPayment?.id) {
+      const { data: updated, error: updateErr } = await supabase
+        .from('payments')
+        .update({
+          user_id: body.user_id,
+          plan: body.plan,
+          plan_id: body.plan,
+          plan_name: body.plan === 'pro' ? 'Pro Plan' : 'Pro Plus Plan',
+          amount: planAmount.toString(),
+          currency: 'INR',
+          payment_method: 'razorpay',
+          status: 'completed',
+          razorpay_payment_id: body.payment_id,
+          razorpay_signature: body.signature,
+          paid_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingPayment.id)
+        .select('id')
+        .single()
+
+      if (updateErr) {
+        console.error('Payment update error:', updateErr)
+        return new Response(
+          JSON.stringify({ success: false, error: 'Payment update failed', details: updateErr }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      paymentId = updated.id
+    } else {
+      const { data: inserted, error: insertErr } = await supabase
+        .from('payments')
+        .insert({
+          user_id: body.user_id,
+          plan: body.plan,
+          plan_id: body.plan, // pro / pro_plus
+          plan_name: body.plan === 'pro' ? 'Pro Plan' : 'Pro Plus Plan',
+          amount: planAmount.toString(),
+          currency: 'INR',
+          payment_method: 'razorpay',
+          status: 'completed',
+          razorpay_payment_id: body.payment_id,
+          razorpay_order_id: body.order_id,
+          razorpay_signature: body.signature,
+          paid_at: new Date().toISOString(),
+          payment_id: body.payment_id
+        })
+        .select('id')
+        .single()
+
+      if (insertErr) {
+        console.error('Payment insert error:', insertErr)
+        return new Response(
+          JSON.stringify({ success: false, error: 'Payment insert failed', details: insertErr }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      paymentId = inserted.id
+    }
+
     console.log('Payment ID:', paymentId)
 
     // Activate membership
+    // Activate membership (upsert by user_id)
+    const membershipStart = new Date().toISOString()
+    const membershipEnd = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+
     const { data: membershipData, error: membershipError } = await supabase
       .from('user_memberships')
-      .insert({
+      .upsert({
         user_id: body.user_id,
-        plan_id: body.plan, // Use the actual plan ID (pro/pro_plus)
-        start_date: new Date().toISOString(),
-        end_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'active',
-        plan: body.plan
-      })
+        plan_id: body.plan,
+        start_date: membershipStart,
+        end_date: membershipEnd,
+        status: 'active'
+      }, { onConflict: 'user_id' })
       .select('id')
       .single()
 
@@ -283,9 +314,7 @@ serve(async (req) => {
         currency: 'INR',
         status: 'completed',
         payment_method: 'razorpay',
-        gateway_payment_id: body.payment_id,
-        gateway_order_id: body.order_id,
-        completed_at: new Date().toISOString()
+        gateway_response: { order_id: body.order_id, payment_id: body.payment_id }
       })
 
     if (transactionError) {
