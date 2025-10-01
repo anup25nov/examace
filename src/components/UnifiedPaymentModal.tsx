@@ -316,59 +316,14 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
               throw new Error('Invalid payment response data received');
             }
 
-            console.log('Processing payment verification...', {
+            console.log('Payment successful, waiting for webhook processing...', {
               orderId: response.razorpay_order_id,
               paymentId: response.razorpay_payment_id
             });
 
-            // Get referral code from localStorage if available
-            const referralCode = localStorage.getItem('referralCode');
-            
-            // Verify payment via Edge Function (includes referral processing)
-            const { data, error } = await supabase.functions.invoke('verify_razorpay_payment', {
-              body: {
-                user_id: user.id,
-                plan: planToPurchase.id,
-                order_id: response.razorpay_order_id,
-                payment_id: response.razorpay_payment_id,
-                signature: response.razorpay_signature,
-                referral_code: referralCode
-              }
-            });
-
-            if (error) {
-              console.error('Edge function error:', error);
-              throw new Error(error.message || 'Payment verification service error');
-            }
-
-            if (!data?.success) {
-              console.error('Payment verification failed:', data);
-              throw new Error(data?.error || 'Payment verification failed');
-            }
-
-            // Also update via unified service for consistency
-            try {
-              const verificationResult = await unifiedPaymentService.verifyPayment(
-                paymentResult.paymentId!,
-                {
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
-                },
-                planToPurchase.id
-              );
-
-              if (!verificationResult.success) {
-                console.warn('Unified service verification failed:', verificationResult.error);
-                // Don't fail the entire process if edge function succeeded
-              }
-            } catch (unifiedError) {
-              console.warn('Unified service error (non-fatal):', unifiedError);
-              // Continue with the process since edge function succeeded
-            }
-
-            console.log('✅ Payment verification successful');
+            // Payment successful - webhook will handle verification and membership activation
             setPaymentStep('success');
+            messagingService.success('Payment successful! Your membership will be activated shortly.');
             
             // Clear any referral code after successful payment
             localStorage.removeItem('referralCode');

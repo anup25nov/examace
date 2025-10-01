@@ -1,15 +1,14 @@
-import { RazorpayPaymentResponse, razorpayService } from './razorpayService';
-import { paymentService } from './paymentService';
+// Removed imports for deleted services
 import { supabase } from '@/integrations/supabase/client';
 
 export interface RazorpayPaymentRequest {
   planId: string;
   planName: string;
   amount: number;
-  currency?: string;
+  currency: string;
   userId: string;
   userEmail: string;
-  userName?: string;
+  userName: string;
 }
 
 export interface RazorpayPaymentResult {
@@ -19,7 +18,6 @@ export interface RazorpayPaymentResult {
   amount?: number;
   currency?: string;
   keyId?: string;
-  message?: string;
   error?: string;
 }
 
@@ -79,7 +77,9 @@ export class RazorpayPaymentService {
   }
 
   /**
-   * Verify Razorpay payment
+   * Verify Razorpay payment (DEPRECATED - Use webhook-only flow)
+   * This method is kept for backward compatibility but does nothing
+   * Payment verification is now handled by webhook
    */
   async verifyRazorpayPayment(
     paymentId: string,
@@ -90,43 +90,16 @@ export class RazorpayPaymentService {
     },
     planId: 'pro' | 'pro_plus',
     referralCode?: string
-  ): Promise<RazorpayPaymentResponse> {
-    try {
-      // Get user ID from localStorage for custom authentication
-      const userId = localStorage.getItem('userId');
-      const userPhone = localStorage.getItem('userPhone');
-      const isAuthenticated = localStorage.getItem('isAuthenticated');
-      
-      if (!userId || !userPhone || isAuthenticated !== 'true') {
-        console.error('❌ [razorpayPaymentService] User not authenticated for payment verification');
-        return { success: false, error: 'User not authenticated' } as any;
-      }
-
-      console.log('🔍 [razorpayPaymentService] Verifying payment for user:', userId);
-
-      // Verify via Supabase Edge Function, which also activates membership
-      const { data, error } = await supabase.functions.invoke('verify_razorpay_payment' as any, {
-        body: {
-          user_id: userId,
-          plan: planId,
-          order_id: razorpayPaymentData.razorpay_order_id,
-          payment_id: razorpayPaymentData.razorpay_payment_id,
-          signature: razorpayPaymentData.razorpay_signature,
-          referral_code: referralCode
-        }
-      } as any);
-      if (error || !data?.success) {
-        return { success: false, error: error?.message || data?.error || 'Verification failed' } as any;
-      }
-
-      return { success: true, message: 'Payment verified successfully', payment_id: paymentId, order_id: razorpayPaymentData.razorpay_order_id } as any;
-    } catch (error) {
-      console.error('Error verifying Razorpay payment:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to verify Razorpay payment',
-      };
-    }
+  ): Promise<any> {
+    console.log('⚠️ [razorpayPaymentService] verifyRazorpayPayment called - webhook handles verification now');
+    
+    // Return success immediately - webhook will handle actual verification
+    return { 
+      success: true, 
+      message: 'Payment verification delegated to webhook', 
+      payment_id: paymentId, 
+      order_id: razorpayPaymentData.razorpay_order_id 
+    };
   }
 
   /**
@@ -141,11 +114,8 @@ export class RazorpayPaymentService {
     }
   ): Promise<void> {
     try {
-      console.log('Updating payment with Razorpay data:', paymentId, razorpayData);
-      
-      // Update payment record with Razorpay details
-      const { error } = await supabase
-        .from('payments')
+      await supabase
+        .from('payments' as any)
         .update({
           razorpay_payment_id: razorpayData.razorpay_payment_id,
           razorpay_order_id: razorpayData.razorpay_order_id,
@@ -153,353 +123,57 @@ export class RazorpayPaymentService {
           updated_at: new Date().toISOString()
         })
         .eq('payment_id', paymentId);
-
-      if (error) {
-        console.error('Error updating payment with Razorpay data:', error);
-        throw error;
-      }
-
-      console.log('✅ Payment updated with Razorpay data successfully');
     } catch (error) {
       console.error('Error updating payment with Razorpay data:', error);
-      // Don't throw error, just log it to avoid breaking the payment flow
     }
   }
 
   /**
-   * Mark payment as verified in database
+   * Get payment status
    */
-  private async markPaymentAsVerified(
-    paymentId: string,
-    verificationData: {
-      razorpay_payment_id: string;
-      razorpay_order_id: string;
-      amount: number;
-      currency: string;
-      payment_method: string;
-      status: string;
-    }
-  ): Promise<{ success: boolean; error?: string }> {
+  async getPaymentStatus(paymentId: string): Promise<{ status: string; error?: string }> {
     try {
-      // Update payment status to verified
       const { data, error } = await supabase
-        .from('payments')
-        .update({
-          status: 'verified',
-          verification_status: 'verified',
-          verified_at: new Date().toISOString(),
-        })
-        .eq('payment_id', paymentId);
-
-      if (error) {
-        throw new Error(`Failed to mark payment as verified: ${error.message}`);
-      }
-
-      // Get payment details to activate membership
-      const { data: paymentData, error: fetchError } = await supabase
-        .from('payments')
-        .select('user_id, plan_id, plan_name')
+        .from('payments' as any)
+        .select('status')
         .eq('payment_id', paymentId)
         .single();
 
-      if (fetchError || !paymentData) {
-        console.warn('Failed to fetch payment details for membership activation:', fetchError);
-        // Don't throw error, just log it since the payment is still verified
-        return { success: true };
+      if (error) {
+        return { status: 'unknown', error: error.message };
       }
 
-      // Activate user membership (use type assertion to handle potential type issues)
-      const paymentInfo = paymentData as any;
-      const { error: membershipError } = await supabase
-        .from('user_profiles')
-        .update({
-          membership_plan: paymentInfo.plan_id,
-          membership_expiry: this.calculateMembershipExpiry(paymentInfo.plan_id),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', paymentInfo.user_id);
-
-      if (membershipError) {
-        throw new Error(`Failed to activate membership: ${membershipError.message}`);
-      }
-
-      // Log successful verification (skip if audit log table doesn't exist)
-      try {
-        // Use raw SQL to insert into audit log if table exists
-        await supabase.rpc('log_payment_audit' as any, {
-          p_payment_id: paymentId,
-          p_action: 'verified',
-          p_old_status: 'paid',
-          p_new_status: 'verified',
-          p_reason: 'Razorpay payment verified successfully'
-        });
-      } catch (auditError) {
-        console.warn('Failed to log payment audit:', auditError);
-        // Don't fail the entire operation for audit logging
-      }
-
-      return { success: true };
+      return { status: (data as any)?.status || 'unknown' };
     } catch (error) {
-      console.error('Error marking payment as verified:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to mark payment as verified',
+      return { 
+        status: 'unknown', 
+        error: error instanceof Error ? error.message : 'Failed to get payment status' 
       };
     }
   }
 
   /**
-   * Calculate membership expiry date
+   * Get user's payment history
    */
-  private calculateMembershipExpiry(planId: string): string {
-    const now = new Date();
-    
-    switch (planId) {
-      case 'monthly':
-        return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
-      case 'yearly':
-        return new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString();
-      case 'lifetime':
-        return new Date(now.getTime() + 100 * 365 * 24 * 60 * 60 * 1000).toISOString();
-      default:
-        return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
-    }
-  }
-
-  /**
-   * Handle Razorpay webhook
-   */
-  async handleWebhook(webhookData: any, signature: string): Promise<{ success: boolean; error?: string }> {
+  async getPaymentHistory(userId: string): Promise<{ data: any[]; error: string | null }> {
     try {
-      // Verify webhook signature
-      const webhookSecret = process.env.VITE_RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_WEBHOOK_SECRET;
-      if (!webhookSecret) {
-        console.error('Webhook secret not configured');
-        return {
-          success: false,
-          error: 'Webhook secret not configured',
-        };
-      }
-      const body = JSON.stringify(webhookData);
-      
-      const isSignatureValid = razorpayService.verifyWebhookSignature(body, signature, webhookSecret);
-      
-      if (!isSignatureValid) {
-        return {
-          success: false,
-          error: 'Invalid webhook signature',
-        };
+      const { data, error } = await supabase
+        .from('payments' as any)
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        return { data: [], error: error.message };
       }
 
-      // Handle different webhook events
-      switch (webhookData.event) {
-        case 'payment.captured':
-          await this.handlePaymentCaptured(webhookData.payload.payment.entity);
-          break;
-        case 'payment.failed':
-          await this.handlePaymentFailed(webhookData.payload.payment.entity);
-          break;
-        case 'order.paid':
-          await this.handleOrderPaid(webhookData.payload.order.entity);
-          break;
-        default:
-          console.log('Unhandled webhook event:', webhookData.event);
-      }
-
-      return { success: true };
+      return { data: data || [], error: null };
     } catch (error) {
-      console.error('Error handling webhook:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to handle webhook',
+      return { 
+        data: [], 
+        error: error instanceof Error ? error.message : 'Failed to get payment history' 
       };
     }
-  }
-
-  /**
-   * Handle payment captured webhook
-   */
-  private async handlePaymentCaptured(payment: any): Promise<void> {
-    try {
-      console.log('Payment captured:', payment.id);
-      
-      // Find payment record by order ID
-      const { data: paymentData, error: fetchError } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('razorpay_order_id', payment.order_id)
-        .single();
-
-      if (fetchError || !paymentData) {
-        console.error('Payment record not found for captured payment:', payment.order_id);
-        return;
-      }
-
-      // Update payment status to verified
-      const { error: updateError } = await supabase
-        .from('payments')
-        .update({
-          status: 'verified',
-          razorpay_payment_id: payment.id,
-          verification_status: 'verified',
-          verified_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', paymentData.id);
-
-      if (updateError) {
-        console.error('Failed to update payment status for captured payment:', updateError);
-        return;
-      }
-
-      // Activate membership if not already active
-      const planId = paymentData.plan_id || 'pro';
-      const { error: membershipError } = await supabase
-        .from('user_profiles')
-        .update({
-          membership_plan: planId,
-          membership_expiry: this.calculateMembershipExpiry(planId),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', paymentData.user_id);
-
-      if (membershipError) {
-        console.error('Failed to activate membership for captured payment:', membershipError);
-      } else {
-        console.log('✅ Membership activated for captured payment:', payment.id);
-      }
-
-      console.log('✅ Payment captured webhook processed successfully');
-    } catch (error) {
-      console.error('Error handling payment captured webhook:', error);
-    }
-  }
-
-  /**
-   * Handle payment failed webhook
-   */
-  private async handlePaymentFailed(payment: any): Promise<void> {
-    try {
-      console.log('Payment failed:', payment.id);
-      
-      // Find payment record by order ID
-      const { data: paymentData, error: fetchError } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('razorpay_order_id', payment.order_id)
-        .single();
-
-      if (fetchError || !paymentData) {
-        console.error('Payment record not found for failed payment:', payment.order_id);
-        return;
-      }
-
-      // Update payment status to failed
-      const { error: updateError } = await supabase
-        .from('payments')
-        .update({
-          status: 'failed',
-          failed_reason: payment.error_description || payment.error_reason || 'Payment failed',
-          failed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', paymentData.id);
-
-      if (updateError) {
-        console.error('Failed to update payment status for failed payment:', updateError);
-        return;
-      }
-
-      // Check if payment was captured but failed later (needs refund)
-      if (payment.status === 'failed' && payment.amount_captured > 0) {
-        console.log('💰 Payment was captured but failed, initiating refund for:', payment.id);
-        
-        try {
-          // Initiate refund through Razorpay
-          const refundResult = await razorpayService.refundPayment(
-            payment.id,
-            payment.amount_captured / 100, // Convert from paise to rupees
-            `Automatic refund due to payment failure: ${payment.error_description || 'Unknown error'}`
-          );
-
-          if (refundResult && refundResult.id) {
-            console.log('✅ Refund initiated successfully:', refundResult.id);
-            
-            // Update payment record with refund details
-            await supabase
-              .from('payments')
-              .update({
-                status: 'refunded',
-                failed_reason: `Automatic refund initiated: ${refundResult.id}`,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', paymentData.id);
-          } else {
-            console.error('❌ Failed to initiate refund for payment:', payment.id);
-          }
-        } catch (refundError) {
-          console.error('❌ Error initiating refund:', refundError);
-        }
-      }
-
-      console.log('✅ Payment failed webhook processed successfully');
-    } catch (error) {
-      console.error('Error handling payment failed webhook:', error);
-    }
-  }
-
-  /**
-   * Handle order paid webhook
-   */
-  private async handleOrderPaid(order: any): Promise<void> {
-    try {
-      console.log('Order paid:', order.id);
-      
-      // Find payment record by order ID
-      const { data: paymentData, error: fetchError } = await supabase
-        .from('payments')
-        .select('*')
-        .eq('razorpay_order_id', order.id)
-        .single();
-
-      if (fetchError || !paymentData) {
-        console.error('Payment record not found for paid order:', order.id);
-        return;
-      }
-
-      // Update payment status to paid (will be verified separately)
-      const { error: updateError } = await supabase
-        .from('payments')
-        .update({
-          status: 'paid',
-          paid_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', paymentData.id);
-
-      if (updateError) {
-        console.error('Failed to update payment status for paid order:', updateError);
-        return;
-      }
-
-      console.log('✅ Order paid webhook processed successfully');
-    } catch (error) {
-      console.error('Error handling order paid webhook:', error);
-    }
-  }
-
-  /**
-   * Get Razorpay key ID for frontend
-   */
-  getKeyId(): string {
-    return razorpayService.getKeyId();
-  }
-
-  /**
-   * Format amount for display
-   */
-  formatAmount(amount: number): string {
-    return razorpayService.formatAmount(amount);
   }
 }
 

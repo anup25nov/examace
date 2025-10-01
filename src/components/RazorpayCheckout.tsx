@@ -177,36 +177,23 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
         },
         handler: async (response: any) => {
           try {
-            // Get referral code from localStorage if available
-            const referralCode = localStorage.getItem('referralCode');
-            
-            // Verify payment
-            const verificationResult = await razorpayPaymentService.verifyRazorpayPayment(
-              paymentResult.paymentId!,
-              {
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-              },
-              plan.id === 'pro_plus' ? 'pro_plus' : 'pro',
-              referralCode || undefined
-            );
+            console.log('Payment successful, waiting for webhook processing...', {
+              order_id: response.razorpay_order_id,
+              payment_id: response.razorpay_payment_id
+            });
 
-            if (verificationResult.success) {
-              setPaymentStep('success');
-              setTimeout(() => {
-                onPaymentSuccess(paymentResult.paymentId!);
-              }, 2000);
-            } else {
-              setPaymentStep('failed');
-              messagingService.paymentFailed(verificationResult.error || 'Payment verification failed');
-              setError(verificationResult.error || 'Payment verification failed');
-            }
+            // Payment successful - webhook will handle verification and membership activation
+            setPaymentStep('success');
+            messagingService.success('Payment successful! Your membership will be activated shortly.');
+            
+            setTimeout(() => {
+              onPaymentSuccess(paymentResult.paymentId!);
+            }, 2000);
           } catch (error) {
-            console.error('Payment verification error:', error);
+            console.error('Payment handler error:', error);
             setPaymentStep('failed');
-            messagingService.paymentFailed('Payment verification failed. Please contact support.');
-            setError('Payment verification failed. Please contact support.');
+            messagingService.paymentFailed('Payment processing error. Please contact support.');
+            setError('Payment processing error. Please contact support.');
           }
         },
         modal: {
