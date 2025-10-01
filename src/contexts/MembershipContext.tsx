@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { unifiedPaymentService } from '@/lib/unifiedPaymentService';
+import { supabase } from '@/integrations/supabase/client';
 
 interface MembershipContextType {
   membership: any | null;
@@ -33,7 +33,17 @@ export const MembershipProvider: React.FC<MembershipProviderProps> = ({ children
     
     setLoading(true);
     try {
-      const membershipData = await unifiedPaymentService.getUserMembership(user.id);
+      const { data: membershipData, error } = await supabase
+        .from('user_memberships')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching membership:', error);
+      }
+      
       setMembership(membershipData);
     } catch (error) {
       console.error('Error refreshing membership:', error);

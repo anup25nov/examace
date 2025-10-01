@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { unifiedPaymentService } from './unifiedPaymentService';
+import { razorpayPaymentService } from './razorpayPaymentService';
 import { dynamicTestDataLoader } from './dynamicTestDataLoader';
 import { getPlanPricing, formatPrice } from '@/config/pricingConfig';
 
@@ -28,7 +28,17 @@ export class PlanLimitsService {
     try {
       console.log('🔍 [planLimitsService] Getting user plan limits for userId:', userId);
       // Get user's current membership
-      const membership = await unifiedPaymentService.getUserMembership(userId);
+      const { data: membership, error: membershipError } = await supabase
+        .from('user_memberships')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .single();
+      
+      if (membershipError && membershipError.code !== 'PGRST116') {
+        console.error('❌ [planLimitsService] Error fetching membership:', membershipError);
+      }
+      
       console.log('👤 [planLimitsService] User membership:', membership);
       
       let planType: 'free' | 'pro' | 'pro_plus' = 'free';
@@ -451,9 +461,14 @@ export class PlanLimitsService {
    */
   async hasGracePeriodAccess(userId: string): Promise<{ hasAccess: boolean; daysRemaining: number; message: string }> {
     try {
-      const membership = await unifiedPaymentService.getUserMembership(userId);
+      const { data: membership, error: membershipError } = await supabase
+        .from('user_memberships')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .single();
       
-      if (!membership || membership.status !== 'active') {
+      if (membershipError || !membership) {
         return { hasAccess: false, daysRemaining: 0, message: 'No active membership' };
       }
 

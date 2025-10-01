@@ -18,9 +18,21 @@ import {
   Lock,
   RotateCcw
 } from 'lucide-react';
-import { unifiedPaymentService, PaymentPlan } from '@/lib/unifiedPaymentService';
+import { razorpayPaymentService } from '@/lib/razorpayPaymentService';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+
+// Payment plan interface
+interface PaymentPlan {
+  id: string;
+  name: string;
+  price: number;
+  features: string[];
+  isPopular?: boolean;
+  description?: string;
+  currency?: string;
+  duration?: string;
+}
 
 // Declare Razorpay types
 declare global {
@@ -181,8 +193,8 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
     try {
       setLoading(true);
       const [plansData, membership] = await Promise.all([
-        unifiedPaymentService.getPaymentPlans(),
-        unifiedPaymentService.getUserMembership(user!.id)
+        getPaymentPlans(),
+        getUserMembership(user!.id)
       ]);
       
       // Filter plans based on current membership
@@ -237,7 +249,7 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
           price: testPrice,
           currency: 'INR',
           features: ['Access to this test', 'Detailed solutions', 'Performance analytics'],
-          duration: 1
+          duration: '1 test'
         };
       } else {
         // Membership plan
@@ -248,7 +260,15 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
       }
 
       // Create payment
-      const paymentResult = await unifiedPaymentService.createPayment(planToPurchase.id, user.id);
+      const paymentResult = await razorpayPaymentService.createRazorpayPayment({
+        planId: planToPurchase.id,
+        planName: planToPurchase.name,
+        amount: planToPurchase.price,
+        currency: 'INR',
+        userId: user.id,
+        userEmail: (user as any).email || '',
+        userName: (user as any).user_metadata?.full_name || 'User'
+      });
       
       if (!paymentResult.success) {
         throw new Error(paymentResult.error || 'Failed to create payment');
@@ -323,7 +343,7 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
 
             // Payment successful - webhook will handle verification and membership activation
             setPaymentStep('success');
-            messagingService.success('Payment successful! Your membership will be activated shortly.');
+            console.log('Payment successful! Your membership will be activated shortly.');
             
             // Clear any referral code after successful payment
             localStorage.removeItem('referralCode');
@@ -403,7 +423,7 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
         price: testPrice,
         currency: 'INR',
         features: ['Access to this test', 'Detailed solutions', 'Performance analytics'],
-        duration: 1
+        duration: '1 test'
       };
     }
     return plans.find(p => p.id === selectedPlan) || null;
@@ -545,7 +565,7 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
                     <div className="text-center">
                       <h4 className="font-semibold text-lg">Single Test</h4>
                       <div className="text-2xl font-bold text-primary mt-2">
-                        {unifiedPaymentService.formatAmount(testPrice)}
+                        ₹{testPrice}
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">Access to this test only</p>
                     </div>
@@ -573,7 +593,7 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
                       )}
                       <h4 className="font-semibold text-lg">{plan.name}</h4>
                       <div className="text-2xl font-bold text-primary mt-2">
-                        {unifiedPaymentService.formatAmount(plan.price)}
+                        ₹{plan.price}
                         <span className="text-sm text-muted-foreground">/month</span>
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">{plan.description}</p>
@@ -609,7 +629,7 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
                   </div>
                   <div className="text-right">
                     <p className="text-2xl font-bold text-blue-600">
-                      {unifiedPaymentService.formatAmount(selectedPlanDetails.price)}
+                      ₹{selectedPlanDetails.price}
                     </p>
                     <Badge variant="secondary" className="mt-1">
                       {selectedPlanDetails.currency}
@@ -671,7 +691,7 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
               ) : (
                 <>
                   <CreditCard className="w-5 h-5 mr-2" />
-                  Pay {selectedPlanDetails ? unifiedPaymentService.formatAmount(selectedPlanDetails.price) : 'Now'} & Unlock
+                  Pay {selectedPlanDetails ? `₹${selectedPlanDetails.price}` : 'Now'} & Unlock
                 </>
               )}
             </Button>
@@ -688,3 +708,54 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
     </Dialog>
   );
 };
+
+// Helper functions
+async function getPaymentPlans(): Promise<PaymentPlan[]> {
+  return [
+    {
+      id: 'pro',
+      name: 'Pro Plan',
+      price: 99,
+      description: 'Perfect for focused preparation',
+      currency: 'INR',
+      duration: '1 month',
+      features: [
+        '11 Mock Tests',
+        'All PYQ Papers',
+        'Performance Analytics',
+        'Mobile App Access'
+      ],
+      isPopular: true
+    },
+    {
+      id: 'pro_plus',
+      name: 'Pro+ Plan',
+      price: 299,
+      description: 'Complete preparation package',
+      currency: 'INR',
+      duration: '1 month',
+      features: [
+        'Unlimited Mock Tests',
+        'All PYQ Papers',
+        'Advanced Analytics',
+        'Priority Support',
+        'Mobile App Access'
+      ]
+    }
+  ];
+}
+
+async function getUserMembership(userId: string): Promise<any> {
+  const { data, error } = await supabase
+    .from('user_memberships')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .single();
+  
+  if (error && error.code !== 'PGRST116') {
+    console.error('Error fetching membership:', error);
+  }
+  
+  return data;
+}

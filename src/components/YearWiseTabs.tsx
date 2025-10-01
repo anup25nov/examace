@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Calendar, Clock, CheckCircle, Star, Crown, Target, History } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { unifiedPaymentService } from '@/lib/unifiedPaymentService';
+import { supabase } from '@/integrations/supabase/client';
 import { MembershipPlans } from '@/components/MembershipPlans';
 import { PerfectModal } from '@/components/PerfectModal';
 import { TestStartModal } from '@/components/TestStartModal';
@@ -86,7 +86,17 @@ export const YearWiseTabs: React.FC<YearWiseTabsProps> = ({
     if (!user) return;
     
     try {
-      const membership = await unifiedPaymentService.getUserMembership(user.id);
+      const { data: membership, error } = await supabase
+        .from('user_memberships')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching membership:', error);
+      }
+      
       setUserMembership(membership);
       
       // Check access for each paper

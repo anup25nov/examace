@@ -18,7 +18,7 @@ import { PremiumTest } from '@/lib/premiumService';
 import { TestStartModal } from './TestStartModal';
 import { MembershipPlans } from './MembershipPlans';
 import { PerfectModal } from './PerfectModal';
-import { unifiedPaymentService } from '@/lib/unifiedPaymentService';
+// Removed unifiedPaymentService import
 import { useAuth } from '@/hooks/useAuth';
 import { useMembership } from '@/contexts/MembershipContext';
 

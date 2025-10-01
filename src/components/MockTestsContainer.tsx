@@ -16,7 +16,7 @@ import {
 import ResponsiveScrollContainer from './ResponsiveScrollContainer';
 import { PremiumTest } from '@/lib/premiumService';
 import { useAuth } from '@/hooks/useAuth';
-import { unifiedPaymentService } from '@/lib/unifiedPaymentService';
+import { supabase } from '@/integrations/supabase/client';
 import { MembershipPlans } from './MembershipPlans';
 import { PerfectModal } from './PerfectModal';
 
@@ -56,7 +56,17 @@ export const MockTestsContainer: React.FC<MockTestsContainerProps> = ({
     if (!user) return;
     
     try {
-      const membership = await unifiedPaymentService.getUserMembership(user.id);
+      const { data: membership, error } = await supabase
+        .from('user_memberships')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching membership:', error);
+      }
+      
       setUserMembership(membership);
       
       // Check access for each test

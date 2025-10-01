@@ -45,10 +45,9 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { unifiedPaymentService } from '@/lib/unifiedPaymentService';
+import { supabase } from '@/integrations/supabase/client';
 import { MembershipPlans } from '@/components/MembershipPlans';
 import { PerfectModal } from '@/components/PerfectModal';
-import { supabase } from '@/integrations/supabase/client';
 import { referralService } from '@/lib/referralService';
 import { messagingService } from '@/lib/messagingService';
 
@@ -106,7 +105,17 @@ const Profile = () => {
       }
       
       // Load membership data
-      const membershipData = await unifiedPaymentService.getUserMembership(user!.id);
+      const { data: membershipData, error } = await supabase
+        .from('user_memberships')
+        .select('*')
+        .eq('user_id', user!.id)
+        .eq('status', 'active')
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching membership:', error);
+      }
+      
       setMembership(membershipData);
 
       // Load membership transactions
