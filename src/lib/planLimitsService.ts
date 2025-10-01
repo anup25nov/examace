@@ -33,9 +33,9 @@ export class PlanLimitsService {
         .select('*')
         .eq('user_id', userId)
         .eq('status', 'active')
-        .single();
+        .maybeSingle();
       
-      if (membershipError && membershipError.code !== 'PGRST116') {
+      if (membershipError) {
         console.error('❌ [planLimitsService] Error fetching membership:', membershipError);
       }
       
@@ -466,9 +466,14 @@ export class PlanLimitsService {
         .select('*')
         .eq('user_id', userId)
         .eq('status', 'active')
-        .single();
+        .maybeSingle();
       
-      if (membershipError || !membership) {
+      if (membershipError) {
+        console.error('❌ [planLimitsService] Error fetching membership:', membershipError);
+        return { hasAccess: false, daysRemaining: 0, message: 'Error fetching membership' };
+      }
+      
+      if (!membership) {
         return { hasAccess: false, daysRemaining: 0, message: 'No active membership' };
       }
 

@@ -110,9 +110,9 @@ const Profile = () => {
         .select('*')
         .eq('user_id', user!.id)
         .eq('status', 'active')
-        .single();
+        .maybeSingle();
       
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error fetching membership:', error);
       }
       

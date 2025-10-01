@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
+// Use built-in Deno serve function
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,7 +25,7 @@ interface RazorpayWebhookEvent {
   }
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   console.log('=== WEBHOOK FUNCTION CALLED ===')
   console.log('Method:', req.method)
   console.log('URL:', req.url)
