@@ -318,21 +318,21 @@ export const AdminPanel: React.FC = () => {
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-2">
                             <Badge className="bg-green-100 text-green-800">
-                              ₹{request.amount.toFixed(2)}
+                              ₹{(request.amount || 0).toFixed(2)}
                             </Badge>
-                            <Badge variant="outline">{request.payment_method.replace('_', ' ')}</Badge>
+                            <Badge variant="outline">{request.payment_method?.replace('_', ' ') || 'Unknown Method'}</Badge>
                           </div>
                           <h4 className="font-semibold text-gray-900 mb-2">
                             Withdrawal Request
                           </h4>
                           <p className="text-sm text-gray-600 mb-2">
-                            <strong>User:</strong> {request.user_phone} | 
-                            <strong> Date:</strong> {new Date(request.created_at).toLocaleDateString()}
+                            <strong>User:</strong> {request.user_phone || 'Unknown'} | 
+                            <strong> Date:</strong> {request.created_at ? new Date(request.created_at).toLocaleDateString() : 'Unknown'}
                           </p>
                           <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded">
                             <strong>Payment Details:</strong>
                             <pre className="mt-1 text-xs">
-                              {JSON.stringify(request.payment_details, null, 2)}
+                              {JSON.stringify(request.payment_details || {}, null, 2)}
                             </pre>
                           </div>
                         </div>
@@ -462,7 +462,7 @@ export const AdminPanel: React.FC = () => {
                 
                 <div>
                   <Label>Payment Method</Label>
-                  <p className="text-sm text-gray-600">{selectedWithdrawal.payment_method.replace('_', ' ')}</p>
+                  <p className="text-sm text-gray-600">{selectedWithdrawal.payment_method?.replace('_', ' ') || 'Unknown Method'}</p>
                 </div>
                 
                 <div>
