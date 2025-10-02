@@ -28,13 +28,6 @@ interface WithdrawalRequestModalProps {
 
 const paymentMethods = [
   { 
-    value: 'phone_number', 
-    label: 'Phone Number', 
-    icon: Smartphone,
-    description: 'Transfer to phone number (same or different)',
-    fields: ['phone_number', 'phone_provider']
-  },
-  { 
     value: 'bank_transfer', 
     label: 'Bank Transfer', 
     icon: Building2,
@@ -47,13 +40,6 @@ const paymentMethods = [
     icon: Smartphone,
     description: 'UPI ID transfer',
     fields: ['upi_id']
-  },
-  { 
-    value: 'paytm', 
-    label: 'Paytm', 
-    icon: CreditCard,
-    description: 'Paytm wallet transfer',
-    fields: ['paytm_number']
   }
 ];
 
@@ -71,11 +57,10 @@ export const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [canRequest, setCanRequest] = useState(true);
-  const [userPhone, setUserPhone] = useState('');
-  const [fetchedAvailableAmount, setFetchedAvailableAmount] = useState<number | null>(null);
+  const [pendingAmountAvailable, setPendingAmountAvailable] = useState<number | null>(null);
   const [pendingWithdrawals, setPendingWithdrawals] = useState<number>(0);
 
-  // Check if user can make withdrawal request and get user phone
+  // Check if user can make withdrawal request
   useEffect(() => {
     const checkWithdrawalEligibility = async () => {
       if (!user) return;
@@ -109,30 +94,15 @@ export const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
           // Set pending withdrawals
           setPendingWithdrawals(pendingAmount);
           
-          // Calculate pending amount (total earnings - pending withdrawals)
-          const pendingAmountAvailable = Math.max(0, totalEarnings - pendingAmount);
-          setFetchedAvailableAmount(pendingAmountAvailable);
+          // Calculate pending amount available for withdrawal (total earnings - pending withdrawals)
+          const pendingAmountForWithdrawal = Math.max(0, totalEarnings - pendingAmount);
+          setPendingAmountAvailable(pendingAmountForWithdrawal);
           
           // Check if user can withdraw (pending amount >= minimum withdrawal)
           const minimumWithdrawal = defaultConfig.commission.minimumWithdrawal;
-          setCanRequest(pendingAmountAvailable >= minimumWithdrawal);
+          setCanRequest(pendingAmountForWithdrawal >= minimumWithdrawal);
         }
 
-        // Get user's phone number
-        const { data: profileData, error: profileError } = await supabase
-          .from('user_profiles')
-          .select('phone')
-          .eq('id', user.id)
-          .single();
-
-        if (!profileError && profileData?.phone) {
-          setUserPhone(profileData.phone);
-          // Set default phone number in payment details
-          setPaymentDetails(prev => ({
-            ...prev,
-            phone_number: profileData.phone
-          }));
-        }
       } catch (error) {
         console.error('Error checking withdrawal eligibility:', error);
       }
@@ -160,9 +130,9 @@ export const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
       return;
     }
 
-    const currentAvailableAmount = fetchedAvailableAmount !== null ? fetchedAvailableAmount : availableAmount;
-    if (amountValue > Math.min(currentAvailableAmount, defaultConfig.commission.maximumWithdrawal)) {
-      setError(`Amount cannot exceed ₹${Math.min(currentAvailableAmount, defaultConfig.commission.maximumWithdrawal)}`);
+    const currentPendingAmount = pendingAmountAvailable !== null ? pendingAmountAvailable : availableAmount;
+    if (amountValue > Math.min(currentPendingAmount, defaultConfig.commission.maximumWithdrawal)) {
+      setError(`Amount cannot exceed ₹${Math.min(currentPendingAmount, defaultConfig.commission.maximumWithdrawal)}`);
       return;
     }
 
@@ -290,10 +260,10 @@ export const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-green-600 font-medium">Pending Amount Available</p>
-                    <p className="text-2xl font-bold text-green-700">₹{(fetchedAvailableAmount !== null ? fetchedAvailableAmount : availableAmount).toFixed(2)}</p>
+                    <p className="text-2xl font-bold text-green-700">₹{(pendingAmountAvailable || 0).toFixed(2)}</p>
                     {pendingWithdrawals > 0 && (
                       <p className="text-xs text-gray-500 mt-1">
-                        Total earnings: ₹{((fetchedAvailableAmount || 0) + pendingWithdrawals).toFixed(2)} | Already requested: ₹{pendingWithdrawals.toFixed(2)}
+                        Total earnings: ₹{((pendingAmountAvailable || 0) + pendingWithdrawals).toFixed(2)} | Already requested: ₹{pendingWithdrawals.toFixed(2)}
                       </p>
                     )}
                   </div>
@@ -312,12 +282,12 @@ export const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 min={defaultConfig.commission.minimumWithdrawal}
-                max={Math.min(fetchedAvailableAmount !== null ? fetchedAvailableAmount : availableAmount, defaultConfig.commission.maximumWithdrawal)}
+                max={Math.min(pendingAmountAvailable !== null ? pendingAmountAvailable : availableAmount, defaultConfig.commission.maximumWithdrawal)}
                 step="0.01"
                 required
               />
               <p className="text-xs text-gray-500">
-                Minimum withdrawal: ₹{defaultConfig.commission.minimumWithdrawal} | Maximum: ₹{Math.min(fetchedAvailableAmount !== null ? fetchedAvailableAmount : availableAmount, defaultConfig.commission.maximumWithdrawal).toFixed(2)}
+                Minimum withdrawal: ₹{defaultConfig.commission.minimumWithdrawal} | Maximum: ₹{Math.min(pendingAmountAvailable !== null ? pendingAmountAvailable : availableAmount, defaultConfig.commission.maximumWithdrawal).toFixed(2)}
               </p>
             </div>
 
@@ -363,44 +333,7 @@ export const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
             {selectedMethod && (
               <div className="space-y-4">
                 <Label className="text-base font-semibold">Payment Details</Label>
-                {selectedMethod === 'phone_number' && (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="phone_number">Phone Number</Label>
-                      <Input
-                        id="phone_number"
-                        type="tel"
-                        placeholder="Enter phone number"
-                        value={paymentDetails.phone_number || ''}
-                        onChange={(e) => handlePaymentDetailChange('phone_number', e.target.value)}
-                        required
-                      />
-                      {userPhone && (
-                        <p className="text-xs text-gray-500">
-                          Your registered number: {userPhone} (you can use a different number)
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone_provider">Phone Provider</Label>
-                      <select
-                        id="phone_provider"
-                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        value={paymentDetails.phone_provider || ''}
-                        onChange={(e) => handlePaymentDetailChange('phone_provider', e.target.value)}
-                        required
-                      >
-                        <option value="">Select provider</option>
-                        <option value="jio">Jio</option>
-                        <option value="airtel">Airtel</option>
-                        <option value="vi">Vi (Vodafone Idea)</option>
-                        <option value="bsnl">BSNL</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
-                {selectedMethod !== 'phone_number' && paymentMethods
+                {paymentMethods
                   .find(m => m.value === selectedMethod)
                   ?.fields.map((field) => (
                     <div key={field} className="space-y-2">
