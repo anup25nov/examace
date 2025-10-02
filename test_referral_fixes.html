@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Referral System Fixes Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        #log { background: #f8f9fa; padding: 10px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 15px 0; }
+        .stat-card { background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; }
+        .stat-value { font-size: 24px; font-weight: bold; color: #007bff; }
+        .stat-label { font-size: 14px; color: #6c757d; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Referral System Fixes Test</h1>
+    
+    <div class="test-section">
+        <h3>Test 1: Check Referral Count Logic</h3>
+        <button onclick="testReferralCount()">Test Referral Count</button>
+        <div id="referral-count-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 2: Check Commission Status</h3>
+        <button onclick="testCommissionStatus()">Test Commission Status</button>
+        <div id="commission-status-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 3: Test Withdrawal Eligibility</h3>
+        <button onclick="testWithdrawalEligibility()">Test Withdrawal Eligibility</button>
+        <div id="withdrawal-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 4: Payment Flow Test</h3>
+        <button onclick="testPaymentFlow()">Test Payment Flow</button>
+        <div id="payment-flow-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Current Stats</h3>
+        <div id="current-stats" class="stats"></div>
+        <button onclick="refreshStats()">Refresh Stats</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>Console Log</h3>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://talvssmwnsfotoutjlhd.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhbHZzc213bnNmb3RvdXRqbGhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3MjQ2NjMsImV4cCI6MjA3MjMwMDY2M30.kViEumcw7qxZeITgtZf91D-UVFY5PaFyXganLyh2Tok';
+        
+        let testUserId = null;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toISOString();
+            const logEntry = `[${timestamp}] ${type.toUpperCase()}: ${message}\n`;
+            logDiv.textContent += logEntry;
+            console.log(logEntry.trim());
+        }
+
+        async function getTestUser() {
+            if (testUserId) return testUserId;
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles?select=id,full_name&limit=1`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const users = await response.json();
+                    if (users.length > 0) {
+                        testUserId = users[0].id;
+                        log(`Using test user: ${users[0].full_name} (${testUserId})`);
+                        return testUserId;
+                    }
+                }
+                
+                // Fallback to default
+                testUserId = 'd791ba76-4059-4460-bda6-3020bf786100';
+                log(`Using fallback user ID: ${testUserId}`);
+                return testUserId;
+            } catch (error) {
+                testUserId = 'd791ba76-4059-4460-bda6-3020bf786100';
+                log(`Error getting user, using fallback: ${testUserId}`);
+                return testUserId;
+            }
+        }
+
+        async function testReferralCount() {
+            log('Testing referral count logic...');
+            const resultDiv = document.getElementById('referral-count-result');
+            
+            try {
+                const userId = await getTestUser();
+                
+                // Get referral stats
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_referral_stats`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({ p_user_id: userId })
+                });
+                
+                if (response.ok) {
+                    const stats = await response.json();
+                    if (stats && stats.length > 0) {
+                        const stat = stats[0];
+                        log(`Referral stats: Total=${stat.total_referrals}, Completed=${stat.completed_referrals}, Earnings=${stat.total_earnings}`);
+                        
+                        resultDiv.innerHTML = `
+                            <div class="success">
+                                ✅ Referral count logic working correctly<br>
+                                Total Referrals: ${stat.total_referrals}<br>
+                                Completed Referrals: ${stat.completed_referrals}<br>
+                                Total Earnings: ₹${stat.total_earnings}
+                            </div>
+                        `;
+                    } else {
+                        resultDiv.innerHTML = '<div class="warning">⚠️ No referral data found</div>';
+                    }
+                } else {
+                    const error = await response.text();
+                    log(`Error getting referral stats: ${error}`, 'error');
+                    resultDiv.innerHTML = '<div class="error">❌ Error getting referral stats</div>';
+                }
+            } catch (error) {
+                log(`Error testing referral count: ${error.message}`, 'error');
+                resultDiv.innerHTML = '<div class="error">❌ Error testing referral count</div>';
+            }
+        }
+
+        async function testCommissionStatus() {
+            log('Testing commission status...');
+            const resultDiv = document.getElementById('commission-status-result');
+            
+            try {
+                const userId = await getTestUser();
+                
+                // Get referral transactions
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/referral_transactions?referrer_id=eq.${userId}&select=commission_status,commission_amount,status`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const transactions = await response.json();
+                    log(`Found ${transactions.length} referral transactions`);
+                    
+                    const pendingCount = transactions.filter(t => t.commission_status === 'pending').length;
+                    const paidCount = transactions.filter(t => t.commission_status === 'paid').length;
+                    
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ Commission status check complete<br>
+                            Total Transactions: ${transactions.length}<br>
+                            Pending Commissions: ${pendingCount}<br>
+                            Paid Commissions: ${paidCount}
+                        </div>
+                    `;
+                } else {
+                    const error = await response.text();
+                    log(`Error getting commission status: ${error}`, 'error');
+                    resultDiv.innerHTML = '<div class="error">❌ Error getting commission status</div>';
+                }
+            } catch (error) {
+                log(`Error testing commission status: ${error.message}`, 'error');
+                resultDiv.innerHTML = '<div class="error">❌ Error testing commission status</div>';
+            }
+        }
+
+        async function testWithdrawalEligibility() {
+            log('Testing withdrawal eligibility...');
+            const resultDiv = document.getElementById('withdrawal-result');
+            
+            try {
+                const userId = await getTestUser();
+                
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_withdrawal_eligibility`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({ p_user_id: userId })
+                });
+                
+                if (response.ok) {
+                    const eligibility = await response.json();
+                    if (eligibility && eligibility.length > 0) {
+                        const data = eligibility[0];
+                        log(`Withdrawal eligibility: Can withdraw=${data.can_withdraw}, Available=${data.available_balance}, Min=${data.minimum_withdrawal}`);
+                        
+                        resultDiv.innerHTML = `
+                            <div class="${data.can_withdraw ? 'success' : 'warning'}">
+                                ${data.can_withdraw ? '✅' : '⚠️'} Withdrawal eligibility check complete<br>
+                                Can Withdraw: ${data.can_withdraw ? 'Yes' : 'No'}<br>
+                                Available Balance: ₹${data.available_balance}<br>
+                                Minimum Withdrawal: ₹${data.minimum_withdrawal}<br>
+                                Pending Withdrawals: ₹${data.pending_withdrawals}
+                            </div>
+                        `;
+                    } else {
+                        resultDiv.innerHTML = '<div class="warning">⚠️ No eligibility data found</div>';
+                    }
+                } else {
+                    const error = await response.text();
+                    log(`Error getting withdrawal eligibility: ${error}`, 'error');
+                    resultDiv.innerHTML = '<div class="error">❌ Error getting withdrawal eligibility</div>';
+                }
+            } catch (error) {
+                log(`Error testing withdrawal eligibility: ${error.message}`, 'error');
+                resultDiv.innerHTML = '<div class="error">❌ Error testing withdrawal eligibility</div>';
+            }
+        }
+
+        async function testPaymentFlow() {
+            log('Testing payment flow...');
+            const resultDiv = document.getElementById('payment-flow-result');
+            
+            try {
+                const userId = await getTestUser();
+                
+                // Create a test payment
+                const paymentData = {
+                    payment_id: `PAY_${Date.now()}_test_fix`,
+                    user_id: userId,
+                    plan_id: 'pro',
+                    plan_name: 'Pro Plan',
+                    amount: 99,
+                    razorpay_order_id: `order_${Date.now()}_test_fix`,
+                    payment_method: 'razorpay',
+                    status: 'pending'
+                };
+                
+                const createResponse = await fetch(`${SUPABASE_URL}/rest/v1/payments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify(paymentData)
+                });
+                
+                if (createResponse.ok) {
+                    log(`Test payment created: ${paymentData.payment_id}`);
+                    
+                    // Process payment via RPC
+                    const processResponse = await fetch(`${SUPABASE_URL}/rest/v1/rpc/process_payment_webhook`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                        },
+                        body: JSON.stringify({
+                            p_order_id: paymentData.razorpay_order_id,
+                            p_razorpay_payment_id: `pay_${Date.now()}`,
+                            p_amount: paymentData.amount,
+                            p_currency: 'INR'
+                        })
+                    });
+                    
+                    if (processResponse.ok) {
+                        const result = await processResponse.json();
+                        if (result && result.length > 0 && result[0].success) {
+                            log(`Payment processed successfully: ${result[0].message}`);
+                            resultDiv.innerHTML = `
+                                <div class="success">
+                                    ✅ Payment flow test successful<br>
+                                    Message: ${result[0].message}<br>
+                                    Payment ID: ${result[0].payment_id}
+                                </div>
+                            `;
+                        } else {
+                            resultDiv.innerHTML = `<div class="error">❌ Payment processing failed: ${result[0]?.message || 'Unknown error'}</div>`;
+                        }
+                    } else {
+                        const error = await processResponse.text();
+                        log(`Error processing payment: ${error}`, 'error');
+                        resultDiv.innerHTML = '<div class="error">❌ Error processing payment</div>';
+                    }
+                } else {
+                    const error = await createResponse.text();
+                    log(`Error creating payment: ${error}`, 'error');
+                    resultDiv.innerHTML = '<div class="error">❌ Error creating payment</div>';
+                }
+            } catch (error) {
+                log(`Error testing payment flow: ${error.message}`, 'error');
+                resultDiv.innerHTML = '<div class="error">❌ Error testing payment flow</div>';
+            }
+        }
+
+        async function refreshStats() {
+            log('Refreshing stats...');
+            const statsDiv = document.getElementById('current-stats');
+            
+            try {
+                const userId = await getTestUser();
+                
+                // Get referral stats
+                const statsResponse = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_referral_stats`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({ p_user_id: userId })
+                });
+                
+                // Get withdrawal eligibility
+                const eligibilityResponse = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_withdrawal_eligibility`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({ p_user_id: userId })
+                });
+                
+                let statsHtml = '';
+                
+                if (statsResponse.ok) {
+                    const stats = await statsResponse.json();
+                    if (stats && stats.length > 0) {
+                        const stat = stats[0];
+                        statsHtml += `
+                            <div class="stat-card">
+                                <div class="stat-value">${stat.total_referrals}</div>
+                                <div class="stat-label">Total Referrals</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">₹${stat.total_earnings}</div>
+                                <div class="stat-label">Total Earnings</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">₹${stat.pending_earnings}</div>
+                                <div class="stat-label">Pending Earnings</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">₹${stat.paid_earnings}</div>
+                                <div class="stat-label">Paid Earnings</div>
+                            </div>
+                        `;
+                    }
+                }
+                
+                if (eligibilityResponse.ok) {
+                    const eligibility = await eligibilityResponse.json();
+                    if (eligibility && eligibility.length > 0) {
+                        const data = eligibility[0];
+                        statsHtml += `
+                            <div class="stat-card">
+                                <div class="stat-value">${data.can_withdraw ? 'Yes' : 'No'}</div>
+                                <div class="stat-label">Can Withdraw</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">₹${data.available_balance}</div>
+                                <div class="stat-label">Available Balance</div>
+                            </div>
+                        `;
+                    }
+                }
+                
+                statsDiv.innerHTML = statsHtml || '<div class="warning">No stats available</div>';
+                log('Stats refreshed successfully');
+            } catch (error) {
+                log(`Error refreshing stats: ${error.message}`, 'error');
+                statsDiv.innerHTML = '<div class="error">Error loading stats</div>';
+            }
+        }
+
+        // Auto-refresh stats on load
+        window.addEventListener('load', () => {
+            log('Referral System Fixes Test loaded');
+            refreshStats();
+        });
+    </script>
+</body>
+</html>

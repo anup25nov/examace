@@ -164,14 +164,9 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
         setIsNewUser(isNewUser);
         
         // Step 1 Complete: OTP verified successfully
-        // Now check if user is new or existing
-        if (isNewUser) {
-          console.log('New user detected - going to referral step');
-          setStep('referral');
-        } else {
-          console.log('Existing user detected - going to dashboard');
-          onAuthSuccess();
-        }
+        // Go directly to dashboard for both new and existing users
+        console.log('User authenticated - going to dashboard');
+        onAuthSuccess();
       } else {
         setError(result.error || 'Invalid OTP');
       }

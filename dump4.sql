@@ -1,16 +1,8 @@
-/*
-pg_dump "postgresql://postgres:rUyUSFnBG2B5Wyae@db.talvssmwnsfotoutjlhd.supabase.co:5432/postgres" \
-  -s \
-  -n public \
-  -n auth \
-  -n storage \
-  -n extensions \
-  -n realtime \
-  > /Users/anupmishra/Desktop/repos/examace/dump1.sql
-*/
+--
+-- PostgreSQL database dump
+--
 
-
-\restrict PBg8y9Rzn9OZ1cbsMx8h0HLeW8pQQLHBEH5YZA8dzAxRtZwcM8giSef617GEIxJ
+\restrict z0Lh1Z2pgkz3k2MVwbsxevLSVsuvWEExqHJ1nboYFdGfUZhYaeaZq83HysjwtUE
 
 -- Dumped from database version 17.4
 -- Dumped by pg_dump version 18.0
@@ -25,11 +17,11 @@ SELECT pg_catalog.set_config('search_path', '', false);
 SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
-SET row_security = off;
+SET row_security = off; 
 
 --
 -- Name: auth; Type: SCHEMA; Schema: -; Owner: supabase_admin
---
+--  
 
 CREATE SCHEMA auth;
 
@@ -860,127 +852,83 @@ ALTER FUNCTION public.admin_verify_payment(p_payment_id character varying, p_adm
 --
 
 CREATE FUNCTION public.apply_referral_code(p_user_id uuid, p_referral_code text) RETURNS TABLE(success boolean, message text, referrer_id uuid)
-    LANGUAGE plpgsql
+    LANGUAGE plpgsql SECURITY DEFINER
     AS $$
 DECLARE
-  referrer_id_val UUID;
-  referral_code_exists BOOLEAN;
+    referrer_record record;
+    referrer_id_val UUID;
 BEGIN
-  -- Check if referral code exists
-  SELECT 
-    user_id,
-    true
-  INTO 
-    referrer_id_val,
-    referral_code_exists
-  FROM referral_codes
-  WHERE code = p_referral_code
-    AND is_active = true
-  LIMIT 1;
-  
-  -- If referral code not found
-  IF NOT referral_code_exists THEN
-    RETURN QUERY SELECT false, 'Referral code not found', NULL::UUID;
-    RETURN;
-  END IF;
-  
-  -- Check if user is trying to use their own referral code
-  IF referrer_id_val = p_user_id THEN
-    RETURN QUERY SELECT false, 'Cannot use your own referral code', NULL::UUID;
-    RETURN;
-  END IF;
-  
-  -- Update user profile with referral code
-  UPDATE user_profiles
-  SET 
-    referred_by = p_referral_code,
-    referral_code_applied = true,
-    referral_code_used = p_referral_code,
-    referral_applied_at = NOW(),
-    updated_at = NOW()
-  WHERE id = p_user_id;
-  
-  RETURN QUERY SELECT true, 'Referral code applied successfully', referrer_id_val;
+    -- Check if referral code exists and is active
+    SELECT user_id INTO referrer_id_val
+    FROM public.referral_codes
+    WHERE code = p_referral_code AND is_active = true AND user_id != p_user_id;
+    
+    IF referrer_id_val IS NULL THEN
+        RETURN QUERY SELECT false, 'Referral code not found or inactive', NULL::UUID;
+        RETURN;
+    END IF;
+    
+    -- Check if user is already referred
+    IF EXISTS (
+        SELECT 1 FROM public.referral_transactions 
+        WHERE referred_id = p_user_id
+    ) THEN
+        RETURN QUERY SELECT false, 'User already has a referrer', NULL::UUID;
+        RETURN;
+    END IF;
+    
+    -- Create referral transaction
+    INSERT INTO public.referral_transactions (
+        referrer_id,
+        referred_id,
+        referral_code,
+        status,
+        transaction_type,
+        amount,
+        commission_amount,
+        commission_status,
+        membership_purchased,
+        first_membership_only
+    ) VALUES (
+        referrer_id_val,
+        p_user_id,
+        p_referral_code,
+        'pending', -- Initial status
+        'referral_signup', -- Type for initial signup
+        0.00, -- No amount for signup
+        0.00, -- No commission for signup
+        'pending',
+        false,
+        true
+    );
+    
+    -- Update referrer's referral count
+    UPDATE public.referral_codes
+    SET 
+        total_referrals = COALESCE(total_referrals, 0) + 1,
+        updated_at = NOW()
+    WHERE user_id = referrer_id_val;
+    
+    -- Update user profile with referral code
+    UPDATE public.user_profiles
+    SET 
+        referred_by = p_referral_code,
+        referral_code_applied = true,
+        referral_code_used = p_referral_code,
+        referral_applied_at = NOW(),
+        updated_at = NOW()
+    WHERE id = p_user_id;
+    
+    RETURN QUERY SELECT true, 'Referral code applied successfully', referrer_id_val;
+    
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN QUERY SELECT false, 'Error applying referral code: ' || SQLERRM, NULL::UUID;
 END;
 $$;
 
 
 ALTER FUNCTION public.apply_referral_code(p_user_id uuid, p_referral_code text) OWNER TO postgres;
-
---
--- Name: apply_referral_code(uuid, character varying); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.apply_referral_code(p_user_id uuid, p_referral_code character varying) RETURNS TABLE(success boolean, message text, referrer_id uuid)
-    LANGUAGE plpgsql SECURITY DEFINER
-    SET search_path TO 'public'
-    AS $$
-DECLARE
-  referrer_record RECORD;
-BEGIN
-  -- Check if referral code exists and is active
-  SELECT * INTO referrer_record
-  FROM referral_codes
-  WHERE code = p_referral_code 
-  AND is_active = true
-  AND user_id != p_user_id;
-  
-  IF NOT FOUND THEN
-    RETURN QUERY SELECT false, 'Invalid or inactive referral code', NULL::UUID;
-    RETURN;
-  END IF;
-  
-  -- Check if user is already referred
-  IF EXISTS (
-    SELECT 1 FROM referral_transactions 
-    WHERE referred_id = p_user_id
-  ) THEN
-    RETURN QUERY SELECT false, 'User already has a referrer', NULL::UUID;
-    RETURN;
-  END IF;
-  
-  -- Create referral transaction
-  INSERT INTO referral_transactions (
-    referrer_id,
-    referred_id,
-    referral_code,
-    status,
-    transaction_type,
-    amount,
-    commission_amount,
-    commission_status,
-    membership_purchased,
-    first_membership_only,
-    created_at,
-    updated_at
-  ) VALUES (
-    referrer_record.user_id,
-    p_user_id,
-    p_referral_code,
-    'pending',
-    'referral',
-    0.00,
-    0.00,
-    'pending',
-    false,
-    true,
-    NOW(),
-    NOW()
-  );
-  
-  -- Update referrer's referral count
-  UPDATE referral_codes
-  SET 
-    total_referrals = COALESCE(total_referrals, 0) + 1,
-    updated_at = NOW()
-  WHERE user_id = referrer_record.user_id;
-  
-  RETURN QUERY SELECT true, 'Referral code applied successfully', referrer_record.user_id;
-END;
-$$;
-
-
-ALTER FUNCTION public.apply_referral_code(p_user_id uuid, p_referral_code character varying) OWNER TO postgres;
 
 --
 -- Name: attempt_use_mock(uuid); Type: FUNCTION; Schema: public; Owner: postgres
@@ -1090,6 +1038,33 @@ ALTER FUNCTION public.cancel_user_membership(p_user_id uuid, p_reason text) OWNE
 
 COMMENT ON FUNCTION public.cancel_user_membership(p_user_id uuid, p_reason text) IS 'Cancels user membership and updates profile';
 
+
+--
+-- Name: cancel_withdrawal_request(uuid, text); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.cancel_withdrawal_request(p_withdrawal_id uuid, p_admin_notes text DEFAULT 'Cancelled by user request'::text) RETURNS TABLE(success boolean, message text)
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+BEGIN
+    -- Update the withdrawal request status
+    UPDATE withdrawal_requests 
+    SET 
+        status = 'cancelled',
+        admin_notes = p_admin_notes,
+        updated_at = NOW()
+    WHERE id = p_withdrawal_id;
+    
+    IF FOUND THEN
+        RETURN QUERY SELECT true, 'Withdrawal request cancelled successfully';
+    ELSE
+        RETURN QUERY SELECT false, 'Withdrawal request not found';
+    END IF;
+END;
+$$;
+
+
+ALTER FUNCTION public.cancel_withdrawal_request(p_withdrawal_id uuid, p_admin_notes text) OWNER TO postgres;
 
 --
 -- Name: check_commission_status(uuid); Type: FUNCTION; Schema: public; Owner: postgres
@@ -1522,6 +1497,72 @@ $$;
 ALTER FUNCTION public.create_default_user_streak(p_user_id uuid) OWNER TO postgres;
 
 --
+-- Name: create_membership_transaction(uuid, uuid, uuid, numeric, text); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.create_membership_transaction(p_user_id uuid, p_membership_id uuid, p_transaction_id uuid, p_amount numeric, p_currency text) RETURNS boolean
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+BEGIN
+    INSERT INTO public.membership_transactions (
+        user_id, membership_id, transaction_id, amount, currency, status, payment_method
+    ) VALUES (
+        p_user_id, p_membership_id, p_transaction_id, p_amount, p_currency, 'completed', 'razorpay'
+    );
+    
+    RETURN TRUE;
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN FALSE;
+END;
+$$;
+
+
+ALTER FUNCTION public.create_membership_transaction(p_user_id uuid, p_membership_id uuid, p_transaction_id uuid, p_amount numeric, p_currency text) OWNER TO postgres;
+
+--
+-- Name: create_or_update_membership(uuid, text, timestamp with time zone, timestamp with time zone); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.create_or_update_membership(p_user_id uuid, p_plan_id text, p_start_date timestamp with time zone, p_end_date timestamp with time zone) RETURNS uuid
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+DECLARE
+    v_membership_id uuid;
+BEGIN
+    -- Check if membership exists
+    SELECT id INTO v_membership_id
+    FROM public.user_memberships
+    WHERE user_id = p_user_id
+    LIMIT 1;
+    
+    IF v_membership_id IS NOT NULL THEN
+        -- Update existing membership
+        UPDATE public.user_memberships
+        SET 
+            plan_id = p_plan_id,
+            start_date = p_start_date,
+            end_date = p_end_date,
+            status = 'active',
+            updated_at = NOW()
+        WHERE id = v_membership_id;
+    ELSE
+        -- Create new membership
+        INSERT INTO public.user_memberships (
+            user_id, plan_id, start_date, end_date, status
+        ) VALUES (
+            p_user_id, p_plan_id, p_start_date, p_end_date, 'active'
+        ) RETURNING id INTO v_membership_id;
+    END IF;
+    
+    RETURN v_membership_id;
+END;
+$$;
+
+
+ALTER FUNCTION public.create_or_update_membership(p_user_id uuid, p_plan_id text, p_start_date timestamp with time zone, p_end_date timestamp with time zone) OWNER TO postgres;
+
+--
 -- Name: create_payment(uuid, character varying, character varying, jsonb); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -1858,101 +1899,84 @@ $$;
 ALTER FUNCTION public.create_user_profile_if_missing(user_uuid uuid, user_phone text) OWNER TO postgres;
 
 --
--- Name: create_user_referral_code(uuid, character varying); Type: FUNCTION; Schema: public; Owner: postgres
+-- Name: create_user_referral_code(uuid, text); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.create_user_referral_code(user_uuid uuid, custom_code character varying DEFAULT NULL::character varying) RETURNS TABLE(success boolean, message text, referral_code character varying)
+CREATE FUNCTION public.create_user_referral_code(p_user_uuid uuid, p_custom_code text DEFAULT NULL::text) RETURNS jsonb
     LANGUAGE plpgsql SECURITY DEFINER
-    SET search_path TO 'public'
     AS $$
 DECLARE
-  generated_code VARCHAR(20);
-  code_exists BOOLEAN;
-  existing_id UUID;
+    v_referral_code text;
+    v_code_exists boolean := false;
+    v_user_exists boolean := false;
 BEGIN
-  -- Check if user already has an active referral code
-  SELECT id INTO existing_id
-  FROM referral_codes
-  WHERE user_id = user_uuid AND is_active = true
-  LIMIT 1;
-  
-  -- If user already has an active code, return it
-  IF existing_id IS NOT NULL THEN
-    SELECT code INTO generated_code
-    FROM referral_codes
-    WHERE id = existing_id;
+    -- Check if user exists
+    SELECT EXISTS(SELECT 1 FROM public.user_profiles WHERE id = p_user_uuid) INTO v_user_exists;
     
-    RETURN QUERY
-    SELECT 
-      true as success,
-      'Referral code already exists' as message,
-      generated_code;
-    RETURN;
-  END IF;
-
-  -- Generate or use custom code
-  IF custom_code IS NOT NULL THEN
-    -- Check if custom code is available
-    SELECT EXISTS(SELECT 1 FROM referral_codes WHERE code = custom_code) INTO code_exists;
-    IF code_exists THEN
-      RETURN QUERY
-      SELECT 
-        false as success,
-        'Referral code already exists' as message,
-        NULL::VARCHAR as referral_code;
-      RETURN;
+    IF NOT v_user_exists THEN
+        RETURN jsonb_build_object(
+            'success', false,
+            'message', 'User not found',
+            'referral_code', NULL
+        );
     END IF;
-    generated_code := custom_code;
-  ELSE
-    -- Generate random code
-    generated_code := UPPER(SUBSTRING(MD5(RANDOM()::TEXT), 1, 8));
     
-    -- Ensure uniqueness
-    WHILE EXISTS(SELECT 1 FROM referral_codes WHERE code = generated_code) LOOP
-      generated_code := UPPER(SUBSTRING(MD5(RANDOM()::TEXT), 1, 8));
+    -- Check if user already has a referral code
+    IF EXISTS(SELECT 1 FROM public.referral_codes WHERE user_id = p_user_uuid) THEN
+        SELECT code INTO v_referral_code FROM public.referral_codes WHERE user_id = p_user_uuid;
+        RETURN jsonb_build_object(
+            'success', true,
+            'message', 'User already has a referral code',
+            'referral_code', v_referral_code
+        );
+    END IF;
+    
+    -- Generate referral code
+    IF p_custom_code IS NOT NULL THEN
+        v_referral_code := UPPER(p_custom_code);
+    ELSE
+        -- Generate alphanumeric referral code with guaranteed uniqueness
+        v_referral_code := generate_alphanumeric_referral_code();
+    END IF;
+    
+    -- Check if code already exists and regenerate if needed
+    LOOP
+        SELECT EXISTS(SELECT 1 FROM public.referral_codes WHERE code = v_referral_code) INTO v_code_exists;
+        EXIT WHEN NOT v_code_exists;
+        v_referral_code := generate_alphanumeric_referral_code();
     END LOOP;
-  END IF;
-  
-  -- Check if user has any referral code (active or inactive)
-  SELECT id INTO existing_id
-  FROM referral_codes
-  WHERE user_id = user_uuid
-  LIMIT 1;
-  
-  IF existing_id IS NOT NULL THEN
-    -- Update existing referral code
-    UPDATE referral_codes
-    SET 
-      code = generated_code,
-      is_active = true,
-      updated_at = NOW()
-    WHERE id = existing_id;
-  ELSE
-    -- Insert new referral code
-    INSERT INTO referral_codes (user_id, code, total_referrals, total_earnings, is_active)
-    VALUES (user_uuid, generated_code, 0, 0, true);
-  END IF;
-  
-  -- Return success
-  RETURN QUERY
-  SELECT 
-    true as success,
-    'Referral code created successfully' as message,
-    generated_code;
+    
+    -- Insert referral code
+    INSERT INTO public.referral_codes (
+        user_id,
+        code,
+        created_at,
+        updated_at
+    ) VALUES (
+        p_user_uuid,
+        v_referral_code,
+        NOW(),
+        NOW()
+    );
+    
+    RETURN jsonb_build_object(
+        'success', true,
+        'message', 'Referral code created successfully',
+        'referral_code', v_referral_code
+    );
     
 EXCEPTION
-  WHEN OTHERS THEN
-    -- Return error
-    RETURN QUERY
-    SELECT 
-      false as success,
-      'Error creating referral code: ' || SQLERRM as message,
-      NULL::VARCHAR as referral_code;
+    WHEN OTHERS THEN
+        RETURN jsonb_build_object(
+            'success', false,
+            'message', 'Error creating referral code: ' || SQLERRM,
+            'referral_code', NULL
+        );
 END;
 $$;
 
 
-ALTER FUNCTION public.create_user_referral_code(user_uuid uuid, custom_code character varying) OWNER TO postgres;
+ALTER FUNCTION public.create_user_referral_code(p_user_uuid uuid, p_custom_code text) OWNER TO postgres;
 
 --
 -- Name: debug_commission_status(uuid); Type: FUNCTION; Schema: public; Owner: postgres
@@ -2039,6 +2063,39 @@ $$;
 
 
 ALTER FUNCTION public.diagnose_user_messages_schema() OWNER TO postgres;
+
+--
+-- Name: find_pending_payment(text); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.find_pending_payment(p_order_id text) RETURNS TABLE(id uuid, user_id uuid, plan_id text, plan_name text, amount numeric, currency text, status text, razorpay_order_id text, razorpay_payment_id text, paid_at timestamp with time zone, created_at timestamp with time zone, updated_at timestamp with time zone)
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        p.id,
+        p.user_id,
+        p.plan_id,
+        p.plan_name,
+        p.amount,
+        p.currency,
+        p.status,
+        p.razorpay_order_id,
+        p.razorpay_payment_id,
+        p.paid_at,
+        p.created_at,
+        p.updated_at
+    FROM public.payments p
+    WHERE p.razorpay_order_id = p_order_id 
+    AND p.status = 'pending'
+    ORDER BY p.created_at DESC
+    LIMIT 1;
+END;
+$$;
+
+
+ALTER FUNCTION public.find_pending_payment(p_order_id text) OWNER TO postgres;
 
 --
 -- Name: fix_all_pending_commissions(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -2229,6 +2286,33 @@ $$;
 ALTER FUNCTION public.fix_user_referral_relationships() OWNER TO postgres;
 
 --
+-- Name: generate_alphanumeric_referral_code(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.generate_alphanumeric_referral_code() RETURNS text
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+    v_code text;
+    v_chars text := 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    v_length integer := 8; -- 8 characters after REF prefix
+    v_i integer;
+BEGIN
+    v_code := 'REF';
+    
+    -- Generate random alphanumeric string
+    FOR v_i IN 1..v_length LOOP
+        v_code := v_code || substr(v_chars, floor(random() * length(v_chars) + 1)::integer, 1);
+    END LOOP;
+    
+    RETURN v_code;
+END;
+$$;
+
+
+ALTER FUNCTION public.generate_alphanumeric_referral_code() OWNER TO postgres;
+
+--
 -- Name: get_active_otp(character varying); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -2396,13 +2480,12 @@ ALTER FUNCTION public.get_bulk_test_completions(user_uuid uuid, exam_name charac
 CREATE FUNCTION public.get_commission_config() RETURNS TABLE(commission_percentage numeric, minimum_withdrawal numeric, maximum_withdrawal numeric, processing_fee numeric, tax_deduction numeric, first_time_bonus numeric, max_daily_withdrawals integer, withdrawal_processing_days integer, referral_code_length integer, referral_code_prefix character varying)
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'public'
-    AS $$
-BEGIN
+    AS $$BEGIN
   -- Return centralized commission configuration
   -- This should match the configuration in src/config/appConfig.ts
   RETURN QUERY SELECT 
     12.00::DECIMAL(5,2) as commission_percentage,
-    100.00::DECIMAL(10,2) as minimum_withdrawal,
+    0.00::DECIMAL(10,2) as minimum_withdrawal,
     10000.00::DECIMAL(10,2) as maximum_withdrawal,
     0.00::DECIMAL(5,2) as processing_fee,
     0.00::DECIMAL(5,2) as tax_deduction,
@@ -2411,8 +2494,7 @@ BEGIN
     3::INTEGER as withdrawal_processing_days,
     8::INTEGER as referral_code_length,
     'S2S'::VARCHAR(10) as referral_code_prefix;
-END;
-$$;
+END;$$;
 
 
 ALTER FUNCTION public.get_commission_config() OWNER TO postgres;
@@ -2711,25 +2793,21 @@ ALTER FUNCTION public.get_pending_question_reports() OWNER TO postgres;
 
 CREATE FUNCTION public.get_pending_withdrawal_requests() RETURNS TABLE(id uuid, user_id uuid, amount numeric, status character varying, payment_details jsonb, created_at timestamp with time zone)
     LANGUAGE plpgsql SECURITY DEFINER
-    SET search_path TO 'public'
     AS $$
 BEGIN
-  -- Check if referral_payouts table exists
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'referral_payouts') THEN
+  -- Check if withdrawal_requests table exists
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'withdrawal_requests') THEN
     RETURN QUERY
     SELECT 
-      rp.id,
-      rp.user_id,
-      rp.amount,
-      rp.status,
-      jsonb_build_object(
-        'method', rp.payment_method,
-        'details', rp.account_details
-      ) as payment_details,
-      rp.created_at
-    FROM referral_payouts rp
-    WHERE rp.status = 'pending'
-    ORDER BY rp.created_at DESC;
+      wr.id,
+      wr.user_id,
+      wr.amount,
+      wr.status,
+      wr.payment_details,
+      wr.created_at
+    FROM withdrawal_requests wr
+    WHERE wr.status = 'pending'
+    ORDER BY wr.created_at DESC;
   ELSE
     -- Return empty result set if table doesn't exist
     RETURN;
@@ -2882,6 +2960,45 @@ $$;
 
 
 ALTER FUNCTION public.get_referral_network_detailed(user_uuid uuid) OWNER TO postgres;
+
+--
+-- Name: get_referral_stats(uuid); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.get_referral_stats(p_user_id uuid) RETURNS TABLE(total_referrals bigint, completed_referrals bigint, total_earnings numeric, pending_earnings numeric, paid_earnings numeric)
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+DECLARE
+    v_stats RECORD;
+BEGIN
+    SELECT 
+        COUNT(*) as total_referrals,
+        COUNT(*) FILTER (WHERE status = 'completed') as completed_referrals,
+        COALESCE(SUM(commission_amount), 0) as total_earnings,
+        COALESCE(SUM(commission_amount) FILTER (WHERE commission_status = 'pending'), 0) as pending_earnings,
+        COALESCE(SUM(commission_amount) FILTER (WHERE commission_status = 'paid'), 0) as paid_earnings
+    INTO v_stats
+    FROM public.referral_transactions
+    WHERE referrer_id = p_user_id;
+    
+    RETURN QUERY SELECT 
+        v_stats.total_referrals,
+        v_stats.completed_referrals,
+        v_stats.total_earnings,
+        v_stats.pending_earnings,
+        v_stats.paid_earnings;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_referral_stats(p_user_id uuid) OWNER TO postgres;
+
+--
+-- Name: FUNCTION get_referral_stats(p_user_id uuid); Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON FUNCTION public.get_referral_stats(p_user_id uuid) IS 'Gets referral statistics with correct pending/paid amounts';
+
 
 --
 -- Name: get_refund_statistics(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -3959,6 +4076,73 @@ $$;
 ALTER FUNCTION public.get_user_test_score(user_uuid uuid, exam_name character varying, test_type_name character varying, test_name character varying) OWNER TO postgres;
 
 --
+-- Name: get_user_withdrawal_requests(uuid); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.get_user_withdrawal_requests(p_user_id uuid) RETURNS TABLE(id uuid, amount numeric, payment_method character varying, payment_details jsonb, status character varying, created_at timestamp with time zone)
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        wr.id,
+        wr.amount,
+        wr.payment_method,
+        wr.payment_details,
+        wr.status,
+        wr.created_at
+    FROM withdrawal_requests wr
+    WHERE wr.user_id = p_user_id
+    ORDER BY wr.created_at DESC;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_user_withdrawal_requests(p_user_id uuid) OWNER TO postgres;
+
+--
+-- Name: get_withdrawal_eligibility(uuid); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.get_withdrawal_eligibility(p_user_id uuid) RETURNS TABLE(can_withdraw boolean, available_balance numeric, minimum_withdrawal numeric)
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+DECLARE
+    v_available_balance decimal(10,2) := 0;
+    v_minimum_withdrawal decimal(10,2) := 0;
+    v_can_withdraw boolean := false;
+    v_config RECORD;
+BEGIN
+    -- Get total earnings (ignore commission_status - all are available)
+    SELECT COALESCE(SUM(commission_amount), 0) INTO v_available_balance
+    FROM referral_transactions
+    WHERE referrer_id = p_user_id;
+    
+    -- Get minimum withdrawal from config - use specific column reference
+    SELECT * INTO v_config FROM get_commission_config() LIMIT 1;
+    v_minimum_withdrawal := v_config.minimum_withdrawal;
+    
+    -- Check if user can withdraw
+    v_can_withdraw := (v_available_balance >= v_minimum_withdrawal);
+    
+    RETURN QUERY SELECT 
+        v_can_withdraw,
+        v_available_balance,
+        v_minimum_withdrawal;
+END;
+$$;
+
+
+ALTER FUNCTION public.get_withdrawal_eligibility(p_user_id uuid) OWNER TO postgres;
+
+--
+-- Name: FUNCTION get_withdrawal_eligibility(p_user_id uuid); Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON FUNCTION public.get_withdrawal_eligibility(p_user_id uuid) IS 'Fixed - resolves ambiguous column reference for minimum_withdrawal';
+
+
+--
 -- Name: handle_membership_refund(uuid); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -4639,6 +4823,58 @@ $$;
 ALTER FUNCTION public.mark_otp_verified(otp_id uuid) OWNER TO postgres;
 
 --
+-- Name: pay_commission(uuid, uuid); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.pay_commission(p_referral_transaction_id uuid, p_admin_user_id uuid) RETURNS TABLE(success boolean, message text)
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+DECLARE
+    v_transaction RECORD;
+    v_commission_amount decimal(10,2);
+BEGIN
+    -- Get referral transaction details
+    SELECT * INTO v_transaction
+    FROM referral_transactions
+    WHERE id = p_referral_transaction_id
+    AND commission_status = 'pending';
+    
+    IF v_transaction.id IS NULL THEN
+        RETURN QUERY SELECT false, 'Referral transaction not found or already processed';
+        RETURN;
+    END IF;
+    
+    -- Update commission status to paid
+    UPDATE referral_transactions
+    SET 
+        commission_status = 'paid',
+        updated_at = NOW()
+    WHERE id = p_referral_transaction_id;
+    
+    -- Update referral_commissions table
+    UPDATE referral_commissions
+    SET 
+        status = 'paid',
+        updated_at = NOW()
+    WHERE referrer_id = v_transaction.referrer_id
+    AND referred_id = v_transaction.referred_id
+    AND payment_id = v_transaction.payment_id;
+    
+    RETURN QUERY SELECT true, 'Commission paid successfully';
+END;
+$$;
+
+
+ALTER FUNCTION public.pay_commission(p_referral_transaction_id uuid, p_admin_user_id uuid) OWNER TO postgres;
+
+--
+-- Name: FUNCTION pay_commission(p_referral_transaction_id uuid, p_admin_user_id uuid); Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON FUNCTION public.pay_commission(p_referral_transaction_id uuid, p_admin_user_id uuid) IS 'Admin function to manually pay commissions';
+
+
+--
 -- Name: payments_method_backfill(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -5261,257 +5497,309 @@ COMMENT ON FUNCTION public.process_payment_and_membership(p_payment_id uuid, p_p
 
 
 --
--- Name: process_referral_commission(numeric, character varying, uuid, uuid); Type: FUNCTION; Schema: public; Owner: postgres
+-- Name: process_payment_webhook(text, text, numeric, text); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION public.process_referral_commission(p_membership_amount numeric, p_membership_plan character varying, p_payment_id uuid, p_user_id uuid) RETURNS TABLE(success boolean, message text, commission_amount numeric)
-    LANGUAGE plpgsql
+CREATE FUNCTION public.process_payment_webhook(p_order_id text, p_razorpay_payment_id text, p_amount numeric, p_currency text DEFAULT 'INR'::text) RETURNS TABLE(success boolean, message text, payment_id uuid, user_id uuid, membership_id uuid)
+    LANGUAGE plpgsql SECURITY DEFINER
     AS $$
 DECLARE
-    v_referrer_id UUID;
-    v_commission_rate DECIMAL(5,4);
-    v_commission_amount DECIMAL(10,2);
-    v_referral_code_value VARCHAR(20);
+    v_payment_record RECORD;
+    v_membership_id uuid;
+    v_start_date timestamptz;
+    v_end_date timestamptz;
+    v_success boolean := false;
+    v_message text := '';
+    v_payment_id uuid;
+    v_user_id uuid;
+    v_commission_result RECORD;
+    v_referrer_id uuid;
+    v_commission_amount decimal(10,2) := 0;
+    v_commission_rate decimal(5,2) := 0.15; -- 15% commission rate
 BEGIN
-    -- Get referrer_id from referral_transactions
-    SELECT rt.referrer_id, rt.referral_code
-    INTO v_referrer_id, v_referral_code_value
-    FROM referral_transactions rt
-    WHERE rt.referred_id = p_user_id
-    AND rt.membership_purchased = false
-    ORDER BY rt.created_at DESC
+    -- Get payment record directly from payments table
+    SELECT 
+        p.id,
+        p.user_id,
+        p.plan_id,
+        p.plan_name,
+        p.amount,
+        p.currency,
+        p.status,
+        p.razorpay_order_id,
+        p.razorpay_payment_id,
+        p.paid_at,
+        p.created_at,
+        p.updated_at
+    INTO v_payment_record
+    FROM public.payments p
+    WHERE p.razorpay_order_id = p_order_id 
+    AND p.status = 'pending'
+    ORDER BY p.created_at DESC
     LIMIT 1;
-
-    -- If no referrer found, return success but no commission
-    IF v_referrer_id IS NULL THEN
-        RETURN QUERY SELECT false, 'No referrer found for user', 0.00;
+    
+    IF v_payment_record.id IS NULL THEN
+        v_success := false;
+        v_message := 'No pending payment found for order: ' || p_order_id;
+        RETURN QUERY SELECT v_success, v_message, NULL::uuid, NULL::uuid, NULL::uuid;
         RETURN;
     END IF;
-
-    -- Set commission rate (10% for pro, 15% for pro_plus)
-    v_commission_rate := CASE 
-        WHEN p_membership_plan = 'pro_plus' THEN 0.15
-        ELSE 0.10
-    END;
-
-    -- Calculate commission amount
-    v_commission_amount := p_membership_amount * v_commission_rate;
-
-    -- Update referral_transaction to mark membership as purchased
-    UPDATE referral_transactions
-    SET 
-        amount = p_membership_amount,
-        commission_amount = v_commission_amount,
-        commission_status = 'pending',
-        membership_purchased = true,
-        updated_at = NOW()
-    WHERE referred_id = p_user_id
-    AND referrer_id = v_referrer_id
-    AND membership_purchased = false;
-
-    -- Insert commission record
-    INSERT INTO referral_commissions (
-        referrer_id,
-        referred_id,
-        amount,
-        commission_amount,
-        commission_rate,
-        status,
-        created_at,
-        updated_at
-    ) VALUES (
-        v_referrer_id,
-        p_user_id,
-        p_membership_amount,
-        v_commission_amount,
-        v_commission_rate,
-        'pending',
-        NOW(),
+    
+    -- Check if already processed
+    IF v_payment_record.status = 'completed' THEN
+        v_success := false;
+        v_message := 'Payment already processed';
+        RETURN QUERY SELECT v_success, v_message, v_payment_record.id, v_payment_record.user_id, NULL::uuid;
+        RETURN;
+    END IF;
+    
+    -- Update payment status
+    PERFORM update_payment_status(
+        v_payment_record.id,
+        'completed',
+        p_razorpay_payment_id,
         NOW()
     );
+    
+    -- Calculate membership dates based on plan
+    v_start_date := NOW();
+    
+    -- Set duration based on plan_id (use actual plan_id from payment record)
+    IF v_payment_record.plan_id = 'pro_plus' THEN
+        v_end_date := NOW() + INTERVAL '1 year'; -- 365 days
+    ELSIF v_payment_record.plan_id = 'pro' THEN
+        v_end_date := NOW() + INTERVAL '3 months'; -- 90 days
+    ELSE
+        v_end_date := NOW() + INTERVAL '1 month'; -- 30 days default
+    END IF;
+    
+    -- Create or update membership
+    v_membership_id := create_or_update_membership(
+        v_payment_record.user_id,
+        v_payment_record.plan_id, -- Use actual plan_id from payment
+        v_start_date,
+        v_end_date
+    );
+    
+    -- Create membership transaction
+    PERFORM create_membership_transaction(
+        v_payment_record.user_id,
+        v_membership_id,
+        v_payment_record.id,
+        v_payment_record.amount,
+        v_payment_record.currency
+    );
+    
+    -- Update user profile with correct plan_id (use actual plan_id from payment)
+    PERFORM update_user_profile_membership(
+        v_payment_record.user_id,
+        'active', -- membership_status
+        v_payment_record.plan_id, -- membership_plan (use actual plan_id from payment)
+        v_end_date
+    );
+    
+    -- Process referral commission if user has a referrer
+    -- Check if user has a pending referral transaction
+    SELECT referrer_id INTO v_referrer_id
+    FROM referral_transactions
+    WHERE referred_id = v_payment_record.user_id 
+    AND status = 'pending'
+    AND membership_purchased = false
+    ORDER BY created_at DESC
+    LIMIT 1;
+    
+    IF v_referrer_id IS NOT NULL THEN
+        -- Calculate commission amount
+        v_commission_amount := v_payment_record.amount * v_commission_rate;
+        
+        -- Update referral transaction
+        UPDATE referral_transactions
+        SET 
+            amount = v_payment_record.amount,
+            commission_amount = v_commission_amount,
+            commission_status = 'pending', -- Keep as pending until actually paid
+            membership_purchased = true,
+            status = 'completed',
+            updated_at = NOW()
+        WHERE referred_id = v_payment_record.user_id 
+        AND referrer_id = v_referrer_id
+        AND status = 'pending';
+        
+        -- Create commission record
+        INSERT INTO referral_commissions (
+            referrer_id,
+            referred_id,
+            payment_id,
+            membership_plan,
+            membership_amount,
+            commission_amount,
+            commission_rate,
+            status,
+            created_at
+        ) VALUES (
+            v_referrer_id,
+            v_payment_record.user_id,
+            v_payment_record.id,
+            v_payment_record.plan_id,
+            v_payment_record.amount,
+            v_commission_amount,
+            v_commission_rate,
+            'pending', -- Keep as pending until actually paid
+            NOW()
+        );
+        
+        -- Update referrer's total earnings in referral_codes table
+        -- DO NOT increment total_referrals here - only on signup
+        UPDATE referral_codes
+        SET 
+            total_earnings = COALESCE(total_earnings, 0) + v_commission_amount,
+            -- total_referrals = COALESCE(total_referrals, 0) + 1, -- REMOVED: Only increment on signup
+            updated_at = NOW()
+        WHERE referral_codes.user_id = v_referrer_id;
+        
+        -- Log commission processing
+        RAISE NOTICE 'Commission processed: referrer_id=%, amount=%, commission=%', 
+            v_referrer_id, v_payment_record.amount, v_commission_amount;
+    END IF;
+    
+    -- Set success result
+    v_success := true;
+    v_message := 'Payment processed successfully with plan: ' || v_payment_record.plan_id;
+    v_payment_id := v_payment_record.id;
+    v_user_id := v_payment_record.user_id;
+    
+    -- Return success result
+    RETURN QUERY SELECT v_success, v_message, v_payment_id, v_user_id, v_membership_id;
+    
+EXCEPTION
+    WHEN OTHERS THEN
+        v_success := false;
+        v_message := 'Error processing payment: ' || SQLERRM;
+        RETURN QUERY SELECT v_success, v_message, NULL::uuid, NULL::uuid, NULL::uuid;
+END;
+$$;
 
-    -- Update referral_codes total_earnings
-    UPDATE referral_codes
+
+ALTER FUNCTION public.process_payment_webhook(p_order_id text, p_razorpay_payment_id text, p_amount numeric, p_currency text) OWNER TO postgres;
+
+--
+-- Name: FUNCTION process_payment_webhook(p_order_id text, p_razorpay_payment_id text, p_amount numeric, p_currency text); Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON FUNCTION public.process_payment_webhook(p_order_id text, p_razorpay_payment_id text, p_amount numeric, p_currency text) IS 'Processes payment webhook - only increments earnings, not referral count';
+
+
+--
+-- Name: process_referral_commission(uuid, uuid, numeric, text); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.process_referral_commission(p_payment_id uuid, p_referred_user_id uuid, p_payment_amount numeric, p_referral_code text) RETURNS jsonb
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+DECLARE
+    v_referrer_id uuid;
+    v_commission_amount numeric;
+    v_existing_transaction_id uuid;
+    v_new_transaction_id uuid;
+    v_referrer_profile record;
+BEGIN
+    -- Get referrer ID from referral code
+    SELECT user_id INTO v_referrer_id
+    FROM public.referral_codes
+    WHERE code = p_referral_code AND is_active = true;
+    
+    IF v_referrer_id IS NULL THEN
+        RETURN jsonb_build_object(
+            'success', false,
+            'error', 'Referrer not found for code: ' || p_referral_code
+        );
+    END IF;
+    
+    -- Calculate commission (15% of payment amount)
+    v_commission_amount := p_payment_amount * 0.15;
+    
+    -- Check for existing transaction to prevent duplicates
+    SELECT id INTO v_existing_transaction_id
+    FROM public.referral_transactions
+    WHERE referred_id = p_referred_user_id 
+        AND referral_code = p_referral_code
+        AND transaction_type = 'referral'
+        AND payment_id = p_payment_id;
+    
+    IF v_existing_transaction_id IS NOT NULL THEN
+        RETURN jsonb_build_object(
+            'success', false,
+            'error', 'Referral transaction already exists',
+            'transaction_id', v_existing_transaction_id
+        );
+    END IF;
+    
+    -- Create referral transaction
+    INSERT INTO public.referral_transactions (
+        referrer_id,
+        referred_id,
+        referral_code,
+        amount,
+        transaction_type,
+        status,
+        commission_amount,
+        commission_status,
+        membership_purchased,
+        payment_id,
+        first_membership_only
+    ) VALUES (
+        v_referrer_id,
+        p_referred_user_id,
+        p_referral_code,
+        p_payment_amount,
+        'referral',
+        'completed',
+        v_commission_amount,
+        'pending',
+        true,
+        p_payment_id,
+        true
+    ) RETURNING id INTO v_new_transaction_id;
+    
+    -- Update referrer's total earnings
+    SELECT * INTO v_referrer_profile
+    FROM public.user_profiles
+    WHERE id = v_referrer_id;
+    
+    IF v_referrer_profile.id IS NOT NULL THEN
+        UPDATE public.user_profiles
+        SET 
+            total_referral_earnings = COALESCE(total_referral_earnings, 0) + v_commission_amount,
+            updated_at = NOW()
+        WHERE id = v_referrer_id;
+    END IF;
+    
+    -- Update referral code stats
+    UPDATE public.referral_codes
     SET 
         total_earnings = COALESCE(total_earnings, 0) + v_commission_amount,
         updated_at = NOW()
     WHERE user_id = v_referrer_id;
-
-    RETURN QUERY SELECT true, 'Commission processed successfully', v_commission_amount;
+    
+    RETURN jsonb_build_object(
+        'success', true,
+        'transaction_id', v_new_transaction_id,
+        'referrer_id', v_referrer_id,
+        'commission_amount', v_commission_amount,
+        'message', 'Referral commission processed successfully'
+    );
+    
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN jsonb_build_object(
+            'success', false,
+            'error', 'Error processing referral commission: ' || SQLERRM
+        );
 END;
 $$;
 
 
-ALTER FUNCTION public.process_referral_commission(p_membership_amount numeric, p_membership_plan character varying, p_payment_id uuid, p_user_id uuid) OWNER TO postgres;
-
---
--- Name: process_referral_commission(uuid, character varying, numeric, uuid); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.process_referral_commission(p_user_id uuid, p_plan_id character varying, p_amount numeric, p_membership_transaction_id uuid) RETURNS TABLE(success boolean, message text, commission_amount numeric)
-    LANGUAGE plpgsql SECURITY DEFINER
-    SET search_path TO 'public'
-    AS $$
-DECLARE
-  referral_record RECORD;
-  commission_amount DECIMAL(10,2) := 0.00;
-  commission_percentage DECIMAL(5,2) := 50.00; -- 50% commission
-BEGIN
-  -- Find the referral relationship for this user
-  SELECT * INTO referral_record
-  FROM referral_transactions
-  WHERE referred_id = p_user_id AND status = 'pending'
-  ORDER BY created_at DESC
-  LIMIT 1;
-
-  IF NOT FOUND THEN
-    RETURN QUERY SELECT true, 'No pending referral found, no commission to process', 0.00;
-    RETURN;
-  END IF;
-
-  -- Check if this is the first membership purchase for the referred user
-  IF referral_record.first_membership_only THEN
-    IF EXISTS (
-      SELECT 1 FROM user_memberships um
-      WHERE um.user_id = p_user_id
-      AND um.status = 'active'
-      AND um.end_date > NOW()
-      AND um.id != p_membership_transaction_id
-    ) THEN
-      RETURN QUERY SELECT true, 'Not first membership, no commission', 0.00;
-      RETURN;
-    END IF;
-  END IF;
-
-  -- Calculate commission
-  commission_amount := (p_amount * commission_percentage / 100);
-
-  -- Create commission record
-  INSERT INTO referral_commissions (
-    referrer_id,
-    referred_id,
-    membership_transaction_id,
-    commission_amount,
-    commission_percentage,
-    membership_plan,
-    membership_amount,
-    status,
-    is_first_membership
-  ) VALUES (
-    referral_record.referrer_id,
-    p_user_id,
-    p_membership_transaction_id,
-    commission_amount,
-    commission_percentage,
-    p_plan_id,
-    p_amount,
-    'pending',
-    referral_record.first_membership_only
-  );
-
-  -- Update referral transaction
-  UPDATE referral_transactions
-  SET
-    status = 'completed',
-    amount = p_amount,
-    commission_amount = commission_amount,
-    commission_status = 'pending',
-    membership_purchased = TRUE,
-    updated_at = NOW()
-  WHERE id = referral_record.id;
-
-  -- Update referrer's total earnings
-  UPDATE referral_codes
-  SET
-    total_earnings = total_earnings + commission_amount,
-    updated_at = NOW()
-  WHERE user_id = referral_record.referrer_id;
-
-  RETURN QUERY SELECT true, 'Commission processed successfully', commission_amount;
-END;
-$$;
-
-
-ALTER FUNCTION public.process_referral_commission(p_user_id uuid, p_plan_id character varying, p_amount numeric, p_membership_transaction_id uuid) OWNER TO postgres;
-
---
--- Name: process_referral_commission(uuid, character varying, character varying, numeric); Type: FUNCTION; Schema: public; Owner: postgres
---
-
-CREATE FUNCTION public.process_referral_commission(p_user_id uuid, p_payment_id character varying, p_membership_plan character varying, p_membership_amount numeric) RETURNS TABLE(success boolean, message text, commission_amount numeric)
-    LANGUAGE plpgsql
-    AS $$
-DECLARE
-  referral_record RECORD;
-  commission_amount DECIMAL(10,2) := 0.00;
-  commission_percentage DECIMAL(5,2) := 50.00; -- 50% commission constant
-  minimum_withdrawal DECIMAL(10,2) := 100.00; -- Minimum withdrawal constant
-BEGIN
-  -- Debug: Log the input parameters
-  RAISE NOTICE 'Processing commission for user: %, payment: %, plan: %, amount: %', 
-    p_user_id, p_payment_id, p_membership_plan, p_membership_amount;
-  
-  -- Find the referral transaction for this user
-  SELECT * INTO referral_record
-  FROM referral_transactions
-  WHERE referred_id = p_user_id AND status = 'pending';
-  
-  IF NOT FOUND THEN
-    RAISE NOTICE 'No pending referral found for user: %', p_user_id;
-    RETURN QUERY SELECT true, 'No referral found, no commission to process', 0.00;
-    RETURN;
-  END IF;
-  
-  RAISE NOTICE 'Found referral record: %, referrer: %', referral_record.id, referral_record.referrer_id;
-  
-  -- Calculate commission amount
-  commission_amount := (p_membership_amount * commission_percentage) / 100;
-  
-  -- Check if commission meets minimum withdrawal requirement
-  IF commission_amount < minimum_withdrawal THEN
-    RAISE NOTICE 'Commission amount % is below minimum withdrawal %', commission_amount, minimum_withdrawal;
-    RETURN QUERY SELECT true, 'Commission amount below minimum withdrawal threshold', 0.00;
-    RETURN;
-  END IF;
-  
-  -- Update referral transaction status
-  UPDATE referral_transactions
-  SET status = 'completed',
-      commission_amount = commission_amount,
-      completed_at = NOW()
-  WHERE id = referral_record.id;
-  
-  -- Create commission record
-  INSERT INTO referral_commissions (
-    referrer_id,
-    referred_id,
-    payment_id,
-    membership_plan,
-    membership_amount,
-    commission_amount,
-    commission_percentage,
-    status,
-    created_at
-  ) VALUES (
-    referral_record.referrer_id,
-    p_user_id,
-    p_payment_id,
-    p_membership_plan,
-    p_membership_amount,
-    commission_amount,
-    commission_percentage,
-    'pending',
-    NOW()
-  );
-  
-  RAISE NOTICE 'Commission processed successfully: %', commission_amount;
-  
-  RETURN QUERY SELECT true, 'Commission processed successfully', commission_amount;
-END;
-$$;
-
-
-ALTER FUNCTION public.process_referral_commission(p_user_id uuid, p_payment_id character varying, p_membership_plan character varying, p_membership_amount numeric) OWNER TO postgres;
+ALTER FUNCTION public.process_referral_commission(p_payment_id uuid, p_referred_user_id uuid, p_payment_amount numeric, p_referral_code text) OWNER TO postgres;
 
 --
 -- Name: process_referral_commission_v2(numeric, character varying, uuid, uuid); Type: FUNCTION; Schema: public; Owner: postgres
@@ -5626,6 +5914,68 @@ $$;
 ALTER FUNCTION public.process_referral_commission_v2(p_membership_amount numeric, p_membership_plan character varying, p_payment_id uuid, p_user_id uuid) OWNER TO postgres;
 
 --
+-- Name: process_withdrawal_request(uuid, uuid, text, text); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.process_withdrawal_request(request_id uuid, admin_user_id uuid, action text, admin_notes text DEFAULT NULL::text) RETURNS boolean
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+DECLARE
+    withdrawal_record RECORD;
+    v_admin_notes TEXT := admin_notes;
+BEGIN
+    -- Get the withdrawal request from withdrawal_requests table
+    SELECT * INTO withdrawal_record
+    FROM withdrawal_requests
+    WHERE id = request_id;
+    
+    IF NOT FOUND THEN
+        RETURN false;
+    END IF;
+    
+    -- Check if already processed
+    IF withdrawal_record.status IN ('approved', 'rejected', 'completed') THEN
+        RETURN false;
+    END IF;
+    
+    -- Process based on action
+    IF action = 'approved' THEN
+        -- Update withdrawal status
+        UPDATE withdrawal_requests
+        SET 
+            status = 'approved',
+            admin_notes = COALESCE(v_admin_notes, 'Approved by admin'),
+            processed_by = admin_user_id,
+            processed_at = NOW(),
+            updated_at = NOW()
+        WHERE id = request_id;
+        
+        RETURN true;
+        
+    ELSIF action = 'rejected' THEN
+        -- Update withdrawal status
+        UPDATE withdrawal_requests
+        SET 
+            status = 'rejected',
+            admin_notes = COALESCE(v_admin_notes, 'Rejected by admin'),
+            processed_by = admin_user_id,
+            processed_at = NOW(),
+            updated_at = NOW()
+        WHERE id = request_id;
+        
+        RETURN true;
+        
+    ELSE
+        RETURN false;
+    END IF;
+    
+END;
+$$;
+
+
+ALTER FUNCTION public.process_withdrawal_request(request_id uuid, admin_user_id uuid, action text, admin_notes text) OWNER TO postgres;
+
+--
 -- Name: process_withdrawal_request(uuid, uuid, character varying, text); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -5700,72 +6050,67 @@ ALTER FUNCTION public.process_withdrawal_request(request_id uuid, admin_user_id 
 
 CREATE FUNCTION public.process_withdrawal_request_with_message(request_id uuid, admin_user_id uuid, action text, admin_notes text DEFAULT NULL::text) RETURNS TABLE(success boolean, message text, withdrawal_id uuid)
     LANGUAGE plpgsql SECURITY DEFINER
-    SET search_path TO 'public'
     AS $$
 DECLARE
-  withdrawal_record RECORD;
-  v_admin_notes TEXT := admin_notes; -- Rename parameter to avoid ambiguity
+    withdrawal_record RECORD;
+    v_admin_notes TEXT := admin_notes;
 BEGIN
-  -- Get the withdrawal request from referral_payouts table
-  SELECT * INTO withdrawal_record
-  FROM referral_payouts
-  WHERE id = request_id;
-  
-  -- If not found, return error with more details
-  IF NOT FOUND THEN
-    RETURN QUERY SELECT false, 
-      'Withdrawal request not found. Request ID: ' || request_id || 
-      '. Check if the request exists in referral_payouts table.', 
-      NULL::UUID;
-    RETURN;
-  END IF;
-  
-  -- Check if already processed
-  IF withdrawal_record.status IN ('approved', 'rejected', 'completed') THEN
-    RETURN QUERY SELECT false, 
-      'Withdrawal request already processed. Current status: ' || withdrawal_record.status, 
-      request_id;
-    RETURN;
-  END IF;
-  
-  -- Process based on action
-  IF action = 'approved' THEN
-    -- Update withdrawal status
-    UPDATE referral_payouts
-    SET 
-      status = 'approved',
-      admin_notes = COALESCE(v_admin_notes, 'Approved by admin'),
-      approved_at = NOW(),
-      approved_by = admin_user_id,
-      updated_at = NOW()
+    -- Get the withdrawal request from withdrawal_requests table
+    SELECT * INTO withdrawal_record
+    FROM withdrawal_requests
     WHERE id = request_id;
     
-    -- Update referrer's earnings (deduct from pending)
-    UPDATE referral_codes
-    SET 
-      total_earnings = GREATEST(0, total_earnings - withdrawal_record.amount),
-      updated_at = NOW()
-    WHERE user_id = withdrawal_record.user_id;
+    IF NOT FOUND THEN
+        RETURN QUERY SELECT false, 'Withdrawal request not found', NULL::uuid;
+        RETURN;
+    END IF;
     
-    RETURN QUERY SELECT true, 'Withdrawal approved successfully', request_id;
+    -- Check if already processed
+    IF withdrawal_record.status IN ('approved', 'rejected', 'completed') THEN
+        RETURN QUERY SELECT false, 'Withdrawal request already processed', NULL::uuid;
+        RETURN;
+    END IF;
     
-  ELSIF action = 'rejected' THEN
-    -- Update withdrawal status
-    UPDATE referral_payouts
-    SET 
-      status = 'rejected',
-      admin_notes = COALESCE(v_admin_notes, 'Rejected by admin'),
-      rejected_at = NOW(),
-      rejected_by = admin_user_id,
-      updated_at = NOW()
-    WHERE id = request_id;
+    -- Process based on action
+    IF action = 'approved' THEN
+        -- Update withdrawal status
+        UPDATE withdrawal_requests
+        SET 
+            status = 'approved',
+            admin_notes = COALESCE(v_admin_notes, 'Approved by admin'),
+            processed_by = admin_user_id,
+            processed_at = NOW(),
+            updated_at = NOW()
+        WHERE id = request_id;
+        
+        -- Note: We don't need to update earnings here since they're already deducted
+        -- when the withdrawal request was created
+        
+        RETURN QUERY SELECT true, 'Withdrawal request approved successfully', request_id;
+        RETURN;
+        
+    ELSIF action = 'rejected' THEN
+        -- Update withdrawal status
+        UPDATE withdrawal_requests
+        SET 
+            status = 'rejected',
+            admin_notes = COALESCE(v_admin_notes, 'Rejected by admin'),
+            processed_by = admin_user_id,
+            processed_at = NOW(),
+            updated_at = NOW()
+        WHERE id = request_id;
+        
+        -- Note: We don't need to restore earnings here since they were never deducted
+        -- The withdrawal request just blocks new requests
+        
+        RETURN QUERY SELECT true, 'Withdrawal request rejected successfully', request_id;
+        RETURN;
+        
+    ELSE
+        RETURN QUERY SELECT false, 'Invalid action. Use "approved" or "rejected"', NULL::uuid;
+        RETURN;
+    END IF;
     
-    RETURN QUERY SELECT true, 'Withdrawal rejected successfully', request_id;
-    
-  ELSE
-    RETURN QUERY SELECT false, 'Invalid action. Use "approved" or "rejected"', NULL::UUID;
-  END IF;
-  
 END;
 $$;
 
@@ -5854,6 +6199,84 @@ $$;
 
 
 ALTER FUNCTION public.request_commission_withdrawal(p_user_id uuid, p_amount numeric, p_payment_method character varying) OWNER TO postgres;
+
+--
+-- Name: request_commission_withdrawal(text, numeric, character varying, uuid); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.request_commission_withdrawal(p_account_details text, p_amount numeric, p_payment_method character varying, p_user_id uuid) RETURNS TABLE(success boolean, message text, withdrawal_id uuid)
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+DECLARE
+    available_balance DECIMAL(10,2);
+    new_withdrawal_id UUID;
+    minimum_withdrawal DECIMAL(10,2);
+BEGIN
+    -- Get available balance from referral stats
+    SELECT COALESCE(SUM(commission_amount), 0.00) INTO available_balance
+    FROM referral_transactions
+    WHERE referrer_id = p_user_id;
+    
+    -- Get minimum withdrawal from config
+    SELECT config.minimum_withdrawal INTO minimum_withdrawal
+    FROM get_commission_config() AS config;
+    
+    -- Check if user has any pending withdrawal requests
+    IF EXISTS (
+        SELECT 1 FROM withdrawal_requests 
+        WHERE user_id = p_user_id 
+        AND status IN ('pending', 'approved')
+    ) THEN
+        RETURN QUERY SELECT false, 'You already have a pending withdrawal request', NULL::UUID;
+        RETURN;
+    END IF;
+    
+    -- Check if withdrawal amount is valid
+    IF p_amount <= 0 THEN
+        RETURN QUERY SELECT false, 'Withdrawal amount must be greater than 0', NULL::UUID;
+        RETURN;
+    END IF;
+    
+    -- Check minimum withdrawal
+    IF p_amount < minimum_withdrawal THEN
+        RETURN QUERY SELECT false, 
+            'Minimum withdrawal amount is ₹' || minimum_withdrawal, 
+            NULL::UUID;
+        RETURN;
+    END IF;
+    
+    -- Check if user has sufficient balance
+    IF p_amount > available_balance THEN
+        RETURN QUERY SELECT false, 
+            'Insufficient balance. Available: ₹' || available_balance || ', Requested: ₹' || p_amount, 
+            NULL::UUID;
+        RETURN;
+    END IF;
+    
+    -- Create withdrawal request
+    INSERT INTO withdrawal_requests (
+        user_id,
+        amount,
+        payment_method,
+        payment_details,
+        status,
+        created_at
+    ) VALUES (
+        p_user_id,
+        p_amount,
+        p_payment_method,
+        p_account_details::jsonb,
+        'pending',
+        NOW()
+    ) RETURNING id INTO new_withdrawal_id;
+    
+    RETURN QUERY SELECT true, 'Withdrawal request submitted successfully', new_withdrawal_id;
+    
+END;
+$$;
+
+
+ALTER FUNCTION public.request_commission_withdrawal(p_account_details text, p_amount numeric, p_payment_method character varying, p_user_id uuid) OWNER TO postgres;
 
 --
 -- Name: request_commission_withdrawal(uuid, numeric, character varying, text); Type: FUNCTION; Schema: public; Owner: postgres
@@ -6920,6 +7343,29 @@ $$;
 ALTER FUNCTION public.update_payment_failures_updated_at() OWNER TO postgres;
 
 --
+-- Name: update_payment_status(uuid, text, text, timestamp with time zone); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.update_payment_status(p_payment_id uuid, p_status text, p_razorpay_payment_id text DEFAULT NULL::text, p_paid_at timestamp with time zone DEFAULT NULL::timestamp with time zone) RETURNS boolean
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+BEGIN
+    UPDATE public.payments 
+    SET 
+        status = p_status,
+        razorpay_payment_id = COALESCE(p_razorpay_payment_id, razorpay_payment_id),
+        paid_at = COALESCE(p_paid_at, paid_at),
+        updated_at = NOW()
+    WHERE id = p_payment_id;
+    
+    RETURN FOUND;
+END;
+$$;
+
+
+ALTER FUNCTION public.update_payment_status(p_payment_id uuid, p_status text, p_razorpay_payment_id text, p_paid_at timestamp with time zone) OWNER TO postgres;
+
+--
 -- Name: update_payment_status(character varying, character varying, character varying, character varying, character varying, jsonb); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -7015,6 +7461,29 @@ COMMENT ON FUNCTION public.update_referral_earnings(p_user_id uuid, p_amount num
 
 
 --
+-- Name: update_referrer_earnings(uuid, numeric); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.update_referrer_earnings(p_user_id uuid, p_commission_amount numeric) RETURNS boolean
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+BEGIN
+  -- Update the referrer's total earnings
+  UPDATE user_profiles 
+  SET 
+    total_referral_earnings = COALESCE(total_referral_earnings, 0) + p_commission_amount,
+    updated_at = NOW()
+  WHERE id = p_user_id;
+  
+  -- Return true if update was successful
+  RETURN FOUND;
+END;
+$$;
+
+
+ALTER FUNCTION public.update_referrer_earnings(p_user_id uuid, p_commission_amount numeric) OWNER TO postgres;
+
+--
 -- Name: update_refund_requests_updated_at(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -7081,6 +7550,29 @@ $$;
 
 
 ALTER FUNCTION public.update_test_shares_updated_at() OWNER TO postgres;
+
+--
+-- Name: update_user_profile_membership(uuid, text, text, timestamp with time zone); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.update_user_profile_membership(p_user_id uuid, p_membership_status text, p_membership_plan text, p_membership_expiry timestamp with time zone) RETURNS boolean
+    LANGUAGE plpgsql SECURITY DEFINER
+    AS $$
+BEGIN
+    UPDATE public.user_profiles
+    SET 
+        membership_status = p_membership_status,
+        membership_plan = p_membership_plan,
+        membership_expiry = p_membership_expiry,
+        updated_at = NOW()
+    WHERE id = p_user_id;
+    
+    RETURN FOUND;
+END;
+$$;
+
+
+ALTER FUNCTION public.update_user_profile_membership(p_user_id uuid, p_membership_status text, p_membership_plan text, p_membership_expiry timestamp with time zone) OWNER TO postgres;
 
 --
 -- Name: update_user_streak(uuid); Type: FUNCTION; Schema: public; Owner: postgres
@@ -9741,32 +10233,6 @@ CREATE TABLE public.exam_questions (
 ALTER TABLE public.exam_questions OWNER TO postgres;
 
 --
--- Name: exam_stats; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.exam_stats (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    user_id uuid NOT NULL,
-    exam_id character varying(50) NOT NULL,
-    total_tests integer DEFAULT 0,
-    best_score integer DEFAULT 0,
-    average_score numeric(5,2) DEFAULT 0,
-    rank integer,
-    last_test_date timestamp with time zone,
-    created_at timestamp with time zone DEFAULT now(),
-    updated_at timestamp with time zone DEFAULT now(),
-    total_tests_taken integer DEFAULT 0,
-    total_score integer DEFAULT 0,
-    total_time_taken integer DEFAULT 0,
-    average_time_per_question numeric(5,2) DEFAULT 0.00,
-    accuracy_percentage numeric(5,2) DEFAULT 0.00,
-    percentile numeric(5,2) DEFAULT 0.00
-);
-
-
-ALTER TABLE public.exam_stats OWNER TO postgres;
-
---
 -- Name: exam_test_data; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -9882,7 +10348,8 @@ CREATE TABLE public.user_profiles (
     referral_earnings numeric(10,2) DEFAULT 0,
     total_referrals integer DEFAULT 0,
     is_admin boolean DEFAULT false,
-    pin text
+    pin text,
+    total_referral_earnings numeric(10,2) DEFAULT 0
 );
 
 
@@ -9913,7 +10380,35 @@ COMMENT ON COLUMN public.user_profiles.referral_code IS 'Unique referral code fo
 -- Name: COLUMN user_profiles.referred_by; Type: COMMENT; Schema: public; Owner: postgres
 --
 
-COMMENT ON COLUMN public.user_profiles.referred_by IS 'Referral code used when this user signed up';
+COMMENT ON COLUMN public.user_profiles.referred_by IS 'Referral code used by this user';
+
+
+--
+-- Name: COLUMN user_profiles.referral_code_applied; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.user_profiles.referral_code_applied IS 'Whether user has applied a referral code';
+
+
+--
+-- Name: COLUMN user_profiles.referral_code_used; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.user_profiles.referral_code_used IS 'The referral code this user used';
+
+
+--
+-- Name: COLUMN user_profiles.referral_applied_at; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.user_profiles.referral_applied_at IS 'When the referral code was applied';
+
+
+--
+-- Name: COLUMN user_profiles.total_referral_earnings; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.user_profiles.total_referral_earnings IS 'Total earnings from referrals';
 
 
 --
@@ -10215,11 +10710,55 @@ CREATE TABLE public.referral_transactions (
     commission_amount numeric(10,2) DEFAULT 0,
     commission_status character varying(20) DEFAULT 'pending'::character varying,
     first_membership_only boolean DEFAULT true,
-    membership_purchased boolean DEFAULT false
+    membership_purchased boolean DEFAULT false,
+    payment_id uuid,
+    CONSTRAINT check_commission_status_valid CHECK (((commission_status)::text = ANY ((ARRAY['pending'::character varying, 'paid'::character varying, 'cancelled'::character varying, 'refunded'::character varying])::text[])))
 );
 
 
 ALTER TABLE public.referral_transactions OWNER TO postgres;
+
+--
+-- Name: COLUMN referral_transactions.referral_code; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.referral_transactions.referral_code IS 'The referral code used for this transaction';
+
+
+--
+-- Name: COLUMN referral_transactions.commission_amount; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.referral_transactions.commission_amount IS 'Commission amount earned by referrer';
+
+
+--
+-- Name: COLUMN referral_transactions.commission_status; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.referral_transactions.commission_status IS 'Status of commission payment (pending, paid, cancelled, refunded)';
+
+
+--
+-- Name: COLUMN referral_transactions.first_membership_only; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.referral_transactions.first_membership_only IS 'Whether commission is only for first membership purchase';
+
+
+--
+-- Name: COLUMN referral_transactions.membership_purchased; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.referral_transactions.membership_purchased IS 'Whether a membership was purchased in this transaction';
+
+
+--
+-- Name: COLUMN referral_transactions.payment_id; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON COLUMN public.referral_transactions.payment_id IS 'Reference to the payment that triggered this referral';
+
 
 --
 -- Name: refund_requests; Type: TABLE; Schema: public; Owner: postgres
@@ -10889,22 +11428,6 @@ ALTER TABLE ONLY auth.users
 
 ALTER TABLE ONLY public.exam_questions
     ADD CONSTRAINT exam_questions_pkey PRIMARY KEY (id);
-
-
---
--- Name: exam_stats exam_stats_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.exam_stats
-    ADD CONSTRAINT exam_stats_pkey PRIMARY KEY (id);
-
-
---
--- Name: exam_stats exam_stats_user_id_exam_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.exam_stats
-    ADD CONSTRAINT exam_stats_user_id_exam_id_key UNIQUE (user_id, exam_id);
 
 
 --
@@ -11631,20 +12154,6 @@ CREATE INDEX idx_exam_questions_order ON public.exam_questions USING btree (exam
 
 
 --
--- Name: idx_exam_stats_user_exam; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_exam_stats_user_exam ON public.exam_stats USING btree (user_id, exam_id);
-
-
---
--- Name: idx_exam_stats_user_id_exam_id; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX idx_exam_stats_user_id_exam_id ON public.exam_stats USING btree (user_id, exam_id);
-
-
---
 -- Name: idx_exam_test_data_exam_test; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -11957,6 +12466,13 @@ CREATE INDEX idx_referral_notifications_user_id ON public.referral_notifications
 --
 
 CREATE INDEX idx_referral_transactions_commission_status ON public.referral_transactions USING btree (commission_status);
+
+
+--
+-- Name: idx_referral_transactions_payment_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_referral_transactions_payment_id ON public.referral_transactions USING btree (payment_id);
 
 
 --
@@ -12443,13 +12959,6 @@ CREATE TRIGGER trigger_create_referral_transaction_on_payment AFTER INSERT OR UP
 
 
 --
--- Name: user_profiles trigger_create_referral_transaction_on_user_creation; Type: TRIGGER; Schema: public; Owner: postgres
---
-
-CREATE TRIGGER trigger_create_referral_transaction_on_user_creation AFTER INSERT OR UPDATE ON public.user_profiles FOR EACH ROW EXECUTE FUNCTION public.create_referral_transaction_on_user_creation();
-
-
---
 -- Name: test_attempts trigger_update_test_attempts_updated_at; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -12622,11 +13131,11 @@ ALTER TABLE ONLY auth.sso_domains
 
 
 --
--- Name: exam_stats exam_stats_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: referral_transactions fk_referral_transactions_payment_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.exam_stats
-    ADD CONSTRAINT exam_stats_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.user_profiles(id) ON DELETE CASCADE;
+ALTER TABLE ONLY public.referral_transactions
+    ADD CONSTRAINT fk_referral_transactions_payment_id FOREIGN KEY (payment_id) REFERENCES public.payments(id) ON DELETE SET NULL;
 
 
 --
@@ -13057,13 +13566,6 @@ CREATE POLICY "Users can create their own refund requests" ON public.refund_requ
 
 
 --
--- Name: exam_stats Users can insert own exam stats; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users can insert own exam stats" ON public.exam_stats FOR INSERT WITH CHECK ((user_id = auth.uid()));
-
-
---
 -- Name: user_memberships Users can insert own memberships; Type: POLICY; Schema: public; Owner: postgres
 --
 
@@ -13162,13 +13664,6 @@ CREATE POLICY "Users can read exam test data" ON public.exam_test_data FOR SELEC
 
 
 --
--- Name: exam_stats Users can update own exam stats; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users can update own exam stats" ON public.exam_stats FOR UPDATE USING ((user_id = auth.uid()));
-
-
---
 -- Name: user_profiles Users can update own profile; Type: POLICY; Schema: public; Owner: postgres
 --
 
@@ -13222,13 +13717,6 @@ CREATE POLICY "Users can update their own profiles" ON public.user_profiles FOR 
 --
 
 CREATE POLICY "Users can update their own test shares" ON public.test_shares FOR UPDATE USING ((auth.uid() = created_by));
-
-
---
--- Name: exam_stats Users can view own exam stats; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY "Users can view own exam stats" ON public.exam_stats FOR SELECT USING ((user_id = auth.uid()));
 
 
 --
@@ -13355,20 +13843,6 @@ CREATE POLICY "Users can view their own test shares" ON public.test_shares FOR S
 --
 
 ALTER TABLE public.exam_questions ENABLE ROW LEVEL SECURITY;
-
---
--- Name: exam_stats exam_stats_anon_access; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY exam_stats_anon_access ON public.exam_stats TO anon USING (true) WITH CHECK (true);
-
-
---
--- Name: exam_stats exam_stats_authenticated_access; Type: POLICY; Schema: public; Owner: postgres
---
-
-CREATE POLICY exam_stats_authenticated_access ON public.exam_stats TO authenticated USING (true) WITH CHECK (true);
-
 
 --
 -- Name: exam_test_data; Type: ROW SECURITY; Schema: public; Owner: postgres
@@ -13775,15 +14249,6 @@ GRANT ALL ON FUNCTION public.apply_referral_code(p_user_id uuid, p_referral_code
 
 
 --
--- Name: FUNCTION apply_referral_code(p_user_id uuid, p_referral_code character varying); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.apply_referral_code(p_user_id uuid, p_referral_code character varying) TO anon;
-GRANT ALL ON FUNCTION public.apply_referral_code(p_user_id uuid, p_referral_code character varying) TO authenticated;
-GRANT ALL ON FUNCTION public.apply_referral_code(p_user_id uuid, p_referral_code character varying) TO service_role;
-
-
---
 -- Name: FUNCTION attempt_use_mock(p_user uuid); Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -13808,6 +14273,15 @@ GRANT ALL ON FUNCTION public.can_make_withdrawal_request(user_uuid uuid) TO serv
 GRANT ALL ON FUNCTION public.cancel_user_membership(p_user_id uuid, p_reason text) TO anon;
 GRANT ALL ON FUNCTION public.cancel_user_membership(p_user_id uuid, p_reason text) TO authenticated;
 GRANT ALL ON FUNCTION public.cancel_user_membership(p_user_id uuid, p_reason text) TO service_role;
+
+
+--
+-- Name: FUNCTION cancel_withdrawal_request(p_withdrawal_id uuid, p_admin_notes text); Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON FUNCTION public.cancel_withdrawal_request(p_withdrawal_id uuid, p_admin_notes text) TO anon;
+GRANT ALL ON FUNCTION public.cancel_withdrawal_request(p_withdrawal_id uuid, p_admin_notes text) TO authenticated;
+GRANT ALL ON FUNCTION public.cancel_withdrawal_request(p_withdrawal_id uuid, p_admin_notes text) TO service_role;
 
 
 --
@@ -13901,6 +14375,24 @@ GRANT ALL ON FUNCTION public.create_default_user_streak(p_user_id uuid) TO servi
 
 
 --
+-- Name: FUNCTION create_membership_transaction(p_user_id uuid, p_membership_id uuid, p_transaction_id uuid, p_amount numeric, p_currency text); Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON FUNCTION public.create_membership_transaction(p_user_id uuid, p_membership_id uuid, p_transaction_id uuid, p_amount numeric, p_currency text) TO anon;
+GRANT ALL ON FUNCTION public.create_membership_transaction(p_user_id uuid, p_membership_id uuid, p_transaction_id uuid, p_amount numeric, p_currency text) TO authenticated;
+GRANT ALL ON FUNCTION public.create_membership_transaction(p_user_id uuid, p_membership_id uuid, p_transaction_id uuid, p_amount numeric, p_currency text) TO service_role;
+
+
+--
+-- Name: FUNCTION create_or_update_membership(p_user_id uuid, p_plan_id text, p_start_date timestamp with time zone, p_end_date timestamp with time zone); Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON FUNCTION public.create_or_update_membership(p_user_id uuid, p_plan_id text, p_start_date timestamp with time zone, p_end_date timestamp with time zone) TO anon;
+GRANT ALL ON FUNCTION public.create_or_update_membership(p_user_id uuid, p_plan_id text, p_start_date timestamp with time zone, p_end_date timestamp with time zone) TO authenticated;
+GRANT ALL ON FUNCTION public.create_or_update_membership(p_user_id uuid, p_plan_id text, p_start_date timestamp with time zone, p_end_date timestamp with time zone) TO service_role;
+
+
+--
 -- Name: FUNCTION create_payment(p_user_id uuid, p_plan_id character varying, p_payment_method character varying, p_metadata jsonb); Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -13955,12 +14447,12 @@ GRANT ALL ON FUNCTION public.create_user_profile_if_missing(user_uuid uuid, user
 
 
 --
--- Name: FUNCTION create_user_referral_code(user_uuid uuid, custom_code character varying); Type: ACL; Schema: public; Owner: postgres
+-- Name: FUNCTION create_user_referral_code(p_user_uuid uuid, p_custom_code text); Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT ALL ON FUNCTION public.create_user_referral_code(user_uuid uuid, custom_code character varying) TO anon;
-GRANT ALL ON FUNCTION public.create_user_referral_code(user_uuid uuid, custom_code character varying) TO authenticated;
-GRANT ALL ON FUNCTION public.create_user_referral_code(user_uuid uuid, custom_code character varying) TO service_role;
+GRANT ALL ON FUNCTION public.create_user_referral_code(p_user_uuid uuid, p_custom_code text) TO anon;
+GRANT ALL ON FUNCTION public.create_user_referral_code(p_user_uuid uuid, p_custom_code text) TO authenticated;
+GRANT ALL ON FUNCTION public.create_user_referral_code(p_user_uuid uuid, p_custom_code text) TO service_role;
 
 
 --
@@ -13979,6 +14471,15 @@ GRANT ALL ON FUNCTION public.debug_commission_status(p_user_id uuid) TO service_
 GRANT ALL ON FUNCTION public.diagnose_user_messages_schema() TO anon;
 GRANT ALL ON FUNCTION public.diagnose_user_messages_schema() TO authenticated;
 GRANT ALL ON FUNCTION public.diagnose_user_messages_schema() TO service_role;
+
+
+--
+-- Name: FUNCTION find_pending_payment(p_order_id text); Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON FUNCTION public.find_pending_payment(p_order_id text) TO anon;
+GRANT ALL ON FUNCTION public.find_pending_payment(p_order_id text) TO authenticated;
+GRANT ALL ON FUNCTION public.find_pending_payment(p_order_id text) TO service_role;
 
 
 --
@@ -14015,6 +14516,15 @@ GRANT ALL ON FUNCTION public.fix_referral_transactions() TO service_role;
 GRANT ALL ON FUNCTION public.fix_user_referral_relationships() TO anon;
 GRANT ALL ON FUNCTION public.fix_user_referral_relationships() TO authenticated;
 GRANT ALL ON FUNCTION public.fix_user_referral_relationships() TO service_role;
+
+
+--
+-- Name: FUNCTION generate_alphanumeric_referral_code(); Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON FUNCTION public.generate_alphanumeric_referral_code() TO anon;
+GRANT ALL ON FUNCTION public.generate_alphanumeric_referral_code() TO authenticated;
+GRANT ALL ON FUNCTION public.generate_alphanumeric_referral_code() TO service_role;
 
 
 --
@@ -14195,6 +14705,15 @@ GRANT ALL ON FUNCTION public.get_referral_leaderboard(limit_count integer) TO se
 GRANT ALL ON FUNCTION public.get_referral_network_detailed(user_uuid uuid) TO anon;
 GRANT ALL ON FUNCTION public.get_referral_network_detailed(user_uuid uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.get_referral_network_detailed(user_uuid uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION get_referral_stats(p_user_id uuid); Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON FUNCTION public.get_referral_stats(p_user_id uuid) TO anon;
+GRANT ALL ON FUNCTION public.get_referral_stats(p_user_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.get_referral_stats(p_user_id uuid) TO service_role;
 
 
 --
@@ -14468,6 +14987,24 @@ GRANT ALL ON FUNCTION public.get_user_test_score(user_uuid uuid, exam_name chara
 
 
 --
+-- Name: FUNCTION get_user_withdrawal_requests(p_user_id uuid); Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON FUNCTION public.get_user_withdrawal_requests(p_user_id uuid) TO anon;
+GRANT ALL ON FUNCTION public.get_user_withdrawal_requests(p_user_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.get_user_withdrawal_requests(p_user_id uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION get_withdrawal_eligibility(p_user_id uuid); Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON FUNCTION public.get_withdrawal_eligibility(p_user_id uuid) TO anon;
+GRANT ALL ON FUNCTION public.get_withdrawal_eligibility(p_user_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.get_withdrawal_eligibility(p_user_id uuid) TO service_role;
+
+
+--
 -- Name: FUNCTION handle_membership_refund(p_membership_transaction_id uuid); Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -14603,6 +15140,15 @@ GRANT ALL ON FUNCTION public.mark_otp_verified(otp_id uuid) TO service_role;
 
 
 --
+-- Name: FUNCTION pay_commission(p_referral_transaction_id uuid, p_admin_user_id uuid); Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON FUNCTION public.pay_commission(p_referral_transaction_id uuid, p_admin_user_id uuid) TO anon;
+GRANT ALL ON FUNCTION public.pay_commission(p_referral_transaction_id uuid, p_admin_user_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.pay_commission(p_referral_transaction_id uuid, p_admin_user_id uuid) TO service_role;
+
+
+--
 -- Name: FUNCTION payments_method_backfill(); Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -14684,30 +15230,21 @@ GRANT ALL ON FUNCTION public.process_payment_and_membership(p_payment_id uuid, p
 
 
 --
--- Name: FUNCTION process_referral_commission(p_membership_amount numeric, p_membership_plan character varying, p_payment_id uuid, p_user_id uuid); Type: ACL; Schema: public; Owner: postgres
+-- Name: FUNCTION process_payment_webhook(p_order_id text, p_razorpay_payment_id text, p_amount numeric, p_currency text); Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT ALL ON FUNCTION public.process_referral_commission(p_membership_amount numeric, p_membership_plan character varying, p_payment_id uuid, p_user_id uuid) TO anon;
-GRANT ALL ON FUNCTION public.process_referral_commission(p_membership_amount numeric, p_membership_plan character varying, p_payment_id uuid, p_user_id uuid) TO authenticated;
-GRANT ALL ON FUNCTION public.process_referral_commission(p_membership_amount numeric, p_membership_plan character varying, p_payment_id uuid, p_user_id uuid) TO service_role;
-
-
---
--- Name: FUNCTION process_referral_commission(p_user_id uuid, p_plan_id character varying, p_amount numeric, p_membership_transaction_id uuid); Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON FUNCTION public.process_referral_commission(p_user_id uuid, p_plan_id character varying, p_amount numeric, p_membership_transaction_id uuid) TO anon;
-GRANT ALL ON FUNCTION public.process_referral_commission(p_user_id uuid, p_plan_id character varying, p_amount numeric, p_membership_transaction_id uuid) TO authenticated;
-GRANT ALL ON FUNCTION public.process_referral_commission(p_user_id uuid, p_plan_id character varying, p_amount numeric, p_membership_transaction_id uuid) TO service_role;
+GRANT ALL ON FUNCTION public.process_payment_webhook(p_order_id text, p_razorpay_payment_id text, p_amount numeric, p_currency text) TO anon;
+GRANT ALL ON FUNCTION public.process_payment_webhook(p_order_id text, p_razorpay_payment_id text, p_amount numeric, p_currency text) TO authenticated;
+GRANT ALL ON FUNCTION public.process_payment_webhook(p_order_id text, p_razorpay_payment_id text, p_amount numeric, p_currency text) TO service_role;
 
 
 --
--- Name: FUNCTION process_referral_commission(p_user_id uuid, p_payment_id character varying, p_membership_plan character varying, p_membership_amount numeric); Type: ACL; Schema: public; Owner: postgres
+-- Name: FUNCTION process_referral_commission(p_payment_id uuid, p_referred_user_id uuid, p_payment_amount numeric, p_referral_code text); Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT ALL ON FUNCTION public.process_referral_commission(p_user_id uuid, p_payment_id character varying, p_membership_plan character varying, p_membership_amount numeric) TO anon;
-GRANT ALL ON FUNCTION public.process_referral_commission(p_user_id uuid, p_payment_id character varying, p_membership_plan character varying, p_membership_amount numeric) TO authenticated;
-GRANT ALL ON FUNCTION public.process_referral_commission(p_user_id uuid, p_payment_id character varying, p_membership_plan character varying, p_membership_amount numeric) TO service_role;
+GRANT ALL ON FUNCTION public.process_referral_commission(p_payment_id uuid, p_referred_user_id uuid, p_payment_amount numeric, p_referral_code text) TO anon;
+GRANT ALL ON FUNCTION public.process_referral_commission(p_payment_id uuid, p_referred_user_id uuid, p_payment_amount numeric, p_referral_code text) TO authenticated;
+GRANT ALL ON FUNCTION public.process_referral_commission(p_payment_id uuid, p_referred_user_id uuid, p_payment_amount numeric, p_referral_code text) TO service_role;
 
 
 --
@@ -14717,6 +15254,15 @@ GRANT ALL ON FUNCTION public.process_referral_commission(p_user_id uuid, p_payme
 GRANT ALL ON FUNCTION public.process_referral_commission_v2(p_membership_amount numeric, p_membership_plan character varying, p_payment_id uuid, p_user_id uuid) TO anon;
 GRANT ALL ON FUNCTION public.process_referral_commission_v2(p_membership_amount numeric, p_membership_plan character varying, p_payment_id uuid, p_user_id uuid) TO authenticated;
 GRANT ALL ON FUNCTION public.process_referral_commission_v2(p_membership_amount numeric, p_membership_plan character varying, p_payment_id uuid, p_user_id uuid) TO service_role;
+
+
+--
+-- Name: FUNCTION process_withdrawal_request(request_id uuid, admin_user_id uuid, action text, admin_notes text); Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON FUNCTION public.process_withdrawal_request(request_id uuid, admin_user_id uuid, action text, admin_notes text) TO anon;
+GRANT ALL ON FUNCTION public.process_withdrawal_request(request_id uuid, admin_user_id uuid, action text, admin_notes text) TO authenticated;
+GRANT ALL ON FUNCTION public.process_withdrawal_request(request_id uuid, admin_user_id uuid, action text, admin_notes text) TO service_role;
 
 
 --
@@ -14753,6 +15299,15 @@ GRANT ALL ON FUNCTION public.remove_admin_user(admin_user_id uuid, target_user_i
 GRANT ALL ON FUNCTION public.request_commission_withdrawal(p_user_id uuid, p_amount numeric, p_payment_method character varying) TO anon;
 GRANT ALL ON FUNCTION public.request_commission_withdrawal(p_user_id uuid, p_amount numeric, p_payment_method character varying) TO authenticated;
 GRANT ALL ON FUNCTION public.request_commission_withdrawal(p_user_id uuid, p_amount numeric, p_payment_method character varying) TO service_role;
+
+
+--
+-- Name: FUNCTION request_commission_withdrawal(p_account_details text, p_amount numeric, p_payment_method character varying, p_user_id uuid); Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON FUNCTION public.request_commission_withdrawal(p_account_details text, p_amount numeric, p_payment_method character varying, p_user_id uuid) TO anon;
+GRANT ALL ON FUNCTION public.request_commission_withdrawal(p_account_details text, p_amount numeric, p_payment_method character varying, p_user_id uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.request_commission_withdrawal(p_account_details text, p_amount numeric, p_payment_method character varying, p_user_id uuid) TO service_role;
 
 
 --
@@ -14927,6 +15482,15 @@ GRANT ALL ON FUNCTION public.update_payment_failures_updated_at() TO service_rol
 
 
 --
+-- Name: FUNCTION update_payment_status(p_payment_id uuid, p_status text, p_razorpay_payment_id text, p_paid_at timestamp with time zone); Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON FUNCTION public.update_payment_status(p_payment_id uuid, p_status text, p_razorpay_payment_id text, p_paid_at timestamp with time zone) TO anon;
+GRANT ALL ON FUNCTION public.update_payment_status(p_payment_id uuid, p_status text, p_razorpay_payment_id text, p_paid_at timestamp with time zone) TO authenticated;
+GRANT ALL ON FUNCTION public.update_payment_status(p_payment_id uuid, p_status text, p_razorpay_payment_id text, p_paid_at timestamp with time zone) TO service_role;
+
+
+--
 -- Name: FUNCTION update_payment_status(p_payment_id character varying, p_status character varying, p_razorpay_payment_id character varying, p_razorpay_order_id character varying, p_razorpay_signature character varying, p_metadata jsonb); Type: ACL; Schema: public; Owner: postgres
 --
 
@@ -14951,6 +15515,15 @@ GRANT ALL ON FUNCTION public.update_referral_codes_earnings() TO service_role;
 GRANT ALL ON FUNCTION public.update_referral_earnings(p_user_id uuid, p_amount numeric, p_operation character varying) TO anon;
 GRANT ALL ON FUNCTION public.update_referral_earnings(p_user_id uuid, p_amount numeric, p_operation character varying) TO authenticated;
 GRANT ALL ON FUNCTION public.update_referral_earnings(p_user_id uuid, p_amount numeric, p_operation character varying) TO service_role;
+
+
+--
+-- Name: FUNCTION update_referrer_earnings(p_user_id uuid, p_commission_amount numeric); Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON FUNCTION public.update_referrer_earnings(p_user_id uuid, p_commission_amount numeric) TO anon;
+GRANT ALL ON FUNCTION public.update_referrer_earnings(p_user_id uuid, p_commission_amount numeric) TO authenticated;
+GRANT ALL ON FUNCTION public.update_referrer_earnings(p_user_id uuid, p_commission_amount numeric) TO service_role;
 
 
 --
@@ -14987,6 +15560,15 @@ GRANT ALL ON FUNCTION public.update_test_attempts_updated_at() TO service_role;
 GRANT ALL ON FUNCTION public.update_test_shares_updated_at() TO anon;
 GRANT ALL ON FUNCTION public.update_test_shares_updated_at() TO authenticated;
 GRANT ALL ON FUNCTION public.update_test_shares_updated_at() TO service_role;
+
+
+--
+-- Name: FUNCTION update_user_profile_membership(p_user_id uuid, p_membership_status text, p_membership_plan text, p_membership_expiry timestamp with time zone); Type: ACL; Schema: public; Owner: postgres
+--
+
+GRANT ALL ON FUNCTION public.update_user_profile_membership(p_user_id uuid, p_membership_status text, p_membership_plan text, p_membership_expiry timestamp with time zone) TO anon;
+GRANT ALL ON FUNCTION public.update_user_profile_membership(p_user_id uuid, p_membership_status text, p_membership_plan text, p_membership_expiry timestamp with time zone) TO authenticated;
+GRANT ALL ON FUNCTION public.update_user_profile_membership(p_user_id uuid, p_membership_status text, p_membership_plan text, p_membership_expiry timestamp with time zone) TO service_role;
 
 
 --
@@ -15360,15 +15942,6 @@ GRANT SELECT ON TABLE auth.users TO postgres WITH GRANT OPTION;
 GRANT ALL ON TABLE public.exam_questions TO anon;
 GRANT ALL ON TABLE public.exam_questions TO authenticated;
 GRANT ALL ON TABLE public.exam_questions TO service_role;
-
-
---
--- Name: TABLE exam_stats; Type: ACL; Schema: public; Owner: postgres
---
-
-GRANT ALL ON TABLE public.exam_stats TO anon;
-GRANT ALL ON TABLE public.exam_stats TO authenticated;
-GRANT ALL ON TABLE public.exam_stats TO service_role;
 
 
 --
@@ -15898,5 +16471,5 @@ ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA storage GRANT ALL ON TABLES
 -- PostgreSQL database dump complete
 --
 
-\unrestrict PBg8y9Rzn9OZ1cbsMx8h0HLeW8pQQLHBEH5YZA8dzAxRtZwcM8giSef617GEIxJ
+\unrestrict z0Lh1Z2pgkz3k2MVwbsxevLSVsuvWEExqHJ1nboYFdGfUZhYaeaZq83HysjwtUE
 

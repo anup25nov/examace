@@ -87,6 +87,7 @@ const ReferralPage = () => {
       } else if (statsData && Array.isArray(statsData) && statsData.length > 0) {
         const stats = statsData[0];
         setComprehensiveStats(stats);
+        setReferralStats(stats); // Also set referralStats for withdrawal logic
         setError(null);
         
         // Extract network data from comprehensive stats if available
@@ -189,7 +190,11 @@ const ReferralPage = () => {
           url: referralLink
         });
       } catch (error) {
-        console.error('Error sharing:', error);
+        // Only log non-AbortError errors (AbortError means user cancelled)
+        if (error.name !== 'AbortError') {
+          console.error('Error sharing:', error);
+        }
+        // Fallback to copy on any error (including user cancellation)
         copyToClipboard(referralLink);
       }
     } else {
@@ -241,7 +246,17 @@ const ReferralPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div 
+      className="bg-gradient-to-br from-blue-50 via-white to-purple-50" 
+      style={{ 
+        minHeight: '100vh', 
+        overflowY: 'scroll',
+        height: 'auto',
+        position: 'relative'
+      }}
+      onTouchStart={(e) => console.log('Touch start on referral page')}
+      onScroll={(e) => console.log('Scroll event on referral page')}
+    >
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="container mx-auto px-4 py-4">
@@ -454,7 +469,13 @@ const ReferralPage = () => {
             </Card>
 
             {/* Withdrawal Request Section */}
-            {referralStats && (Number(referralStats.pending_earnings || 0) >= getMinimumWithdrawal()) && (
+            {(() => {
+              console.log('Referral Stats Debug:', referralStats);
+              console.log('Pending Commissions:', referralStats?.pending_commissions);
+              console.log('Total Commissions Earned:', referralStats?.total_commissions_earned);
+              console.log('Minimum Withdrawal:', getMinimumWithdrawal());
+              return referralStats && (Number(referralStats.pending_commissions || referralStats.total_commissions_earned || 0) >= getMinimumWithdrawal());
+            })() && (
               <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
@@ -463,7 +484,7 @@ const ReferralPage = () => {
                       <span>Withdraw Earnings</span>
                     </div>
                     <Badge className="bg-green-100 text-green-800">
-                      Available ₹{Number(referralStats.pending_earnings).toFixed(2)}
+                      Minimum Withdrawal ₹{getMinimumWithdrawal()}
                     </Badge>
                   </CardTitle>
                 </CardHeader>
@@ -471,14 +492,14 @@ const ReferralPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-600 mb-2">
-                        You have ₹{Number(referralStats.pending_earnings).toFixed(2)} available for withdrawal (minimum: ₹{getMinimumWithdrawal()})
+                        You have ₹{Number(referralStats.pending_commissions || 0).toFixed(2)} available for withdrawal
                       </p>
                       <p className="text-xs text-gray-500">
                         Withdrawal requests are processed within {getWithdrawalProcessingDays()} business days. Minimum withdrawal amount: ₹{getMinimumWithdrawal()}.
                       </p>
                     </div>
                     <WithdrawalRequestModal 
-                      availableAmount={Number(referralStats.pending_earnings)}
+                      availableAmount={Number(referralStats.pending_commissions || referralStats.total_commissions_earned || 0)}
                       onRequestSubmitted={loadReferralStats}
                     />
                   </div>
@@ -489,7 +510,7 @@ const ReferralPage = () => {
 
 
             {/* Progress Tracking */}
-            <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200">
+            {/* <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-200">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <BarChart3 className="w-6 h-6 text-indigo-600" />
@@ -497,9 +518,9 @@ const ReferralPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
+                <div className="space-y-6"> */}
                   {/* Referral Goal Progress */}
-                  <div>
+                  {/* <div>
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm font-medium text-gray-700">Referral Goal</span>
                       <span className="text-sm text-gray-600">
@@ -513,10 +534,10 @@ const ReferralPage = () => {
                     <div className="text-xs text-gray-500 mt-1">
                       {50 - (comprehensiveStats?.total_referrals || referralStats?.total_referrals || 0)} more referrals to reach your goal!
                     </div>
-                  </div>
+                  </div> */}
                   
                   {/* Earnings Progress */}
-                  <div>
+                  {/* <div>
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm font-medium text-gray-700">Monthly Earnings Target</span>
                       <span className="text-sm text-gray-600">
@@ -533,7 +554,7 @@ const ReferralPage = () => {
                   </div>
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
 
             {/* Detailed Referral Network */}
             {referralNetwork.length > 0 && (
@@ -571,7 +592,7 @@ const ReferralPage = () => {
                         </div>
                         <div className="text-right">
                           <div className="flex items-center space-x-3 mb-2">
-                            <Badge 
+                            {/* <Badge 
                               className={
                                 referral.commission_status === 'paid' ? 'bg-green-100 text-green-800' : 
                                 referral.commission_status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
@@ -579,13 +600,13 @@ const ReferralPage = () => {
                               }
                             >
                               {referral.commission_status}
-                            </Badge>
+                            </Badge> */}
                             {referral.commission_amount > 0 && (
                               <div className="text-right">
                                 <div className="font-bold text-green-600 text-lg">
                                   ₹{referral.commission_amount}
                                 </div>
-                                <div className="text-xs text-gray-500">Commission</div>
+                                {/* <div className="text-xs text-gray-500">Commission</div> */}
                               </div>
                             )}
                           </div>
@@ -660,6 +681,24 @@ const ReferralPage = () => {
             </CardContent>
           </Card>
         )}
+        
+        {/* Extra content to ensure scrolling works */}
+        <div className="mt-8 p-8 bg-white rounded-lg shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Information</h3>
+          <div className="space-y-4 text-gray-600">
+            <p>This is additional content to test scrolling functionality.</p>
+            <p>If you can see this text, scrolling is working properly.</p>
+            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+            <p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+            <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+            <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+            <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.</p>
+            <p>Totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.</p>
+            <p>Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.</p>
+            <p>Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit.</p>
+            <p>Sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.</p>
+          </div>
+        </div>
       </div>
     </div>
   );
