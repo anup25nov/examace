@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSP Fix Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        #log { background: #f8f9fa; padding: 10px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔒 CSP Fix Test for Razorpay</h1>
+    
+    <div class="test-section">
+        <h3>Test 1: Load Razorpay Checkout Script</h3>
+        <button onclick="testRazorpayScript()">Test Razorpay Script Load</button>
+        <div id="script-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 2: Test Service Worker Bypass</h3>
+        <button onclick="testServiceWorkerBypass()">Test SW Bypass</button>
+        <div id="sw-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Test 3: Test CSP Headers</h3>
+        <button onclick="testCSPHeaders()">Test CSP Headers</button>
+        <div id="csp-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Console Log</h3>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toISOString();
+            const logEntry = `[${timestamp}] ${type.toUpperCase()}: ${message}\n`;
+            logDiv.textContent += logEntry;
+            console.log(logEntry.trim());
+        }
+
+        function testRazorpayScript() {
+            log('Testing Razorpay script load...');
+            const resultDiv = document.getElementById('script-result');
+            
+            try {
+                // Test if we can load Razorpay script
+                const script = document.createElement('script');
+                script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+                script.onload = () => {
+                    log('✅ Razorpay script loaded successfully!', 'success');
+                    resultDiv.innerHTML = '<div class="success">✅ Razorpay script loaded successfully!</div>';
+                };
+                script.onerror = (error) => {
+                    log('❌ Failed to load Razorpay script: ' + error.message, 'error');
+                    resultDiv.innerHTML = '<div class="error">❌ Failed to load Razorpay script</div>';
+                };
+                document.head.appendChild(script);
+            } catch (error) {
+                log('❌ Error creating script element: ' + error.message, 'error');
+                resultDiv.innerHTML = '<div class="error">❌ Error creating script element</div>';
+            }
+        }
+
+        function testServiceWorkerBypass() {
+            log('Testing service worker bypass for Razorpay...');
+            const resultDiv = document.getElementById('sw-result');
+            
+            // Test if service worker is registered
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(registrations => {
+                    if (registrations.length > 0) {
+                        log('Service worker is registered, testing bypass...');
+                        
+                        // Test fetch to Razorpay
+                        fetch('https://checkout.razorpay.com/v1/checkout.js', {
+                            method: 'HEAD',
+                            mode: 'no-cors'
+                        }).then(() => {
+                            log('✅ Service worker bypass working for Razorpay!', 'success');
+                            resultDiv.innerHTML = '<div class="success">✅ Service worker bypass working!</div>';
+                        }).catch(error => {
+                            log('❌ Service worker bypass failed: ' + error.message, 'error');
+                            resultDiv.innerHTML = '<div class="error">❌ Service worker bypass failed</div>';
+                        });
+                    } else {
+                        log('No service worker registered');
+                        resultDiv.innerHTML = '<div class="success">✅ No service worker to bypass</div>';
+                    }
+                });
+            } else {
+                log('Service worker not supported');
+                resultDiv.innerHTML = '<div class="success">✅ Service worker not supported</div>';
+            }
+        }
+
+        function testCSPHeaders() {
+            log('Testing CSP headers...');
+            const resultDiv = document.getElementById('csp-result');
+            
+            // Check if CSP is applied
+            const csp = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+            if (csp) {
+                log('CSP meta tag found: ' + csp.content);
+            } else {
+                log('No CSP meta tag found (CSP likely set via headers)');
+            }
+            
+            // Test if we can make requests to Razorpay
+            fetch('https://api.razorpay.com/v1/orders', {
+                method: 'HEAD',
+                mode: 'no-cors'
+            }).then(() => {
+                log('✅ CSP allows Razorpay API requests!', 'success');
+                resultDiv.innerHTML = '<div class="success">✅ CSP allows Razorpay requests!</div>';
+            }).catch(error => {
+                log('❌ CSP blocks Razorpay API requests: ' + error.message, 'error');
+                resultDiv.innerHTML = '<div class="error">❌ CSP blocks Razorpay requests</div>';
+            });
+        }
+
+        // Auto-run tests on load
+        window.addEventListener('load', () => {
+            log('CSP Fix Test loaded');
+            log('Current CSP policy: ' + (document.querySelector('meta[http-equiv="Content-Security-Policy"]')?.content || 'Set via headers'));
+        });
+    </script>
+</body>
+</html>

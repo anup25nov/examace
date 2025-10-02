@@ -86,12 +86,14 @@ export const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
       if (!user) return;
       
       try {
-        const { data, error } = await supabase.rpc('can_make_withdrawal_request' as any, {
-          user_uuid: user.id
+        const { data, error } = await supabase.rpc('get_withdrawal_eligibility' as any, {
+          p_user_id: user.id
         });
         
-        if (!error) {
-          setCanRequest(data);
+        if (!error && data && data.length > 0) {
+          const eligibility = data[0];
+          setCanRequest(eligibility.can_withdraw);
+          setAvailableAmount(eligibility.available_balance || 0);
         }
 
         // Get user's phone number
@@ -164,18 +166,22 @@ export const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
     setError('');
 
     try {
-      const { error: withdrawalError } = await supabase
-        .from('withdrawal_requests' as any)
-        .insert({
-          user_id: user.id,
-          amount: parseFloat(amount),
-          payment_method: selectedMethod,
-          payment_details: paymentDetails
-        });
+      // Use the proper RPC function for withdrawal request
+      const { data, error: withdrawalError } = await supabase.rpc('request_commission_withdrawal' as any, {
+        p_user_id: user.id,
+        p_amount: parseFloat(amount),
+        p_payment_method: selectedMethod,
+        p_account_details: JSON.stringify(paymentDetails)
+      });
 
       if (withdrawalError) {
         console.error('Error creating withdrawal request:', withdrawalError);
         setError('Failed to submit withdrawal request. Please try again.');
+        return;
+      }
+
+      if (data && data.length > 0 && !data[0].success) {
+        setError(data[0].message || 'Failed to submit withdrawal request');
         return;
       }
 

@@ -1,8 +1,11 @@
--- Fix Production Payment Processing Issues - FUNCTION ONLY
--- This script ONLY fixes the process_payment_webhook function
--- Run this in Supabase SQL Editor
+-- Fix Referral System Issues
+-- 1. Only increment total_referrals on signup, not on purchase
+-- 2. Fix commission status logic (should be pending until actually paid)
+-- 3. Ensure withdrawal system works properly
 
--- 1. Fix the process_payment_webhook function to use correct plan_id and process commissions
+-- Step 1: Fix process_payment_webhook to NOT increment total_referrals on purchase
+-- Only increment earnings, not referral count
+-- Drop existing function first to avoid conflicts
 DROP FUNCTION IF EXISTS process_payment_webhook(text, text, numeric, text);
 
 CREATE OR REPLACE FUNCTION process_payment_webhook(
@@ -135,7 +138,7 @@ BEGIN
         SET 
             amount = v_payment_record.amount,
             commission_amount = v_commission_amount,
-            commission_status = 'paid', -- Set to paid (valid constraint value)
+            commission_status = 'pending', -- Keep as pending until actually paid
             membership_purchased = true,
             status = 'completed',
             updated_at = NOW()
@@ -162,15 +165,16 @@ BEGIN
             v_payment_record.amount,
             v_commission_amount,
             v_commission_rate,
-            'paid', -- Set to paid (consistent with referral_transactions)
+            'pending', -- Keep as pending until actually paid
             NOW()
         );
         
         -- Update referrer's total earnings in referral_codes table
+        -- DO NOT increment total_referrals here - only on signup
         UPDATE referral_codes
         SET 
             total_earnings = COALESCE(total_earnings, 0) + v_commission_amount,
-            total_referrals = COALESCE(total_referrals, 0) + 1,
+            -- total_referrals = COALESCE(total_referrals, 0) + 1, -- REMOVED: Only increment on signup
             updated_at = NOW()
         WHERE referral_codes.user_id = v_referrer_id;
         
@@ -196,7 +200,151 @@ EXCEPTION
 END;
 $$;
 
--- Grant execute permissions
+-- Step 2: Create function to manually pay commissions (for admin use)
+-- Drop existing function first to avoid conflicts
+DROP FUNCTION IF EXISTS pay_commission(uuid, uuid);
+
+CREATE OR REPLACE FUNCTION pay_commission(
+    p_referral_transaction_id uuid,
+    p_admin_user_id uuid
+)
+RETURNS TABLE(
+    success boolean,
+    message text
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_transaction RECORD;
+    v_commission_amount decimal(10,2);
+BEGIN
+    -- Get referral transaction details
+    SELECT * INTO v_transaction
+    FROM referral_transactions
+    WHERE id = p_referral_transaction_id
+    AND commission_status = 'pending';
+    
+    IF v_transaction.id IS NULL THEN
+        RETURN QUERY SELECT false, 'Referral transaction not found or already processed';
+        RETURN;
+    END IF;
+    
+    -- Update commission status to paid
+    UPDATE referral_transactions
+    SET 
+        commission_status = 'paid',
+        updated_at = NOW()
+    WHERE id = p_referral_transaction_id;
+    
+    -- Update referral_commissions table
+    UPDATE referral_commissions
+    SET 
+        status = 'paid',
+        updated_at = NOW()
+    WHERE referrer_id = v_transaction.referrer_id
+    AND referred_id = v_transaction.referred_id
+    AND payment_id = v_transaction.payment_id;
+    
+    RETURN QUERY SELECT true, 'Commission paid successfully';
+END;
+$$;
+
+-- Step 3: Create function to get withdrawal eligibility
+-- Drop existing function first to avoid conflicts
+DROP FUNCTION IF EXISTS get_withdrawal_eligibility(uuid);
+
+CREATE OR REPLACE FUNCTION get_withdrawal_eligibility(p_user_id uuid)
+RETURNS TABLE(
+    can_withdraw boolean,
+    available_balance decimal(10,2),
+    minimum_withdrawal decimal(10,2),
+    pending_withdrawals decimal(10,2)
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_available_balance decimal(10,2) := 0;
+    v_minimum_withdrawal decimal(10,2) := 0; -- From config
+    v_pending_withdrawals decimal(10,2) := 0;
+    v_can_withdraw boolean := false;
+BEGIN
+    -- Get available balance (paid commissions only)
+    SELECT COALESCE(SUM(commission_amount), 0) INTO v_available_balance
+    FROM referral_transactions
+    WHERE referrer_id = p_user_id
+    AND commission_status = 'paid';
+    
+    -- Get minimum withdrawal from config
+    SELECT minimum_withdrawal INTO v_minimum_withdrawal
+    FROM get_commission_config();
+    
+    -- Get pending withdrawal amount
+    SELECT COALESCE(SUM(amount), 0) INTO v_pending_withdrawals
+    FROM withdrawal_requests
+    WHERE user_id = p_user_id
+    AND status IN ('pending', 'approved');
+    
+    -- Calculate available balance after pending withdrawals
+    v_available_balance := v_available_balance - v_pending_withdrawals;
+    
+    -- Check if user can withdraw
+    v_can_withdraw := (v_available_balance >= v_minimum_withdrawal);
+    
+    RETURN QUERY SELECT 
+        v_can_withdraw,
+        v_available_balance,
+        v_minimum_withdrawal,
+        v_pending_withdrawals;
+END;
+$$;
+
+-- Step 4: Update get_referral_stats to show correct pending/paid amounts
+-- Drop existing function first to avoid return type conflicts
+DROP FUNCTION IF EXISTS get_referral_stats(uuid);
+
+CREATE OR REPLACE FUNCTION get_referral_stats(p_user_id uuid)
+RETURNS TABLE(
+    total_referrals bigint,
+    completed_referrals bigint,
+    total_earnings decimal(10,2),
+    pending_earnings decimal(10,2),
+    paid_earnings decimal(10,2)
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_stats RECORD;
+BEGIN
+    SELECT 
+        COUNT(*) as total_referrals,
+        COUNT(*) FILTER (WHERE status = 'completed') as completed_referrals,
+        COALESCE(SUM(commission_amount), 0) as total_earnings,
+        COALESCE(SUM(commission_amount) FILTER (WHERE commission_status = 'pending'), 0) as pending_earnings,
+        COALESCE(SUM(commission_amount) FILTER (WHERE commission_status = 'paid'), 0) as paid_earnings
+    INTO v_stats
+    FROM public.referral_transactions
+    WHERE referrer_id = p_user_id;
+    
+    RETURN QUERY SELECT 
+        v_stats.total_referrals,
+        v_stats.completed_referrals,
+        v_stats.total_earnings,
+        v_stats.pending_earnings,
+        v_stats.paid_earnings;
+END;
+$$;
+
+-- Step 5: Grant permissions
 GRANT EXECUTE ON FUNCTION process_payment_webhook(text, text, numeric, text) TO authenticated;
-GRANT EXECUTE ON FUNCTION process_payment_webhook(text, text, numeric, text) TO anon;
-GRANT EXECUTE ON FUNCTION process_payment_webhook(text, text, numeric, text) TO service_role;
+GRANT EXECUTE ON FUNCTION pay_commission(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION get_withdrawal_eligibility(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION get_referral_stats(uuid) TO authenticated;
+
+-- Step 6: Add comments
+COMMENT ON FUNCTION process_payment_webhook IS 'Processes payment webhook - only increments earnings, not referral count';
+COMMENT ON FUNCTION pay_commission IS 'Admin function to manually pay commissions';
+COMMENT ON FUNCTION get_withdrawal_eligibility IS 'Checks if user can withdraw based on paid commissions';
+COMMENT ON FUNCTION get_referral_stats IS 'Gets referral statistics with correct pending/paid amounts';

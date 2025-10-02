@@ -78,6 +78,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Skip Razorpay checkout requests - let them go directly to network
+  if (url.hostname === 'checkout.razorpay.com' || url.hostname === 'api.razorpay.com') {
+    return;
+  }
+
   event.respondWith(handleRequest(request));
 });
 
