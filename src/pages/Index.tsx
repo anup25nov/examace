@@ -15,7 +15,6 @@ import UserMessages from '@/components/UserMessages';
 import { MembershipPlans } from "@/components/MembershipPlans";
 import { PhoneUpdateModal } from "@/components/PhoneUpdateModal";
 import { ReferralSystem } from "@/components/ReferralSystem";
-import { ReferralCodeInput } from "@/components/ReferralCodeInput";
 import { DailyAccolades } from "@/components/DailyAccolades";
 import PullToRefresh from "@/components/PullToRefresh";
 // Removed referral code modal from login flow - now handled during OTP verification
@@ -51,7 +50,6 @@ const Index = () => {
   const [showMembershipPlans, setShowMembershipPlans] = useState(false);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [showReferralSystem, setShowReferralSystem] = useState(false);
-  const [showReferralCodeInput, setShowReferralCodeInput] = useState(false);
   const [appliedReferralCode, setAppliedReferralCode] = useState<string | null>(null);
   const [showDailyAccolades, setShowDailyAccolades] = useState(false);
   const [isFirstDailyVisit, setIsFirstDailyVisit] = useState(false);
@@ -125,7 +123,6 @@ const Index = () => {
 
   const handleReferralCodeApplied = (code: string, referrerId?: string) => {
     setAppliedReferralCode(code);
-    setShowReferralCodeInput(false);
     // Show success message
     console.log('Referral code applied:', code, 'Referrer ID:', referrerId);
   };
@@ -543,21 +540,6 @@ const Index = () => {
           onClose={() => setShowReferralSystem(false)}
         />
       </ModalWrapper>
-
-      <ModalWrapper
-        isOpen={showReferralCodeInput}
-        onClose={() => setShowReferralCodeInput(false)}
-        title="Enter Referral Code"
-        maxWidth="md"
-      >
-        <div className="p-6">
-          <ReferralCodeInput
-            onReferralApplied={handleReferralCodeApplied}
-            onClose={() => setShowReferralCodeInput(false)}
-          />
-        </div>
-      </ModalWrapper>
-
 
       {/* Referral Code Collection removed - now handled during OTP verification for new users only */}
 

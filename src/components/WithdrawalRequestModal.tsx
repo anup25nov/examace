@@ -5,14 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from '@/components/ui/dialog';
+import { PerfectModal } from '@/components/PerfectModal';
 import { 
   IndianRupee, 
   CreditCard, 
@@ -79,6 +72,8 @@ export const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
   const [error, setError] = useState('');
   const [canRequest, setCanRequest] = useState(true);
   const [userPhone, setUserPhone] = useState('');
+  const [fetchedAvailableAmount, setFetchedAvailableAmount] = useState<number | null>(null);
+  const [pendingWithdrawals, setPendingWithdrawals] = useState<number>(0);
 
   // Check if user can make withdrawal request and get user phone
   useEffect(() => {
@@ -86,14 +81,41 @@ export const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
       if (!user) return;
       
       try {
-        const { data, error } = await supabase.rpc('get_withdrawal_eligibility' as any, {
+        // Get total earnings from referral stats
+        const { data: statsData, error: statsError } = await supabase.rpc('get_referral_stats' as any, {
           p_user_id: user.id
         });
         
-        if (!error && data && data.length > 0) {
-          const eligibility = data[0];
-          setCanRequest(eligibility.can_withdraw);
-          setAvailableAmount(eligibility.available_balance || 0);
+        // Get pending withdrawals (if table exists)
+        let pendingAmount = 0;
+        try {
+          const { data: withdrawalsData, error: withdrawalsError } = await supabase
+            .from('withdrawal_requests' as any)
+            .select('amount')
+            .eq('user_id', user.id)
+            .in('status', ['pending', 'approved']);
+          
+          if (!withdrawalsError && withdrawalsData) {
+            pendingAmount = withdrawalsData.reduce((sum: number, w: any) => sum + (w.amount || 0), 0);
+          }
+        } catch (error) {
+          console.log('Withdrawal requests table not found, assuming no pending withdrawals');
+        }
+        
+        if (!statsError && statsData && statsData.length > 0) {
+          const stats = statsData[0];
+          const totalEarnings = stats.total_earnings || 0;
+          
+          // Set pending withdrawals
+          setPendingWithdrawals(pendingAmount);
+          
+          // Calculate pending amount (total earnings - pending withdrawals)
+          const pendingAmountAvailable = Math.max(0, totalEarnings - pendingAmount);
+          setFetchedAvailableAmount(pendingAmountAvailable);
+          
+          // Check if user can withdraw (pending amount >= minimum withdrawal)
+          const minimumWithdrawal = defaultConfig.commission.minimumWithdrawal;
+          setCanRequest(pendingAmountAvailable >= minimumWithdrawal);
         }
 
         // Get user's phone number
@@ -138,8 +160,9 @@ export const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
       return;
     }
 
-    if (amountValue > Math.min(availableAmount, defaultConfig.commission.maximumWithdrawal)) {
-      setError(`Amount cannot exceed ₹${Math.min(availableAmount, defaultConfig.commission.maximumWithdrawal)}`);
+    const currentAvailableAmount = fetchedAvailableAmount !== null ? fetchedAvailableAmount : availableAmount;
+    if (amountValue > Math.min(currentAvailableAmount, defaultConfig.commission.maximumWithdrawal)) {
+      setError(`Amount cannot exceed ₹${Math.min(currentAvailableAmount, defaultConfig.commission.maximumWithdrawal)}`);
       return;
     }
 
@@ -232,25 +255,26 @@ export const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
+    <>
+      <div onClick={() => setIsOpen(true)}>
         {children || (
           <Button className="bg-green-600 hover:bg-green-700">
             <IndianRupee className="w-4 h-4 mr-2" />
             Request Withdrawal
           </Button>
         )}
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center space-x-2">
-            <IndianRupee className="w-5 h-5 text-green-500" />
-            <span>Request Withdrawal</span>
-          </DialogTitle>
-          <DialogDescription>
+      </div>
+      
+      <PerfectModal
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        title="Request Withdrawal"
+        maxWidth="max-w-2xl"
+      >
+        <div className="space-y-4">
+          <div className="text-center text-gray-600 mb-4">
             Withdraw your referral earnings to your preferred payment method
-          </DialogDescription>
-        </DialogHeader>
+          </div>
 
         {success ? (
           <div className="text-center py-8">
@@ -260,13 +284,18 @@ export const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Available Balance */}
+            {/* Pending Amount Available for Withdrawal */}
             <Card className="bg-green-50 border-green-200">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-green-600 font-medium">Available Balance</p>
-                    <p className="text-2xl font-bold text-green-700">₹{availableAmount.toFixed(2)}</p>
+                    <p className="text-sm text-green-600 font-medium">Pending Amount Available</p>
+                    <p className="text-2xl font-bold text-green-700">₹{(fetchedAvailableAmount !== null ? fetchedAvailableAmount : availableAmount).toFixed(2)}</p>
+                    {pendingWithdrawals > 0 && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Total earnings: ₹{((fetchedAvailableAmount || 0) + pendingWithdrawals).toFixed(2)} | Already requested: ₹{pendingWithdrawals.toFixed(2)}
+                      </p>
+                    )}
                   </div>
                   <IndianRupee className="w-8 h-8 text-green-500" />
                 </div>
@@ -283,12 +312,12 @@ export const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 min={defaultConfig.commission.minimumWithdrawal}
-                max={Math.min(availableAmount, defaultConfig.commission.maximumWithdrawal)}
+                max={Math.min(fetchedAvailableAmount !== null ? fetchedAvailableAmount : availableAmount, defaultConfig.commission.maximumWithdrawal)}
                 step="0.01"
                 required
               />
               <p className="text-xs text-gray-500">
-                Minimum withdrawal: ₹{defaultConfig.commission.minimumWithdrawal} | Maximum: ₹{Math.min(availableAmount, defaultConfig.commission.maximumWithdrawal).toFixed(2)}
+                Minimum withdrawal: ₹{defaultConfig.commission.minimumWithdrawal} | Maximum: ₹{Math.min(fetchedAvailableAmount !== null ? fetchedAvailableAmount : availableAmount, defaultConfig.commission.maximumWithdrawal).toFixed(2)}
               </p>
             </div>
 
@@ -438,8 +467,9 @@ export const WithdrawalRequestModal: React.FC<WithdrawalRequestModalProps> = ({
             </div>
           </form>
         )}
-      </DialogContent>
-    </Dialog>
+        </div>
+      </PerfectModal>
+    </>
   );
 };
 

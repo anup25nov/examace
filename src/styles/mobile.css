@@ -98,14 +98,10 @@ body {
   padding-top: 0;
   margin-top: 0;
   /* Full screen height */
-  height: 100vh;
-  height: 100dvh; /* Dynamic viewport height for mobile */
+  min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height for mobile */
   /* Ensure no status bar space */
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: relative;
   /* Remove any safe area insets */
   padding-top: 0 !important;
   margin-top: 0 !important;
@@ -471,7 +467,7 @@ header {
 html, body {
   margin: 0;
   padding: 0;
-  height: 100%;
+  min-height: 100%;
   overflow-x: hidden;
 }
 
@@ -507,12 +503,12 @@ header, .sticky-header {
 @media (max-width: 768px) {
   /* Ensure proper viewport handling */
   html {
-    height: 100%;
+    min-height: 100%;
     overflow-x: hidden;
   }
   
   body {
-    height: 100%;
+    min-height: 100%;
     overflow-x: hidden;
     /* Remove any conflicting padding */
     padding: 0 !important;
@@ -583,6 +579,23 @@ header, .sticky-header {
   min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Force scrolling to work on all pages */
+* {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ensure body can scroll */
+body {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Ensure html can scroll */
+html {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 
 /* Keyboard handling styles */

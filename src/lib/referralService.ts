@@ -63,6 +63,17 @@ export interface ReferralStats {
   pending_rewards: number;
   verified_referrals: number;
   rewarded_referrals: number;
+  // Additional properties from get_comprehensive_referral_stats
+  pending_commissions?: number;
+  total_commissions_earned?: number;
+  paid_commissions?: number;
+  cancelled_commissions?: number;
+  active_referrals?: number;
+  completed_referrals?: number;
+  pending_referrals?: number;
+  referral_link?: string;
+  code_created_at?: string;
+  last_referral_date?: string;
 }
 
 class ReferralService {
