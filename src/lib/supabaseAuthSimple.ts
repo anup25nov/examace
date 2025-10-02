@@ -100,6 +100,9 @@ export const verifyOTPCode = async (phone: string, otp: string) => {
       localStorage.setItem('userPhone', formattedPhone);
       localStorage.setItem('isAuthenticated', 'true');
       
+      // Note: We're using custom auth, so Supabase auth context won't be available
+      // The referral functions will need to work with user ID from localStorage
+      
       console.log('Authentication data stored:', {
         userId: userId,
         phone: formattedPhone,

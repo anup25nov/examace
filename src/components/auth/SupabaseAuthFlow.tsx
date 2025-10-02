@@ -184,15 +184,22 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
   };
 
   const handleReferralSubmit = async () => {
+    console.log('=== REFERRAL SUBMIT CLICKED ===');
+    console.log('Referral code:', referralCode);
+    console.log('Loading state before:', loading);
     setLoading(true);
+    console.log('Loading state after:', true);
     setError('');
     setReferralInvalid('');
 
     try {
-      // Get current user ID
-      const { data: { user } } = await supabase.auth.getUser();
+      // Get current user ID from localStorage (since we're using custom auth)
+      console.log('Getting current user from localStorage...');
+      const userId = localStorage.getItem('userId');
+      console.log('Current user ID:', userId);
       
-      if (!user) {
+      if (!userId) {
+        console.error('User not authenticated');
         setError('User not authenticated');
         setLoading(false);
         return;
@@ -200,11 +207,11 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
 
       if (referralCode.trim()) {
         console.log('Validating referral code:', referralCode);
-        console.log('User ID for referral application:', user.id);
+        console.log('User ID for referral application:', userId);
         
         // Use the database function to validate and apply referral code
         const { data, error } = await supabase.rpc('validate_and_apply_referral_code' as any, {
-          p_user_id: user.id,
+          p_user_id: userId,
           p_referral_code: referralCode.trim().toUpperCase()
         });
 
@@ -242,6 +249,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
       } else {
         // No referral code provided, proceed to dashboard
         console.log('No referral code provided, proceeding to dashboard');
+        console.log('Calling onAuthSuccess...');
         onAuthSuccess();
       }
     } catch (error: any) {
@@ -583,7 +591,7 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
               <Button 
                 type="button" 
                 onClick={handleReferralSubmit} 
-                disabled={loading || !referralCode.trim()}
+                disabled={loading}
                 className={`${isKeyboardOpen ? 'w-full' : 'flex-1'} h-12 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200`}
               >
                 {loading ? (
