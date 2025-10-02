@@ -519,7 +519,16 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
     </div>
   );
 
-  const renderReferralStep = () => (
+  const renderReferralStep = () => {
+    console.log('=== RENDERING REFERRAL STEP ===');
+    console.log('Current state:', {
+      loading,
+      referralCode,
+      step,
+      isNewUser
+    });
+    
+    return (
     <div 
       className={`w-full max-w-md mx-auto transition-all duration-300 ${
         isKeyboardOpen ? 'transform -translate-y-8' : ''
@@ -590,7 +599,14 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
               </Button>
               <Button 
                 type="button" 
-                onClick={handleReferralSubmit} 
+                onClick={(e) => {
+                  console.log('=== BUTTON CLICKED ===');
+                  console.log('Event:', e);
+                  console.log('Loading state:', loading);
+                  console.log('Referral code:', referralCode);
+                  alert('Button clicked! Check console for details.');
+                  handleReferralSubmit();
+                }} 
                 disabled={loading}
                 className={`${isKeyboardOpen ? 'w-full' : 'flex-1'} h-12 text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200`}
               >
@@ -623,7 +639,19 @@ const SupabaseAuthFlow: React.FC<SupabaseAuthFlowProps> = ({ onAuthSuccess }) =>
         </CardContent>
       </Card>
     </div>
-  );
+    );
+  };
+
+  console.log('=== RENDERING COMPONENT ===');
+  console.log('Current step:', step);
+  console.log('Component state:', {
+    step,
+    loading,
+    referralCode,
+    isNewUser,
+    error,
+    referralInvalid
+  });
 
   switch (step) {
     case 'phone':

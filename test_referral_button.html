@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Referral Button Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .button {
+            background: linear-gradient(to right, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+        }
+        .button:hover {
+            background: linear-gradient(to right, #2563eb, #7c3aed);
+        }
+        .button:disabled {
+            background: #6b7280;
+            cursor: not-allowed;
+        }
+        .input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        .log {
+            background: #f3f4f6;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            margin: 10px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Referral Button Test</h1>
+    
+    <div>
+        <label>Referral Code:</label>
+        <input type="text" id="referralCode" class="input" placeholder="Enter referral code" value="REFKNZ23728">
+    </div>
+    
+    <div>
+        <button id="testButton" class="button">Test Button Click</button>
+    </div>
+    
+    <div>
+        <button id="continueButton" class="button">Continue (Simulated)</button>
+    </div>
+    
+    <div class="log" id="log"></div>
+
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toISOString();
+            logDiv.innerHTML += `[${timestamp}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // Test basic button click
+        document.getElementById('testButton').addEventListener('click', function(e) {
+            log('=== BASIC BUTTON CLICKED ===');
+            log('Event: ' + JSON.stringify({
+                type: e.type,
+                target: e.target.tagName,
+                button: e.button
+            }));
+            log('Referral code: ' + document.getElementById('referralCode').value);
+        });
+
+        // Test continue button simulation
+        document.getElementById('continueButton').addEventListener('click', function(e) {
+            log('=== CONTINUE BUTTON CLICKED ===');
+            const referralCode = document.getElementById('referralCode').value;
+            log('Referral code: ' + referralCode);
+            
+            if (referralCode.trim()) {
+                log('Processing referral code...');
+                // Simulate API call
+                setTimeout(() => {
+                    log('Referral code processed successfully!');
+                }, 1000);
+            } else {
+                log('No referral code, proceeding...');
+            }
+        });
+
+        log('Page loaded. Click buttons to test.');
+    </script>
+</body>
+</html>
