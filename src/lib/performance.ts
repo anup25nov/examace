@@ -3,12 +3,9 @@
 // Preload critical resources
 export const preloadCriticalResources = () => {
   try {
-    // Preload Supabase SDK
-    const supabaseScript = document.createElement('link');
-    supabaseScript.rel = 'preload';
-    supabaseScript.href = 'https://unpkg.com/@supabase/supabase-js@2';
-    supabaseScript.as = 'script';
-    document.head.appendChild(supabaseScript);
+    // Note: Supabase SDK is already bundled with the app, no need to preload from CDN
+    // This avoids CSP issues with external script loading
+    console.log('Resource preloading skipped - using bundled Supabase SDK');
   } catch (error) {
     console.warn('Resource preloading failed:', error);
   }

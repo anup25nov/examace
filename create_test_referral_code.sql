@@ -7,7 +7,7 @@ DO $$
 BEGIN
     -- Delete existing referral code for this user if it exists
     DELETE FROM public.referral_codes 
-    WHERE user_id = 'fa55b327-1200-47a8-aa33-9f8a56df50ec';
+    WHERE user_id = 'd791ba76-4059-4460-bda6-3020bf786100';
     
     -- Insert new referral code
     INSERT INTO public.referral_codes (
@@ -19,7 +19,7 @@ BEGIN
         created_at,
         updated_at
     ) VALUES (
-        'fa55b327-1200-47a8-aa33-9f8a56df50ec', -- Your test user ID
+        'd791ba76-4059-4460-bda6-3020bf786100', -- Your test user ID
         'TEST123',
         0,
         0.00,
@@ -37,7 +37,7 @@ SELECT
     is_active,
     created_at
 FROM public.referral_codes 
-WHERE user_id = 'fa55b327-1200-47a8-aa33-9f8a56df50ec';
+WHERE user_id = 'd791ba76-4059-4460-bda6-3020bf786100';
 
 -- Also create a test referral transaction to verify the schema
 -- First check if we have any payments, if not create a test payment
@@ -65,7 +65,7 @@ BEGIN
             updated_at
         ) VALUES (
             'PAY_TEST_' || EXTRACT(EPOCH FROM NOW())::TEXT,
-            'fa55b327-1200-47a8-aa33-9f8a56df50ec',
+            'd791ba76-4059-4460-bda6-3020bf786100',
             'pro',
             'Pro Plan',
             99.00,
@@ -95,8 +95,8 @@ BEGIN
         payment_id,
         first_membership_only
     ) VALUES (
-        'fa55b327-1200-47a8-aa33-9f8a56df50ec', -- referrer
-        'fa55b327-1200-47a8-aa33-9f8a56df50ec', -- referred (same user for test)
+        'd791ba76-4059-4460-bda6-3020bf786100', -- referrer
+        'd791ba76-4059-4460-bda6-3020bf786100', -- referred (same user for test)
         'TEST123',
         99.00,
         'referral',

@@ -985,7 +985,7 @@ export type Database = {
         Returns: undefined
       }
       create_user_referral_code: {
-        Args: { user_uuid: string }
+        Args: { p_user_uuid: string; p_custom_code?: string }
         Returns: string
       }
       expire_old_memberships: {
@@ -1184,6 +1184,21 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
+      }
+      process_payment_webhook: {
+        Args: {
+          p_order_id: string
+          p_razorpay_payment_id: string
+          p_amount: number
+          p_currency?: string
+        }
+        Returns: {
+          success: boolean
+          message: string
+          payment_id: string
+          user_id: string
+          membership_id: string
+        }[]
       }
     }
     Enums: {

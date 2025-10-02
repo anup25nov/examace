@@ -292,7 +292,7 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string) =
         const referralCode = userId.substring(0, 8).toUpperCase();
         const { data: createResult, error: createError } = await supabase
           .rpc('create_user_referral_code', {
-            user_uuid: userId
+            p_user_uuid: userId
           });
 
         if (createError) {

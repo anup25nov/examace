@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Direct RPC Payment Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .warning { color: #ffc107; }
+        .info { color: #17a2b8; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status.success { background-color: #d4edda; color: #155724; }
+        .status.error { background-color: #f8d7da; color: #721c24; }
+        .status.warning { background-color: #fff3cd; color: #856404; }
+        .status.info { background-color: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Direct RPC Payment Test</h1>
+        <p>This test simulates the complete payment flow using direct RPC calls instead of webhooks.</p>
+
+        <div class="test-section">
+            <h2>1. Test Payment Creation</h2>
+            <button onclick="createTestPayment()">Create Test Payment</button>
+            <div id="paymentResult" class="log"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Test RPC Payment Processing</h2>
+            <button onclick="testRPCProcessing()">Test RPC Processing</button>
+            <div id="rpcResult" class="log"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Verify Database Changes</h2>
+            <button onclick="verifyDatabaseChanges()">Verify Database</button>
+            <div id="dbResult" class="log"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. Test Error Handling</h2>
+            <button onclick="testErrorHandling()">Test Error Cases</button>
+            <div id="errorResult" class="log"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>5. Complete Flow Test</h2>
+            <button onclick="runCompleteFlow()">Run Complete Flow</button>
+            <div id="completeResult" class="log"></div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const SUPABASE_URL = 'https://talvssmwnsfotoutjlhd.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhbHZzc213bnNmb3RvdXRqbGhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3MjQ2NjMsImV4cCI6MjA3MjMwMDY2M30.kViEumcw7qxZeITgtZf91D-UVFY5PaFyXganLyh2Tok';
+        
+        let testPaymentId = null;
+        let testOrderId = null;
+        let testUserId = null;
+
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toISOString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+            element.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            element.scrollTop = element.scrollHeight;
+        }
+
+        async function createTestPayment() {
+            log('paymentResult', 'Creating test payment...', 'info');
+            
+            try {
+                // First, check if any users exist
+                log('paymentResult', 'Checking for existing users...', 'info');
+                const userCheckResponse = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles?select=id,full_name&limit=1`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                
+                let userId = 'd791ba76-4059-4460-bda6-3020bf786100'; // Default
+                
+                if (userCheckResponse.ok) {
+                    const users = await userCheckResponse.json();
+                    if (users.length > 0) {
+                        userId = users[0].id;
+                        log('paymentResult', `✅ Using existing user: ${users[0].full_name} (${users[0].id})`, 'success');
+                    } else {
+                        log('paymentResult', `⚠️ No users found, will try with default user ID`, 'warning');
+                    }
+                } else {
+                    log('paymentResult', `⚠️ Could not check users (${userCheckResponse.status}), using default user ID`, 'warning');
+                }
+                const paymentData = {
+                    payment_id: `PAY_${Date.now()}_test_rpc`,
+                    user_id: userId,
+                    plan_id: 'pro',
+                    plan_name: 'Pro Plan',
+                    amount: 99,
+                    razorpay_order_id: `order_${Date.now()}_test_rpc`,
+                    payment_method: 'razorpay',
+                    status: 'pending'
+                };
+                
+                log('paymentResult', `Request data: ${JSON.stringify(paymentData, null, 2)}`, 'info');
+                
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/payments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify(paymentData)
+                });
+                
+                log('paymentResult', `Response status: ${response.status}`, 'info');
+                log('paymentResult', `Response headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()))}`, 'info');
+
+                if (response.ok) {
+                    // Supabase POST requests often return empty body on success
+                    if (response.headers.get('content-length') === '0' || response.status === 201) {
+                        // Payment created successfully, use the data we sent
+                        testPaymentId = paymentData.payment_id;
+                        testOrderId = paymentData.razorpay_order_id;
+                        testUserId = userId;
+                        log('paymentResult', `✅ Test payment created successfully: ${testPaymentId}`, 'success');
+                        log('paymentResult', `Order ID: ${testOrderId}`, 'info');
+                        log('paymentResult', `User ID: ${userId}`, 'info');
+                    } else {
+                        try {
+                            const data = await response.json();
+                            testPaymentId = data.payment_id || paymentData.payment_id;
+                            testOrderId = data.razorpay_order_id || paymentData.razorpay_order_id;
+                            testUserId = userId;
+                            log('paymentResult', `✅ Test payment created successfully: ${testPaymentId}`, 'success');
+                            log('paymentResult', `Order ID: ${testOrderId}`, 'info');
+                            log('paymentResult', `User ID: ${userId}`, 'info');
+                        } catch (jsonError) {
+                            // Fallback to using our sent data
+                            testPaymentId = paymentData.payment_id;
+                            testOrderId = paymentData.razorpay_order_id;
+                            testUserId = userId;
+                            log('paymentResult', `✅ Test payment created successfully (empty response): ${testPaymentId}`, 'success');
+                            log('paymentResult', `Order ID: ${testOrderId}`, 'info');
+                            log('paymentResult', `User ID: ${userId}`, 'info');
+                        }
+                    }
+                } else {
+                    const error = await response.text();
+                    log('paymentResult', `❌ Failed to create payment (${response.status}): ${error}`, 'error');
+                }
+            } catch (error) {
+                log('paymentResult', `❌ Error creating payment: ${error.message}`, 'error');
+            }
+        }
+
+        async function testRPCProcessing() {
+            if (!testOrderId) {
+                log('rpcResult', '❌ Please create a test payment first', 'error');
+                return;
+            }
+
+            log('rpcResult', 'Testing RPC payment processing...', 'info');
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/process_payment_webhook`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        p_order_id: testOrderId,
+                        p_razorpay_payment_id: `pay_${Date.now()}_test_rpc`,
+                        p_amount: 99,
+                        p_currency: 'INR'
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const result = data[0];
+                    if (result?.success) {
+                        log('rpcResult', `✅ RPC processing successful!`, 'success');
+                        log('rpcResult', `Payment ID: ${result.payment_id}`, 'info');
+                        log('rpcResult', `User ID: ${result.user_id}`, 'info');
+                        log('rpcResult', `Membership ID: ${result.membership_id}`, 'info');
+                        log('rpcResult', `Message: ${result.message}`, 'info');
+                    } else {
+                        log('rpcResult', `❌ RPC processing failed: ${result?.message}`, 'error');
+                    }
+                } else {
+                    const error = await response.text();
+                    log('rpcResult', `❌ RPC call failed: ${error}`, 'error');
+                }
+            } catch (error) {
+                log('rpcResult', `❌ Error calling RPC: ${error.message}`, 'error');
+            }
+        }
+
+        async function verifyDatabaseChanges() {
+            log('dbResult', 'Verifying database changes...', 'info');
+            
+            try {
+                // Check payments table
+                const paymentsResponse = await fetch(`${SUPABASE_URL}/rest/v1/payments?razorpay_order_id=eq.${testOrderId}&select=*`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                
+                if (paymentsResponse.ok) {
+                    const payments = await paymentsResponse.json();
+                    if (payments.length > 0) {
+                        const payment = payments[0];
+                        log('dbResult', `✅ Payment found:`, 'success');
+                        log('dbResult', `  - Status: ${payment.status}`, 'info');
+                        log('dbResult', `  - Amount: ₹${payment.amount}`, 'info');
+                        log('dbResult', `  - Paid at: ${payment.paid_at || 'Not set'}`, 'info');
+                    } else {
+                        log('dbResult', `❌ No payment found for order ${testOrderId}`, 'error');
+                    }
+                }
+
+                // Check user_memberships table
+                const membershipsResponse = await fetch(`${SUPABASE_URL}/rest/v1/user_memberships?user_id=eq.${testUserId || 'd791ba76-4059-4460-bda6-3020bf786100'}&select=*`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                
+                if (membershipsResponse.ok) {
+                    const memberships = await membershipsResponse.json();
+                    if (memberships.length > 0) {
+                        const membership = memberships[0];
+                        log('dbResult', `✅ Membership found:`, 'success');
+                        log('dbResult', `  - Plan: ${membership.plan_id}`, 'info');
+                        log('dbResult', `  - Status: ${membership.status}`, 'info');
+                        log('dbResult', `  - Start: ${membership.start_date}`, 'info');
+                        log('dbResult', `  - End: ${membership.end_date}`, 'info');
+                    } else {
+                        log('dbResult', `❌ No membership found for user`, 'error');
+                    }
+                }
+
+                // Check membership_transactions table
+                const transactionsResponse = await fetch(`${SUPABASE_URL}/rest/v1/membership_transactions?user_id=eq.${testUserId || 'd791ba76-4059-4460-bda6-3020bf786100'}&select=*`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                
+                if (transactionsResponse.ok) {
+                    const transactions = await transactionsResponse.json();
+                    if (transactions.length > 0) {
+                        const transaction = transactions[0];
+                        log('dbResult', `✅ Transaction found:`, 'success');
+                        log('dbResult', `  - Amount: ₹${transaction.amount}`, 'info');
+                        log('dbResult', `  - Status: ${transaction.status}`, 'info');
+                        log('dbResult', `  - Created: ${transaction.created_at}`, 'info');
+                    } else {
+                        log('dbResult', `❌ No transaction found for user`, 'error');
+                    }
+                }
+
+            } catch (error) {
+                log('dbResult', `❌ Error verifying database: ${error.message}`, 'error');
+            }
+        }
+
+        async function testErrorHandling() {
+            log('errorResult', 'Testing error handling...', 'info');
+            
+            try {
+                // Test with invalid order ID
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/process_payment_webhook`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({
+                        p_order_id: 'invalid_order_id',
+                        p_razorpay_payment_id: 'invalid_payment_id',
+                        p_amount: 99,
+                        p_currency: 'INR'
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const result = data[0];
+                    if (!result?.success) {
+                        log('errorResult', `✅ Error handling working: ${result?.message}`, 'success');
+                    } else {
+                        log('errorResult', `❌ Expected error but got success`, 'error');
+                    }
+                } else {
+                    log('errorResult', `❌ RPC call failed: ${await response.text()}`, 'error');
+                }
+            } catch (error) {
+                log('errorResult', `❌ Error testing error handling: ${error.message}`, 'error');
+            }
+        }
+
+        async function runCompleteFlow() {
+            log('completeResult', 'Running complete payment flow test...', 'info');
+            
+            try {
+                // Step 1: Create payment
+                log('completeResult', 'Step 1: Creating test payment...', 'info');
+                await createTestPayment();
+                
+                if (!testOrderId) {
+                    log('completeResult', '❌ Cannot proceed without test payment', 'error');
+                    return;
+                }
+
+                // Step 2: Process payment via RPC
+                log('completeResult', 'Step 2: Processing payment via RPC...', 'info');
+                await testRPCProcessing();
+
+                // Step 3: Verify database changes
+                log('completeResult', 'Step 3: Verifying database changes...', 'info');
+                await verifyDatabaseChanges();
+
+                log('completeResult', '✅ Complete flow test finished!', 'success');
+                
+            } catch (error) {
+                log('completeResult', `❌ Complete flow test failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize
+        log('paymentResult', 'Ready to test direct RPC payment processing!', 'info');
+        log('rpcResult', 'Click "Test RPC Processing" after creating a payment', 'info');
+        log('dbResult', 'Click "Verify Database" to check the results', 'info');
+        log('errorResult', 'Click "Test Error Cases" to verify error handling', 'info');
+        log('completeResult', 'Click "Run Complete Flow" for end-to-end testing', 'info');
+    </script>
+</body>
+</html>

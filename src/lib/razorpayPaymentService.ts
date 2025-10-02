@@ -175,6 +175,18 @@ export class RazorpayPaymentService {
       };
     }
   }
+
+  /**
+   * Format amount for display
+   */
+  formatAmount(amount: number): string {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
+  }
 }
 
 // Export singleton instance

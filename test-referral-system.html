@@ -61,7 +61,7 @@
         
         // Test data
         let testReferralCode = '';
-        let testUserId = 'fa55b327-1200-47a8-aa33-9f8a56df50ec'; // Your test user ID
+        let testUserId = 'd791ba76-4059-4460-bda6-3020bf786100'; // Your test user ID
         let testReferrerId = '';
 
         function log(elementId, message, type = 'info') {
@@ -140,8 +140,8 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        p_user_uuid: testUserId,
-                        p_custom_code: 'TEST' + Date.now()
+                        p_custom_code: 'TEST' + Date.now(),
+                        p_user_uuid: testUserId
                     })
                 });
 

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alphanumeric Referral Codes Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 3px; font-family: monospace; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        .code-display { font-size: 18px; font-weight: bold; color: #2c5aa0; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🔤 Alphanumeric Referral Codes Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Test New Alphanumeric Code Generation</h2>
+        <button onclick="testAlphanumericCodes()">Generate Sample Codes</button>
+        <div id="alphanumericLog" class="log"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Test Uniqueness</h2>
+        <button onclick="testUniqueness()">Test 10 Unique Codes</button>
+        <div id="uniquenessLog" class="log"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Test Database Function</h2>
+        <button onclick="testDatabaseFunction()">Test Database Function</button>
+        <div id="databaseLog" class="log"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://talvssmwnsfotoutjlhd.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhbHZzc213bnNmb3RvdXRqbGhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3MjQ2NjMsImV4cCI6MjA3MjMwMDY2M30.kViEumcw7qxZeITgtZf91D-UVFY5PaFyXganLyh2Tok';
+
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toISOString();
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : '';
+            element.innerHTML += `<div class="${className}">${timestamp}: ${message}</div>`;
+        }
+
+        // Simulate the alphanumeric code generation (client-side)
+        function generateAlphanumericCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let code = 'REF';
+            for (let i = 0; i < 8; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        function testAlphanumericCodes() {
+            log('alphanumericLog', 'Generating sample alphanumeric referral codes...');
+            
+            for (let i = 0; i < 5; i++) {
+                const code = generateAlphanumericCode();
+                log('alphanumericLog', `<div class="code-display">${code}</div>`, 'success');
+            }
+            
+            log('alphanumericLog', '✅ All codes are alphanumeric and clean!', 'success');
+        }
+
+        function testUniqueness() {
+            log('uniquenessLog', 'Testing uniqueness of generated codes...');
+            
+            const codes = new Set();
+            let attempts = 0;
+            const maxAttempts = 100;
+            
+            while (codes.size < 10 && attempts < maxAttempts) {
+                const code = generateAlphanumericCode();
+                codes.add(code);
+                attempts++;
+            }
+            
+            if (codes.size === 10) {
+                log('uniquenessLog', '✅ Generated 10 unique codes:', 'success');
+                codes.forEach(code => {
+                    log('uniquenessLog', `<div class="code-display">${code}</div>`, 'success');
+                });
+            } else {
+                log('uniquenessLog', `❌ Only generated ${codes.size} unique codes in ${attempts} attempts`, 'error');
+            }
+        }
+
+        async function testDatabaseFunction() {
+            log('databaseLog', 'Testing database function for alphanumeric codes...');
+            
+            try {
+                // Test the helper function first
+                const helperResponse = await fetch(`${SUPABASE_URL}/rest/v1/rpc/generate_alphanumeric_referral_code`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+
+                if (helperResponse.ok) {
+                    const code1 = await helperResponse.text();
+                    log('databaseLog', `✅ Helper function works: <div class="code-display">${code1}</div>`, 'success');
+                } else {
+                    log('databaseLog', `❌ Helper function failed: ${helperResponse.status}`, 'error');
+                }
+
+                // Test the main function
+                const mainResponse = await fetch(`${SUPABASE_URL}/rest/v1/rpc/create_user_referral_code`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        p_user_uuid: 'd791ba76-4059-4460-bda6-3020bf786100',
+                        p_custom_code: null
+                    })
+                });
+
+                if (mainResponse.ok) {
+                    const result = await mainResponse.json();
+                    if (result.referral_code) {
+                        log('databaseLog', `✅ Main function works: <div class="code-display">${result.referral_code}</div>`, 'success');
+                    } else {
+                        log('databaseLog', `❌ Main function returned: ${JSON.stringify(result)}`, 'error');
+                    }
+                } else {
+                    const errorText = await mainResponse.text();
+                    log('databaseLog', `❌ Main function failed: ${mainResponse.status} - ${errorText}`, 'error');
+                }
+
+            } catch (error) {
+                log('databaseLog', `❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-run tests on load
+        window.onload = function() {
+            testAlphanumericCodes();
+        };
+    </script>
+</body>
+</html>

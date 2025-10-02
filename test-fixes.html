@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Verification Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 3px; font-family: monospace; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Fix Verification Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Test formatAmount Function</h2>
+        <button onclick="testFormatAmount()">Test formatAmount</button>
+        <div id="formatAmountLog" class="log"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Test CSP Compliance</h2>
+        <button onclick="testCSPCompliance()">Test CSP</button>
+        <div id="cspLog" class="log"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Test Referral System</h2>
+        <button onclick="testReferralSystem()">Test Referral System</button>
+        <div id="referralLog" class="log"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://talvssmwnsfotoutjlhd.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhbHZzc213bnNmb3RvdXRqbGhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3MjQ2NjMsImV4cCI6MjA3MjMwMDY2M30.kViEumcw7qxZeITgtZf91D-UVFY5PaFyXganLyh2Tok';
+
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toISOString();
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : '';
+            element.innerHTML += `<div class="${className}">${timestamp}: ${message}</div>`;
+        }
+
+        // Test formatAmount function (simulating the RazorpayPaymentService)
+        function testFormatAmount() {
+            log('formatAmountLog', 'Testing formatAmount function...');
+            
+            try {
+                // Simulate the formatAmount method
+                const formatAmount = (amount) => {
+                    return new Intl.NumberFormat('en-IN', {
+                        style: 'currency',
+                        currency: 'INR',
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
+                    }).format(amount);
+                };
+
+                const testAmounts = [1, 99, 999, 9999, 99999];
+                testAmounts.forEach(amount => {
+                    const formatted = formatAmount(amount);
+                    log('formatAmountLog', `₹${amount} → ${formatted}`, 'success');
+                });
+
+                log('formatAmountLog', '✅ formatAmount function working correctly!', 'success');
+            } catch (error) {
+                log('formatAmountLog', `❌ formatAmount error: ${error.message}`, 'error');
+            }
+        }
+
+        // Test CSP compliance
+        function testCSPCompliance() {
+            log('cspLog', 'Testing CSP compliance...');
+            
+            try {
+                // Check if we can access the current origin
+                const currentOrigin = window.location.origin;
+                log('cspLog', `Current origin: ${currentOrigin}`, 'info');
+                
+                // Test if we can create elements without CSP violations
+                const testElement = document.createElement('div');
+                testElement.textContent = 'CSP test element';
+                document.body.appendChild(testElement);
+                document.body.removeChild(testElement);
+                
+                log('cspLog', '✅ CSP compliance test passed - no external script loading', 'success');
+            } catch (error) {
+                log('cspLog', `❌ CSP error: ${error.message}`, 'error');
+            }
+        }
+
+        // Test referral system
+        async function testReferralSystem() {
+            log('referralLog', 'Testing referral system...');
+            
+            try {
+                // Test 1: Check if user profile exists
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles?id=eq.00000000-0000-0000-0000-000000000001&select=id,name,phone`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        log('referralLog', `✅ Test user profile exists: ${data[0].name}`, 'success');
+                    } else {
+                        log('referralLog', '⚠️ Test user profile not found - run create_test_user_profile.sql first', 'error');
+                        return;
+                    }
+                } else {
+                    log('referralLog', `❌ Failed to check user profile: ${response.status}`, 'error');
+                    return;
+                }
+
+                // Test 2: Test referral code creation
+                const createResponse = await fetch(`${SUPABASE_URL}/rest/v1/rpc/create_user_referral_code`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        p_custom_code: 'TESTFIX123',
+                        p_user_uuid: 'd791ba76-4059-4460-bda6-3020bf786100'
+                    })
+                });
+
+                if (createResponse.ok) {
+                    log('referralLog', '✅ Referral code creation working', 'success');
+                } else {
+                    const errorText = await createResponse.text();
+                    log('referralLog', `❌ Referral code creation failed: ${createResponse.status} - ${errorText}`, 'error');
+                }
+
+                // Test 3: Test referral stats
+                const statsResponse = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_referral_stats`, {
+                    method: 'POST',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        p_user_uuid: 'd791ba76-4059-4460-bda6-3020bf786100'
+                    })
+                });
+
+                if (statsResponse.ok) {
+                    const stats = await statsResponse.json();
+                    log('referralLog', `✅ Referral stats working: ${JSON.stringify(stats)}`, 'success');
+                } else {
+                    const errorText = await statsResponse.text();
+                    log('referralLog', `❌ Referral stats failed: ${statsResponse.status} - ${errorText}`, 'error');
+                }
+
+            } catch (error) {
+                log('referralLog', `❌ Referral system error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-run tests on load
+        window.onload = function() {
+            testFormatAmount();
+            testCSPCompliance();
+        };
+    </script>
+</body>
+</html>

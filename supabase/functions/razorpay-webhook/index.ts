@@ -1,5 +1,13 @@
 // Use built-in Deno serve function
 
+// Deno type declarations
+declare const Deno: {
+  serve: (handler: (req: Request) => Promise<Response>) => void
+  env: {
+    get: (key: string) => string | undefined
+  }
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -44,6 +52,9 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     const webhookSecret = Deno.env.get('RAZORPAY_WEBHOOK_SECRET')
     
+    // For Razorpay webhooks, we don't need authorization header
+    // The webhook secret verification is sufficient
+    
     console.log('Environment variables loaded')
     
     // Get request body
@@ -55,7 +66,7 @@ Deno.serve(async (req) => {
     console.log('Signature present:', !!signature)
     console.log('Body preview:', body.substring(0, 200) + '...')
     
-    // Verify webhook signature for security
+    // Verify webhook signature for security (optional for testing)
     if (webhookSecret && signature) {
       const isValidSignature = await verifyWebhookSignature(body, signature, webhookSecret)
       if (!isValidSignature) {
@@ -64,41 +75,66 @@ Deno.serve(async (req) => {
       }
       console.log('✅ Webhook signature verified')
     } else {
-      console.log('⚠️ WARNING: Webhook signature verification disabled')
+      console.log('⚠️ WARNING: Webhook signature verification disabled - proceeding anyway')
     }
 
     // Parse webhook event
     const event: RazorpayWebhookEvent = JSON.parse(body)
     console.log('Received webhook event:', event.event)
 
-    // Handle different event types
-    switch (event.event) {
-      case 'payment.captured':
-        await handlePaymentCaptured(supabaseUrl, supabaseKey, event)
-        break
-      
-      case 'payment.failed':
-        await handlePaymentFailed(supabaseUrl, supabaseKey, event)
-        break
-      
-      case 'payment.authorized':
-        await handlePaymentAuthorized(supabaseUrl, supabaseKey, event)
-        break
-      
-      case 'refund.created':
-        await handleRefundCreated(supabaseUrl, supabaseKey, event)
-        break
-      
-      case 'refund.processed':
-        await handleRefundProcessed(supabaseUrl, supabaseKey, event)
-        break
-      
-      case 'refund.failed':
-        await handleRefundFailed(supabaseUrl, supabaseKey, event)
-        break
-      
-      default:
-        console.log('Unhandled event type:', event.event)
+    // Handle different event types with comprehensive error handling
+    try {
+      switch (event.event) {
+        case 'payment.captured':
+          console.log('Processing payment.captured event')
+          await handlePaymentCaptured(supabaseUrl, supabaseKey, event)
+          break
+        
+        case 'payment.failed':
+          console.log('Processing payment.failed event')
+          await handlePaymentFailed(supabaseUrl, supabaseKey, event)
+          break
+        
+        case 'payment.authorized':
+          console.log('Processing payment.authorized event')
+          await handlePaymentAuthorized(supabaseUrl, supabaseKey, event)
+          break
+        
+        case 'refund.created':
+          console.log('Processing refund.created event')
+          await handleRefundCreated(supabaseUrl, supabaseKey, event)
+          break
+        
+        case 'refund.processed':
+          console.log('Processing refund.processed event')
+          await handleRefundProcessed(supabaseUrl, supabaseKey, event)
+          break
+        
+        case 'refund.failed':
+          console.log('Processing refund.failed event')
+          await handleRefundFailed(supabaseUrl, supabaseKey, event)
+          break
+        
+        case 'order.paid':
+          console.log('Processing order.paid event')
+          await handleOrderPaid(supabaseUrl, supabaseKey, event)
+          break
+        
+        case 'payment.dispute.created':
+          console.log('Processing payment.dispute.created event')
+          await handleDisputeCreated(supabaseUrl, supabaseKey, event)
+          break
+        
+        default:
+          console.log('Unhandled event type:', event.event)
+          return new Response('Event type not supported', { 
+            status: 200, 
+            headers: corsHeaders 
+          })
+      }
+    } catch (eventError) {
+      console.error('Error processing event:', event.event, eventError)
+      // Don't fail the webhook for individual event processing errors
     }
 
     return new Response('OK', { 
@@ -108,8 +144,23 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Webhook error:', error)
+    
+    // Log detailed error information
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    })
+    
+    // Return appropriate error response
+    const errorResponse = {
+      error: 'Webhook processing failed',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    }
+    
     return new Response(
-      JSON.stringify({ error: error.message }), 
+      JSON.stringify(errorResponse), 
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -117,6 +168,33 @@ Deno.serve(async (req) => {
     )
   }
 })
+
+/**
+ * Retry operation with exponential backoff
+ */
+async function retryOperation<T>(
+  operation: () => Promise<T>, 
+  operationName: string, 
+  maxRetries: number = 3
+): Promise<T> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation()
+    } catch (error) {
+      console.error(`${operationName} attempt ${attempt} failed:`, error)
+      
+      if (attempt === maxRetries) {
+        throw error
+      }
+      
+      // Exponential backoff: 1s, 2s, 4s
+      const delay = Math.pow(2, attempt - 1) * 1000
+      console.log(`Retrying ${operationName} in ${delay}ms...`)
+      await new Promise(resolve => setTimeout(resolve, delay))
+    }
+  }
+  throw new Error(`${operationName} failed after ${maxRetries} attempts`)
+}
 
 /**
  * Verify Razorpay webhook signature
@@ -150,10 +228,39 @@ async function verifyWebhookSignature(
 }
 
 /**
- * Make Supabase API call
+ * Make Supabase API call using service role key
  */
 async function supabaseCall(url: string, key: string, method: string, table: string, operation: string, data?: any) {
-  const response = await fetch(`${url}/rest/v1/${table}`, {
+  let requestUrl = `${url}/rest/v1/${table}`
+  
+  // Handle different operations
+  if (operation === 'select') {
+    // GET request for selecting data
+    if (data) {
+      const params = new URLSearchParams()
+      Object.keys(data).forEach(key => {
+        params.append(key, data[key])
+      })
+      requestUrl += `?${params.toString()}`
+    }
+  } else if (operation === 'update') {
+    // PATCH request for updating
+    if (data && data.id) {
+      requestUrl += `?id=eq.${data.id}`
+      delete data.id // Remove id from body
+    }
+  } else if (operation === 'insert') {
+    // POST request for inserting
+    // data should be the record to insert
+    // No URL modifications needed for insert
+  } else if (operation === 'delete') {
+    // DELETE request for deleting
+    if (data && data.id) {
+      requestUrl += `?id=eq.${data.id}`
+    }
+  }
+
+  const response = await fetch(requestUrl, {
     method,
     headers: {
       'Authorization': `Bearer ${key}`,
@@ -161,15 +268,25 @@ async function supabaseCall(url: string, key: string, method: string, table: str
       'Content-Type': 'application/json',
       'Prefer': 'return=representation'
     },
-    body: data ? JSON.stringify(data) : undefined
+    body: (method === 'POST' || method === 'PATCH') && data ? JSON.stringify(data) : undefined
   })
 
   if (!response.ok) {
     const errorText = await response.text()
+    console.error(`Supabase API error for ${operation} on ${table}:`, {
+      status: response.status,
+      statusText: response.statusText,
+      error: errorText,
+      url: requestUrl,
+      method,
+      data
+    })
     throw new Error(`Supabase API error: ${response.status} - ${errorText}`)
   }
 
-  return await response.json()
+  const result = await response.json()
+  console.log(`Supabase API success for ${operation} on ${table}:`, result)
+  return result
 }
 
 /**
@@ -180,29 +297,20 @@ async function handlePaymentCaptured(supabaseUrl: string, supabaseKey: string, e
     const payment = event.payload.payment.entity
     console.log('Processing payment captured:', payment.id)
 
-    // Find the payment record
+    // Find the payment record by order_id
     const paymentRecords = await supabaseCall(
       supabaseUrl, 
       supabaseKey, 
       'GET', 
       'payments', 
       'select',
-      null
+      { razorpay_order_id: `eq.${payment.order_id}` }
     )
 
-    let paymentRecord = paymentRecords.find((p: any) => 
-      p.razorpay_order_id === payment.order_id && p.status === 'pending'
-    )
+    let paymentRecord = paymentRecords.find((p: any) => p.status === 'pending')
 
     if (!paymentRecord) {
-      // Try to find by payment ID as fallback
-      paymentRecord = paymentRecords.find((p: any) => 
-        p.razorpay_payment_id === payment.id
-      )
-    }
-
-    if (!paymentRecord) {
-      console.error('Payment record not found for order:', payment.order_id)
+      console.log('No pending payment found for order:', payment.order_id)
       return
     }
 
@@ -214,22 +322,39 @@ async function handlePaymentCaptured(supabaseUrl: string, supabaseKey: string, e
       return
     }
 
-    // Update payment to completed
-    await supabaseCall(
+    // Check for duplicate processing (idempotency)
+    const existingTransactions = await supabaseCall(
       supabaseUrl,
       supabaseKey,
-      'PATCH',
-      'payments',
-      'update',
-      {
-        id: paymentRecord.id,
-        status: 'completed',
-        razorpay_payment_id: payment.id,
-        razorpay_signature: (payment as any).razorpay_signature || null,
-        paid_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
+      'GET',
+      'membership_transactions',
+      'select',
+      { transaction_id: `eq.${paymentRecord.id}` }
     )
+
+    if (existingTransactions.length > 0) {
+      console.log('Membership transaction already exists, skipping:', paymentRecord.id)
+      return
+    }
+
+    // Update payment to completed with retry logic
+    await retryOperation(async () => {
+      await supabaseCall(
+        supabaseUrl,
+        supabaseKey,
+        'PATCH',
+        'payments',
+        'update',
+        {
+          id: paymentRecord.id,
+          status: 'completed',
+          razorpay_payment_id: payment.id,
+          razorpay_signature: (payment as any).razorpay_signature || null,
+          paid_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      )
+    }, 'Payment update')
 
     console.log('Payment updated to completed')
 
@@ -244,47 +369,90 @@ async function handlePaymentCaptured(supabaseUrl: string, supabaseKey: string, e
       'GET',
       'user_memberships',
       'select',
-      null
+      { user_id: `eq.${paymentRecord.user_id}` }
     )
 
     const existingMembership = existingMemberships.find((m: any) => m.user_id === paymentRecord.user_id)
+    let membershipId: string
 
     if (existingMembership) {
-      // Update existing membership
-      await supabaseCall(
-        supabaseUrl,
-        supabaseKey,
-        'PATCH',
-        'user_memberships',
-        'update',
-        {
-          id: existingMembership.id,
-          plan_id: paymentRecord.plan_id,
-          start_date: membershipStart,
-          end_date: membershipEnd,
-          status: 'active',
-          updated_at: new Date().toISOString()
-        }
-      )
+      // Update existing membership with retry
+      await retryOperation(async () => {
+        await supabaseCall(
+          supabaseUrl,
+          supabaseKey,
+          'PATCH',
+          'user_memberships',
+          'update',
+          {
+            id: existingMembership.id,
+            plan_id: paymentRecord.plan_id,
+            start_date: membershipStart,
+            end_date: membershipEnd,
+            status: 'active',
+            updated_at: new Date().toISOString()
+          }
+        )
+      }, 'Membership update')
       console.log('Updated existing membership:', existingMembership.id)
+      membershipId = existingMembership.id
     } else {
-      // Create new membership
-      const newMembership = await supabaseCall(
-        supabaseUrl,
-        supabaseKey,
-        'POST',
-        'user_memberships',
-        'insert',
-        {
-          user_id: paymentRecord.user_id,
-          plan_id: paymentRecord.plan_id,
-          start_date: membershipStart,
-          end_date: membershipEnd,
-          status: 'active'
-        }
-      )
+      // Create new membership with retry
+      const newMembership = await retryOperation(async () => {
+        return await supabaseCall(
+          supabaseUrl,
+          supabaseKey,
+          'POST',
+          'user_memberships',
+          'insert',
+          {
+            user_id: paymentRecord.user_id,
+            plan_id: paymentRecord.plan_id,
+            start_date: membershipStart,
+            end_date: membershipEnd,
+            status: 'active'
+          }
+        )
+      }, 'Membership creation')
       console.log('Created new membership:', newMembership[0].id)
+      membershipId = newMembership[0].id
     }
+
+    // Create membership transaction record
+    await supabaseCall(
+      supabaseUrl,
+      supabaseKey,
+      'POST',
+      'membership_transactions',
+      'insert',
+      {
+        user_id: paymentRecord.user_id,
+        membership_id: membershipId,
+        transaction_id: paymentRecord.id,
+        amount: paymentRecord.amount,
+        currency: paymentRecord.currency || 'INR',
+        status: 'completed',
+        payment_method: 'razorpay'
+      }
+    )
+    console.log('Created membership transaction record')
+
+    // Update user profile
+    await supabaseCall(
+      supabaseUrl,
+      supabaseKey,
+      'PATCH',
+      'user_profiles',
+      'update',
+      {
+        id: paymentRecord.user_id,
+        membership_status: 'pro',
+        membership_plan: 'pro',
+        membership_expiry: membershipEnd,
+        updated_at: new Date().toISOString()
+      }
+    )
+    console.log('Updated user profile')
 
     // Process referral commission
     await processReferralCommission(supabaseUrl, supabaseKey, paymentRecord, payment)
@@ -669,5 +837,145 @@ async function handleRefundFailed(supabaseUrl: string, supabaseKey: string, even
 
   } catch (error) {
     console.error('Error in handleRefundFailed:', error)
+  }
+}
+
+/**
+ * Handle order.paid event (alternative to payment.captured)
+ */
+async function handleOrderPaid(supabaseUrl: string, supabaseKey: string, event: any) {
+  try {
+    const order = event.payload.order.entity
+    console.log('Processing order.paid event:', order.id)
+    
+    // Find payment record by order_id
+    const paymentRecords = await supabaseCall(
+      supabaseUrl,
+      supabaseKey,
+      'GET',
+      'payments',
+      'select',
+      { razorpay_order_id: `eq.${order.id}` }
+    )
+
+    const paymentRecord = paymentRecords.find((p: any) => p.status === 'pending')
+    
+    if (!paymentRecord) {
+      console.log('No pending payment found for order:', order.id)
+      return
+    }
+
+    // Update payment status
+    await supabaseCall(
+      supabaseUrl,
+      supabaseKey,
+      'PATCH',
+      'payments',
+      'update',
+      {
+        id: paymentRecord.id,
+        status: 'completed',
+        paid_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    )
+
+    // Process the same as payment.captured
+    await handlePaymentCaptured(supabaseUrl, supabaseKey, {
+      ...event,
+      payload: {
+        payment: {
+          entity: {
+            id: order.id,
+            order_id: order.id,
+            amount: order.amount,
+            currency: order.currency,
+            status: 'captured'
+          }
+        }
+      }
+    })
+
+  } catch (error) {
+    console.error('Error in handleOrderPaid:', error)
+  }
+}
+
+/**
+ * Handle payment dispute created event
+ */
+async function handleDisputeCreated(supabaseUrl: string, supabaseKey: string, event: any) {
+  try {
+    const dispute = event.payload.dispute.entity
+    console.log('Processing payment.dispute.created event:', dispute.id)
+
+    // Find the payment record
+    const paymentRecords = await supabaseCall(
+      supabaseUrl,
+      supabaseKey,
+      'GET',
+      'payments',
+      'select',
+      { razorpay_payment_id: `eq.${dispute.payment_id}` }
+    )
+
+    const paymentRecord = paymentRecords.find((p: any) => p.razorpay_payment_id === dispute.payment_id)
+    
+    if (!paymentRecord) {
+      console.log('Payment record not found for dispute:', dispute.payment_id)
+      return
+    }
+
+    // Update payment status to disputed
+    await supabaseCall(
+      supabaseUrl,
+      supabaseKey,
+      'PATCH',
+      'payments',
+      'update',
+      {
+        id: paymentRecord.id,
+        status: 'disputed',
+        updated_at: new Date().toISOString(),
+        metadata: {
+          dispute_id: dispute.id,
+          dispute_reason: dispute.reason,
+          dispute_amount: dispute.amount,
+          dispute_created_at: dispute.created_at
+        }
+      }
+    )
+
+    // Deactivate membership if active
+    const memberships = await supabaseCall(
+      supabaseUrl,
+      supabaseKey,
+      'GET',
+      'user_memberships',
+      'select',
+      { user_id: `eq.${paymentRecord.user_id}` }
+    )
+
+    const activeMembership = memberships.find((m: any) => m.status === 'active')
+    if (activeMembership) {
+      await supabaseCall(
+        supabaseUrl,
+        supabaseKey,
+        'PATCH',
+        'user_memberships',
+        'update',
+        {
+          id: activeMembership.id,
+          status: 'disputed',
+          updated_at: new Date().toISOString()
+        }
+      )
+      console.log('Membership deactivated due to dispute')
+    }
+
+    console.log('Dispute processed successfully')
+
+  } catch (error) {
+    console.error('Error in handleDisputeCreated:', error)
   }
 }

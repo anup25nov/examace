@@ -218,8 +218,8 @@ export const createOrUpdateUserProfile = async (userId: string, phone: string, i
           // Use the database function to create referral code (bypasses RLS)
           const { data: createResult, error: createError } = await supabase
             .rpc('create_user_referral_code', {
-              user_uuid: userId,
-              custom_code: null
+              p_user_uuid: userId,
+              p_custom_code: null
             } as any);
 
           if (createError) {

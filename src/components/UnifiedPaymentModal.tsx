@@ -336,22 +336,49 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
               throw new Error('Invalid payment response data received');
             }
 
-            console.log('Payment successful, waiting for webhook processing...', {
+            console.log('Payment successful, processing via RPC...', {
               orderId: response.razorpay_order_id,
               paymentId: response.razorpay_payment_id
             });
 
-            // Payment successful - webhook will handle verification and membership activation
-            setPaymentStep('success');
-            console.log('Payment successful! Your membership will be activated shortly.');
-            
-            // Clear any referral code after successful payment
-            localStorage.removeItem('referralCode');
-            
-            setTimeout(() => {
-              onPaymentSuccess(planToPurchase.id);
-              onClose();
-            }, 2000);
+            // Process payment via RPC function
+            const processPayment = async () => {
+              try {
+                const { data, error } = await supabase.rpc('process_payment_webhook', {
+                  p_order_id: response.razorpay_order_id,
+                  p_razorpay_payment_id: response.razorpay_payment_id,
+                  p_amount: planToPurchase.price,
+                  p_currency: 'INR'
+                });
+
+                if (error) {
+                  throw new Error(`RPC call failed: ${error.message}`);
+                }
+
+                const result = data?.[0];
+                if (result?.success) {
+                  console.log('✅ Payment processed successfully via RPC:', result);
+                  setPaymentStep('success');
+                  console.log('Payment successful! Your membership has been activated.');
+                  
+                  // Clear any referral code after successful payment
+                  localStorage.removeItem('referralCode');
+                  
+                  setTimeout(() => {
+                    onPaymentSuccess(planToPurchase.id);
+                    onClose();
+                  }, 2000);
+                } else {
+                  throw new Error(result?.message || 'Payment processing failed');
+                }
+              } catch (rpcError) {
+                console.error('RPC payment processing error:', rpcError);
+                throw rpcError;
+              }
+            };
+
+            // Process payment
+            await processPayment();
 
           } catch (error) {
             console.error('Payment verification error:', error);

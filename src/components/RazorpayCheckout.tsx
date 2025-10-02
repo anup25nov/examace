@@ -7,6 +7,7 @@ import { razorpayPaymentService, RazorpayPaymentRequest } from '@/lib/razorpayPa
 import { useAuth } from '@/hooks/useAuth';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { messagingService } from '@/lib/messagingService';
+import { supabase } from '@/integrations/supabase/client';
 
 // Declare Razorpay types
 declare global {
@@ -177,18 +178,46 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
         },
         handler: async (response: any) => {
           try {
-            console.log('Payment successful, waiting for webhook processing...', {
+            console.log('Payment successful, processing via RPC...', {
               order_id: response.razorpay_order_id,
               payment_id: response.razorpay_payment_id
             });
 
-            // Payment successful - webhook will handle verification and membership activation
-            setPaymentStep('success');
-            messagingService.success('Payment successful! Your membership will be activated shortly.');
-            
-            setTimeout(() => {
-              onPaymentSuccess(paymentResult.paymentId!);
-            }, 2000);
+            // Process payment via RPC function
+            const processPayment = async () => {
+              try {
+                const { data, error } = await supabase.rpc('process_payment_webhook', {
+                  p_order_id: response.razorpay_order_id,
+                  p_razorpay_payment_id: response.razorpay_payment_id,
+                  p_amount: plan.price,
+                  p_currency: plan.currency || 'INR'
+                });
+
+                if (error) {
+                  throw new Error(`RPC call failed: ${error.message}`);
+                }
+
+                const result = data?.[0];
+                if (result?.success) {
+                  console.log('✅ Payment processed successfully via RPC:', result);
+                  setPaymentStep('success');
+                  messagingService.success('Payment successful! Your membership has been activated.');
+                  
+                  setTimeout(() => {
+                    onPaymentSuccess(paymentResult.paymentId!);
+                  }, 2000);
+                } else {
+                  throw new Error(result?.message || 'Payment processing failed');
+                }
+              } catch (rpcError) {
+                console.error('RPC payment processing error:', rpcError);
+                throw rpcError;
+              }
+            };
+
+            // Process payment
+            await processPayment();
+
           } catch (error) {
             console.error('Payment handler error:', error);
             setPaymentStep('failed');

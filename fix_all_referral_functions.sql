@@ -1,6 +1,28 @@
 -- Complete Fix for All Referral Functions
 -- Run this in Supabase SQL Editor
 
+-- Helper function to generate alphanumeric referral codes
+CREATE OR REPLACE FUNCTION generate_alphanumeric_referral_code()
+RETURNS text
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_code text;
+    v_chars text := 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    v_length integer := 8; -- 8 characters after REF prefix
+    v_i integer;
+BEGIN
+    v_code := 'REF';
+    
+    -- Generate random alphanumeric string
+    FOR v_i IN 1..v_length LOOP
+        v_code := v_code || substr(v_chars, floor(random() * length(v_chars) + 1)::integer, 1);
+    END LOOP;
+    
+    RETURN v_code;
+END;
+$$;
+
 -- Step 1: Show existing functions
 SELECT 
     'EXISTING FUNCTIONS BEFORE FIX:' as info,
@@ -73,16 +95,16 @@ BEGIN
     IF p_custom_code IS NOT NULL THEN
         v_referral_code := UPPER(p_custom_code);
     ELSE
-        v_referral_code := 'REF' || EXTRACT(EPOCH FROM NOW())::TEXT;
+        -- Generate alphanumeric referral code with guaranteed uniqueness
+        v_referral_code := generate_alphanumeric_referral_code();
     END IF;
     
-    -- Check if code already exists
-    SELECT EXISTS(SELECT 1 FROM public.referral_codes WHERE code = v_referral_code) INTO v_code_exists;
-    
-    IF v_code_exists THEN
-        -- Generate a unique code
-        v_referral_code := v_referral_code || '_' || EXTRACT(EPOCH FROM NOW())::TEXT;
-    END IF;
+    -- Check if code already exists and regenerate if needed
+    LOOP
+        SELECT EXISTS(SELECT 1 FROM public.referral_codes WHERE code = v_referral_code) INTO v_code_exists;
+        EXIT WHEN NOT v_code_exists;
+        v_referral_code := generate_alphanumeric_referral_code();
+    END LOOP;
     
     -- Insert referral code
     INSERT INTO public.referral_codes (

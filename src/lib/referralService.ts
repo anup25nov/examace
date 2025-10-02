@@ -208,7 +208,7 @@ class ReferralService {
 
       // Use the database function to create referral code
       const { data: referralCode, error } = await supabase
-        .rpc('create_user_referral_code', { user_uuid: user.id });
+        .rpc('create_user_referral_code', { p_user_uuid: user.id });
 
       if (error) {
         console.error('Error creating referral code:', error);
@@ -248,8 +248,8 @@ class ReferralService {
       console.log('Creating referral code for user:', userId);
       const { data: createResult, error: createError } = await supabase
         .rpc('create_user_referral_code', {
-          user_uuid: userId,
-          custom_code: null
+          p_user_uuid: userId,
+          p_custom_code: null
         } as any);
 
       if (createError) {
@@ -311,8 +311,8 @@ class ReferralService {
           console.log('No referral code found, attempting to create one...');
           const { data: createResult, error: createError } = await supabase
             .rpc('create_user_referral_code', {
-              user_uuid: user.id,
-              custom_code: null
+              p_user_uuid: user.id,
+              p_custom_code: null
             } as any);
 
           if (!createError && createResult && Array.isArray(createResult) && createResult.length > 0) {
