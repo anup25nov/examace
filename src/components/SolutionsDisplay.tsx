@@ -610,7 +610,8 @@ const SolutionsDisplay: React.FC<SolutionsDisplayProps> = ({
                   <div className="space-y-2 sm:space-y-3 mb-4">
                     {question.options && Array.isArray(question.options) ? question.options.map((option, optionIndex) => {
                       const isUserAnswer = userAnswer === optionIndex;
-                      const isCorrectAnswer = question.correct !== undefined && question.correct === optionIndex;
+                      const isCorrectAnswer = (question.correctAnswerIndex !== undefined && question.correctAnswerIndex === optionIndex) || 
+                                            (question.correct !== undefined && question.correct === optionIndex);
                       
                       // Handle options - simple string format
                       let optionText: string;
