@@ -148,6 +148,8 @@ export const RazorpayCheckout: React.FC<RazorpayCheckoutProps> = ({
         name: 'Step2Sarkari',
         description: plan.name,
         order_id: paymentResult.orderId,
+        // Add website URL to match registered website in Razorpay dashboard
+        website: window.location.origin,
         prefill: {
           name: (profile as any)?.name || user.phone || '',
           email: '',

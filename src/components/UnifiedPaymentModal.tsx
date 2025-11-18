@@ -282,6 +282,8 @@ export const UnifiedPaymentModal: React.FC<UnifiedPaymentModalProps> = ({
         name: 'Step2Sarkari',
         description: planToPurchase.name,
         order_id: paymentResult.orderId,
+        // Add website URL to match registered website in Razorpay dashboard
+        website: window.location.origin,
         prefill: {
           name: user.phone || '',
           email: '',

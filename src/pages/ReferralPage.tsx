@@ -637,33 +637,6 @@ const ReferralPage = () => {
                 </CardTitle>
                 <p className="text-gray-600">Transparent and rewarding commission system</p>
               </CardHeader>
-              <CardContent>
-                <div className="bg-gradient-to-r from-yellow-100 to-orange-100 rounded-xl p-8 shadow-lg">
-                  <div className="text-center">
-                    <div className="text-6xl font-bold text-yellow-600 mb-4">{getCommissionPercentage()}%</div>
-                    <div className="text-2xl font-bold text-gray-900 mb-6">Commission Rate</div>
-                    <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-                      You earn <span className="font-bold text-yellow-600">{getCommissionPercentage()}%</span> of every purchase made by your referrals. 
-                      The more people you refer, the more you earn!
-                    </p>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-                      <div className="bg-white/60 rounded-lg p-4">
-                        <div className="text-2xl font-bold text-green-600">₹{getMinimumWithdrawal()}</div>
-                        <div className="text-sm text-gray-600">Minimum Withdrawal</div>
-                      </div>
-                      <div className="bg-white/60 rounded-lg p-4">
-                        <div className="text-2xl font-bold text-blue-600">{getWithdrawalProcessingDays()}</div>
-                        <div className="text-sm text-gray-600">Processing Days</div>
-                      </div>
-                      <div className="bg-white/60 rounded-lg p-4">
-                        <div className="text-2xl font-bold text-purple-600">Unlimited</div>
-                        <div className="text-sm text-gray-600">Referral Limit</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
             </Card>
 
           </div>
@@ -682,23 +655,6 @@ const ReferralPage = () => {
           </Card>
         )}
         
-        {/* Extra content to ensure scrolling works */}
-        <div className="mt-8 p-8 bg-white rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Information</h3>
-          <div className="space-y-4 text-gray-600">
-            <p>This is additional content to test scrolling functionality.</p>
-            <p>If you can see this text, scrolling is working properly.</p>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-            <p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
-            <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
-            <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
-            <p>Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.</p>
-            <p>Totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.</p>
-            <p>Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.</p>
-            <p>Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit.</p>
-            <p>Sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.</p>
-          </div>
-        </div>
       </div>
     </div>
   );
