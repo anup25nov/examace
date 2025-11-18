@@ -335,7 +335,7 @@ const ReferralPage = () => {
               <Sparkles className="w-3 h-3 text-white" />
             </div> */}
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Start Earning Today!</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">Starttttt Earning Today!</h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-6">
             Share code with your friends and earn <span className="font-semibold text-green-600">{getCommissionPercentage()}% commission</span> on first purchase they make. 
             The more you refer, the more you earn!
