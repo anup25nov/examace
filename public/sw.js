@@ -3,9 +3,11 @@
  * Optimized for low network connectivity
  */
 
+
 const CACHE_NAME = 'examace-v1';
 const STATIC_CACHE = 'examace-static-v1';
 const DYNAMIC_CACHE = 'examace-dynamic-v1';
+
 
 // Critical resources to cache immediately
 const CRITICAL_RESOURCES = [
